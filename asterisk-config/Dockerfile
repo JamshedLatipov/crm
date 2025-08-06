@@ -1,0 +1,73 @@
+# Dockerfile for Asterisk 22
+FROM debian:bullseye-slim
+
+ENV ASTERISK_VERSION=22.5.1
+
+# Install dependencies (including WebRTC codecs and libs)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    build-essential \
+    wget \
+    subversion \
+    git \
+    curl \
+    ca-certificates \
+    libxml2-dev \
+    libncurses5-dev \
+    uuid-dev \
+    libjansson-dev \
+    libssl-dev \
+    libedit-dev \
+    libsqlite3-dev \
+    libcurl4-openssl-dev \
+    libnewt-dev \
+    libspandsp-dev \
+    libiksemel-dev \
+    liblua5.2-dev \
+    liburiparser-dev \
+    libxslt1-dev \
+    xmlstarlet \
+    pkg-config \
+    libopus-dev \
+    libogg-dev \
+    libvpx-dev \
+    libspeex-dev \
+    libavcodec-dev \
+    libavformat-dev \
+    libavutil-dev \
+    libswresample-dev \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN groupadd --system asterisk && useradd --system --no-create-home --gid asterisk --shell /sbin/nologin asterisk \
+    && mkdir -p /var/run/asterisk /var/lib/asterisk \
+    && chown -R asterisk:asterisk /var/run/asterisk /var/lib/asterisk
+
+# Download and extract Asterisk
+WORKDIR /usr/src
+RUN wget https://downloads.asterisk.org/pub/telephony/asterisk/asterisk-${ASTERISK_VERSION}.tar.gz && \
+    tar xzf asterisk-${ASTERISK_VERSION}.tar.gz && \
+    rm asterisk-${ASTERISK_VERSION}.tar.gz
+
+WORKDIR /usr/src/asterisk-${ASTERISK_VERSION}
+
+# Build and install Asterisk with WebRTC support
+RUN ./configure --with-jansson-bundled && \
+    make menuselect.makeopts && \
+    menuselect/menuselect --enable codec_opus --enable codec_speex --enable res_http_websocket --enable chan_pjsip --enable res_rtp_asterisk --enable cdr_pgsql menuselect.makeopts && \
+    make -j$(nproc) && \
+    make install && \
+    make samples && \
+    make config && \
+    ldconfig
+
+# Clean up build dependencies and sources
+WORKDIR /
+RUN rm -rf /usr/src/asterisk-${ASTERISK_VERSION}
+
+# Expose ports for SIP and RTP
+EXPOSE 5060/udp 5060/tcp 5061/tcp 8088/tcp 8089/tcp 10000-20000/udp
+
+# Set user and entrypoint
+USER asterisk
+ENTRYPOINT ["/usr/sbin/asterisk", "-f"]
