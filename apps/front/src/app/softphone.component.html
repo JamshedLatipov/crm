@@ -1,3 +1,24 @@
+<div class="softphone-form">
+  <label>
+    SIP логин:
+    <input [(ngModel)]="sipUser" placeholder="webrtc_client1" />
+  </label>
+  <label>
+    SIP пароль:
+    <input [(ngModel)]="sipPassword" placeholder="webrtcpass1" />
+  </label>
+  <label>
+    Кому звонить:
+    <input [(ngModel)]="callee" placeholder="webrtc_client2" />
+  </label>
+  <button (click)="connect()">Подключиться</button>
+  <button (click)="call()">Позвонить</button>
+  <button (click)="hangup()">Сбросить</button>
+</div>
+<div>
+  <p>Status: {{ status }}</p>
+  <audio id="remoteAudio" autoplay></audio>
+</div>
 <div class="softphone">
   <div>Status: {{ status }}</div>
   <button (click)="connect()">Connect</button>

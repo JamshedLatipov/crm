@@ -28,7 +28,7 @@ RUN apt-get update && \
     libxslt1-dev \
     xmlstarlet \
     pkg-config \
-    libopus-dev \ 
+    libopus-dev \
     libogg-dev \
     libvpx-dev \
     libspeex-dev \
@@ -37,6 +37,9 @@ RUN apt-get update && \
     libavutil-dev \
     libswresample-dev \
     libpq-dev \
+    unixodbc \
+    unixodbc-dev \
+    odbc-postgresql \
     && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd --system asterisk && useradd --system --no-create-home --gid asterisk --shell /sbin/nologin asterisk \
@@ -54,7 +57,7 @@ WORKDIR /usr/src/asterisk-${ASTERISK_VERSION}
 # Build and install Asterisk with WebRTC support
 RUN ./configure --with-jansson-bundled && \
     make menuselect.makeopts && \
-    menuselect/menuselect --enable codec_opus --enable codec_speex --enable res_http_websocket --enable chan_pjsip --enable res_rtp_asterisk --enable cdr_pgsql menuselect.makeopts && \
+    menuselect/menuselect --enable codec_opus --enable codec_speex --enable res_http_websocket --enable chan_pjsip --enable res_rtp_asterisk --enable cdr_pgsql --enable res_odbc menuselect.makeopts && \
     make -j$(nproc) && \
     make install && \
     make samples && \

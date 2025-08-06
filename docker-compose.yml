@@ -51,6 +51,10 @@ services:
       - ./asterisk-config/cdr_pgsql.conf:/etc/asterisk/cdr_pgsql.conf:ro
       - ./asterisk-config/keys:/etc/asterisk/keys:ro
       - ./asterisk-config/cel_pgsql.conf:/etc/asterisk/cel_pgsql.conf:ro
+      - ./asterisk-config/odbcinst.ini:/etc/odbcinst.ini:ro
+      - ./asterisk-config/odbc.ini:/etc/odbc.ini:ro
+      - ./asterisk-config/res_odbc.conf:/etc/asterisk/res_odbc.conf:ro
+      - ./asterisk-config/extconfig.conf:/etc/asterisk/extconfig.conf:ro
 
   back:
     build: .
