@@ -28,7 +28,7 @@ RUN apt-get update && \
     libxslt1-dev \
     xmlstarlet \
     pkg-config \
-    libopus-dev \
+    libopus-dev \ 
     libogg-dev \
     libvpx-dev \
     libspeex-dev \
@@ -40,8 +40,8 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd --system asterisk && useradd --system --no-create-home --gid asterisk --shell /sbin/nologin asterisk \
-    && mkdir -p /var/run/asterisk /var/lib/asterisk \
-    && chown -R asterisk:asterisk /var/run/asterisk /var/lib/asterisk
+    && mkdir -p /var/run/asterisk /var/lib/asterisk /var/spool/asterisk/outgoing /var/log/asterisk \
+    && chown -R asterisk:asterisk /var/run/asterisk /var/lib/asterisk /var/spool/asterisk /var/log/asterisk
 
 # Download and extract Asterisk
 WORKDIR /usr/src

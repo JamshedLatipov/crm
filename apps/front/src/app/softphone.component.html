@@ -1,0 +1,7 @@
+<div class="softphone">
+  <div>Status: {{ status }}</div>
+  <button (click)="connect()">Connect</button>
+  <button (click)="call()" [disabled]="callActive">Call 1000</button>
+  <button (click)="hangup()" [disabled]="!callActive">Hangup</button>
+  <audio id="remoteAudio" autoplay></audio>
+</div>
