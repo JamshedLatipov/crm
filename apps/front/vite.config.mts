@@ -12,6 +12,9 @@ export default defineConfig(() => ({
   // worker: {
   //  plugins: [ nxViteTsPaths() ],
   // },
+  css: {
+    postcss: '../../postcss.config.js',
+  },
   test: {
     watch: false,
     globals: true,

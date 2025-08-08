@@ -9,6 +9,7 @@ RUN apt-get update && \
     build-essential \
     wget \
     subversion \
+    sngrep \
     git \
     curl \
     ca-certificates \
@@ -66,10 +67,19 @@ RUN ./configure --with-jansson-bundled && \
 
 # Clean up build dependencies and sources
 WORKDIR /
-RUN rm -rf /usr/src/asterisk-${ASTERISK_VERSION}
+RUN rm -rf /usr/src/asterisk-${ASTERISK_VERSION} && \
+    mkdir -p /etc/asterisk/pjsip.d && \
+    mkdir -p /etc/asterisk/keys && \
+    chown -R asterisk:asterisk /etc/asterisk/pjsip.d /etc/asterisk/keys
+
+# Copy certificate creation script
+COPY create_cert.sh /tmp/create_cert.sh
+RUN chmod +x /tmp/create_cert.sh && \
+    /tmp/create_cert.sh && \
+    rm /tmp/create_cert.sh
 
 # Expose ports for SIP and RTP
-EXPOSE 5060/udp 5060/tcp 5061/tcp 8088/tcp 8089/tcp 10000-20000/udp
+EXPOSE 5060/udp 5060/tcp 5061/tcp 8088/tcp 8089/tcp 8443/tcp 10000-20000/udp
 
 # Set user and entrypoint
 USER asterisk

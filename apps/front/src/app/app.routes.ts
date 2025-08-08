@@ -1,5 +1,5 @@
 import { Route } from '@angular/router';
-import { SoftphoneComponent } from './softphone.component';
+import { SoftphoneComponent } from './softphone/softphone.component';
 
 export const appRoutes: Route[] = [
     {
