@@ -30,9 +30,7 @@ services:
 
 
   asterisk:
-    build:
-      context: ./asterisk-config
-    image: asterisk:22.5.1
+    image: asterisk_with_srtp
     restart: always
     ports:
       - "5060:5060/udp"   # SIP UDP
@@ -57,6 +55,7 @@ services:
       - ./asterisk-config/odbc.ini:/etc/odbc.ini:ro
       - ./asterisk-config/res_odbc.conf:/etc/asterisk/res_odbc.conf:ro
       - ./asterisk-config/extconfig.conf:/etc/asterisk/extconfig.conf:ro
+      - ./asterisk-config/sorcery.conf:/etc/asterisk/sorcery.conf:ro
 
   back:
     build: .
