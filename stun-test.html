@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>STUN Test</title>
+</head>
+<body>
+    <h1>STUN Server Test</h1>
+    <p>Testing connection to stun:127.0.0.1:3478...</p>
+    <div id="result">Running test...</div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const resultElement = document.getElementById('result');
+            
+            // Create configuration with STUN server
+            const config = {
+                iceServers: [
+                    {
+                        urls: 'stun:127.0.0.1:3478'
+                    }
+                ]
+            };
+            
+            try {
+                // Create RTCPeerConnection
+                const pc = new RTCPeerConnection(config);
+                
+                // Create data channel (required to trigger ICE gathering)
+                pc.createDataChannel('stun-test');
+                
+                // Listen for ICE candidate events
+                pc.onicecandidate = function(event) {
+                    if (event.candidate) {
+                        // Extract address from ICE candidate
+                        const candidateStr = event.candidate.candidate;
+                        
+                        if (candidateStr.indexOf('typ srflx') !== -1) {
+                            // This is a server reflexive candidate, which means STUN worked
+                            resultElement.innerHTML = `
+                                <p style="color: green">✓ STUN сервер доступен!</p>
+                                <p>ICE кандидат: ${candidateStr}</p>
+                                <p>STUN сервер успешно определил ваш публичный IP-адрес.</p>
+                            `;
+                            
+                            // Extract IP address from candidate string
+                            const ipMatch = /([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})/;
+                            const matches = candidateStr.match(ipMatch);
+                            
+                            if (matches && matches.length > 1) {
+                                resultElement.innerHTML += `<p>Ваш публичный IP: <strong>${matches[1]}</strong></p>`;
+                            }
+                            
+                            // Close the connection
+                            setTimeout(() => pc.close(), 1000);
+                        }
+                    }
+                };
+                
+                // Handle ICE gathering state changes
+                pc.onicegatheringstatechange = function() {
+                    if (pc.iceGatheringState === 'complete') {
+                        if (resultElement.textContent.includes('Running test...')) {
+                            resultElement.innerHTML = `
+                                <p style="color: orange">⚠ Тест завершен, но сервер рефлексивный кандидат не получен.</p>
+                                <p>Возможно, STUN-сервер недоступен или заблокирован.</p>
+                            `;
+                        }
+                    }
+                };
+                
+                // Start ICE gathering by creating an offer
+                pc.createOffer()
+                    .then(offer => pc.setLocalDescription(offer))
+                    .catch(err => {
+                        resultElement.innerHTML = `
+                            <p style="color: red">✗ Ошибка при создании WebRTC соединения:</p>
+                            <p>${err.toString()}</p>
+                        `;
+                    });
+                
+                // Set timeout in case ICE gathering takes too long
+                setTimeout(function() {
+                    if (resultElement.textContent.includes('Running test...')) {
+                        resultElement.innerHTML = `
+                            <p style="color: red">✗ Тайм-аут при ожидании ответа от STUN-сервера.</p>
+                            <p>Возможно, STUN-сервер недоступен или заблокирован.</p>
+                        `;
+                        pc.close();
+                    }
+                }, 10000);
+                
+            } catch (error) {
+                resultElement.innerHTML = `
+                    <p style="color: red">✗ Ошибка при инициализации WebRTC:</p>
+                    <p>${error.toString()}</p>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>

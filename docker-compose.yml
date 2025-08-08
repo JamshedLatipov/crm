@@ -1,4 +1,4 @@
-version: '3.8'
+# version: '3.8'
 services:
   postgres:
     image: postgres:16
@@ -27,11 +27,21 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
+      
+  coturn:
+    image: coturn/coturn
+    restart: always
+    ports:
+      - "3478:3478"
+      - "3478:3478/udp"
+    command: turnserver -n --log-file=stdout -a -v -r crm.local
 
 
   asterisk:
     image: asterisk_with_srtp
     restart: always
+    depends_on:
+      - coturn
     ports:
       - "5060:5060/udp"   # SIP UDP
       - "5060:5060/tcp"   # SIP TCP
@@ -40,6 +50,11 @@ services:
       - "5061:5061/tcp"   # SIP TLS (WebRTC)
       - "8089:8089/tcp"   # WebSocket (ws)
       - "8443:8443/tcp"   # WebSocket Secure (wss)
+    command: >
+      bash -c "
+        mkdir -p /var/log/asterisk/cdr-csv &&
+        chmod -R 777 /var/log/asterisk &&
+        /usr/sbin/asterisk -f"
     volumes:
       - ./asterisk-config/asterisk.conf:/etc/asterisk/asterisk.conf:ro
       - ./asterisk-config/pjsip.conf:/etc/asterisk/pjsip.conf:ro
@@ -49,6 +64,8 @@ services:
       - ./asterisk-config/extensions.conf:/etc/asterisk/extensions.conf:ro
       - ./asterisk-config/res_pgsql.conf:/etc/asterisk/res_pgsql.conf:ro
       - ./asterisk-config/cdr_pgsql.conf:/etc/asterisk/cdr_pgsql.conf:ro
+      - ./asterisk-config/cdr.conf:/etc/asterisk/cdr.conf:ro
+      - ./asterisk-config/modules.conf:/etc/asterisk/modules.conf:ro
       - ./asterisk-config/keys:/etc/asterisk/keys:ro
       - ./asterisk-config/cel_pgsql.conf:/etc/asterisk/cel_pgsql.conf:ro
       - ./asterisk-config/odbcinst.ini:/etc/odbcinst.ini:ro
@@ -64,6 +81,7 @@ services:
       - redis
       - rabbitmq
       - asterisk
+      - coturn
     environment:
       DB_HOST: postgres
       DB_PORT: 5432

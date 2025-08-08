@@ -50,8 +50,8 @@ export class SoftphoneComponent {
   private currentSession: JsSIPSession | null = null;
 
   // Новые переменные для ввода
-  sipUser = 'operator2';
-  sipPassword = 'operator2pass';
+  sipUser = 'operator1';
+  sipPassword = 'pass1';
   callee = '';
 
   // Переменная для IP-адреса сервера Asterisk
@@ -121,13 +121,9 @@ export class SoftphoneComponent {
       uri: `sip:${this.sipUser}@${this.asteriskHost}`,
       password: this.sipPassword,
       sockets: [ socketWs], // Пробуем оба транспорта
-      realm: this.asteriskHost, // Используем IP-адрес вместо localhost
-      user_agent: 'CRM Softphone',
-      register_expires: 300,
-      register: true,
       authorization_user: this.sipUser, // Указываем явно имя пользователя для авторизации
       connection_recovery_min_interval: 2, // Быстрое восстановление соединения
-      connection_recovery_max_interval: 30
+      connection_recovery_max_interval: 30,
     });
     this.ua.on('registered', () => {
       this.status = 'Registered!';
@@ -232,8 +228,11 @@ export class SoftphoneComponent {
       'extraHeaders': ['X-Custom-Header: CRM Call'],
       'pcConfig': {
         'iceServers': [
-          { 'urls': ['stun:stun.l.google.com:19302'] }
-        ]
+          { 'urls': [
+            `stun:${this.asteriskHost}:3478`  // Локальный STUN сервер (coturn)
+          ]}
+        ],
+        'rtcpMuxPolicy': 'require' as const // Enable RTCP multiplexing for Chrome
       }
     };
 
