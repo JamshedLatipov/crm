@@ -124,6 +124,7 @@ export class SoftphoneComponent {
       authorization_user: this.sipUser, // Указываем явно имя пользователя для авторизации
       connection_recovery_min_interval: 2, // Быстрое восстановление соединения
       connection_recovery_max_interval: 30,
+      realm: 'crm.local'
     });
     this.ua.on('registered', () => {
       this.status = 'Registered!';
@@ -228,9 +229,19 @@ export class SoftphoneComponent {
       'extraHeaders': ['X-Custom-Header: CRM Call'],
       'pcConfig': {
         'iceServers': [
-          { 'urls': [
-            `stun:${this.asteriskHost}:3478`  // Локальный STUN сервер (turn)
-          ]}
+          {
+            'urls': [
+              `stun:${this.asteriskHost}:3478`
+            ]
+          },
+          {
+            'urls': [
+              `turn:${this.asteriskHost}:3478?transport=udp`,
+              `turn:${this.asteriskHost}:3478?transport=tcp`
+            ],
+            'username': 'webrtc',
+            'credential': 'webrtcpass'
+          }
         ],
         'rtcpMuxPolicy': 'require' as const // Enable RTCP multiplexing for Chrome
       }

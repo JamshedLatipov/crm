@@ -12,9 +12,12 @@ LISTEN_IPS="0.0.0.0"
 
 # Relay IP (use the docker host IP if needed, else container will pick)
 RELAY_IP=0.0.0.0
+EXTERNAL_IP=0.0.0.0  # ЗАМЕНИ на локальный IP (например 192.168.1.50)
 
-# Shared secret for TURN REST API style auth (STATIC_AUTH_SECRET mode)
-STATIC_AUTH_SECRET=devsecret
+# Переключено на статические креды вместо STATIC_AUTH_SECRET
+# STATIC_AUTH_SECRET=devsecret
+USERNAME=webrtc
+PASSWORD=webrtcpass
 
 # Authentication realm (match domain you use, arbitrary for local)
 REALM=crm.local

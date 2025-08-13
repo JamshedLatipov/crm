@@ -42,10 +42,9 @@ services:
     ports:
       - "3478:3478"
       - "3478:3478/udp"
+    # spreed/turnserver expects env-style config at /srv/config
     volumes:
-      - type: bind
-        source: ./turnserver/data
-        target: /srv
+      - "./turnserver/data:/srv"
     mem_limit: "128m"
     mem_reservation: "64m"
 
