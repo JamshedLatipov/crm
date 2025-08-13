@@ -40,24 +40,25 @@ services:
     storage_opt:
       size: "2g"
       
-  coturn:
-    image: coturn/coturn
+  # Replaced coturn with spreed/turnserver
+  turn:
+    image: spreed/turnserver:v0.3
     restart: always
     ports:
       - "3478:3478"
       - "3478:3478/udp"
-    command: turnserver -n --log-file=stdout -a -v -r crm.local
+    volumes:
+      - ./turnserver/data:/srv
     mem_limit: "128m"
     mem_reservation: "64m"
     storage_opt:
       size: "512m"
 
-
   asterisk:
     image: asterisk_with_srtp
     restart: always
     depends_on:
-      - coturn
+      - turn
     ports:
       - "5060:5060/udp"   # SIP UDP
       - "5060:5060/tcp"   # SIP TCP
@@ -100,7 +101,7 @@ services:
       - redis
       - rabbitmq
       - asterisk
-      - coturn
+      - turn
     environment:
       DB_HOST: postgres
       DB_PORT: 5432

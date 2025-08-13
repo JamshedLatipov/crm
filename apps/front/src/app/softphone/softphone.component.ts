@@ -229,7 +229,7 @@ export class SoftphoneComponent {
       'pcConfig': {
         'iceServers': [
           { 'urls': [
-            `stun:${this.asteriskHost}:3478`  // Локальный STUN сервер (coturn)
+            `stun:${this.asteriskHost}:3478`  // Локальный STUN сервер (turn)
           ]}
         ],
         'rtcpMuxPolicy': 'require' as const // Enable RTCP multiplexing for Chrome

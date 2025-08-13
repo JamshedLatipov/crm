@@ -67,7 +67,7 @@
     "build:front": "nx build front",
     "test:back": "nx test back",
     "test:front": "nx test front",
-    "start:services": "docker-compose up -d coturn rabbitmq redis postgres asterisk"
+    "start:services": "docker-compose up -d turn rabbitmq redis postgres asterisk"
   },
   "dependencies": {
     "@angular/cdk": "^20.1.5",
