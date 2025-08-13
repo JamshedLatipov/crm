@@ -41,6 +41,7 @@ RUN apt-get update && \
     unixodbc \
     unixodbc-dev \
     odbc-postgresql \
+    stun-client \
     libsrtp2-dev \
     bash \
     && rm -rf /var/lib/apt/lists/*
