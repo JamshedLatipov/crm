@@ -42,6 +42,7 @@ RUN apt-get update && \
     unixodbc-dev \
     odbc-postgresql \
     libsrtp2-dev \
+    bash \
     && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd --system asterisk && useradd --system --no-create-home --gid asterisk --shell /sbin/nologin asterisk \
@@ -75,7 +76,9 @@ RUN rm -rf /usr/src/asterisk-${ASTERISK_VERSION} && \
 
 # Copy certificate creation script
 COPY create_cert.sh /tmp/create_cert.sh
-RUN chmod +x /tmp/create_cert.sh && \
+# Normalize line endings (fix possible CRLF) and run the script
+RUN sed -i 's/\r$//' /tmp/create_cert.sh && \
+    chmod +x /tmp/create_cert.sh && \
     /tmp/create_cert.sh && \
     rm /tmp/create_cert.sh
 

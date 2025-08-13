@@ -32,6 +32,8 @@ openssl x509 -req -sha256 -days 3650 -in asterisk.csr -signkey asterisk.key -out
 
 # Очистка и установка прав
 rm asterisk.csr /tmp/openssl.cnf
+# Ensure Asterisk can read the certs after switching to non-root user
+chown asterisk:asterisk asterisk.key asterisk.pem
 chmod 644 asterisk.pem
-chmod 600 asterisk.key
+chmod 640 asterisk.key
 echo "Certificates generated successfully with modern parameters!"
