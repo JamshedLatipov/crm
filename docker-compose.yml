@@ -84,6 +84,7 @@ services:
       - ./asterisk-config/res_odbc.conf:/etc/asterisk/res_odbc.conf:ro
       - ./asterisk-config/extconfig.conf:/etc/asterisk/extconfig.conf:ro
       - ./asterisk-config/sorcery.conf:/etc/asterisk/sorcery.conf:ro
+      - ./asterisk-config/stun.conf:/etc/asterisk/stun.conf:ro
     mem_limit: "512m"
     mem_reservation: "256m"
 
