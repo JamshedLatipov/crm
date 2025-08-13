@@ -34,13 +34,16 @@ services:
     mem_limit: "512m"
     mem_reservation: "256m"
       
-  coturn:
-    image: coturn/coturn
+  # TURN/STUN server (spreed/turnserver wrapper around coturn)
+  turn:
+    image: spreed/turnserver:v0.3
     restart: always
+    # NOTE: For production expose 443 as well and consider network_mode: host
     ports:
       - "3478:3478"
       - "3478:3478/udp"
-    command: turnserver -n --log-file=stdout -a -v -r crm.local
+    volumes:
+      - ./turnserver/data:/srv:ro
     mem_limit: "128m"
     mem_reservation: "64m"
 
@@ -49,7 +52,7 @@ services:
     image: asterisk_with_srtp
     restart: always
     depends_on:
-      - coturn
+      - turn
     ports:
       - "5060:5060/udp"   # SIP UDP
       - "5060:5060/tcp"   # SIP TCP
@@ -90,7 +93,7 @@ services:
       - redis
       - rabbitmq
       - asterisk
-      - coturn
+      - turn
     environment:
       DB_HOST: postgres
       DB_PORT: 5432

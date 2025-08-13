@@ -1,0 +1,34 @@
+## Minimal TURN server config for local development
+## Adjust IPs to your host machine's accessible IP inside docker network.
+
+# Primary listening port (keep 3478 for dev)
+LISTENING_PORT=3478
+
+# Optional alternate listening port
+ALT_LISTENING_PORT=0
+
+# Space separated list of listening IPs (0.0.0.0 for all inside container)
+LISTEN_IPS="0.0.0.0"
+
+# Relay IP (use the docker host IP if needed, else container will pick)
+RELAY_IP=0.0.0.0
+
+# Shared secret for TURN REST API style auth (STATIC_AUTH_SECRET mode)
+STATIC_AUTH_SECRET=devsecret
+
+# Authentication realm (match domain you use, arbitrary for local)
+REALM=crm.local
+
+# Enable verbose logging
+VERBOSE=1
+
+# Uncomment to enable TLS later (need to mount cert files into /srv)
+# TLS_CERT=/srv/fullchain.pem
+# TLS_KEY=/srv/privkey.pem
+
+# Allow loopback for local tests
+ALLOW_LOOPBACK_PEERS=1
+ALLOW_LOOPBACK=1
+
+# User database not needed when using STATIC_AUTH_SECRET
+# Add extra options as needed referencing data/config.example from project.
