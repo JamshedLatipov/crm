@@ -43,7 +43,9 @@ services:
       - "3478:3478"
       - "3478:3478/udp"
     volumes:
-      - ./turnserver/data:/srv:ro
+      - type: bind
+        source: ./turnserver/data
+        target: /srv
     mem_limit: "128m"
     mem_reservation: "64m"
 
