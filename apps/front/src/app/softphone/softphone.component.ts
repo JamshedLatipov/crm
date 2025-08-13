@@ -124,7 +124,7 @@ export class SoftphoneComponent {
       authorization_user: this.sipUser, // Указываем явно имя пользователя для авторизации
       connection_recovery_min_interval: 2, // Быстрое восстановление соединения
       connection_recovery_max_interval: 30,
-      realm: 'crm.local'
+      realm: '127.0.0.1'
     });
     this.ua.on('registered', () => {
       this.status = 'Registered!';

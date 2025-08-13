@@ -20,7 +20,7 @@ USERNAME=webrtc
 PASSWORD=webrtcpass
 
 # Authentication realm (match domain you use, arbitrary for local)
-REALM=crm.local
+REALM=127.0.0.1
 
 # Enable verbose logging
 VERBOSE=1
