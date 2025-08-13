@@ -13,8 +13,6 @@ services:
       - pgdata:/var/lib/postgresql/data
     mem_limit: "1g"
     mem_reservation: "512m"
-    storage_opt:
-      size: "5g"
 
   redis:
     image: redis:7
@@ -23,8 +21,6 @@ services:
       - "6379:6379"
     mem_limit: "256m"
     mem_reservation: "128m"
-    storage_opt:
-      size: "1g"
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -37,8 +33,6 @@ services:
       RABBITMQ_DEFAULT_PASS: guest
     mem_limit: "512m"
     mem_reservation: "256m"
-    storage_opt:
-      size: "2g"
       
   coturn:
     image: coturn/coturn
@@ -49,8 +43,6 @@ services:
     command: turnserver -n --log-file=stdout -a -v -r crm.local
     mem_limit: "128m"
     mem_reservation: "64m"
-    storage_opt:
-      size: "512m"
 
 
   asterisk:
@@ -90,8 +82,6 @@ services:
       - ./asterisk-config/sorcery.conf:/etc/asterisk/sorcery.conf:ro
     mem_limit: "512m"
     mem_reservation: "256m"
-    storage_opt:
-      size: "2g"
 
   back:
     build: .
@@ -115,8 +105,6 @@ services:
     command: ["node", "dist/main.js"]
     mem_limit: "512m"
     mem_reservation: "256m"
-    storage_opt:
-      size: "1g"
 
 volumes:
   pgdata:
