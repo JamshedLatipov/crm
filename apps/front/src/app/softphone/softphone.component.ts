@@ -56,6 +56,25 @@ export class SoftphoneComponent {
 
   // Переменная для IP-адреса сервера Asterisk
   private readonly asteriskHost = '127.0.0.1';
+
+  constructor() {
+    // Полное отключение глобального debug-логирования JsSIP
+    try {
+      // Удаляем сохраненный namespace debug (если библиотека использует localStorage)
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('debug');
+      }
+      // Пытаемся вызвать стандартный метод отключения
+      if (JsSIP.debug && typeof JsSIP.debug.disable === 'function') {
+        JsSIP.debug.disable();
+      } else if (JsSIP.debug && typeof JsSIP.debug.enable === 'function') {
+        // Установка пустой строки обычно отключает вывод (debug npm пакет)
+        JsSIP.debug.enable('');
+      }
+    } catch {
+      // игнорируем любые ошибки (например, доступ к localStorage в некоторых окружениях)
+    }
+  }
   
   failed(e: JsSIPSessionEvent) {
     console.log('Call failed with cause:', e);
@@ -106,10 +125,6 @@ export class SoftphoneComponent {
 
     this.status = 'Connecting...';
 
-    // Включаем подробное логирование JsSIP
-    JsSIP.debug.enable('JsSIP:*');
-    console.log('Enabling detailed JsSIP logging');
-
     // Пытаемся сначала использовать WSS, если не получится - используем WS
     const socketWs = new JsSIP.WebSocketInterface(`ws://${this.asteriskHost}:8089/ws`);
 
@@ -124,7 +139,7 @@ export class SoftphoneComponent {
       authorization_user: this.sipUser, // Указываем явно имя пользователя для авторизации
       connection_recovery_min_interval: 2, // Быстрое восстановление соединения
       connection_recovery_max_interval: 30,
-      realm: '127.0.0.1'
+      realm: this.asteriskHost
     });
     this.ua.on('registered', () => {
       this.status = 'Registered!';
@@ -227,24 +242,24 @@ export class SoftphoneComponent {
       'eventHandlers': eventHandlers,
       'mediaConstraints': { 'audio': true, 'video': false }, // Use video: false for audio-only calls
       'extraHeaders': ['X-Custom-Header: CRM Call'],
-      'pcConfig': {
-        'iceServers': [
-          {
-            'urls': [
-              `stun:${this.asteriskHost}:3478`
-            ]
-          },
-          {
-            'urls': [
-              `turn:${this.asteriskHost}:3478?transport=udp`,
-              `turn:${this.asteriskHost}:3478?transport=tcp`
-            ],
-            'username': 'webrtc',
-            'credential': 'webrtcpass'
-          }
-        ],
-        'rtcpMuxPolicy': 'require' as const // Enable RTCP multiplexing for Chrome
-      }
+      // 'pcConfig': {
+      //   'iceServers': [
+      //     {
+      //       'urls': [
+      //         `stun:${this.asteriskHost}:3478`
+      //       ]
+      //     },
+      //     {
+      //       'urls': [
+      //         `turn:${this.asteriskHost}:3478?transport=udp`,
+      //         `turn:${this.asteriskHost}:3478?transport=tcp`
+      //       ],
+      //       'username': 'webrtc',
+      //       'credential': 'webrtcpass'
+      //     }
+      //   ],
+      //   'rtcpMuxPolicy': 'require' as const // Enable RTCP multiplexing for Chrome
+      // }
     };
 
     try {
