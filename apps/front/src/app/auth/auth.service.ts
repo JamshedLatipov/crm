@@ -5,7 +5,9 @@ import { firstValueFrom } from 'rxjs';
 interface StoredAuthData {
   username: string;
   token: string;
-  ts: number;
+  ts: number;      // stored timestamp
+  exp?: number;    // unix seconds expiration
+  roles?: string[];
 }
 interface LoginResponse {
   access_token: string;
@@ -32,22 +34,18 @@ export class AuthService {
   private http = inject(HttpClient);
 
   constructor() {
-    const raw = localStorage.getItem(AuthService.STORAGE_KEY);
-    if (raw) {
-      try {
-        const data: StoredAuthData = JSON.parse(raw);
-        if (data?.token && data?.username) {
-          this._user.set(data.username);
-        }
-      } catch {
-        /* ignore */
-      }
-    }
+    this.restoreSession();
   }
 
   user = this._user.asReadonly();
 
   isAuthenticated(): boolean {
+    const data = this.getStoredAuth();
+    if (!data) return false;
+    if (data.exp && Date.now() / 1000 > data.exp) {
+      this.clearStoredAuth();
+      return false;
+    }
     return !!this._user();
   }
 
@@ -70,7 +68,7 @@ export class AuthService {
       const decoded = this.decodeJwt(token);
       const effectiveUsername = decoded?.username || username;
       this._user.set(effectiveUsername);
-      const store: StoredAuthData = { username, token, ts: Date.now() };
+  const store: StoredAuthData = { username, token, ts: Date.now(), exp: decoded?.exp, roles: decoded?.roles };
       if (remember) {
         localStorage.setItem(AuthService.STORAGE_KEY, JSON.stringify(store));
       } else {
@@ -88,8 +86,7 @@ export class AuthService {
 
   logout() {
     this._user.set(null);
-    localStorage.removeItem(AuthService.STORAGE_KEY);
-    sessionStorage.removeItem(AuthService.STORAGE_KEY);
+  this.clearStoredAuth();
     localStorage.removeItem('operator.username');
     localStorage.removeItem('operator.password');
   }
@@ -109,5 +106,32 @@ export class AuthService {
     } catch {
       return undefined;
     }
+  }
+
+  private restoreSession() {
+    // Prefer localStorage, then sessionStorage
+    const raw = localStorage.getItem(AuthService.STORAGE_KEY) || sessionStorage.getItem(AuthService.STORAGE_KEY);
+    if (!raw) return;
+    try {
+      const data: StoredAuthData = JSON.parse(raw);
+      if (!data.token || !data.username) return;
+      const decoded = this.decodeJwt(data.token);
+      if (decoded?.exp && Date.now() / 1000 > decoded.exp) {
+        this.clearStoredAuth();
+        return;
+      }
+      this._user.set(data.username);
+    } catch { /* ignore */ }
+  }
+
+  private getStoredAuth(): StoredAuthData | null {
+    const raw = localStorage.getItem(AuthService.STORAGE_KEY) || sessionStorage.getItem(AuthService.STORAGE_KEY);
+    if (!raw) return null;
+    try { return JSON.parse(raw) as StoredAuthData; } catch { return null; }
+  }
+
+  private clearStoredAuth() {
+    localStorage.removeItem(AuthService.STORAGE_KEY);
+    sessionStorage.removeItem(AuthService.STORAGE_KEY);
   }
 }

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import * as JsSIP from 'jssip'; // Ensure JsSIP is available globally
 import { FormsModule } from '@angular/forms'; // Import FormsModule for ngModel
 import { CommonModule } from '@angular/common'; // Import CommonModule for *ngIf
@@ -52,7 +52,7 @@ interface JsSIPSession { [key: string]: any; }
     SoftphoneScriptsPanelComponent
   ]
 })
-export class SoftphoneComponent {
+export class SoftphoneComponent implements OnInit {
   status = 'Disconnected';
   callActive = false;
   muted = false;
@@ -74,6 +74,8 @@ export class SoftphoneComponent {
   // Переменная для IP-адреса сервера Asterisk
   private readonly asteriskHost = '127.0.0.1';
 
+  private autoConnectAttempted = false;
+
   constructor() {
     // Полное отключение глобального debug-логирования JsSIP
     try {
@@ -90,6 +92,27 @@ export class SoftphoneComponent {
       }
     } catch {
       // игнорируем любые ошибки (например, доступ к localStorage в некоторых окружениях)
+    }
+
+    // Автоподстановка сохранённых SIP реквизитов оператора
+    try {
+      const savedUser = localStorage.getItem('operator.username');
+      const savedPass = localStorage.getItem('operator.password');
+      if (savedUser) this.sipUser = savedUser;
+      if (savedPass) this.sipPassword = savedPass;
+    } catch { /* ignore */ }
+  }
+
+  ngOnInit() {
+    // Авто-SIP авторизация, если есть сохранённые данные и ещё не подключено
+    if (!this.autoConnectAttempted && this.sipUser && this.sipPassword) {
+      this.autoConnectAttempted = true;
+      // Небольшая задержка чтобы DOM стабилизировался (иногда полезно для JsSIP)
+      setTimeout(() => {
+        if (!this.ua || !this.ua.isRegistered()) {
+          this.connect();
+        }
+      }, 50);
     }
   }
   
