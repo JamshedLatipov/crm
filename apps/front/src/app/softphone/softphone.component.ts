@@ -70,6 +70,9 @@ export class SoftphoneComponent implements OnInit {
   sipUser = 'operator1';
   sipPassword = 'pass1';
   callee = '';
+  // Simple stats placeholders (could be wired to backend later)
+  callsProcessedToday = 12;
+  callsInQueue = 42;
 
   // Переменная для IP-адреса сервера Asterisk
   private readonly asteriskHost = '127.0.0.1';
@@ -415,4 +418,14 @@ export class SoftphoneComponent implements OnInit {
         this.status = 'Для звонков необходим доступ к микрофону';
       });
   }
+
+  // Dial pad interactions
+  pressKey(key: string) {
+    if (this.callActive && this.currentSession && typeof this.currentSession['sendDTMF'] === 'function' && /[0-9*#]/.test(key)) {
+      try { this.currentSession['sendDTMF'](key); } catch (e) { console.warn('DTMF send failed', e); }
+    }
+    this.callee += key;
+  }
+  clearNumber() { this.callee = ''; }
+  removeLast() { this.callee = this.callee.slice(0, -1); }
 }

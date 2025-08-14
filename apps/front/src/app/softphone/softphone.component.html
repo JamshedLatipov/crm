@@ -42,14 +42,53 @@
 
     <div class="flex-1 flex flex-col gap-6 pt-2">
       <app-softphone-status-bar [status]="status" [callActive]="callActive"></app-softphone-status-bar>
-      <app-softphone-login-form *ngIf="!callActive"
-        [sipUser]="sipUser" (sipUserChange)="sipUser=$event"
-        [sipPassword]="sipPassword" (sipPasswordChange)="sipPassword=$event"
-        [callee]="callee" (calleeChange)="callee=$event"
-        [microphoneError]="microphoneError"
-        (retryMic)="checkMicrophoneAccess()"
-        (dismissMicError)="microphoneError=false">
-      </app-softphone-login-form>
+      <!-- Dialer with keypad -->
+      <div *ngIf="!callActive" class="space-y-6">
+        <div class="space-y-2">
+          <h2 class="text-sm font-medium text-[var(--text-secondary)]">Make an Outgoing Call</h2>
+          <div class="flex items-center justify-between bg-[var(--muted-color)]/40 border border-[var(--border-color)] rounded-md px-4 py-3 text-lg font-medium tracking-wider select-none">
+            <span class="truncate" [title]="callee">{{ callee || '(Введите номер)' }}</span>
+            <button *ngIf="callee" (click)="clearNumber()" class="ml-4 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition">
+              <span class="material-icons text-base leading-none">close</span>
+            </button>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <button *ngFor="let key of ['1','2','3','4','5','6','7','8','9','*','0','#']"
+            (click)="pressKey(key)"
+            class="h-14 rounded-md text-lg font-medium bg-[var(--muted-color)]/40 hover:bg-[var(--muted-color)] border border-[var(--border-color)] flex items-center justify-center active:scale-[0.97] transition select-none">
+            {{ key }}
+          </button>
+        </div>
+        <div class="pt-2">
+          <button (click)="call()" [disabled]="!callee" class="w-full flex items-center justify-center gap-2 h-12 rounded-md text-white font-medium disabled:opacity-60 disabled:cursor-not-allowed bg-green-500 hover:bg-green-600 active:scale-[0.99] transition">
+            <span class="material-icons text-base">call</span>
+            Call
+          </button>
+        </div>
+        <div class="flex items-center justify-between text-[11px] text-[var(--text-secondary)] border-t border-[var(--border-color)] pt-3">
+          <div class="flex items-center gap-1">
+            <span class="material-icons text-[13px]">tag</span>
+            <span>Calls Processed Today:</span>
+            <span class="font-medium text-[var(--text-primary)]">{{ callsProcessedToday }}</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <span class="material-icons text-[13px]">call</span>
+            <span>Calls in queue:</span>
+            <span class="font-medium text-[var(--text-primary)]">{{ callsInQueue }}</span>
+          </div>
+        </div>
+        <div *ngIf="microphoneError" class="bg-red-50 border-l-4 border-red-500 p-4 rounded mb-2">
+          <div class="flex items-center">
+            <span class="material-icons text-red-500 mr-2">error</span>
+            <p class="text-sm text-red-700 flex-1">Доступ к микрофону отклонен. Разрешите доступ в настройках браузера.</p>
+          </div>
+          <div class="mt-2 flex gap-2">
+            <button class="px-3 py-1 text-xs bg-red-100 text-red-800 rounded hover:bg-red-200" (click)="microphoneError=false">Закрыть</button>
+            <button class="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded hover:bg-blue-200" (click)="checkMicrophoneAccess()">Повторить</button>
+          </div>
+        </div>
+      </div>
       <app-softphone-call-info *ngIf="callActive" [callee]="callee" [callDuration]="callDuration"></app-softphone-call-info>
       <app-softphone-call-actions [status]="status" [callActive]="callActive"
         [muted]="muted" [onHold]="onHold" [holdInProgress]="holdInProgress"

@@ -9,18 +9,6 @@ import { MatIconModule } from '@angular/material/icon';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="grid grid-cols-3 gap-4 w-full">
-      <!-- Connect / Call -->
-      <button (click)="connect.emit()" *ngIf="!status.includes('Registered') && !callActive"
-        class="flex flex-col items-center justify-center gap-2 p-3 rounded-lg bg-[var(--primary-color)] hover:bg-blue-700 transition-all text-white">
-        <span class="material-icons">login</span>
-        <span class="text-xs font-medium">Подключиться</span>
-      </button>
-      <button (click)="call.emit()" *ngIf="status.includes('Registered') && !callActive"
-        class="flex flex-col items-center justify-center gap-2 p-3 rounded-lg bg-green-600 hover:bg-green-700 transition-all text-white">
-        <span class="material-icons">call</span>
-        <span class="text-xs font-medium">Позвонить</span>
-      </button>
-
       <!-- Active call controls -->
       <ng-container *ngIf="callActive">
         <button (click)="holdToggle.emit()" [disabled]="holdInProgress"
