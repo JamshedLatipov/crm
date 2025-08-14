@@ -1,0 +1,127 @@
+import { Injectable, Logger } from '@nestjs/common';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore dynamic module without types
+import * as AriClient from 'ari-client';
+
+interface AriConfig {
+  host: string;
+  port: number;
+  username: string;
+  password: string;
+  app: string;
+  autoReconnect?: boolean;
+  reconnectDelayMs?: number;
+  protocol: 'http' | 'https';
+}
+
+@Injectable()
+export class AriService {
+  private readonly logger = new Logger(AriService.name);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private client: any;
+  private connected = false;
+  private reconnectTimer?: NodeJS.Timeout;
+  private readonly config: AriConfig = {
+    host: process.env.ARI_HOST || 'localhost',
+    port: parseInt(process.env.ARI_PORT || '8089', 10),
+    protocol: process.env.ARI_PROTOCOL === 'https' ? 'https' : 'http',
+    username: process.env.ARI_USER || 'ariuser',
+    password: process.env.ARI_PASSWORD || 'aripass',
+    app: process.env.ARI_APP || 'crm-app',
+    autoReconnect: true,
+    reconnectDelayMs: 3000,
+  };
+
+  async connect() {
+    if (this.connected) return;
+    try {
+      const baseUrl = `${this.config.protocol}://${this.config.host}:${this.config.port}`;
+      this.logger.log(`Connecting to ARI ${baseUrl} (app=${this.config.app})`);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      this.client = await (AriClient as any).connect(
+        baseUrl,
+        this.config.username,
+        this.config.password
+      );
+      this.subscribeAllEvents();
+      this.client.start(this.config.app);
+      this.connected = true;
+      this.logger.log('ARI connected and application started');
+    } catch (err) {
+      this.logger.error('ARI connect failed', err as Error);
+      this.scheduleReconnect();
+    }
+  }
+
+  private scheduleReconnect() {
+    if (!this.config.autoReconnect) return;
+    if (this.reconnectTimer) return;
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = undefined;
+      this.connect();
+    }, this.config.reconnectDelayMs);
+  }
+
+  private subscribeAllEvents() {
+    if (!this.client) return;
+    const coreEvents = [
+      'StasisStart',
+      'StasisEnd',
+      'ChannelCreated',
+      'ChannelDestroyed',
+      'ChannelStateChange',
+      'ChannelDtmfReceived',
+      'PlaybackStarted',
+      'PlaybackFinished',
+    ];
+    coreEvents.forEach((evt) =>
+      this.client.on(evt, (e: unknown) => this.logEvent(evt, e))
+    );
+    const ws = this.client._client && this.client._client.ws;
+    if (ws) {
+      ws.on('message', (data: string) => {
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.type && !coreEvents.includes(parsed.type)) {
+            this.logEvent(parsed.type, parsed);
+          }
+        } catch {
+          /* ignore */
+        }
+      });
+      ws.on('close', () => {
+        this.logger.warn('ARI websocket closed');
+        this.connected = false;
+        this.scheduleReconnect();
+      });
+      ws.on('error', (err: unknown) =>
+        this.logger.error('ARI websocket error', err as Error)
+      );
+    }
+  }
+
+  private logEvent(type: string, payload: unknown) {
+    const simplified: Record<string, unknown> = {
+      ...(payload as Record<string, unknown>),
+    };
+    if (simplified.channel && typeof simplified.channel === 'object') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const ch: any = simplified.channel;
+      simplified.channel = { id: ch.id, state: ch.state, name: ch.name };
+    }
+    this.logger.debug(`[ARI] ${type} ${JSON.stringify(simplified)}`);
+  }
+
+  async disconnect() {
+    try {
+      this.client?._client?.ws?.close();
+    } catch {
+      /* ignore */
+    }
+    this.connected = false;
+  }
+
+  isConnected() {
+    return this.connected;
+  }
+}

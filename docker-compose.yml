@@ -85,6 +85,7 @@ services:
       - ./asterisk-config/extconfig.conf:/etc/asterisk/extconfig.conf:ro
       - ./asterisk-config/sorcery.conf:/etc/asterisk/sorcery.conf:ro
       - ./asterisk-config/stun.conf:/etc/asterisk/stun.conf:ro
+      - ./asterisk-config/ari.conf:/etc/asterisk/ari.conf:ro
     mem_limit: "512m"
     mem_reservation: "256m"
 
@@ -105,6 +106,11 @@ services:
       RMQ_URL: amqp://rabbitmq:5672
       RMQ_QUEUE: crm_queue
       REDIS_URL: redis://redis:6379
+      ARI_HOST: asterisk
+      ARI_PORT: 8089
+      ARI_USER: ariuser
+      ARI_PASSWORD: aripass
+      ARI_APP: crm-app
     ports:
       - "3000:3000"
     command: ["node", "dist/main.js"]

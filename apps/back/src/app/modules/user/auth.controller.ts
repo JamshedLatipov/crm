@@ -1,4 +1,4 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, ForbiddenException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto } from './auth.dto';
 import { ApiTags, ApiBody } from '@nestjs/swagger';
@@ -11,10 +11,11 @@ export class AuthController {
   @Post('login')
   @ApiBody({ type: LoginDto })
   async login(@Body() body: LoginDto) {
-    const user = await this.authService.validateUser(body.username, body.password);
-    if (!user) {
-      throw new Error('Invalid credentials');
-    }
+    const user = await this.authService.validateUser(
+      body.username,
+      body.password
+    );
+    if (!user) throw new ForbiddenException('Invalid credentials');
     return this.authService.login(user);
   }
 

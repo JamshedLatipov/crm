@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn } from 'typeorm';
+import { PsEndpoint } from '../calls/entities/ps-endpoint.entity';
 
 @Entity('users')
 export class User {
@@ -16,4 +17,12 @@ export class User {
 
   @Column({ default: true })
   isActive: boolean;
+
+  // SIP endpoint linkage (optional)
+  @Column({ name: 'sip_endpoint_id', length: 40, nullable: true })
+  sipEndpointId?: string | null;
+
+  @OneToOne(() => PsEndpoint, { nullable: true })
+  @JoinColumn({ name: 'sip_endpoint_id', referencedColumnName: 'id' })
+  sipEndpoint?: PsEndpoint | null;
 }

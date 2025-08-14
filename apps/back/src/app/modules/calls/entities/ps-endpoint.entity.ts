@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryColumn } from 'typeorm';
+import { Entity, Column, PrimaryColumn, OneToOne } from 'typeorm';
+import { User } from '../../user/user.entity';
 
 @Entity('ps_endpoints')
 export class PsEndpoint {
@@ -58,4 +59,7 @@ export class PsEndpoint {
   
   @Column({ length: 40, nullable: true })
   rtp_symmetric: string;
+
+  @OneToOne(() => User, user => user.sipEndpoint, { nullable: true })
+  user?: User | null;
 }

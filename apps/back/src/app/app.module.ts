@@ -7,6 +7,7 @@ import { ConfigModule } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { MODULES } from './modules';
 import { CALLS_MIGRATIONS } from './modules/calls/migrations';
+import { USER_MIGRATIONS } from './modules/user/migrations';
 
 @Module({
     imports: [
@@ -20,7 +21,7 @@ import { CALLS_MIGRATIONS } from './modules/calls/migrations';
             database: process.env.DB_NAME || 'crm',
             autoLoadEntities: true,
             synchronize: true,
-            migrations: [...CALLS_MIGRATIONS],
+            migrations: [...CALLS_MIGRATIONS, ...USER_MIGRATIONS],
             migrationsRun: true,
         }),
         ClientsModule.register([

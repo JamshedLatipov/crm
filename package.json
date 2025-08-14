@@ -67,7 +67,7 @@
     "build:front": "nx build front",
     "test:back": "nx test back",
     "test:front": "nx test front",
-  "start:services": "docker-compose up -d turn rabbitmq redis postgres asterisk"
+    "start:services": "docker-compose up -d turn rabbitmq redis postgres asterisk"
   },
   "dependencies": {
     "@angular/cdk": "^20.1.5",
@@ -96,6 +96,9 @@
     "rxjs": "^7.8.0",
     "swagger-ui-express": "^5.0.1",
     "typeorm": "^0.3.25",
-    "zone.js": "~0.15.0"
+    "zone.js": "~0.15.0",
+    "@fontsource/roboto": "^5.0.0",
+    "@fontsource/material-icons": "^5.0.0",
+    "ari-client": "^2.2.0"
   }
 }
