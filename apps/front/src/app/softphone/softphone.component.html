@@ -45,12 +45,23 @@
       <!-- Dialer with keypad -->
       <div *ngIf="!callActive" class="space-y-6">
         <div class="space-y-2">
-          <h2 class="text-sm font-medium text-[var(--text-secondary)]">Make an Outgoing Call</h2>
+          <h2 class="text-sm font-medium text-[var(--text-secondary)] flex items-center gap-2">
+            Make an Outgoing Call
+            <button (click)="pasteFromClipboard()" type="button" class="text-[11px] px-2 py-1 border border-[var(--border-color)] rounded hover:bg-[var(--muted-color)]/60 transition flex items-center gap-1">
+              <span class="material-icons text-[14px] leading-none">content_paste</span>
+              Paste
+            </button>
+          </h2>
           <div class="flex items-center justify-between bg-[var(--muted-color)]/40 border border-[var(--border-color)] rounded-md px-4 py-3 text-lg font-medium tracking-wider select-none">
             <span class="truncate" [title]="callee">{{ callee || '(Введите номер)' }}</span>
-            <button *ngIf="callee" (click)="clearNumber()" class="ml-4 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition">
-              <span class="material-icons text-base leading-none">close</span>
-            </button>
+            <div class="flex items-center gap-2 ml-4">
+              <button *ngIf="callee" (click)="removeLast()" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition" title="Удалить последний символ">
+                <span class="material-icons text-base leading-none">backspace</span>
+              </button>
+              <button *ngIf="callee" (click)="clearNumber()" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition" title="Очистить номер">
+                <span class="material-icons text-base leading-none">close</span>
+              </button>
+            </div>
           </div>
         </div>
         <div class="grid grid-cols-3 gap-3">

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import * as JsSIP from 'jssip'; // Ensure JsSIP is available globally
 import { FormsModule } from '@angular/forms'; // Import FormsModule for ngModel
 import { CommonModule } from '@angular/common'; // Import CommonModule for *ngIf
@@ -46,7 +46,6 @@ interface JsSIPSession { [key: string]: any; }
   styleUrls: ['./softphone.component.scss'],
   imports: [FormsModule, CommonModule, MatIconModule,
     SoftphoneStatusBarComponent,
-    SoftphoneLoginFormComponent,
     SoftphoneCallInfoComponent,
     SoftphoneCallActionsComponent,
     SoftphoneScriptsPanelComponent
@@ -428,4 +427,31 @@ export class SoftphoneComponent implements OnInit {
   }
   clearNumber() { this.callee = ''; }
   removeLast() { this.callee = this.callee.slice(0, -1); }
+
+  // Clipboard paste support
+  @HostListener('window:paste', ['$event'])
+  onPaste(e: ClipboardEvent) {
+    if (this.callActive) return;
+    const text = e.clipboardData?.getData('text') || '';
+    if (!text) return;
+    this.applyClipboardNumber(text);
+    e.preventDefault();
+  }
+
+  async pasteFromClipboard() {
+    if (!navigator.clipboard) return;
+    try {
+      const text = await navigator.clipboard.readText();
+      this.applyClipboardNumber(text);
+    } catch (err) {
+      console.warn('Clipboard read failed', err);
+    }
+  }
+
+  private applyClipboardNumber(raw: string) {
+    const cleaned = raw.replace(/[^0-9*#+]/g, '');
+    if (!cleaned) return;
+    this.callee = cleaned;
+    this.status = `Number pasted (${cleaned.length} digits)`;
+  }
 }
