@@ -27,23 +27,23 @@
   <div class="bg-[var(--surface-color)] rounded-lg p-6 flex flex-col shadow-sm">
     <div class="border-b border-[var(--border-color)] mb-4">
       <div class="flex items-center -mx-4">
-        <div
-          class="px-4 py-2 text-sm font-medium text-[var(--primary-color)] border-b-2 border-[var(--primary-color)] flex items-center gap-2">
+        <button (click)="activeTab='dial'"
+          [class]="activeTab==='dial' ? 'px-4 py-2 text-sm font-medium text-[var(--primary-color)] border-b-2 border-[var(--primary-color)] flex items-center gap-2' : 'px-4 py-2 text-sm font-medium text-[var(--text-secondary)] border-b-2 border-transparent flex items-center gap-2 hover:text-[var(--text-primary)]'">
           <span class="material-icons text-lg">call</span>
           <span>Звонок</span>
-        </div>
-        <div
-          class="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] border-b-2 border-transparent cursor-pointer hover:text-[var(--text-primary)] flex items-center gap-2">
+        </button>
+        <button (click)="activeTab='history'"
+          [class]="activeTab==='history' ? 'px-4 py-2 text-sm font-medium text-[var(--primary-color)] border-b-2 border-[var(--primary-color)] flex items-center gap-2' : 'px-4 py-2 text-sm font-medium text-[var(--text-secondary)] border-b-2 border-transparent flex items-center gap-2 hover:text-[var(--text-primary)]'">
           <span class="material-icons text-lg">history</span>
           <span>История</span>
-        </div>
+        </button>
       </div>
     </div>
 
     <div class="flex-1 flex flex-col gap-6 pt-2">
       <app-softphone-status-bar [status]="status" [callActive]="callActive"></app-softphone-status-bar>
       <!-- Dialer with keypad -->
-      <div *ngIf="!callActive" class="space-y-6">
+      <div *ngIf="activeTab==='dial' && !callActive" class="space-y-6">
         <div class="space-y-2">
           <h2 class="text-sm font-medium text-[var(--text-secondary)] flex items-center gap-2">
             Make an Outgoing Call
@@ -100,7 +100,8 @@
           </div>
         </div>
       </div>
-      <app-softphone-call-info *ngIf="callActive" [callee]="callee" [callDuration]="callDuration"></app-softphone-call-info>
+  <app-softphone-call-info *ngIf="callActive && activeTab==='dial'" [callee]="callee" [callDuration]="callDuration"></app-softphone-call-info>
+  <app-softphone-call-history *ngIf="activeTab==='history'" class="h-full" [operatorId]="sipUser" />
       <app-softphone-call-actions [status]="status" [callActive]="callActive"
         [muted]="muted" [onHold]="onHold" [holdInProgress]="holdInProgress"
         (connect)="connect()" (call)="call()" (hangup)="hangup()"

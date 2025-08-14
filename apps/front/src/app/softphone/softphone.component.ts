@@ -5,11 +5,11 @@ import { CommonModule } from '@angular/common'; // Import CommonModule for *ngIf
 import { MatIconModule } from '@angular/material/icon'; // Import MatIconModule for icons
 import { 
   SoftphoneStatusBarComponent,
-  SoftphoneLoginFormComponent,
   SoftphoneCallInfoComponent,
   SoftphoneCallActionsComponent,
   SoftphoneScriptsPanelComponent
 } from './components';
+import { SoftphoneCallHistoryComponent } from './components/softphone-call-history.component';
 
 // Define custom interfaces to avoid 'any' types
 interface JsSIPSessionEvent {
@@ -48,7 +48,8 @@ interface JsSIPSession { [key: string]: any; }
     SoftphoneStatusBarComponent,
     SoftphoneCallInfoComponent,
     SoftphoneCallActionsComponent,
-    SoftphoneScriptsPanelComponent
+  SoftphoneScriptsPanelComponent,
+  SoftphoneCallHistoryComponent
   ]
 })
 export class SoftphoneComponent implements OnInit {
@@ -77,6 +78,8 @@ export class SoftphoneComponent implements OnInit {
   private readonly asteriskHost = '127.0.0.1';
 
   private autoConnectAttempted = false;
+  // UI tab state
+  activeTab: 'dial' | 'history' = 'dial';
 
   constructor() {
     // Полное отключение глобального debug-логирования JsSIP

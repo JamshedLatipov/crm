@@ -1,4 +1,5 @@
 import { Injectable, signal, inject } from '@angular/core';
+import { environment } from '../../environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 
@@ -28,9 +29,7 @@ export class AuthService {
   private static STORAGE_KEY = 'crm_auth';
   private _user = signal<string | null>(null);
 
-  private apiBase =
-    (globalThis as unknown as { __API_BASE__?: string }).__API_BASE__ ||
-    'http://localhost:3000/api';
+  private apiBase = environment.apiBase;
   private http = inject(HttpClient);
 
   constructor() {
