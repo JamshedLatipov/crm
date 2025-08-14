@@ -46,9 +46,10 @@ RUN apt-get update && \
     bash \
     && rm -rf /var/lib/apt/lists/*
 
-RUN groupadd --system asterisk && useradd --system --no-create-home --gid asterisk --shell /sbin/nologin asterisk \
+RUN groupadd --system asterisk && useradd --system --create-home --home-dir /home/asterisk --gid asterisk --shell /bin/bash asterisk \
     && mkdir -p /var/run/asterisk /var/lib/asterisk /var/spool/asterisk/outgoing /var/log/asterisk \
-    && chown -R asterisk:asterisk /var/run/asterisk /var/lib/asterisk /var/spool/asterisk /var/log/asterisk
+    && touch /home/asterisk/.asterisk_history \
+    && chown -R asterisk:asterisk /home/asterisk /var/run/asterisk /var/lib/asterisk /var/spool/asterisk /var/log/asterisk
 
 # Download and extract Asterisk
 WORKDIR /usr/src
