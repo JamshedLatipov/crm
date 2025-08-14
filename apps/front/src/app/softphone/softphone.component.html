@@ -41,216 +41,32 @@
     </div>
 
     <div class="flex-1 flex flex-col gap-6 pt-2">
-      <!-- Status Bar -->
-      <div class="flex items-center gap-2 mb-2">
-        <span [class]="status.includes('Registered') ? 'inline-block w-2.5 h-2.5 rounded-full bg-green-500' : 
-          (status.includes('failed') || status.includes('Ошибка') ? 'inline-block w-2.5 h-2.5 rounded-full bg-red-500' : 
-          'inline-block w-2.5 h-2.5 rounded-full bg-yellow-500')"></span>
-        <span class="text-sm font-medium text-[var(--text-secondary)]">{{ status }}</span>
-      </div>
-
-
-      <!-- Microphone Error Message -->
-      <div *ngIf="microphoneError" class="bg-red-50 border-l-4 border-red-500 p-4 rounded mb-4">
-        <div class="flex items-center">
-          <div class="flex-shrink-0">
-            <span class="material-icons text-red-500">error</span>
-          </div>
-          <div class="ml-3">
-            <p class="text-sm text-red-700">
-              Доступ к микрофону отклонен. Звонки невозможны без доступа к микрофону. Пожалуйста, разрешите доступ в
-              настройках браузера.
-            </p>
-            <div class="mt-2 flex gap-2">
-              <button class="px-3 py-1 text-xs bg-red-100 text-red-800 rounded hover:bg-red-200"
-                (click)="microphoneError = false">
-                Закрыть
-              </button>
-              <button class="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded hover:bg-blue-200"
-                (click)="checkMicrophoneAccess()">
-                Повторить проверку
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- SIP Login Form -->
-      <div *ngIf="!callActive" class="space-y-4">
-        <div>
-          <label for="sipUser" class="block text-sm font-medium text-[var(--text-secondary)] mb-2">SIP логин</label>
-          <div class="relative">
-            <span
-              class="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]">person</span>
-            <input [(ngModel)]="sipUser" id="sipUser" name="sipUser"
-              class="w-full bg-[var(--surface-color)] border border-[var(--border-color)] rounded-md pl-10 pr-3 py-2 focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)]"
-              placeholder="operator1" />
-          </div>
-        </div>
-        <div>
-          <label for="sipPassword" class="block text-sm font-medium text-[var(--text-secondary)] mb-2">SIP
-            пароль</label>
-          <div class="relative">
-            <span
-              class="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]">lock</span>
-            <input [(ngModel)]="sipPassword" id="sipPassword" name="sipPassword" type="password"
-              class="w-full bg-[var(--surface-color)] border border-[var(--border-color)] rounded-md pl-10 pr-3 py-2 focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)]"
-              placeholder="operator1pass" />
-          </div>
-        </div>
-        <div>
-          <label for="callee" class="block text-sm font-medium text-[var(--text-secondary)] mb-2">Кому звонить</label>
-          <div class="relative">
-            <span
-              class="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]">call</span>
-            <input [(ngModel)]="callee" id="callee" name="callee"
-              class="w-full bg-[var(--surface-color)] border border-[var(--border-color)] rounded-md pl-10 pr-3 py-2 focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)]"
-              placeholder="2002" />
-          </div>
-        </div>
-
-        <!-- Microphone access warning -->
-        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <span class="material-icons text-yellow-400">warning</span>
-            </div>
-            <div class="ml-3">
-              <p class="text-sm text-yellow-700">
-                Для совершения звонков требуется доступ к микрофону. Пожалуйста, разрешите доступ при запросе браузера.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Call Info When Active -->
-      <div *ngIf="callActive" class="space-y-4">
-        <h2 class="text-xl font-bold">Вызов с {{ callee }}</h2>
-        <div class="flex items-center justify-between text-[var(--text-secondary)] flex-wrap gap-y-2">
-          <div class="flex items-center gap-2">
-            <span class="material-icons text-base">call</span>
-            <span>Активный вызов - {{ callDuration }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Call Actions -->
-      <div class="grid grid-cols-3 gap-4 w-full">
-        <button (click)="connect()" *ngIf="!status.includes('Registered')"
-          class="flex flex-col items-center justify-center gap-2 p-3 rounded-lg bg-[var(--primary-color)] hover:bg-blue-700 transition-all text-white">
-          <span class="material-icons">login</span>
-          <span class="text-xs font-medium">Подключиться</span>
-        </button>
-        <button (click)="call()" *ngIf="status.includes('Registered')"
-          class="flex flex-col items-center justify-center gap-2 p-3 rounded-lg bg-green-600 hover:bg-green-700 transition-all text-white">
-          <span class="material-icons">call</span>
-          <span class="text-xs font-medium">Позвонить</span>
-        </button>
-
-        <!-- Active Call Buttons -->
-        <ng-container *ngIf="callActive">
-          <button
-            class="flex flex-col items-center justify-center gap-2 p-3 rounded-lg bg-[var(--muted-color)] hover:bg-gray-200 transition-all text-[var(--text-primary)]">
-            <span class="material-icons">pause</span>
-            <span class="text-xs font-medium">Удержание</span>
-          </button>
-          <button
-            class="flex flex-col items-center justify-center gap-2 p-3 rounded-lg bg-[var(--muted-color)] hover:bg-gray-200 transition-all text-[var(--text-primary)]">
-            <span class="material-icons">mic_off</span>
-            <span class="text-xs font-medium">Без звука</span>
-          </button>
-          <button
-            class="flex flex-col items-center justify-center gap-2 p-3 rounded-lg bg-[var(--muted-color)] hover:bg-gray-200 transition-all text-[var(--text-primary)]">
-            <span class="material-icons">record_voice_over</span>
-            <span class="text-xs font-medium">Запись</span>
-          </button>
-        </ng-container>
-
-        <!-- End Call button always shown when call is active -->
-        <button (click)="hangup()" *ngIf="callActive"
-          class="flex flex-col items-center justify-center gap-2 p-3 rounded-lg bg-red-600 hover:bg-red-700 transition-all text-white">
-          <span class="material-icons">call_end</span>
-          <span class="text-xs font-medium">Сбросить</span>
-        </button>
-      </div>
-
-      <!-- Add note during active call -->
+      <app-softphone-status-bar [status]="status" [callActive]="callActive"></app-softphone-status-bar>
+      <app-softphone-login-form *ngIf="!callActive"
+        [sipUser]="sipUser" (sipUserChange)="sipUser=$event"
+        [sipPassword]="sipPassword" (sipPasswordChange)="sipPassword=$event"
+        [callee]="callee" (calleeChange)="callee=$event"
+        [microphoneError]="microphoneError"
+        (retryMic)="checkMicrophoneAccess()"
+        (dismissMicError)="microphoneError=false">
+      </app-softphone-login-form>
+      <app-softphone-call-info *ngIf="callActive" [callee]="callee" [callDuration]="callDuration"></app-softphone-call-info>
+      <app-softphone-call-actions [status]="status" [callActive]="callActive"
+        [muted]="muted" [onHold]="onHold" [holdInProgress]="holdInProgress"
+        (connect)="connect()" (call)="call()" (hangup)="hangup()"
+        (muteToggle)="toggleMute()" (holdToggle)="toggleHold()"></app-softphone-call-actions>
       <div *ngIf="callActive" class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-[var(--text-secondary)] mb-2" for="call-note">Добавить
-            заметку</label>
-          <textarea
+          <label class="block text-sm font-medium text-[var(--text-secondary)] mb-2" for="call-note">Добавить заметку</label>
+          <textarea id="call-note" rows="4"
             class="w-full bg-[var(--surface-color)] border border-[var(--border-color)] rounded-md p-2 text-sm focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)]"
-            id="call-note" placeholder="Добавьте заметку о звонке..." rows="4"></textarea>
+            placeholder="Добавьте заметку о звонке..."></textarea>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Right Panel - Only displayed during active call -->
-  <div *ngIf="callActive" class="bg-[var(--surface-color)] rounded-lg p-6 flex flex-col shadow-sm">
-    <div class="flex items-center justify-between mb-4 gap-4 flex-wrap">
-      <h2 class="text-2xl font-bold">Сценарии вызова</h2>
-      <div class="relative">
-        <span class="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]">search</span>
-        <input
-          class="bg-[var(--surface-color)] border border-[var(--border-color)] rounded-md pl-10 pr-4 py-2 text-sm focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)] w-64"
-          placeholder="Поиск сценариев..." type="text" />
-      </div>
-    </div>
-
-    <div class="border-b border-[var(--border-color)] mb-4">
-      <div class="flex items-center">
-        <div class="px-2 py-2 text-sm font-medium text-[var(--primary-color)] border-b-2 border-[var(--primary-color)]">
-          Все</div>
-        <div
-          class="px-2 py-2 text-sm font-medium text-[var(--text-secondary)] border-b-2 border-transparent cursor-pointer hover:text-[var(--text-primary)] flex items-center gap-2">
-          <span class="material-icons text-lg -ml-1 mr-1">history</span>
-          <span>Недавние</span>
-        </div>
-        <div
-          class="px-2 py-2 text-sm font-medium text-[var(--text-secondary)] border-b-2 border-transparent cursor-pointer hover:text-[var(--text-primary)] flex items-center gap-2">
-          <span class="material-icons text-lg -ml-1 mr-1 text-yellow-500">bookmark</span>
-          <span>Избранные</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="flex-1 overflow-y-auto pt-2 pr-4 -mr-4">
-      <div class="space-y-4">
-        <div>
-          <h3 class="text-sm font-semibold text-[var(--text-secondary)] px-2 mb-2 flex items-center gap-2">
-            <span class="material-icons text-base">history</span>
-            <span>Недавно использованные</span>
-          </h3>
-          <div class="space-y-1">
-            <div class="flex items-center gap-2 cursor-pointer py-1.5 px-2 rounded-md hover:bg-[var(--muted-color)]">
-              <span class="font-medium text-sm">Обновление контактной информации</span>
-              <span class="material-icons text-lg text-yellow-500 ml-auto">bookmark</span>
-            </div>
-            <div
-              class="flex items-center gap-2 cursor-pointer py-1.5 px-2 rounded-md bg-[var(--primary-color)] text-white">
-              <span class="font-medium text-sm">Проверка статуса заявки</span>
-              <span class="material-icons text-lg text-white ml-auto">bookmark</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="border-t border-[var(--border-color)] my-4"></div>
-
-        <!-- Sample script content displayed -->
-        <div>
-          <div class="text-sm font-medium text-[var(--text-secondary)] mb-2">Сценарий</div>
-          <div
-            class="bg-[var(--muted-color)] border border-[var(--border-color)] rounded-md p-3 text-sm text-[var(--text-secondary)] space-y-2 leading-relaxed h-32 overflow-auto">
-            <p>"Я могу проверить статус вашей заявки. Не могли бы вы предоставить номер заявки?"</p>
-            <p class="italic">(Если клиент не имеет номера заявки, попросите полное имя и дату рождения для поиска)</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <app-softphone-scripts-panel [callActive]="callActive"></app-softphone-scripts-panel>
 </main>
 
 <audio id="remoteAudio" autoplay class="hidden"></audio>

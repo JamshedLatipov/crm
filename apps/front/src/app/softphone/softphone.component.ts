@@ -3,6 +3,13 @@ import * as JsSIP from 'jssip'; // Ensure JsSIP is available globally
 import { FormsModule } from '@angular/forms'; // Import FormsModule for ngModel
 import { CommonModule } from '@angular/common'; // Import CommonModule for *ngIf
 import { MatIconModule } from '@angular/material/icon'; // Import MatIconModule for icons
+import { 
+  SoftphoneStatusBarComponent,
+  SoftphoneLoginFormComponent,
+  SoftphoneCallInfoComponent,
+  SoftphoneCallActionsComponent,
+  SoftphoneScriptsPanelComponent
+} from './components';
 
 // Define custom interfaces to avoid 'any' types
 interface JsSIPSessionEvent {
@@ -29,22 +36,28 @@ interface JsSIPRTCSessionEvent {
 }
 
 // Типизируем объект сессии для предотвращения ошибок "any"
-interface JsSIPSession {
-  direction?: string;
-  connection?: RTCPeerConnection;
-  on(event: string, callback: () => void): void;
-  terminate(): void;
-}
+// Minimal surface of JsSIP RTCSession we need; loosen types to avoid incompat issues
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+interface JsSIPSession { [key: string]: any; }
 
 @Component({
   selector: 'app-softphone',
   templateUrl: './softphone.component.html',
   styleUrls: ['./softphone.component.scss'],
-  imports: [FormsModule, CommonModule, MatIconModule]
+  imports: [FormsModule, CommonModule, MatIconModule,
+    SoftphoneStatusBarComponent,
+    SoftphoneLoginFormComponent,
+    SoftphoneCallInfoComponent,
+    SoftphoneCallActionsComponent,
+    SoftphoneScriptsPanelComponent
+  ]
 })
 export class SoftphoneComponent {
   status = 'Disconnected';
   callActive = false;
+  muted = false;
+  onHold = false;
+  holdInProgress = false;
   microphoneError = false;
   private ua: JsSIP.UA | null = null;
   private currentSession: JsSIPSession | null = null;
@@ -95,6 +108,7 @@ export class SoftphoneComponent {
     console.log('Call ended with cause:', e.data?.cause);
     this.callActive = false;
     this.stopCallTimer();
+  this.onHold = false;
     this.status = this.isRegistered() ? 'Registered!' : `Call ended: ${e.data?.cause || 'Normal clearing'}`;
   }
   private handleCallFailed(e: JsSIPSessionEvent) {
@@ -221,19 +235,29 @@ export class SoftphoneComponent {
 
     // Примечание: событие transportError не поддерживается в текущей версии JsSIP
     this.ua.on('newRTCSession', (e: JsSIPRTCSessionEvent) => {
-      // Используем приведение типа к нашему интерфейсу
-      const session = e.session as JsSIPSession;
-      if (session && session.direction === 'outgoing') {
+      const session = e.session as unknown as JsSIPSession;
+      if (session && session['direction'] === 'outgoing') {
         this.currentSession = session;
-        session.on('accepted', () => {
+        session['on']('accepted', () => {
           this.status = 'Call accepted';
           this.callActive = true;
           this.startCallTimer();
         });
-        session.on('ended', () => this.handleCallEnded({ data: { cause: 'Normal clearing' } }));
-        session.on('failed', () => this.handleCallFailed({ data: { cause: 'Failed' } }));
-        if (session.connection) {
-          session.connection.addEventListener('track', (ev: RTCTrackEvent) => {
+        // Handle hold/unhold events (JsSIP emits 'hold'/'unhold')
+        session['on']('hold', () => {
+          this.onHold = true;
+          this.holdInProgress = false;
+          this.status = 'Call on hold';
+        });
+        session['on']('unhold', () => {
+          this.onHold = false;
+          this.holdInProgress = false;
+          this.status = 'Call in progress';
+        });
+        session['on']('ended', () => this.handleCallEnded({ data: { cause: 'Normal clearing' } }));
+        session['on']('failed', () => this.handleCallFailed({ data: { cause: 'Failed' } }));
+        if (session['connection']) {
+          (session['connection'] as RTCPeerConnection).addEventListener('track', (ev: RTCTrackEvent) => {
             if (ev.track.kind === 'audio') {
               const audio: HTMLAudioElement | null = document.getElementById('remoteAudio') as HTMLAudioElement;
               if (audio) audio.srcObject = ev.streams[0];
@@ -305,7 +329,52 @@ export class SoftphoneComponent {
 
   hangup() {
     if (this.currentSession) {
-      this.currentSession.terminate();
+      this.currentSession['terminate']?.();
+    }
+  }
+
+  // Toggle local audio track enabled state
+  toggleMute() {
+    if (!this.callActive || !this.currentSession) return;
+    try {
+  const pc: RTCPeerConnection | undefined = this.currentSession['connection'];
+      if (pc) {
+        pc.getSenders()?.forEach(sender => {
+          if (sender.track && sender.track.kind === 'audio') {
+            sender.track.enabled = this.muted; // if currently muted flag true -> enabling
+          }
+        });
+      }
+      this.muted = !this.muted;
+      // After flipping flag, correct actual track state (above used previous value)
+      if (pc) {
+        pc.getSenders()?.forEach(sender => {
+          if (sender.track && sender.track.kind === 'audio') sender.track.enabled = !this.muted;
+        });
+      }
+      this.status = this.muted ? 'Microphone muted' : 'Call in progress';
+    } catch (e) {
+      console.error('Mute toggle failed', e);
+    }
+  }
+
+  // Hold / Unhold using JsSIP built-in re-INVITE logic
+  toggleHold() {
+    if (!this.callActive || !this.currentSession) return;
+    if (this.holdInProgress) return;
+    try {
+      this.holdInProgress = true;
+      const goingToHold = !this.onHold;
+      if (goingToHold) {
+        this.status = 'Placing on hold...';
+        this.currentSession['hold']?.({ useUpdate: true });
+      } else {
+        this.status = 'Resuming call...';
+        this.currentSession['unhold']?.({ useUpdate: true });
+      }
+    } catch (e) {
+      console.error('Hold toggle failed', e);
+      this.holdInProgress = false;
     }
   }
 
