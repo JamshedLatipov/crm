@@ -48,6 +48,10 @@ export class SoftphoneComponent {
   microphoneError = false;
   private ua: JsSIP.UA | null = null;
   private currentSession: JsSIPSession | null = null;
+  // Таймер звонка
+  private callStart: number | null = null;
+  callDuration = '00:00';
+  private durationTimer: number | null = null;
 
   // Новые переменные для ввода
   sipUser = 'operator1';
@@ -76,27 +80,28 @@ export class SoftphoneComponent {
     }
   }
   
-  failed(e: JsSIPSessionEvent) {
-    console.log('Call failed with cause:', e);
-    this.status = `Call failed: ${e.data?.cause || 'Unknown reason'}`;
-    this.callActive = false;
+  // Унифицированные хендлеры событий звонка
+  private handleCallProgress(e: JsSIPSessionEvent) {
+    console.log('Call is in progress', e);
+    this.status = 'Ringing...';
   }
-
-  ended(e: JsSIPSessionEvent) {
-    console.log('Call ended with cause:', e.data?.cause);
-    this.status = `Call ended: ${e.data?.cause || 'Normal clearing'}`;
-    this.callActive = false;
-  }
-
-  confirmed(e: JsSIPSessionEvent) {
+  private handleCallConfirmed(e: JsSIPSessionEvent) {
     console.log('Call confirmed', e);
     this.status = 'Call in progress';
     this.callActive = true;
+    this.startCallTimer();
   }
-
-  progress(e: JsSIPSessionEvent) {
-    console.log('Call is in progress', e);
-    this.status = 'Ringing...';
+  private handleCallEnded(e: JsSIPSessionEvent) {
+    console.log('Call ended with cause:', e.data?.cause);
+    this.callActive = false;
+    this.stopCallTimer();
+    this.status = this.isRegistered() ? 'Registered!' : `Call ended: ${e.data?.cause || 'Normal clearing'}`;
+  }
+  private handleCallFailed(e: JsSIPSessionEvent) {
+    console.log('Call failed with cause:', e);
+    this.callActive = false;
+    this.stopCallTimer();
+    this.status = this.isRegistered() ? 'Registered!' : `Call failed: ${e.data?.cause || 'Unknown reason'}`;
   }
 
   registrationFailed(e: JsSIPRegisterEvent) {
@@ -106,6 +111,31 @@ export class SoftphoneComponent {
     if (e.response) {
       console.error('SIP response:', e.response);
     }
+  }
+
+  private isRegistered(): boolean {
+    return !!this.ua && this.ua.isRegistered();
+  }
+
+  private startCallTimer() {
+    this.callStart = Date.now();
+    this.updateDuration();
+    this.durationTimer = setInterval(() => this.updateDuration(), 1000);
+  }
+  private stopCallTimer() {
+    if (this.durationTimer !== null) {
+      clearInterval(this.durationTimer);
+      this.durationTimer = null;
+    }
+    this.callStart = null;
+    this.callDuration = '00:00';
+  }
+  private updateDuration() {
+    if (!this.callStart) return;
+    const diff = Math.floor((Date.now() - this.callStart) / 1000);
+    const mm = String(Math.floor(diff / 60)).padStart(2, '0');
+    const ss = String(diff % 60).padStart(2, '0');
+    this.callDuration = `${mm}:${ss}`;
   }
 
   connect() {
@@ -163,14 +193,14 @@ export class SoftphoneComponent {
     });
 
     this.ua.on('disconnected', () => {
-      this.status = 'Disconnected, reconnecting...';
+      this.status = 'Disconnected';
     });
 
     // Добавляем дополнительные обработчики для более информативного логирования
     if (this.ua) {
       this.ua.on('connecting', (event) => {
         console.log('Connecting event with attempts:', event.attempts);
-        this.status = `Connecting (attempt ${event.attempts})...`;
+        this.status = event.attempts ? `Connecting (attempt ${event.attempts})...` : 'Connecting...';
       });
 
       this.ua.on('connected', (event) => {
@@ -198,15 +228,10 @@ export class SoftphoneComponent {
         session.on('accepted', () => {
           this.status = 'Call accepted';
           this.callActive = true;
+          this.startCallTimer();
         });
-        session.on('ended', () => {
-          this.status = 'Call ended';
-          this.callActive = false;
-        });
-        session.on('failed', () => {
-          this.status = 'Call failed';
-          this.callActive = false;
-        });
+        session.on('ended', () => this.handleCallEnded({ data: { cause: 'Normal clearing' } }));
+        session.on('failed', () => this.handleCallFailed({ data: { cause: 'Failed' } }));
         if (session.connection) {
           session.connection.addEventListener('track', (ev: RTCTrackEvent) => {
             if (ev.track.kind === 'audio') {
@@ -232,10 +257,10 @@ export class SoftphoneComponent {
 
     this.status = `Calling ${this.callee}...`;
     const eventHandlers = {
-      'progress': this.progress.bind(this),
-      'failed': this.failed.bind(this),
-      'ended': this.ended.bind(this),
-      'confirmed': this.confirmed.bind(this)
+      progress: this.handleCallProgress.bind(this),
+      failed: this.handleCallFailed.bind(this),
+      ended: this.handleCallEnded.bind(this),
+      confirmed: this.handleCallConfirmed.bind(this)
     };
 
     const options = {
@@ -268,7 +293,7 @@ export class SoftphoneComponent {
         const session = this.ua.call(`sip:${this.callee}@${this.asteriskHost}`, options);
         this.currentSession = session;
         this.callActive = true;
-        console.log('Call session created:', session);
+  console.log('Call session created:', session);
       } else {
         throw new Error('UA is not initialized');
       }
