@@ -5,6 +5,11 @@
 // Learn more about theming and how to use it for your application's
 // custom components at https://material.angular.dev/guide/theming
 @use '@angular/material' as mat;
+/* Self-hosted via npm @fontsource */
+@use '@fontsource/roboto/300.css' as roboto300;
+@use '@fontsource/roboto/400.css' as roboto400;
+@use '@fontsource/roboto/500.css' as roboto500;
+@use '@fontsource/material-icons' as materialIcons;
 
 html {
   @include mat.theme((
@@ -39,11 +44,6 @@ body {
 
 /* You can add global styles to this file, and also import other style files */
 
-/* Self-hosted via npm @fontsource */
-@import '@fontsource/roboto/300.css';
-@import '@fontsource/roboto/400.css';
-@import '@fontsource/roboto/500.css';
-@import '@fontsource/material-icons';
 
 :root {
   --primary-color: #0c7ff2;

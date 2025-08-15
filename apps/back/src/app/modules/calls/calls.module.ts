@@ -12,35 +12,35 @@ import { CdrController } from './controllers/cdr.controller';
 import { PsEndpointController } from './controllers/ps-endpoint.controller';
 import { PsAorController } from './controllers/ps-aor.controller';
 import { PsAuthController } from './controllers/ps-auth.controller';
+import { CallsController } from './controllers/calls.controller';
+import { CallTransferService } from './services/call-transfer.service';
+import { AriModule } from '../ari/ari.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      PsEndpoint,
-      PsAor,
-      PsAuth,
-      Cdr,
-    ]),
+    AriModule,
+    TypeOrmModule.forFeature([PsEndpoint, PsAor, PsAuth, Cdr]),
   ],
   providers: [
     PsEndpointService,
     PsAorService,
-  PsAuthService,
-  CdrService,
-    
+    PsAuthService,
+    CdrService,
+    CallTransferService,
   ],
   controllers: [
     PsEndpointController,
     PsAorController,
     PsAuthController,
     CdrController,
-    
+    CallsController,
   ],
   exports: [
     PsEndpointService,
     PsAorService,
     PsAuthService,
     CdrService,
+    CallTransferService,
   ],
 })
 export class CallsModule {}

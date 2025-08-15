@@ -4,6 +4,7 @@ import { UserModule } from "./user/user.module";
 import { CallsModule } from "./calls/calls.module";
 import { AriModule } from "./ari/ari.module";
 import { IvrModule } from "./ivr/ivr.module";
+import { IvrMediaModule } from './ivr-media/ivr-media.module';
 
 export const MODULES = [
     LeadModule,
@@ -12,4 +13,5 @@ export const MODULES = [
     CallsModule,
     AriModule,
     IvrModule,
+    IvrMediaModule,
 ];

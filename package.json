@@ -99,6 +99,7 @@
     "zone.js": "~0.15.0",
     "@fontsource/roboto": "^5.0.0",
     "@fontsource/material-icons": "^5.0.0",
-    "ari-client": "^2.2.0"
+    "ari-client": "^2.2.0",
+    "ffmpeg-static": "^5.1.0"
   }
 }

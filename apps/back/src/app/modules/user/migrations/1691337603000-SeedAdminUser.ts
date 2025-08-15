@@ -38,6 +38,34 @@ export class SeedAdminUser1691337603000 implements MigrationInterface {
         END IF;
       END$$;`);
     }
+
+    // Seed a test operator user 'operator2' and attach sip_endpoint_id='operator2' when available
+    const opCols = ['username', 'password', 'roles'];
+    if (isActiveCol) opCols.push(isActiveCol);
+    if (hasSipEndpoint) opCols.push('sip_endpoint_id');
+
+    const opValues = [`'operator2'`, `'${passwordHash}'`, `'operator'`];
+    if (isActiveCol) opValues.push('true');
+    if (hasSipEndpoint) opValues.push(`'operator2'`);
+
+    const insertOpSql = `INSERT INTO users (${opCols.join(', ')}) VALUES (${opValues.join(', ')})`;
+    await queryRunner.query(`DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM users WHERE username = 'operator2') THEN
+        EXECUTE '${insertOpSql.replace(/'/g, "''")}';
+      END IF;
+    END$$;`);
+
+    // If ps_endpoint 'operator2' exists, ensure user links to it
+    if (hasSipEndpoint) {
+      await queryRunner.query(`DO $$
+      BEGIN
+        IF EXISTS (SELECT 1 FROM ps_endpoints WHERE id='operator2') THEN
+          UPDATE users SET sip_endpoint_id='operator2'
+          WHERE username='operator2' AND (sip_endpoint_id IS NULL OR sip_endpoint_id='');
+        END IF;
+      END$$;`);
+    }
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
