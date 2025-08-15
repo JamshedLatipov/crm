@@ -93,6 +93,7 @@ services:
       - ./asterisk-config/stun.conf:/etc/asterisk/stun.conf:ro
       - ./asterisk-config/ari.conf:/etc/asterisk/ari.conf
       - ./asterisk-config/logger.conf:/etc/asterisk/logger.conf:ro
+      - ./data/asterisk/sounds:/var/lib/asterisk/sounds:rw
     mem_limit: "512m"
     mem_reservation: "256m"
 

@@ -12,3 +12,4 @@ vitest.config.*.timestamp*
 node_modules
 dist
 apps/back/.env
+data/asterisk/sounds/custom/*

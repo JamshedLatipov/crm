@@ -58,9 +58,22 @@ const ACTIONS = ['menu','playback','dial','goto','hangup','queue'];
               <option *ngFor="let a of actions" [value]="a">{{a}}</option>
             </select>
           </div>
-          <div>
-            <span class="text-xs uppercase">Payload</span>
-            <input class="w-full border rounded px-2 py-1" formControlName="payload" />
+          <div class="col-span-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs uppercase">Payload / Media</span>
+              <small class="text-[11px] text-gray-500">Select uploaded sound or enter custom payload</small>
+            </div>
+            <div class="flex gap-2 mt-1">
+              <select #mediaSel class="flex-1 border rounded px-2 py-1" [value]="form.value.payload" (change)="onMediaSelect(mediaSel.value)">
+                <option value="">-- none --</option>
+                <option *ngFor="let m of mediaList()" [value]="mediaPayload(m.filename)">{{m.name}}</option>
+              </select>
+              <input class="w-56 border rounded px-2 py-1" formControlName="payload" placeholder="or enter payload" />
+            </div>
+            <div class="mt-2 flex items-center gap-2">
+              <input #fileInput type="file" accept="audio/*" />
+              <button class="bg-blue-600 text-white px-2 py-1 rounded" type="button" (click)="upload(fileInput.files)">Upload</button>
+            </div>
             <div class="text-[11px] text-red-600" *ngIf="errors()['payload']">{{errors()['payload']}}</div>
           </div>
           <div>
@@ -128,6 +141,7 @@ export class IvrAdminComponent {
 
   rootNodes = signal<IvrNodeDto[]>([]);
   childrenMap = signal<Record<string,IvrNodeDto[]>>({});
+  mediaList = signal<{id:string;name:string;filename:string}[]>([]);
   selected = signal<IvrNodeDto|undefined>(undefined);
   reorderMode = signal(false);
   selectionHistory = signal<IvrNodeDto[]>([]);
@@ -170,6 +184,26 @@ export class IvrAdminComponent {
 
   constructor(){ this.reload(); }
 
+  mediaPayload(filename: string) {
+    return 'custom/' + filename.replace(/\.[^.]+$/, '');
+  }
+
+  onMediaSelect(val: string) {
+    if (!this.form) return;
+    this.form.patchValue({ payload: val });
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  upload(files: any) {
+    if(!files || files.length === 0) return;
+    const f = files[0];
+    const fd = new FormData();
+    fd.append('file', f);
+    this.api.uploadMedia(fd).subscribe(()=>{
+      this.api.mediaList().subscribe(m=> this.mediaList.set(m || []));
+    });
+  }
+
   reload(){
     this.api.roots().subscribe(rs => {
       // Ensure only true roots (parentId null) displayed
@@ -177,6 +211,8 @@ export class IvrAdminComponent {
       this.rootNodes.set(filtered);
       this.childrenMap.set({});
       filtered.forEach(r => { if(r.id) this.loadChildren(r.id); });
+  // load media
+  this.api.mediaList().subscribe(m=> this.mediaList.set(m || []));
     });
   }
   loadChildren(id: string){
