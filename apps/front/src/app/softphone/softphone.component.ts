@@ -73,6 +73,8 @@ export class SoftphoneComponent implements OnInit {
   // Simple stats placeholders (could be wired to backend later)
   callsProcessedToday = 12;
   callsInQueue = 42;
+  // Sequence of DTMF sent during active call (for user feedback)
+  dtmfSequence = '';
 
   // Переменная для IP-адреса сервера Asterisk
   private readonly asteriskHost = '127.0.0.1';
@@ -423,11 +425,24 @@ export class SoftphoneComponent implements OnInit {
 
   // Dial pad interactions
   pressKey(key: string) {
-    if (this.callActive && this.currentSession && typeof this.currentSession['sendDTMF'] === 'function' && /[0-9*#]/.test(key)) {
-      try { this.currentSession['sendDTMF'](key); } catch (e) { console.warn('DTMF send failed', e); }
+    if (/[0-9*#]/.test(key)) {
+      if (this.callActive) {
+        if (this.currentSession && typeof this.currentSession['sendDTMF'] === 'function') {
+          try {
+            this.currentSession['sendDTMF'](key);
+            this.dtmfSequence = (this.dtmfSequence + key).slice(-32); // keep last 32 keys
+            this.status = `DTMF: ${key}`;
+          } catch (e) {
+            console.warn('DTMF send failed', e);
+          }
+        }
+        return; // do not modify callee while in call
+      } else {
+        this.callee += key;
+      }
     }
-    this.callee += key;
   }
+  clearDtmf() { this.dtmfSequence = ''; }
   clearNumber() { this.callee = ''; }
   removeLast() { this.callee = this.callee.slice(0, -1); }
 

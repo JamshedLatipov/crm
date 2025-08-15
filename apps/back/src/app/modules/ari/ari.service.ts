@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { EventEmitter } from 'events';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore dynamic module without types
 import * as AriClient from 'ari-client';
@@ -21,6 +22,7 @@ export class AriService {
   private client: any;
   private connected = false;
   private reconnectTimer?: NodeJS.Timeout;
+  private readonly emitter = new EventEmitter();
   private readonly config: AriConfig = {
     host: process.env.ARI_HOST || 'localhost',
     port: parseInt(process.env.ARI_PORT || '8089', 10),
@@ -36,7 +38,9 @@ export class AriService {
     if (this.connected) return;
     try {
       const baseUrl = `${this.config.protocol}://${this.config.host}:${this.config.port}`;
-      this.logger.log(`Connecting to ARI ${baseUrl} (app=${this.config.app})`);
+      this.logger.log(
+        `Connecting to ARI ${baseUrl} (app=${this.config.app}, login: ${this.config.username})`
+      );
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       this.client = await (AriClient as any).connect(
         baseUrl,
@@ -45,6 +49,7 @@ export class AriService {
       );
       this.subscribeAllEvents();
       this.client.start(this.config.app);
+      await this.subscribeAllEventSources();
       this.connected = true;
       this.logger.log('ARI connected and application started');
     } catch (err) {
@@ -75,7 +80,12 @@ export class AriService {
       'PlaybackFinished',
     ];
     coreEvents.forEach((evt) =>
-      this.client.on(evt, (e: unknown) => this.logEvent(evt, e))
+      this.client.on(evt, (...args: unknown[]) => {
+        const e = args[0];
+        this.logEvent(evt, e);
+        // Re-emit for consumers
+        this.emitter.emit(evt, ...args);
+      })
     );
     const ws = this.client._client && this.client._client.ws;
     if (ws) {
@@ -96,6 +106,22 @@ export class AriService {
       });
       ws.on('error', (err: unknown) =>
         this.logger.error('ARI websocket error', err as Error)
+      );
+    }
+  }
+
+  private async subscribeAllEventSources() {
+    if (!this.client?.applications) return;
+    try {
+      // Subscribe to all event sources so we also get Bridge/Device/Endpoint, etc.
+      await this.client.applications.subscribe({
+        applicationName: this.config.app,
+        eventSource: 'all',
+      });
+      this.logger.log('Subscribed ARI application to all event sources');
+    } catch (err) {
+      this.logger.warn(
+        `Failed to subscribe to all event sources: ${(err as Error).message}`
       );
     }
   }
@@ -123,5 +149,18 @@ export class AriService {
 
   isConnected() {
     return this.connected;
+  }
+
+  // Expose event subscription for other modules (e.g., IVR runtime)
+  // Handler signatures vary by event; using rest args.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  on(event: string, handler: (...args: any[]) => void) {
+    this.emitter.on(event, handler);
+  }
+
+  // Provide raw client (internal usage only) ; any to avoid leaking heavy typing requirement
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getClient(): any {
+    return this.client;
   }
 }

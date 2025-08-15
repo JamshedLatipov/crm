@@ -1,7 +1,7 @@
-# Dockerfile for Asterisk 22
+## Dockerfile for Asterisk (custom build with WebRTC + ARI)
 FROM debian:bullseye-slim
 
-ENV ASTERISK_VERSION=22.5.1
+ENV ASTERISK_VERSION=20.15.1
 
 # Install dependencies (including WebRTC codecs and libs)
 RUN apt-get update && \
@@ -59,15 +59,28 @@ RUN wget https://downloads.asterisk.org/pub/telephony/asterisk/asterisk-${ASTERI
 
 WORKDIR /usr/src/asterisk-${ASTERISK_VERSION}
 
-# Build and install Asterisk with WebRTC support
+# Build and install Asterisk with WebRTC + ARI support
 RUN ./configure --with-jansson-bundled && \
-    make menuselect.makeopts && \
-    menuselect/menuselect --enable codec_opus --enable codec_speex --enable res_http_websocket --enable chan_pjsip --enable res_rtp_asterisk --enable cdr_pgsql --enable res_odbc --enable res_srtp menuselect.makeopts && \
-    make -j$(nproc) && \
-    make install && \
-    make samples && \
-    make config && \
-    ldconfig
+        make menuselect.makeopts && \
+        menuselect/menuselect \
+            --enable codec_opus \
+            --enable codec_speex \
+            --enable res_http_websocket \
+            --enable chan_pjsip \
+            --enable res_rtp_asterisk \
+            --enable cdr_pgsql \
+            --enable res_odbc \
+            --enable res_srtp \
+            --enable res_ari \
+            --enable res_ari_applications \
+            --enable res_ari_events \
+            --enable res_ari_model \
+            menuselect.makeopts && \
+        make -j$(nproc) && \
+        make install && \
+        make samples && \
+        make config && \
+        ldconfig
 
 # Clean up build dependencies and sources
 WORKDIR /
