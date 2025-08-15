@@ -3,6 +3,7 @@ import { TaskModule } from "./tasks/task.module";
 import { UserModule } from "./user/user.module";
 import { CallsModule } from "./calls/calls.module";
 import { AriModule } from "./ari/ari.module";
+import { IvrModule } from "./ivr/ivr.module";
 
 export const MODULES = [
     LeadModule,
@@ -10,4 +11,5 @@ export const MODULES = [
     TaskModule,
     CallsModule,
     AriModule,
+    IvrModule,
 ];

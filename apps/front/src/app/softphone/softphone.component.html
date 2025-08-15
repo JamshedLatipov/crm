@@ -101,6 +101,21 @@
         </div>
       </div>
   <app-softphone-call-info *ngIf="callActive && activeTab==='dial'" [callee]="callee" [callDuration]="callDuration"></app-softphone-call-info>
+  <div *ngIf="callActive && activeTab==='dial'" class="space-y-3">
+    <div class="text-xs text-[var(--text-secondary)] flex items-center justify-between">
+      <span>Send DTMF</span>
+      <span *ngIf="dtmfSequence" class="font-mono text-[var(--text-primary)]">{{ dtmfSequence }}
+        <button (click)="clearDtmf()" class="ml-1 text-[10px] px-1 py-0.5 border border-[var(--border-color)] rounded hover:bg-[var(--muted-color)]">x</button>
+      </span>
+    </div>
+    <div class="grid grid-cols-3 gap-2">
+      <button *ngFor="let key of ['1','2','3','4','5','6','7','8','9','*','0','#']"
+        (click)="pressKey(key)"
+        class="h-12 rounded-md text-base font-medium bg-[var(--muted-color)]/30 hover:bg-[var(--muted-color)] border border-[var(--border-color)] flex items-center justify-center active:scale-[0.97] transition select-none">
+        {{ key }}
+      </button>
+    </div>
+  </div>
   <app-softphone-call-history *ngIf="activeTab==='history'" class="h-full" [operatorId]="sipUser" />
       <app-softphone-call-actions [status]="status" [callActive]="callActive"
         [muted]="muted" [onHold]="onHold" [holdInProgress]="holdInProgress"

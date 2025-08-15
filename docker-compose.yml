@@ -54,6 +54,11 @@ services:
     restart: always
     depends_on:
       - turn
+    logging:
+      driver: json-file
+      options:
+        max-size: 50m
+        max-file: "5"
     ports:
       - "5060:5060/udp"   # SIP UDP
       - "5060:5060/tcp"   # SIP TCP
@@ -64,6 +69,7 @@ services:
       - "8443:8443/tcp"   # WebSocket Secure (wss)
     command: >
       bash -c "
+        sed -i 's/\r$//' /etc/asterisk/ari.conf &&
         mkdir -p /var/log/asterisk/cdr-csv &&
         chmod -R 777 /var/log/asterisk &&
         /usr/sbin/asterisk -f"
@@ -85,7 +91,8 @@ services:
       - ./asterisk-config/extconfig.conf:/etc/asterisk/extconfig.conf:ro
       - ./asterisk-config/sorcery.conf:/etc/asterisk/sorcery.conf:ro
       - ./asterisk-config/stun.conf:/etc/asterisk/stun.conf:ro
-      - ./asterisk-config/ari.conf:/etc/asterisk/ari.conf:ro
+      - ./asterisk-config/ari.conf:/etc/asterisk/ari.conf
+      - ./asterisk-config/logger.conf:/etc/asterisk/logger.conf:ro
     mem_limit: "512m"
     mem_reservation: "256m"
 
