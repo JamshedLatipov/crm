@@ -69,6 +69,43 @@ export class SoftphoneService {
     }
   }
 
+  /**
+   * Answer an incoming call. If session is omitted, currentSession is used.
+   */
+  answer(session?: any, options?: any) {
+    const s = session ?? this.currentSession;
+    if (!s) throw new Error('No session to answer');
+    const defaultOptions = { mediaConstraints: { audio: true, video: false } };
+    try {
+      s.answer(options ?? defaultOptions);
+      // re-attach to ensure events are bound
+      this.attachSession(s);
+      this.events$.next({ type: 'answered', payload: { session: s } });
+      return s;
+    } catch (err) {
+      console.warn('answer failed', err);
+      this.events$.next({ type: 'answerFailed', payload: err });
+      throw err;
+    }
+  }
+
+  /**
+   * Reject/decline an incoming call. Uses terminate with status code when supported.
+   */
+  reject(session?: any, statusCode = 486) {
+    const s = session ?? this.currentSession;
+    if (!s) throw new Error('No session to reject');
+    try {
+      // JsSIP supports session.terminate with optional options
+      s.terminate?.({ status_code: statusCode });
+      this.events$.next({ type: 'rejected', payload: { session: s } });
+    } catch (err) {
+      console.warn('reject failed', err);
+      this.events$.next({ type: 'rejectFailed', payload: err });
+      throw err;
+    }
+  }
+
   isRegistered() {
     return !!this.ua && this.ua.isRegistered && this.ua.isRegistered();
   }

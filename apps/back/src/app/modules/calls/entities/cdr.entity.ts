@@ -4,7 +4,7 @@ import { ApiProperty } from '@nestjs/swagger';
 @Entity({ name: 'cdr' })
 export class Cdr {
   @ApiProperty({ description: 'Call start date/time (UTC)' })
-  @PrimaryColumn({ type: 'timestamp', name: 'calldate' })
+  @PrimaryColumn({ type: 'timestamp', name: 'calldate', unique: false })
   calldate!: Date;
 
   @ApiProperty() @Column({ length: 80 }) clid!: string;

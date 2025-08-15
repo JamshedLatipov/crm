@@ -1,8 +1,9 @@
 import { Component } from '@angular/core';
 import { RouterModule } from '@angular/router';
+import { SoftphoneComponent } from './softphone/softphone.component';
 
 @Component({
-  imports: [RouterModule],
+  imports: [RouterModule, SoftphoneComponent],
   selector: 'app-root',
   templateUrl: './app.html',
   styleUrl: './app.scss',
