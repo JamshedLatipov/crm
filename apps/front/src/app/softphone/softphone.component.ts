@@ -1,6 +1,22 @@
-import { Component, OnInit, HostListener, inject } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  HostListener,
+  OnDestroy,
+  inject,
+} from '@angular/core';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs';
 import { CallsApiService } from '../calls/calls.service';
 import { SoftphoneService } from './softphone.service';
+import {
+  RingtoneService,
+  OUTGOING_RINGTONE_SRC,
+  BUSY_RINGTONE_SRC,
+  RINGTONE_SRC,
+  RINGBACK_DEFAULT_LEVEL,
+  REMOTE_AUDIO_ELEMENT_ID,
+} from './ringtone.service';
 import { FormsModule } from '@angular/forms'; // Import FormsModule for ngModel
 import { CommonModule } from '@angular/common'; // Import CommonModule for *ngIf
 import { MatIconModule } from '@angular/material/icon'; // Import MatIconModule for icons
@@ -36,6 +52,8 @@ interface JsSIPRegisterEvent {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type JsSIPSession = any;
 
+// Ringtone constants and behavior are provided by RingtoneService
+
 @Component({
   selector: 'app-softphone',
   templateUrl: './softphone.component.html',
@@ -51,8 +69,11 @@ type JsSIPSession = any;
     SoftphoneCallHistoryComponent,
   ],
 })
-export class SoftphoneComponent implements OnInit {
+export class SoftphoneComponent implements OnInit, OnDestroy {
   status = 'Disconnected';
+  // Incoming call state
+  incoming = false;
+  incomingFrom: string | null = null;
   callActive = false;
   muted = false;
   onHold = false;
@@ -65,15 +86,12 @@ export class SoftphoneComponent implements OnInit {
   private durationTimer: number | null = null;
 
   // Ringback tone (WebAudio) while outgoing call is ringing
-  private ringbackCtx: AudioContext | null = null;
-  private ringbackOsc: OscillatorNode | null = null;
-  private ringbackGain: GainNode | null = null;
-  private ringbackTimer: number | null = null;
+  // ringback state moved to RingtoneService
 
-  // Новые переменные для ввода
-  sipUser = 'operator1';
-  sipPassword = 'pass1';
+  sipUser = '';
+  sipPassword = '';
   callee = '';
+
   // Simple stats placeholders (could be wired to backend later)
   callsProcessedToday = 12;
   callsInQueue = 42;
@@ -86,12 +104,13 @@ export class SoftphoneComponent implements OnInit {
   private readonly asteriskHost = '127.0.0.1';
 
   private autoConnectAttempted = false;
-  // inject calls API
-  private callsApi = inject(CallsApiService);
-  // inject softphone service
-  private softphone = inject(SoftphoneService);
-  // UI tab state
-  activeTab: 'dial' | 'history' = 'dial';
+  // lifecycle destroy notifier
+  private readonly destroy$ = new Subject<void>();
+
+  // inject calls API and softphone service per repo preference
+  private readonly callsApi = inject(CallsApiService);
+  private readonly softphone = inject(SoftphoneService);
+  private readonly ringtone = inject(RingtoneService);
 
   constructor() {
     // Автоподстановка сохранённых SIP реквизитов оператора
@@ -104,10 +123,28 @@ export class SoftphoneComponent implements OnInit {
       /* ignore */
     }
   }
+  // UI tab state
+  activeTab: 'dial' | 'history' = 'dial';
+  // Expand/collapse softphone UI
+  expanded = true;
+  // Missed calls counter shown on minimized badge
+  missedCallCount = 0;
+  // Auto-expand softphone on incoming call
+  autoExpandOnIncoming = true;
 
   ngOnInit() {
+    try {
+      const saved = localStorage.getItem('softphone.expanded');
+      if (saved !== null) this.expanded = saved === '1';
+  const savedAuto = localStorage.getItem('softphone.autoExpandOnIncoming');
+  if (savedAuto !== null) this.autoExpandOnIncoming = savedAuto === '1';
+  const savedMissed = localStorage.getItem('softphone.missedCount');
+  if (savedMissed !== null) this.missedCallCount = Number(savedMissed) || 0;
+    } catch {
+      // ignore
+    }
     // Subscribe to softphone events coming from the service
-    this.softphone.events$.subscribe((ev) => {
+    this.softphone.events$.pipe(takeUntil(this.destroy$)).subscribe((ev) => {
       switch (ev.type) {
         case 'registered':
           this.status = 'Registered!';
@@ -138,14 +175,56 @@ export class SoftphoneComponent implements OnInit {
           this.handleCallFailed(ev.payload as JsSIPSessionEvent);
           break;
         case 'transferResult':
-          this.status = ev.payload?.ok ? 'Transfer initiated' : 'Transfer result: ' + (ev.payload?.error || 'unknown');
+          this.status = ev.payload?.ok
+            ? 'Transfer initiated'
+            : 'Transfer result: ' + (ev.payload?.error || 'unknown');
           break;
         case 'transferFailed':
           this.status = 'Transfer failed';
           break;
+        case 'hold':
+          // Session confirmed placed on hold
+          this.onHold = true;
+          this.holdInProgress = false;
+          this.status = 'Call on hold';
+          break;
+        case 'unhold':
+          // Session resumed from hold
+          this.onHold = false;
+          this.holdInProgress = false;
+          this.status = this.callActive ? 'Call in progress' : this.isRegistered() ? 'Registered!' : 'Disconnected';
+          break;
+          break;
         case 'newRTCSession': {
           const sess = ev.payload?.session as JsSIPSession;
           this.currentSession = sess;
+          // if session direction indicates incoming, show incoming UI
+          const dir =
+            (ev.payload && ev.payload.direction) ||
+            (sess && sess.direction) ||
+            'outgoing';
+          if (dir === 'incoming' || dir === 'inbound') {
+            this.incoming = true;
+            // try to extract caller display or remote identity
+            const from =
+              (sess &&
+                (sess.remote_identity?.uri ||
+                  sess.remote_identity?.display_name)) ||
+              (ev.payload && ev.payload.from) ||
+              null;
+            this.incomingFrom =
+              typeof from === 'string' ? from : from?.toString?.() ?? null;
+            this.status = `Incoming call${
+              this.incomingFrom ? ' from ' + this.incomingFrom : ''
+            }`;
+            console.log('Incoming call from:', this.incomingFrom);
+            // Auto-expand if user prefers
+            try {
+              if (this.autoExpandOnIncoming && !this.expanded) this.toggleExpand();
+            } catch {
+              /* ignore */
+            }
+          }
           try {
             if (sess?.connection) {
               (sess.connection as RTCPeerConnection).addEventListener(
@@ -155,7 +234,7 @@ export class SoftphoneComponent implements OnInit {
                   if (ev2.track?.kind === 'audio') {
                     const audio: HTMLAudioElement | null =
                       document.getElementById(
-                        'remoteAudio'
+                        REMOTE_AUDIO_ELEMENT_ID
                       ) as HTMLAudioElement;
                     if (audio) audio.srcObject = ev2.streams[0];
                   }
@@ -181,11 +260,24 @@ export class SoftphoneComponent implements OnInit {
     }
   }
 
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   // Унифицированные хендлеры событий звонка
   private handleCallProgress(e: JsSIPSessionEvent) {
     console.log('Call is in progress', e);
     this.status = 'Ringing...';
-    this.startRingback();
+    // Use outgoing ringtone while dialing
+    if (this.incoming) {
+      this.ringtone.startRingback(RINGBACK_DEFAULT_LEVEL, RINGTONE_SRC);
+    } else {
+      this.ringtone.startRingback(
+        RINGBACK_DEFAULT_LEVEL,
+        OUTGOING_RINGTONE_SRC
+      );
+    }
   }
 
   private handleCallConfirmed(e: JsSIPSessionEvent) {
@@ -193,15 +285,35 @@ export class SoftphoneComponent implements OnInit {
     this.status = 'Call in progress';
     this.callActive = true;
     this.startCallTimer();
-    this.stopRingback();
+    this.ringtone.stopRingback();
   }
 
   private handleCallEnded(e: JsSIPSessionEvent) {
     console.log('Call ended with cause:', e.data?.cause);
+    // detect missed incoming calls (incoming shown but never answered)
+    const wasMissed = this.incoming && !this.callActive;
     this.callActive = false;
-    this.stopRingback();
+    this.ringtone.stopRingback();
     this.stopCallTimer();
     this.onHold = false;
+    // If missed, increment counter
+    if (wasMissed) {
+      try {
+        this.missedCallCount = (this.missedCallCount || 0) + 1;
+        localStorage.setItem('softphone.missedCount', String(this.missedCallCount));
+      } catch {
+        /* ignore */
+      }
+    }
+    // Clear incoming state and session so UI resets when caller hangs up
+    this.incoming = false;
+    this.incomingFrom = null;
+    this.currentSession = null;
+    // play busy tone if ended due to busy or other error-like cause
+    const causeStr = e.data?.cause ? String(e.data?.cause) : '';
+    if (causeStr.toLowerCase().includes('busy') || causeStr === '486') {
+      this.ringtone.playOneShot(BUSY_RINGTONE_SRC, 0.8, 1000);
+    }
     this.status = this.isRegistered()
       ? 'Registered!'
       : `Call ended: ${e.data?.cause || 'Normal clearing'}`;
@@ -211,17 +323,23 @@ export class SoftphoneComponent implements OnInit {
     console.log('Call failed with cause:', e);
     this.callActive = false;
     this.stopCallTimer();
+    // stop any ringback and play busy/error tone to signal failure
+    this.ringtone.stopRingback();
+    this.ringtone.playOneShot(BUSY_RINGTONE_SRC, 0.8, 1000);
+    // Ensure incoming UI/state is cleared when call fails
+    this.incoming = false;
+    this.incomingFrom = null;
+    this.currentSession = null;
     this.status = this.isRegistered()
       ? 'Registered!'
       : `Call failed: ${e.data?.cause || 'Unknown reason'}`;
-    this.stopRingback();
   }
 
   registrationFailed(e: JsSIPRegisterEvent) {
     console.error('Registration failed:', e);
     this.status = 'Registration failed: ' + e.cause;
     // Log detailed error information
-    this.stopRingback();
+    this.ringtone.stopRingback();
     if (e.response) {
       console.error('SIP response:', e.response);
     }
@@ -236,94 +354,7 @@ export class SoftphoneComponent implements OnInit {
     this.updateDuration();
     this.durationTimer = setInterval(() => this.updateDuration(), 1000);
   }
-
-  private startRingback() {
-    try {
-      if (this.ringbackCtx) return; // already playing
-      const AudioCtx =
-        window.AudioContext ||
-        (window as Window & { webkitAudioContext?: typeof AudioContext })
-          .webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = 400; // ringback-ish
-      gain.gain.value = 0;
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      this.ringbackCtx = ctx;
-      this.ringbackOsc = osc;
-      this.ringbackGain = gain;
-
-      // Simple on/off pattern: 1000ms on, 4000ms off (approx typical ringback)
-      const playPulse = () => {
-        if (!this.ringbackGain || !this.ringbackCtx) return;
-        this.ringbackGain.gain.cancelScheduledValues(
-          this.ringbackCtx.currentTime
-        );
-        this.ringbackGain.gain.setValueAtTime(
-          0.0001,
-          this.ringbackCtx.currentTime
-        );
-        this.ringbackGain.gain.linearRampToValueAtTime(
-          0.18,
-          this.ringbackCtx.currentTime + 0.01
-        );
-        // fade out after 1s
-        this.ringbackGain.gain.linearRampToValueAtTime(
-          0.0001,
-          this.ringbackCtx.currentTime + 1.0
-        );
-      };
-      playPulse();
-      this.ringbackTimer = window.setInterval(playPulse, 4000);
-    } catch (err) {
-      console.warn('Ringback start failed', err);
-    }
-  }
-
-  private stopRingback() {
-    try {
-      if (this.ringbackTimer) {
-        clearInterval(this.ringbackTimer);
-        this.ringbackTimer = null;
-      }
-      if (this.ringbackOsc) {
-        try {
-          this.ringbackOsc.stop();
-        } catch (err) {
-          console.warn('ringbackOsc.stop failed', err);
-        }
-        try {
-          this.ringbackOsc.disconnect();
-        } catch (err) {
-          console.warn('ringbackOsc.disconnect failed', err);
-        }
-        this.ringbackOsc = null;
-      }
-      if (this.ringbackGain) {
-        try {
-          this.ringbackGain.disconnect();
-        } catch (err) {
-          console.warn('ringbackGain.disconnect failed', err);
-        }
-        this.ringbackGain = null;
-      }
-      if (this.ringbackCtx) {
-        try {
-          this.ringbackCtx.close();
-        } catch (err) {
-          console.warn('ringbackCtx.close failed', err);
-        }
-        this.ringbackCtx = null;
-      }
-    } catch (err) {
-      console.warn('Ringback stop failed', err);
-    }
-  }
+  // ringtone logic handled by RingtoneService
   private stopCallTimer() {
     if (this.durationTimer !== null) {
       clearInterval(this.durationTimer);
@@ -354,6 +385,48 @@ export class SoftphoneComponent implements OnInit {
     this.softphone.connect(this.sipUser, this.sipPassword, this.asteriskHost);
   }
 
+  toggleExpand() {
+    this.expanded = !this.expanded;
+    try {
+      localStorage.setItem('softphone.expanded', this.expanded ? '1' : '0');
+      if (this.expanded) {
+        // clearing missed count when the user opens the softphone
+        this.missedCallCount = 0;
+        localStorage.setItem('softphone.missedCount', '0');
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  // User answers the incoming call
+  answerIncoming() {
+    if (!this.incoming || !this.currentSession) return;
+    try {
+      this.softphone.answer(this.currentSession);
+      this.incoming = false;
+      this.status = 'Call answered';
+      this.ringtone.stopRingback();
+    } catch (err) {
+      console.error('Answer failed', err);
+      this.status = 'Answer failed';
+    }
+  }
+
+  // User rejects the incoming call
+  rejectIncoming() {
+    if (!this.incoming || !this.currentSession) return;
+    try {
+      this.softphone.reject(this.currentSession);
+      this.incoming = false;
+      this.status = 'Call rejected';
+      this.ringtone.stopRingback();
+    } catch (err) {
+      console.error('Reject failed', err);
+      this.status = 'Reject failed';
+    }
+  }
+
   call() {
     if (!this.callee) {
       this.status = 'Введите номер абонента';
@@ -366,7 +439,9 @@ export class SoftphoneComponent implements OnInit {
 
     this.status = `Calling ${this.callee}...`;
     try {
-      const session = this.softphone.call(`sip:${this.callee}@${this.asteriskHost}`);
+      const session = this.softphone.call(
+        `sip:${this.callee}@${this.asteriskHost}`
+      );
       this.currentSession = session;
       this.callActive = true;
       console.log('Call session created:', session);
@@ -480,15 +555,6 @@ export class SoftphoneComponent implements OnInit {
     e.preventDefault();
   }
 
-  async pasteFromClipboard() {
-    if (!navigator.clipboard) return;
-    try {
-      const text = await navigator.clipboard.readText();
-      this.applyClipboardNumber(text);
-    } catch (err) {
-      console.warn('Clipboard read failed', err);
-    }
-  }
 
   // Initiate transfer via backend
   async transfer(type: 'blind' | 'attended' = 'blind') {
@@ -501,8 +567,8 @@ export class SoftphoneComponent implements OnInit {
       return;
     }
     try {
-  this.status = 'Transferring...';
-  await this.softphone.transfer(this.transferTarget, type);
+      this.status = 'Transferring...';
+      await this.softphone.transfer(this.transferTarget, type);
     } catch (err) {
       console.error('Transfer request failed', err);
       this.status = 'Transfer request failed';
