@@ -4,8 +4,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { IvrNode } from './entities/ivr-node.entity';
 import axios from 'axios';
-import * as http from 'http';
-import * as https from 'https';
 import { IvrLogService } from './ivr-log.service';
 import { IvrLogEvent } from './entities/ivr-log.entity';
 
@@ -26,6 +24,8 @@ interface ActiveCallState {
   activePlaybacks: Set<string>; // playback ids for this channel
   pendingTimeoutMs?: number; // deferred timeout until playbacks finish
   ended?: boolean; // channel has ended (StasisEnd / ChannelDestroyed)
+  allocRetryCount?: number; // number of recent allocation retries
+  allocRetryTimer?: NodeJS.Timeout; // timer for allocation retry
 }
 
 @Injectable()
@@ -155,24 +155,17 @@ export class IvrRuntimeService implements OnModuleInit {
           break;
         }
         // build endpoint using env vars when appropriate (SIP endpoints may need host:port)
-        let endpoint = node.payload;
-        try {
-          const sipHost = this.getAsteriskHost();
-          const sipPort = this.getAsteriskSipPort();
-          if (typeof endpoint === 'string' && endpoint.startsWith('SIP/') && !endpoint.includes('@')) {
-            // append host:port for SIP dialstrings when missing
-            endpoint = `${endpoint}@${sipHost}:${sipPort}`;
-          }
-        } catch {
-          // fall back to payload as-is
-        }
-        await this.safeChannelOp(channelId, () =>
-          client.channels.originate({
-            endpoint,
-            app: process.env.ARI_APP,
-            callerId: channelId,
-          })
-        );
+        const rawEndpoint = node.payload;
+        const aricontext = process.env.ASTERISK_FROM_ARI_CONTEXT || 'from-ari';
+        const endpoint = this.normalizeEndpoint(rawEndpoint, aricontext);
+
+        const originateParams = {
+          endpoint,
+          app: process.env.ARI_APP || 'crm-app',
+          callerId: channelId,
+        };
+        this.logger.debug(`ARI originate params (dial): ${JSON.stringify(originateParams)}`);
+        await this.safeChannelOp(channelId, () => client.channels.originate(originateParams));
         break;
       }
       case 'goto': {
@@ -190,7 +183,10 @@ export class IvrRuntimeService implements OnModuleInit {
         }
         // If queueName is configured on the node, log and (optionally) perform queue-specific actions
         const targetQueue = (node as IvrNode).queueName || null;
-        console.log('----------------------------------------------', targetQueue);
+        console.log(
+          '----------------------------------------------',
+          targetQueue
+        );
         // Do not start digit waiting for a queue; keep call until external action.
         await this.safeLog({
           channelId,
@@ -207,37 +203,53 @@ export class IvrRuntimeService implements OnModuleInit {
           try {
             // Prefer to send the channel back into dialplan using channels.continue (POST /ari/channels/{channelId}/continue)
             // Many ARI clients expose this method as `channels.continue`. Use it if available, otherwise fall back to Local redirect.
-            const aricontext = process.env.ASTERISK_FROM_ARI_CONTEXT || 'from-ari';
-            const extension = process.env.ASTERISK_QUEUE_EXTENSION || `queue_${targetQueue}`;
+            const aricontext =
+              process.env.ASTERISK_FROM_ARI_CONTEXT || 'from-ari';
+            // By default use the queue name itself as the extension (e.g. 'support')
+            // This matches extensions.conf which defines an extension named 'support'.
+            const extension =
+              process.env.ASTERISK_QUEUE_EXTENSION || `${targetQueue}`;
 
             // Some ARI clients attach a `continue` function on channels; guard safely.
-            const contFn = (client.channels as unknown as Record<string, unknown>)['continue'];
+            const contFn = (
+              client.channels as unknown as Record<string, unknown>
+            )['continue'];
             if (typeof contFn === 'function') {
               // cast to a typed callable to avoid using the unsafe `Function` type
-              const contCallable = contFn as (...args: unknown[]) => unknown;
+              const contCallable = contFn as (...args: unknown[]) => Promise<unknown>;
+              const continueParams = { channelId, context: aricontext, extension, priority: 1 };
+              this.logger.debug(`ARI continue params: ${JSON.stringify(continueParams)}`);
               await this.safeChannelOp(channelId, () =>
-                (contCallable as (...args: unknown[]) => unknown).call(client.channels, { channelId, context: aricontext, extension, priority: 1 })
+                (contCallable as (...args: unknown[]) => Promise<unknown>).call(
+                  client.channels,
+                  continueParams
+                )
+              );
+              this.logger.log(
+                `Channel ${channelId} continued to ${aricontext}/${extension}`
               );
             } else {
-              // fallback: call ARI REST continue endpoint directly to move the channel into the dialplan
-              const ariHost = this.getAsteriskHost();
-              const ariPort = this.getAsteriskRestPort();
-              const ariUser = process.env.ARI_USER || process.env.ASTERISK_USER || 'asterisk';
-              const ariPass = process.env.ARI_PASS || process.env.ASTERISK_PASS || 'asterisk';
-              await this.safeChannelOp(channelId, async () => {
-                await this.callAriContinue({
-                  channelId,
-                  context: aricontext,
-                  extension,
-                  ariHost,
-                  ariPort,
-                  ariUser,
-                  ariPass,
-                });
-              });
+              // Fallback: originate a Local channel into the dialplan extension so the Queue() in extensions.conf handles it
+              const ep = this.normalizeEndpoint(extension, aricontext);
+              const originateParams2 = {
+                endpoint: ep,
+                app: process.env.ARI_APP || 'crm-app',
+                callerId: channelId,
+              };
+              this.logger.debug(`ARI originate params (queue fallback): ${JSON.stringify(originateParams2)}`);
+              await this.safeChannelOp(channelId, () =>
+                client.channels.originate(originateParams2)
+              );
+              this.logger.log(
+                `Channel ${channelId} originated Local/${extension}@${aricontext} to enter queue ${targetQueue}`
+              );
             }
           } catch (err) {
-            this.logger.warn(`Failed to send channel to queue ${targetQueue}: ${(err as Error).message}`);
+            this.logger.warn(
+              `Failed to send channel to queue ${targetQueue}: ${
+                (err as Error).message
+              }`
+            );
           }
         }
         break;
@@ -255,9 +267,9 @@ export class IvrRuntimeService implements OnModuleInit {
         });
         break;
       }
-      default:
-        this.logger.warn(`Unknown action ${node.action}`);
+
     }
+
   }
 
   private setWaiting(channelId: string, waiting: boolean, timeoutMs?: number) {
@@ -547,14 +559,64 @@ export class IvrRuntimeService implements OnModuleInit {
     return /Channel not found/i.test(msg);
   }
 
+  private isAllocationFailedError(err: unknown) {
+    const msg = (err && (err as Error).message) || '';
+    // ari-client sometimes wraps ARI JSON error literal
+    return /Allocation failed/i.test(msg) || /"error"\s*:\s*"Allocation failed"/i.test(msg);
+  }
+
   private async safeChannelOp(channelId: string, op: () => Promise<unknown>) {
     try {
       await op();
     } catch (err) {
+      // Handle transient ARI allocation failures with a short retry loop
+      try {
+        if (this.isAllocationFailedError(err)) {
+          const st = this.calls.get(channelId);
+          const prev = st?.allocRetryCount || 0;
+          const next = prev + 1;
+          if (st) st.allocRetryCount = next;
+          const maxRetries = 3;
+          if (next <= maxRetries) {
+            this.logger.warn(
+              `ARI allocation failed for channel ${channelId}, scheduling retry ${next}/${maxRetries}`
+            );
+            // clear existing timer if any
+            if (st?.allocRetryTimer) clearTimeout(st.allocRetryTimer);
+            const t = setTimeout(() => {
+              if (st) st.allocRetryTimer = undefined;
+              // retry op
+              this.safeChannelOp(channelId, op).catch(() => undefined);
+            }, 2000);
+            if (st) st.allocRetryTimer = t;
+            return;
+          }
+          this.logger.error(
+            `ARI allocation failed for channel ${channelId} after ${next} attempts, giving up`
+          );
+          // Do not delete call state here; caller may decide to hangup or retry later.
+          return;
+        }
+      } catch {
+        /* ignore errors in allocation handling */
+      }
+      // Attach extra context to logs so we can trace failing ARI operations
+      const st = this.calls.get(channelId);
+      const currentNodeId = st?.currentNodeId;
+      let currentNodeAction: string | null = null;
+      try {
+        if (currentNodeId) {
+          // best-effort fetch of node action for context
+          // do not await to avoid blocking error path; use synchronous lookup from repo if available is not possible
+          // we will set to null here; detailed node lookup can be added if needed
+          currentNodeAction = null;
+        }
+      } catch {
+        currentNodeAction = null;
+      }
+
       if (this.isChannelMissingError(err)) {
-        this.logger.debug(
-          `Channel not found for op; cleaning state (${channelId})`
-        );
+        this.logger.debug(`Channel not found for op; cleaning state (${channelId})`);
         const st = this.calls.get(channelId);
         if (st) {
           if (st.digitTimer) clearTimeout(st.digitTimer);
@@ -570,7 +632,19 @@ export class IvrRuntimeService implements OnModuleInit {
         }
         return;
       }
-      this.logger.warn(`Channel op failed: ${(err as Error).message}`);
+      // Log rich context for debugging ARI errors
+      try {
+        const errInfo: Record<string, unknown> = {
+          message: (err && (err as Error).message) || String(err),
+          stack: (err && (err as Error).stack) || undefined,
+          channelId,
+          currentNodeId,
+          currentNodeAction,
+        };
+        this.logger.warn(`Channel op failed: ${JSON.stringify(errInfo)}`);
+      } catch {
+        this.logger.warn(`Channel op failed: ${(err as Error).message}`);
+      }
     }
   }
 
@@ -584,86 +658,11 @@ export class IvrRuntimeService implements OnModuleInit {
     return typeof num === 'string' ? num : null;
   }
 
-  private getAsteriskHost(): string {
-    return process.env.ASTERISK_HOST || process.env.ASTERISK_HOSTNAME || '127.0.0.1';
-  }
-
-  private getAsteriskSipPort(): string {
-    return process.env.ASTERISK_SIP_PORT || process.env.ASTERISK_PORT || '5060';
-  }
-
-  private getAsteriskRestPort(): string {
-    // allow explicit override for ARI REST port
-    return (
-      process.env.ASTERISK_REST_PORT || process.env.ARI_REST_PORT || '8089'
-    );
-  }
-
-  private async callAriContinue(opts: {
-    channelId: string;
-    context: string;
-    extension: string;
-    ariHost: string;
-    ariPort: string;
-    ariUser: string;
-    ariPass: string;
-  }) {
-    const { channelId, context, extension, ariHost, ariPort, ariUser, ariPass } = opts;
-    const url = `http://${ariHost}:${ariPort}/ari/channels/${encodeURIComponent(channelId)}/continue?context=${encodeURIComponent(context)}&extension=${encodeURIComponent(extension)}&priority=1`;
-    const maxAttempts = Number(process.env.ARI_CONTINUE_MAX_ATTEMPTS || 3);
-    const timeoutMs = Number(process.env.ARI_CONTINUE_TIMEOUT_MS || 5000);
-    let attempt = 0;
-    let lastErr: unknown = null;
-
-    // create axios instance with keep-alive agent to avoid frequent connection resets
-    const isTls = url.startsWith('https:');
-    const agent = isTls
-      ? new https.Agent({ keepAlive: true })
-      : new http.Agent({ keepAlive: true });
-    const client = axios.create({ httpAgent: agent, httpsAgent: agent, timeout: timeoutMs, auth: { username: ariUser, password: ariPass }, headers: { Connection: 'keep-alive' } });
-
-    while (attempt < maxAttempts) {
-      attempt++;
-      try {
-        this.logger.debug(`ARI continue attempt ${attempt} -> ${url} (timeout ${timeoutMs}ms)`);
-        // POST with empty body; ensure content-length is explicit when using keep-alive agent
-        await client.post(url, '', { headers: { 'Content-Length': '0' } });
-        this.logger.debug(`ARI continue succeeded for channel ${channelId}`);
-        return;
-      } catch (err) {
-        lastErr = err;
-          type ErrLike = { code?: string; response?: { status?: number; data?: unknown } };
-          const eErr = err as ErrLike;
-          const code = eErr?.code;
-          const status = eErr?.response?.status;
-          this.logger.warn(`ARI continue attempt ${attempt} failed: ${(err as Error).message} code=${code || 'n/a'} status=${status || 'n/a'}`);
-          // If ARI returned a body (e.g. 401 with explanation) include a truncated snippet for diagnostics
-          const respData = eErr?.response?.data;
-          if (respData) {
-            let snippet: string;
-            try {
-              snippet =
-                typeof respData === 'string'
-                  ? respData.slice(0, 400)
-                  : JSON.stringify(respData).slice(0, 400);
-            } catch {
-              snippet = '[unserializable response data]';
-            }
-            this.logger.warn(`ARI continue response data (truncated): ${snippet}`);
-          }
-          if (status === 401) {
-            this.logger.warn('ARI returned 401 Unauthorized — verify ARI credentials (ARI_USER/ARI_PASS or ASTERISK_USER/ASTERISK_PASS) and that ARI is configured to accept REST requests on the given host/port.');
-          }
-
-        // If connection refused, wait a bit longer before retrying
-        const backoff = Math.min(1000 * attempt, 5000);
-        await new Promise((res) => setTimeout(res, backoff));
-      }
-    }
-
-    // Final diagnostics: surface a clearer error
-    const finalMsg = `ARI continue failed after ${maxAttempts} attempts for channel ${channelId} -> ${url}`;
-    this.logger.error(finalMsg);
-    throw lastErr as Error | null;
+  // If a raw endpoint looks like a bare extension or dialplan identifier (no '/'),
+  // convert it to a Local channel that will enter the dialplan: Local/<ext>@<context>
+  private normalizeEndpoint(raw: string, aricontext: string) {
+    if (!raw) return raw;
+    if (raw.includes('/')) return raw; // already protocol-qualified (PJSIP/, SIP/, Local/, etc.)
+    return `Local/${raw}@${aricontext}`;
   }
 }

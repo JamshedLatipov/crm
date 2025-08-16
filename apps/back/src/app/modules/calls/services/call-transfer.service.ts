@@ -10,17 +10,20 @@ export class CallTransferService {
     const client = this.ari.getClient();
     if (!client) throw new Error('ARI client not available');
     this.logger.log(`Blind transfer ${channelId} -> ${target}`);
+    const aricontext = process.env.ASTERISK_FROM_ARI_CONTEXT || 'from-ari';
+    
     try {
-      await client.channels.redirect({ channelId, endpoint: target });
+      // Normalize target: if it's a bare token (no '/'), treat it as a dialplan extension
+      const normalized = target.includes('/') ? target : `Local/${target}@${aricontext}`;
+      await client.channels.redirect({ channelId, endpoint: normalized });
     } catch {
       this.logger.warn('redirect failed, trying originate as fallback');
       try {
         const appName = process.env.ARI_APP || 'crm-app';
-        await client.channels.originate({
-          endpoint: target,
-          app: appName,
-          callerId: channelId,
-        });
+        const ep = target.includes('/') ? target : `Local/${target}@${aricontext}`;
+        const originateParams = { endpoint: ep, app: appName, callerId: channelId };
+        this.logger.debug(`ARI originate params (call-transfer fallback): ${JSON.stringify(originateParams)}`);
+        await client.channels.originate(originateParams);
       } catch (e) {
         this.logger.error('Blind transfer failed', e as Error);
         throw e;
@@ -34,9 +37,11 @@ export class CallTransferService {
     this.logger.log(`Attended transfer ${channelId} -> ${target}`);
     try {
       const bridge = await client.bridges.create({ type: 'mixing' });
+  const aricontext = process.env.ASTERISK_FROM_ARI_CONTEXT || 'from-ari';
       const appName = process.env.ARI_APP || 'crm-app';
+      const ep = target.includes('/') ? target : `Local/${target}@${aricontext}`;
       const orig = await client.channels.originate({
-        endpoint: target,
+        endpoint: ep,
         app: appName,
         callerId: channelId,
       });
