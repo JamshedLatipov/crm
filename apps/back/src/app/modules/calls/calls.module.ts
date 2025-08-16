@@ -4,6 +4,8 @@ import { PsEndpoint } from './entities/ps-endpoint.entity';
 import { PsAor } from './entities/ps-aor.entity';
 import { PsAuth } from './entities/ps-auth.entity';
 import { Cdr } from './entities/cdr.entity';
+import { Queue } from './entities/queue.entity';
+import { QueueMember } from './entities/queue-member.entity';
 import { PsEndpointService } from './services/ps-endpoint.service';
 import { PsAorService } from './services/ps-aor.service';
 import { PsAuthService } from './services/ps-auth.service';
@@ -19,7 +21,14 @@ import { AriModule } from '../ari/ari.module';
 @Module({
   imports: [
     AriModule,
-    TypeOrmModule.forFeature([PsEndpoint, PsAor, PsAuth, Cdr]),
+    TypeOrmModule.forFeature([
+      PsEndpoint,
+      PsAor,
+      PsAuth,
+      Cdr,
+      Queue,
+      QueueMember,
+    ]),
   ],
   providers: [
     PsEndpointService,
