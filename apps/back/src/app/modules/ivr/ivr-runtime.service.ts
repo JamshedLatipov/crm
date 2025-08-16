@@ -4,6 +4,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { IvrNode } from './entities/ivr-node.entity';
 import axios from 'axios';
+import * as http from 'http';
+import * as https from 'https';
 import { IvrLogService } from './ivr-log.service';
 import { IvrLogEvent } from './entities/ivr-log.entity';
 
@@ -49,9 +51,9 @@ export class IvrRuntimeService implements OnModuleInit {
     this.ari.on('PlaybackFinished', (evt: unknown) =>
       this.onPlaybackFinished(evt)
     );
-  // Clean up state promptly when channel ends to avoid race causing 'Channel not found'
-  this.ari.on('StasisEnd', (evt: unknown) => this.onChannelEnded(evt));
-  this.ari.on('ChannelDestroyed', (evt: unknown) => this.onChannelEnded(evt));
+    // Clean up state promptly when channel ends to avoid race causing 'Channel not found'
+    this.ari.on('StasisEnd', (evt: unknown) => this.onChannelEnded(evt));
+    this.ari.on('ChannelDestroyed', (evt: unknown) => this.onChannelEnded(evt));
   }
 
   private async getRootNode(): Promise<IvrNode | null> {
@@ -97,13 +99,16 @@ export class IvrRuntimeService implements OnModuleInit {
     );
     const client = this.ari.getClient();
     if (!client) return;
-  // Abort if channel already ended
-  const existing = this.calls.get(channelId);
-  if (existing?.ended) return;
+    // Abort if channel already ended
+    const existing = this.calls.get(channelId);
+    if (existing?.ended) return;
     // Reset any existing digit wait when entering a new node
     const st = this.calls.get(channelId);
     if (st) {
-      if (st.digitTimer) { clearTimeout(st.digitTimer); st.digitTimer = undefined; }
+      if (st.digitTimer) {
+        clearTimeout(st.digitTimer);
+        st.digitTimer = undefined;
+      }
       st.waitingForDigit = false;
       st.pendingTimeoutMs = undefined;
     }
@@ -118,17 +123,21 @@ export class IvrRuntimeService implements OnModuleInit {
     switch (node.action) {
       case 'playback': {
         if (node.payload) {
-          await this.safeChannelOp(channelId, () => client.channels.play({
-            channelId,
-            media: `sound:${node.payload}`,
-          }));
+          await this.safeChannelOp(channelId, () =>
+            client.channels.play({
+              channelId,
+              media: `sound:${node.payload}`,
+            })
+          );
         }
         break;
       }
       case 'menu': {
         if (node.payload) {
           // Always defer starting timeout until after playback ends to avoid premature hangup
-          await this.safeChannelOp(channelId, () => client.channels.play({ channelId, media: `sound:${node.payload}` }));
+          await this.safeChannelOp(channelId, () =>
+            client.channels.play({ channelId, media: `sound:${node.payload}` })
+          );
           const stLocal = this.calls.get(channelId);
           if (stLocal) {
             stLocal.waitingForDigit = node.allowEarlyDtmf; // mark waiting only logically (no timer yet) if early input allowed
@@ -145,11 +154,25 @@ export class IvrRuntimeService implements OnModuleInit {
           this.logger.warn('Dial node without payload');
           break;
         }
-        await this.safeChannelOp(channelId, () => client.channels.originate({
-          endpoint: node.payload,
-          app: process.env.ARI_APP,
-          callerId: channelId,
-        }));
+        // build endpoint using env vars when appropriate (SIP endpoints may need host:port)
+        let endpoint = node.payload;
+        try {
+          const sipHost = this.getAsteriskHost();
+          const sipPort = this.getAsteriskSipPort();
+          if (typeof endpoint === 'string' && endpoint.startsWith('SIP/') && !endpoint.includes('@')) {
+            // append host:port for SIP dialstrings when missing
+            endpoint = `${endpoint}@${sipHost}:${sipPort}`;
+          }
+        } catch {
+          // fall back to payload as-is
+        }
+        await this.safeChannelOp(channelId, () =>
+          client.channels.originate({
+            endpoint,
+            app: process.env.ARI_APP,
+            callerId: channelId,
+          })
+        );
         break;
       }
       case 'goto': {
@@ -159,23 +182,70 @@ export class IvrRuntimeService implements OnModuleInit {
         break;
       }
       case 'queue': {
+        // If payload present, play it as an announcement
         if (node.payload) {
-          await this.safeChannelOp(channelId, () => client.channels.play({
-            channelId,
-            media: `sound:${node.payload}`,
-          }));
+          await this.safeChannelOp(channelId, () =>
+            client.channels.play({ channelId, media: `sound:${node.payload}` })
+          );
         }
-  // Do not start digit waiting for a queue; keep call until external action.
+        // If queueName is configured on the node, log and (optionally) perform queue-specific actions
+        const targetQueue = (node as IvrNode).queueName || null;
+        console.log('----------------------------------------------', targetQueue);
+        // Do not start digit waiting for a queue; keep call until external action.
         await this.safeLog({
           channelId,
           nodeId: node.id,
           nodeName: node.name,
           event: 'QUEUE_ENTER',
+          meta: { queueName: targetQueue },
         });
+
+        // implement queue-specific actions here
+        // ARI does not have client.channels.queue - instead redirect the current channel
+        // to the dialplan extension named after the queue so Asterisk's Queue() handles it.
+        if (targetQueue) {
+          try {
+            // Prefer to send the channel back into dialplan using channels.continue (POST /ari/channels/{channelId}/continue)
+            // Many ARI clients expose this method as `channels.continue`. Use it if available, otherwise fall back to Local redirect.
+            const aricontext = process.env.ASTERISK_FROM_ARI_CONTEXT || 'from-ari';
+            const extension = process.env.ASTERISK_QUEUE_EXTENSION || `queue_${targetQueue}`;
+
+            // Some ARI clients attach a `continue` function on channels; guard safely.
+            const contFn = (client.channels as unknown as Record<string, unknown>)['continue'];
+            if (typeof contFn === 'function') {
+              // cast to a typed callable to avoid using the unsafe `Function` type
+              const contCallable = contFn as (...args: unknown[]) => unknown;
+              await this.safeChannelOp(channelId, () =>
+                (contCallable as (...args: unknown[]) => unknown).call(client.channels, { channelId, context: aricontext, extension, priority: 1 })
+              );
+            } else {
+              // fallback: call ARI REST continue endpoint directly to move the channel into the dialplan
+              const ariHost = this.getAsteriskHost();
+              const ariPort = this.getAsteriskRestPort();
+              const ariUser = process.env.ARI_USER || process.env.ASTERISK_USER || 'asterisk';
+              const ariPass = process.env.ARI_PASS || process.env.ASTERISK_PASS || 'asterisk';
+              await this.safeChannelOp(channelId, async () => {
+                await this.callAriContinue({
+                  channelId,
+                  context: aricontext,
+                  extension,
+                  ariHost,
+                  ariPort,
+                  ariUser,
+                  ariPass,
+                });
+              });
+            }
+          } catch (err) {
+            this.logger.warn(`Failed to send channel to queue ${targetQueue}: ${(err as Error).message}`);
+          }
+        }
         break;
       }
       case 'hangup': {
-        await this.safeChannelOp(channelId, () => client.channels.hangup({ channelId }));
+        await this.safeChannelOp(channelId, () =>
+          client.channels.hangup({ channelId })
+        );
         this.calls.delete(channelId);
         await this.safeLog({
           channelId,
@@ -209,36 +279,50 @@ export class IvrRuntimeService implements OnModuleInit {
     }
   }
 
-  private startDigitTimeout(channelId: string, st: ActiveCallState, timeoutMs: number) {
+  private startDigitTimeout(
+    channelId: string,
+    st: ActiveCallState,
+    timeoutMs: number
+  ) {
     return setTimeout(() => {
       // On timeout check current node
       const nodeId = st.currentNodeId;
       if (!nodeId) return;
-      this.repo.findOne({ where: { id: nodeId } }).then(async node => {
-        if (!node) return;
-        // Log timeout
-        await this.safeLog({ channelId, nodeId: node.id, nodeName: node.name, event: 'TIMEOUT' });
-        if (node.action === 'menu') {
-          // Repeat menu instead of hanging up
-          st.waitingForDigit = false;
-          // Re-execute same node (replay prompt or immediately wait if no payload)
-          await this.executeNode(node, channelId);
-        } else {
-          // Non-menu: do NOT hangup; attempt to return to nearest ancestor menu
-          const parentId = (node as IvrNode).parentId;
-          if (parentId) {
-            const parent = await this.repo.findOne({ where: { id: parentId } });
-            if (parent && parent.action === 'menu') {
-              st.currentNodeId = parent.id;
-              st.waitingForDigit = false;
-              await this.executeNode(parent, channelId);
-              return;
+      this.repo
+        .findOne({ where: { id: nodeId } })
+        .then(async (node) => {
+          if (!node) return;
+          // Log timeout
+          await this.safeLog({
+            channelId,
+            nodeId: node.id,
+            nodeName: node.name,
+            event: 'TIMEOUT',
+          });
+          if (node.action === 'menu') {
+            // Repeat menu instead of hanging up
+            st.waitingForDigit = false;
+            // Re-execute same node (replay prompt or immediately wait if no payload)
+            await this.executeNode(node, channelId);
+          } else {
+            // Non-menu: do NOT hangup; attempt to return to nearest ancestor menu
+            const parentId = (node as IvrNode).parentId;
+            if (parentId) {
+              const parent = await this.repo.findOne({
+                where: { id: parentId },
+              });
+              if (parent && parent.action === 'menu') {
+                st.currentNodeId = parent.id;
+                st.waitingForDigit = false;
+                await this.executeNode(parent, channelId);
+                return;
+              }
             }
+            // Fallback: just clear waiting (keep call alive)
+            st.waitingForDigit = false;
           }
-          // Fallback: just clear waiting (keep call alive)
-          st.waitingForDigit = false;
-        }
-      }).catch(()=>undefined);
+        })
+        .catch(() => undefined);
     }, timeoutMs);
   }
 
@@ -260,8 +344,17 @@ export class IvrRuntimeService implements OnModuleInit {
     if (!st) return;
     if (playbackId) st.activePlaybacks.delete(playbackId);
     // If all playbacks finished and we were waiting with deferred timeout, start it now
-    if (st.activePlaybacks.size === 0 && st.waitingForDigit && !st.digitTimer && st.pendingTimeoutMs) {
-      st.digitTimer = this.startDigitTimeout(channelId, st, st.pendingTimeoutMs);
+    if (
+      st.activePlaybacks.size === 0 &&
+      st.waitingForDigit &&
+      !st.digitTimer &&
+      st.pendingTimeoutMs
+    ) {
+      st.digitTimer = this.startDigitTimeout(
+        channelId,
+        st,
+        st.pendingTimeoutMs
+      );
     }
     const node = await this.repo.findOne({ where: { id: st.currentNodeId } });
     if (!node) return;
@@ -270,22 +363,33 @@ export class IvrRuntimeService implements OnModuleInit {
       if (!st.waitingForDigit) this.setWaiting(channelId, true, node.timeoutMs);
       // If early DTMF enabled we may have st.waitingForDigit=true already but timer was still deferred; ensure timer starts now
       if (st.waitingForDigit && st.pendingTimeoutMs) {
-        st.digitTimer = this.startDigitTimeout(channelId, st, st.pendingTimeoutMs);
+        st.digitTimer = this.startDigitTimeout(
+          channelId,
+          st,
+          st.pendingTimeoutMs
+        );
         st.pendingTimeoutMs = undefined;
       }
     } else if (node.action === 'playback') {
       // After playback: return to parent menu if exists; else keep call (no hangup)
-      await this.safeLog({ channelId, nodeId: node.id, nodeName: node.name, event: 'PLAYBACK_FINISHED' });
+      await this.safeLog({
+        channelId,
+        nodeId: node.id,
+        nodeName: node.name,
+        event: 'PLAYBACK_FINISHED',
+      });
       const current = await this.repo.findOne({ where: { id: node.id } });
       if (current?.parentId) {
-        const parent = await this.repo.findOne({ where: { id: current.parentId } });
+        const parent = await this.repo.findOne({
+          where: { id: current.parentId },
+        });
         if (parent && parent.action === 'menu') {
           const st2 = this.calls.get(channelId);
           if (st2) {
             st2.currentNodeId = parent.id;
             st2.waitingForDigit = false;
           }
-            await this.executeNode(parent, channelId);
+          await this.executeNode(parent, channelId);
         }
       }
     }
@@ -428,7 +532,12 @@ export class IvrRuntimeService implements OnModuleInit {
     st.activePlaybacks.clear();
     if (!st.ended) {
       st.ended = true;
-      await this.safeLog({ channelId, event: 'CALL_END', nodeId: st.currentNodeId, nodeName: null });
+      await this.safeLog({
+        channelId,
+        event: 'CALL_END',
+        nodeId: st.currentNodeId,
+        nodeName: null,
+      });
     }
     this.calls.delete(channelId);
   }
@@ -443,13 +552,20 @@ export class IvrRuntimeService implements OnModuleInit {
       await op();
     } catch (err) {
       if (this.isChannelMissingError(err)) {
-        this.logger.debug(`Channel not found for op; cleaning state (${channelId})`);
+        this.logger.debug(
+          `Channel not found for op; cleaning state (${channelId})`
+        );
         const st = this.calls.get(channelId);
         if (st) {
           if (st.digitTimer) clearTimeout(st.digitTimer);
           this.calls.delete(channelId);
           if (!st.ended) {
-            await this.safeLog({ channelId, event: 'CALL_END', nodeId: st.currentNodeId, nodeName: null });
+            await this.safeLog({
+              channelId,
+              event: 'CALL_END',
+              nodeId: st.currentNodeId,
+              nodeName: null,
+            });
           }
         }
         return;
@@ -466,5 +582,88 @@ export class IvrRuntimeService implements OnModuleInit {
       channel && (channel['caller'] as Record<string, unknown> | undefined);
     const num = caller && (caller['number'] as unknown);
     return typeof num === 'string' ? num : null;
+  }
+
+  private getAsteriskHost(): string {
+    return process.env.ASTERISK_HOST || process.env.ASTERISK_HOSTNAME || '127.0.0.1';
+  }
+
+  private getAsteriskSipPort(): string {
+    return process.env.ASTERISK_SIP_PORT || process.env.ASTERISK_PORT || '5060';
+  }
+
+  private getAsteriskRestPort(): string {
+    // allow explicit override for ARI REST port
+    return (
+      process.env.ASTERISK_REST_PORT || process.env.ARI_REST_PORT || '8089'
+    );
+  }
+
+  private async callAriContinue(opts: {
+    channelId: string;
+    context: string;
+    extension: string;
+    ariHost: string;
+    ariPort: string;
+    ariUser: string;
+    ariPass: string;
+  }) {
+    const { channelId, context, extension, ariHost, ariPort, ariUser, ariPass } = opts;
+    const url = `http://${ariHost}:${ariPort}/ari/channels/${encodeURIComponent(channelId)}/continue?context=${encodeURIComponent(context)}&extension=${encodeURIComponent(extension)}&priority=1`;
+    const maxAttempts = Number(process.env.ARI_CONTINUE_MAX_ATTEMPTS || 3);
+    const timeoutMs = Number(process.env.ARI_CONTINUE_TIMEOUT_MS || 5000);
+    let attempt = 0;
+    let lastErr: unknown = null;
+
+    // create axios instance with keep-alive agent to avoid frequent connection resets
+    const isTls = url.startsWith('https:');
+    const agent = isTls
+      ? new https.Agent({ keepAlive: true })
+      : new http.Agent({ keepAlive: true });
+    const client = axios.create({ httpAgent: agent, httpsAgent: agent, timeout: timeoutMs, auth: { username: ariUser, password: ariPass }, headers: { Connection: 'keep-alive' } });
+
+    while (attempt < maxAttempts) {
+      attempt++;
+      try {
+        this.logger.debug(`ARI continue attempt ${attempt} -> ${url} (timeout ${timeoutMs}ms)`);
+        // POST with empty body; ensure content-length is explicit when using keep-alive agent
+        await client.post(url, '', { headers: { 'Content-Length': '0' } });
+        this.logger.debug(`ARI continue succeeded for channel ${channelId}`);
+        return;
+      } catch (err) {
+        lastErr = err;
+          type ErrLike = { code?: string; response?: { status?: number; data?: unknown } };
+          const eErr = err as ErrLike;
+          const code = eErr?.code;
+          const status = eErr?.response?.status;
+          this.logger.warn(`ARI continue attempt ${attempt} failed: ${(err as Error).message} code=${code || 'n/a'} status=${status || 'n/a'}`);
+          // If ARI returned a body (e.g. 401 with explanation) include a truncated snippet for diagnostics
+          const respData = eErr?.response?.data;
+          if (respData) {
+            let snippet: string;
+            try {
+              snippet =
+                typeof respData === 'string'
+                  ? respData.slice(0, 400)
+                  : JSON.stringify(respData).slice(0, 400);
+            } catch {
+              snippet = '[unserializable response data]';
+            }
+            this.logger.warn(`ARI continue response data (truncated): ${snippet}`);
+          }
+          if (status === 401) {
+            this.logger.warn('ARI returned 401 Unauthorized — verify ARI credentials (ARI_USER/ARI_PASS or ASTERISK_USER/ASTERISK_PASS) and that ARI is configured to accept REST requests on the given host/port.');
+          }
+
+        // If connection refused, wait a bit longer before retrying
+        const backoff = Math.min(1000 * attempt, 5000);
+        await new Promise((res) => setTimeout(res, backoff));
+      }
+    }
+
+    // Final diagnostics: surface a clearer error
+    const finalMsg = `ARI continue failed after ${maxAttempts} attempts for channel ${channelId} -> ${url}`;
+    this.logger.error(finalMsg);
+    throw lastErr as Error | null;
   }
 }
