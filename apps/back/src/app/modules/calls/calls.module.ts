@@ -17,6 +17,7 @@ import { PsAuthController } from './controllers/ps-auth.controller';
 import { CallsController } from './controllers/calls.controller';
 import { CallTransferService } from './services/call-transfer.service';
 import { AriModule } from '../ari/ari.module';
+import { QueueLog } from './entities/queuelog.entity';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { AriModule } from '../ari/ari.module';
       Cdr,
       Queue,
       QueueMember,
+      QueueLog,
     ]),
   ],
   providers: [
