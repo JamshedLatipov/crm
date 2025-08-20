@@ -51,21 +51,18 @@ export class IvrRuntimeService implements OnModuleInit {
     this.ari.on('PlaybackFinished', (evt: unknown) =>
       this.onPlaybackFinished(evt)
     );
-    // Clean up state promptly when channel ends to avoid race causing 'Channel not found'
     this.ari.on('StasisEnd', (evt: unknown) => this.onChannelEnded(evt));
     this.ari.on('ChannelDestroyed', (evt: unknown) => this.onChannelEnded(evt));
   }
 
   private async getRootNode(): Promise<IvrNode | null> {
     if (this.rootNodeCache) return this.rootNodeCache;
-    const root = await this.repo.findOne({
-      where: { name: 'root', parentId: null },
-    });
+    const root = await this.repo.findOne({ where: { name: 'root', parentId: null } });
     this.rootNodeCache = root;
     return root;
   }
 
-  private async onStasisStart(evt: unknown, channel: unknown) {
+	private async onStasisStart(evt: unknown, channel: unknown) {
     if (!channel || typeof channel !== 'object') return;
     const channelId = (channel as { id?: string }).id;
     if (!channelId || this.calls.has(channelId)) return;
@@ -89,20 +86,21 @@ export class IvrRuntimeService implements OnModuleInit {
       nodeName: root.name,
       event: 'CALL_START',
     });
-    await this.executeNode(root, channelId);
+    await this.executeNode(root, channelId, channel as { id?: string });
   }
 
-  private async executeNode(node: IvrNode, channelId: string) {
-    // Fire webhook (non-blocking)
+  private async executeNode(
+    node: IvrNode,
+    channelId: string,
+    channel?: { id?: string } | null
+  ) {
     this.callWebhook(node).catch((err) =>
       this.logger.warn(`Webhook failed: ${err.message}`)
     );
     const client = this.ari.getClient();
     if (!client) return;
-    // Abort if channel already ended
     const existing = this.calls.get(channelId);
     if (existing?.ended) return;
-    // Reset any existing digit wait when entering a new node
     const st = this.calls.get(channelId);
     if (st) {
       if (st.digitTimer) {
@@ -119,32 +117,23 @@ export class IvrRuntimeService implements OnModuleInit {
       event: 'NODE_EXECUTE',
       meta: { action: node.action, payload: node.payload },
     });
-
     switch (node.action) {
       case 'playback': {
         if (node.payload) {
           await this.safeChannelOp(channelId, () =>
-            client.channels.play({
-              channelId,
-              media: `sound:${node.payload}`,
-            })
+            client.channels.play({ channelId, media: `sound:${node.payload}` })
           );
         }
         break;
       }
       case 'menu': {
         if (node.payload) {
-          // Always defer starting timeout until after playback ends to avoid premature hangup
           await this.safeChannelOp(channelId, () =>
             client.channels.play({ channelId, media: `sound:${node.payload}` })
           );
           const stLocal = this.calls.get(channelId);
-          if (stLocal) {
-            stLocal.waitingForDigit = node.allowEarlyDtmf; // mark waiting only logically (no timer yet) if early input allowed
-            // Do NOT start timer now; will start after playback finishes in onPlaybackFinished
-          }
+          if (stLocal) stLocal.waitingForDigit = node.allowEarlyDtmf;
         } else {
-          // No audio prompt — start waiting immediately
           this.setWaiting(channelId, true, node.timeoutMs);
         }
         break;
@@ -154,103 +143,84 @@ export class IvrRuntimeService implements OnModuleInit {
           this.logger.warn('Dial node without payload');
           break;
         }
-        // build endpoint using env vars when appropriate (SIP endpoints may need host:port)
         const rawEndpoint = node.payload;
         const aricontext = process.env.ASTERISK_FROM_ARI_CONTEXT || 'from-ari';
         const endpoint = this.normalizeEndpoint(rawEndpoint, aricontext);
-
         const originateParams = {
           endpoint,
           app: process.env.ARI_APP || 'crm-app',
           callerId: channelId,
         };
-        this.logger.debug(`ARI originate params (dial): ${JSON.stringify(originateParams)}`);
-        await this.safeChannelOp(channelId, () => client.channels.originate(originateParams));
+        this.logger.debug(
+          `ARI originate params (dial): ${JSON.stringify(originateParams)}`
+        );
+        await this.safeChannelOp(channelId, () =>
+          client.channels.originate(originateParams)
+        );
         break;
       }
       case 'goto': {
         if (!node.payload) break;
         const target = await this.repo.findOne({ where: { id: node.payload } });
-        if (target) await this.executeNode(target, channelId);
+        if (target) await this.executeNode(target, channelId, channel);
         break;
       }
       case 'queue': {
-        // If payload present, play it as an announcement
-        if (node.payload) {
-          await this.safeChannelOp(channelId, () =>
-            client.channels.play({ channelId, media: `sound:${node.payload}` })
-          );
-        }
-        // If queueName is configured on the node, log and (optionally) perform queue-specific actions
-        const targetQueue = (node as IvrNode).queueName || null;
-        console.log(
-          '----------------------------------------------',
-          targetQueue
-        );
-        // Do not start digit waiting for a queue; keep call until external action.
+        // TODO: use ari client instead of raw query
+        const queueName = (node as IvrNode).queueName || 'support';
+        const context = process.env.ASTERISK_FROM_ARI_CONTEXT || 'from-ari';
+        const priority = 1;
+        const host = process.env.ARI_HOST || 'localhost';
+        const port = process.env.ARI_PORT || '8089';
+        const protocol = process.env.ARI_PROTOCOL === 'https' ? 'https' : 'http';
+        const user = process.env.ARI_USER || 'ariuser';
+        const pass = process.env.ARI_PASSWORD || 'aripass';
+        const url = `${protocol}://${host}:${port}/ari/channels/${encodeURIComponent(
+          channelId
+        )}/continue`;
         await this.safeLog({
           channelId,
           nodeId: node.id,
           nodeName: node.name,
           event: 'QUEUE_ENTER',
-          meta: { queueName: targetQueue },
+          meta: { queue: queueName, attempt: 'continue_http', context, priority },
         });
-
-        // implement queue-specific actions here
-        // ARI does not have client.channels.queue - instead redirect the current channel
-        // to the dialplan extension named after the queue so Asterisk's Queue() handles it.
-        if (targetQueue) {
-          try {
-            // Prefer to send the channel back into dialplan using channels.continue (POST /ari/channels/{channelId}/continue)
-            // Many ARI clients expose this method as `channels.continue`. Use it if available, otherwise fall back to Local redirect.
-            const aricontext =
-              process.env.ASTERISK_FROM_ARI_CONTEXT || 'from-ari';
-            // By default use the queue name itself as the extension (e.g. 'support')
-            // This matches extensions.conf which defines an extension named 'support'.
-            const extension =
-              process.env.ASTERISK_QUEUE_EXTENSION || `${targetQueue}`;
-
-            // Some ARI clients attach a `continue` function on channels; guard safely.
-            const contFn = (
-              client.channels as unknown as Record<string, unknown>
-            )['continue'];
-            if (typeof contFn === 'function') {
-              // cast to a typed callable to avoid using the unsafe `Function` type
-              const contCallable = contFn as (...args: unknown[]) => Promise<unknown>;
-              const continueParams = { channelId, context: aricontext, extension, priority: 1 };
-              this.logger.debug(`ARI continue params: ${JSON.stringify(continueParams)}`);
-              await this.safeChannelOp(channelId, () =>
-                (contCallable as (...args: unknown[]) => Promise<unknown>).call(
-                  client.channels,
-                  continueParams
-                )
-              );
-              this.logger.log(
-                `Channel ${channelId} continued to ${aricontext}/${extension}`
-              );
-            } else {
-              // Fallback: originate a Local channel into the dialplan extension so the Queue() in extensions.conf handles it
-              const ep = this.normalizeEndpoint(extension, aricontext);
-              const originateParams2 = {
-                endpoint: ep,
-                app: process.env.ARI_APP || 'crm-app',
-                callerId: channelId,
-              };
-              this.logger.debug(`ARI originate params (queue fallback): ${JSON.stringify(originateParams2)}`);
-              await this.safeChannelOp(channelId, () =>
-                client.channels.originate(originateParams2)
-              );
-              this.logger.log(
-                `Channel ${channelId} originated Local/${extension}@${aricontext} to enter queue ${targetQueue}`
+        this.logger.debug(
+          `Queue handoff HTTP continue: channel=${channelId} context=${context} extension=${queueName} priority=${priority}`
+        );
+        try {
+          await axios.post(
+            url,
+            null,
+            {
+              params: { context, extension: queueName, priority },
+              auth: { username: user, password: pass },
+              timeout: 3000,
+              validateStatus: () => true,
+            }
+          );
+          // We can't easily know success vs 4xx because swagger client wraps errors; do a lightweight follow-up check:
+          // if channel still in our map after a short delay, assume failure.
+          setTimeout(() => {
+            if (this.calls.has(channelId)) {
+              this.logger.warn(
+                `Queue continue HTTP did not handoff (channel still tracked) channel=${channelId}`
               );
             }
-          } catch (err) {
-            this.logger.warn(
-              `Failed to send channel to queue ${targetQueue}: ${
-                (err as Error).message
-              }`
+          }, 200);
+          this.calls.delete(channelId); // optimistic: dialplan will own it now
+        } catch (e) {
+          const msg = (e as Error).message;
+            this.logger.error(
+              `HTTP continue to queue failed channel=${channelId} err=${msg}`
             );
-          }
+            await this.safeLog({
+              channelId,
+              nodeId: node.id,
+              nodeName: node.name,
+              event: 'QUEUE_ENTER',
+              meta: { queue: queueName, attempt: 'failed_http', error: msg },
+            });
         }
         break;
       }
@@ -267,9 +237,7 @@ export class IvrRuntimeService implements OnModuleInit {
         });
         break;
       }
-
     }
-
   }
 
   private setWaiting(channelId: string, waiting: boolean, timeoutMs?: number) {
@@ -562,7 +530,10 @@ export class IvrRuntimeService implements OnModuleInit {
   private isAllocationFailedError(err: unknown) {
     const msg = (err && (err as Error).message) || '';
     // ari-client sometimes wraps ARI JSON error literal
-    return /Allocation failed/i.test(msg) || /"error"\s*:\s*"Allocation failed"/i.test(msg);
+    return (
+      /Allocation failed/i.test(msg) ||
+      /"error"\s*:\s*"Allocation failed"/i.test(msg)
+    );
   }
 
   private async safeChannelOp(channelId: string, op: () => Promise<unknown>) {
@@ -616,7 +587,9 @@ export class IvrRuntimeService implements OnModuleInit {
       }
 
       if (this.isChannelMissingError(err)) {
-        this.logger.debug(`Channel not found for op; cleaning state (${channelId})`);
+        this.logger.debug(
+          `Channel not found for op; cleaning state (${channelId})`
+        );
         const st = this.calls.get(channelId);
         if (st) {
           if (st.digitTimer) clearTimeout(st.digitTimer);
