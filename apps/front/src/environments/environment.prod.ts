@@ -1,4 +1,5 @@
 export const environment = {
   production: true,
-  apiBase: '/api'
+  apiBase: '/api',
+  asteriskHost: '192.168.90.121'
 };
