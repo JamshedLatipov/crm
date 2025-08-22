@@ -13,3 +13,4 @@ node_modules
 dist
 apps/back/.env
 data/asterisk/sounds/custom/*
+turnserver/data/turnserver/turndb
