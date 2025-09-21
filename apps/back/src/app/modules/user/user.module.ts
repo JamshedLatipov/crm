@@ -4,6 +4,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { User } from './user.entity';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
+import { UserController } from './user.controller';
+import { UserService } from './user.service';
 import { RolesGuard } from './roles.guard';
 import { PsAuth } from '../calls/entities/ps-auth.entity';
 import { PsEndpoint } from '../calls/entities/ps-endpoint.entity';
@@ -16,8 +18,8 @@ import { PsEndpoint } from '../calls/entities/ps-endpoint.entity';
       signOptions: { expiresIn: '1d' },
     }),
   ],
-  providers: [AuthService, RolesGuard],
-  controllers: [AuthController],
-  exports: [AuthService],
+  providers: [AuthService, UserService, RolesGuard],
+  controllers: [AuthController, UserController],
+  exports: [AuthService, UserService],
 })
 export class UserModule {}

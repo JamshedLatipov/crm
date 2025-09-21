@@ -13,14 +13,14 @@ async function bootstrap() {
   const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix);
 
-  // CORS configuration - Allow all origins for development
-  app.enableCors({
-    origin: true, // Allow all origins
-    credentials: true,
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: 'Authorization,Content-Type,Accept,Origin,X-Requested-With',
-    exposedHeaders: 'Authorization'
-  });
+  // CORS disabled
+  app.enableCors(
+    {
+      origin: '*',
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+      credentials: true,
+    }
+  );
 
   const config = new DocumentBuilder()
     .setTitle('CRM API')

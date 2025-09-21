@@ -42,6 +42,8 @@ services:
     ports:
       - "3478:3478"
       - "3478:3478/udp"
+      # Expose relay ports used by coturn (must match min-port/max-port in turnserver.conf)
+      - "50000-50020:50000-50020/udp"
     # spreed/turnserver expects env-style config at /srv/config
     volumes:
       - "./turnserver/data:/srv"
