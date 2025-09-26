@@ -16,6 +16,9 @@ import {
   AddTagsRequest,
   ScheduleFollowUpRequest,
 } from '../models/lead.model';
+
+import { CreateLeadActivityDto, UpdateLeadActivityDto } from '../models';
+import { CreateDistributionRuleDto, UpdateDistributionRuleDto, CreateScoringRuleDto, UpdateScoringRuleDto } from '../models';
 import { environment } from '../../../environments/environment';
 import { UserService, Manager, AutoAssignCriteria } from '../../shared/services/user.service';
 
@@ -127,6 +130,48 @@ export class LeadService {
 
   getLeadActivities(leadId: string): Observable<LeadActivity[]> {
     return this.http.get<LeadActivity[]>(`${this.apiUrl}/${leadId}/activities`);
+  }
+
+  createLeadActivity(leadId: string, dto: CreateLeadActivityDto): Observable<LeadActivity> {
+    return this.http.post<LeadActivity>(`${this.apiUrl}/${leadId}/activities`, dto);
+  }
+
+  updateLeadActivity(leadId: string, activityId: string, dto: UpdateLeadActivityDto): Observable<LeadActivity> {
+    return this.http.patch<LeadActivity>(`${this.apiUrl}/${leadId}/activities/${activityId}`, dto);
+  }
+
+  // Distribution rules
+  listDistributionRules(): Observable<CreateDistributionRuleDto[]> {
+    return this.http.get<CreateDistributionRuleDto[]>(`${this.apiUrl}/distribution-rules`);
+  }
+
+  createDistributionRule(dto: CreateDistributionRuleDto): Observable<CreateDistributionRuleDto> {
+    return this.http.post<CreateDistributionRuleDto>(`${this.apiUrl}/distribution-rules`, dto);
+  }
+
+  updateDistributionRule(id: string, dto: UpdateDistributionRuleDto): Observable<CreateDistributionRuleDto> {
+    return this.http.patch<CreateDistributionRuleDto>(`${this.apiUrl}/distribution-rules/${id}`, dto);
+  }
+
+  deleteDistributionRule(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/distribution-rules/${id}`);
+  }
+
+  // Scoring rules
+  listScoringRules(): Observable<CreateScoringRuleDto[]> {
+    return this.http.get<CreateScoringRuleDto[]>(`${this.apiUrl}/scoring-rules`);
+  }
+
+  createScoringRule(dto: CreateScoringRuleDto): Observable<CreateScoringRuleDto> {
+    return this.http.post<CreateScoringRuleDto>(`${this.apiUrl}/scoring-rules`, dto);
+  }
+
+  updateScoringRule(id: string, dto: UpdateScoringRuleDto): Observable<CreateScoringRuleDto> {
+    return this.http.patch<CreateScoringRuleDto>(`${this.apiUrl}/scoring-rules/${id}`, dto);
+  }
+
+  deleteScoringRule(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/scoring-rules/${id}`);
   }
 
   // Search and filtering

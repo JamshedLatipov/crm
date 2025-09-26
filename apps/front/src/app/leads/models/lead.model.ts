@@ -1,3 +1,5 @@
+export * from './enums';
+
 export enum LeadStatus {
   NEW = 'new',
   CONTACTED = 'contacted',
