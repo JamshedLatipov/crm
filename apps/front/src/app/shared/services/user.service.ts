@@ -1,10 +1,12 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { mapBackendToManager } from './user.mappers';
 import { environment } from '../../../environments/environment';
 
 export interface Manager {
-  id: number;
+  id: string;
   username: string;
   firstName: string;
   lastName: string;
@@ -56,7 +58,12 @@ export class UserService {
     if (availableOnly) {
       params = params.set('availableOnly', 'true');
     }
-    return this.http.get<Manager[]>(`${this.apiUrl}/managers`, { params });
+
+    // Backend returns a Manager DTO with slightly different field names/types.
+    // Normalize response into the frontend `Manager` shape so components (QuickAssign, etc.) render correctly.
+    return this.http.get<unknown[]>(`${this.apiUrl}/managers`, { params }).pipe(
+      map((list) => (list || []).map((item) => mapBackendToManager(item as Record<string, unknown>)))
+    );
   }
 
   /**

@@ -147,8 +147,11 @@ export class UpdateLeadDto {
 }
 
 export class AssignLeadDto {
-  @ApiProperty()
-  user: string;
+  @ApiProperty({ required: false })
+  user?: string;
+
+  @ApiProperty({ required: false })
+  managerId?: string;
 }
 
 export class ScoreLeadDto {

@@ -254,11 +254,27 @@ export class LeadService {
     const updated = await this.update(id, { assignedTo: user });
     
     // Обновляем счетчик лидов у пользователя
-    const userEntity = await this.userService.findById(parseInt(user));
+    const parsedUserId = Number(user);
+    if (Number.isNaN(parsedUserId)) {
+      // If user is not a numeric id (e.g., username), skip numeric update and just record activity.
+      // Optionally, you could look up by username here if that's desired.
+      // We avoid passing NaN to DB which causes QueryFailedError.
+      await this.activityRepo.save({
+        leadId: id,
+        type: ActivityType.ASSIGNED,
+        title: 'Лид назначен менеджеру',
+        description: `Лид назначен менеджеру: ${user} (non-numeric id)`,
+        metadata: { assignedTo: user }
+      });
+      return updated;
+    }
+
+    const userEntity = await this.userService.findById(parsedUserId);
     if (userEntity) {
       await this.userService.updateLeadCount(userEntity.id, 1);
     }
     
+    // If we reached here, either userEntity was found and count updated, or user was numeric but not found.
     await this.activityRepo.save({
       leadId: id,
       type: ActivityType.ASSIGNED,

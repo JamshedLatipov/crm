@@ -1,6 +1,5 @@
-import { Controller, Get, Query, Param, HttpException, HttpStatus, Post } from '@nestjs/common';
+import { Controller, Get, Query, Param, Post } from '@nestjs/common';
 import { UserService } from './user.service';
-import { User } from './user.entity';
 
 export interface ManagerDto {
   id: string;
@@ -23,8 +22,13 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get('managers')
-  async getManagers(@Query('available') availableOnly?: string): Promise<ManagerDto[]> {
-    const users = await this.userService.getManagers(availableOnly === 'true');
+  async getManagers(
+    @Query('available') available?: string,
+    @Query('availableOnly') availableOnly?: string
+  ): Promise<ManagerDto[]> {
+    // Support both `available` and `availableOnly` query params for backward compatibility.
+    const useAvailable = (availableOnly ?? available) === 'true';
+    const users = await this.userService.getManagers(useAvailable);
     
     return users.map(user => ({
       id: user.id.toString(),

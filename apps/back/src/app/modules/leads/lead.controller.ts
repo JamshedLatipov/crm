@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Patch, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Delete, Query, BadRequestException } from '@nestjs/common';
 import { LeadService } from './lead.service';
 import { Lead, LeadStatus, LeadSource, LeadPriority } from './lead.entity';
 import { ApiTags, ApiBody, ApiQuery } from '@nestjs/swagger';
@@ -138,7 +138,11 @@ export class LeadController {
   @Patch(':id/assign')
   @ApiBody({ type: AssignLeadDto })
   async assignLead(@Param('id') id: number, @Body() body: AssignLeadDto): Promise<Lead> {
-    return this.leadService.assignLead(id, body.user);
+    const userOrManager = body.managerId ?? body.user;
+    if (!userOrManager) {
+      throw new BadRequestException('Missing user or managerId in request body');
+    }
+    return this.leadService.assignLead(id, userOrManager);
   }
 
   @Post(':id/auto-assign')

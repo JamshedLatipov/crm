@@ -69,7 +69,7 @@ interface AssignLeadData {
             <div class="current-assignee" *ngIf="data.currentAssignee">
               Текущий ответственный: 
               <mat-chip class="assignee-chip" selected>
-                {{ data.currentAssignee }}
+                {{ getCurrentAssigneeName() }}
               </mat-chip>
             </div>
             <div class="no-assignee" *ngIf="!data.currentAssignee">
@@ -558,7 +558,7 @@ export class AssignLeadDialogComponent {
 
   assignForm: FormGroup;
   selectedManager: Manager | null = null;
-  selectedTeamMembers: number[] = [];
+  selectedTeamMembers: string[] = [];
   loading = false;
 
   // Real data from API
@@ -654,6 +654,13 @@ export class AssignLeadDialogComponent {
     }
   }
 
+  getCurrentAssigneeName(): string {
+    const id = this.data.currentAssignee;
+    if (!id) return '';
+    const manager = this.availableManagers.find(m => m.id?.toString() === id?.toString());
+    return manager?.fullName || id;
+  }
+
   assignLead(): void {
     if (!this.isAssignmentValid()) {
       return;
@@ -677,7 +684,7 @@ export class AssignLeadDialogComponent {
       
       case 'team': {
         // Для команды берем первого участника как основного ответственного
-        assigneeId = this.selectedTeamMembers[0].toString();
+        assigneeId = this.selectedTeamMembers[0];
         break;
       }
       

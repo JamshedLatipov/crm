@@ -7,6 +7,7 @@ import { MatChipsModule } from '@angular/material/chips';
 
 import { LeadService } from '../services/lead.service';
 import { Lead } from '../models/lead.model';
+import { UserService, Manager } from '../../shared/services/user.service';
 
 interface ManagerStats {
   id: string;
@@ -253,6 +254,7 @@ interface ManagerStats {
 })
 export class AssignmentStatsComponent {
   private readonly leadService = inject(LeadService);
+  private readonly userService = inject(UserService);
 
   totalLeads = 0;
   assignedLeads = 0;
@@ -262,6 +264,9 @@ export class AssignmentStatsComponent {
 
   managerStats: ManagerStats[] = [];
 
+  // Loaded managers
+  private managers: Manager[] = [];
+
   private workloadLabels = {
     low: 'Низкая загрузка',
     medium: 'Средняя загрузка', 
@@ -270,7 +275,15 @@ export class AssignmentStatsComponent {
   };
 
   constructor() {
+    this.loadManagers();
     this.loadStats();
+  }
+
+  private loadManagers(): void {
+    this.userService.getManagers().subscribe({
+      next: (managers) => this.managers = managers,
+      error: (err) => console.error('Error loading managers for stats:', err)
+    });
   }
 
   loadStats(): void {
@@ -337,9 +350,10 @@ export class AssignmentStatsComponent {
       else if (stats.total <= 15) workload = 'high';
       else workload = 'overloaded';
 
+      const managerRecord = this.managers.find(m => m.id?.toString() === managerId.toString());
       return {
         id: managerId,
-        name: managerId, // В реальном приложении здесь будет имя менеджера
+        name: managerRecord?.fullName || managerId, // Resolve to fullName when available
         totalLeads: stats.total,
         qualifiedLeads: stats.qualified,
         convertedLeads: stats.converted,

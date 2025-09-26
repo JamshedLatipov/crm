@@ -20,6 +20,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 
 import { LeadService } from '../services/lead.service';
+import { UserService, Manager } from '../../shared/services/user.service';
 import { 
   Lead, 
   LeadStatus, 
@@ -128,10 +129,10 @@ import { QuickAssignDialogComponent } from './quick-assign-dialog.component';
           <!-- Checkbox Column -->
           <ng-container matColumnDef="select">
             <th mat-header-cell *matHeaderCellDef>
-              <mat-checkbox></mat-checkbox>
+              <mat-checkbox (click)="$event.stopPropagation()"></mat-checkbox>
             </th>
             <td mat-cell *matCellDef="let lead">
-              <mat-checkbox></mat-checkbox>
+              <mat-checkbox (click)="$event.stopPropagation()"></mat-checkbox>
             </td>
           </ng-container>
 
@@ -190,7 +191,7 @@ import { QuickAssignDialogComponent } from './quick-assign-dialog.component';
             <td mat-cell *matCellDef="let lead" class="manager-cell">
               <div class="manager-container">
                 <span class="manager-name" *ngIf="lead.assignedTo; else unassigned">
-                  {{ lead.assignedTo }}
+                  {{ getManagerName(lead.assignedTo) }}
                 </span>
                 <ng-template #unassigned>
                   <span class="unassigned-text">Unassigned</span>
@@ -219,56 +220,56 @@ import { QuickAssignDialogComponent } from './quick-assign-dialog.component';
           <ng-container matColumnDef="actions">
             <th mat-header-cell *matHeaderCellDef></th>
             <td mat-cell *matCellDef="let lead" class="actions-cell">
-              <button mat-icon-button [matMenuTriggerFor]="actionsMenu">
+              <button mat-icon-button [matMenuTriggerFor]="actionsMenu" (click)="$event.stopPropagation()">
                 <mat-icon>more_horiz</mat-icon>
               </button>
               
               <mat-menu #actionsMenu="matMenu">
-                <button mat-menu-item (click)="viewLead(lead)">
+                <button mat-menu-item (click)="viewLead(lead); $event.stopPropagation()">
                   <mat-icon>visibility</mat-icon>
                   <span>View</span>
                 </button>
-                <button mat-menu-item (click)="editLead(lead)">
+                <button mat-menu-item (click)="editLead(lead); $event.stopPropagation()">
                   <mat-icon>edit</mat-icon>
                   <span>Edit</span>
                 </button>
-                <button mat-menu-item (click)="changeStatus(lead)">
+                <button mat-menu-item (click)="changeStatus(lead); $event.stopPropagation()">
                   <mat-icon>swap_horiz</mat-icon>
                   <span>Change Status</span>
                 </button>
                 <mat-menu #quickStatusMenu="matMenu">
-                  <button mat-menu-item (click)="quickUpdateStatus(lead, 'contacted')">
+                  <button mat-menu-item (click)="quickUpdateStatus(lead, 'contacted'); $event.stopPropagation()">
                     <mat-icon>contact_phone</mat-icon>
                     <span>Mark as Contacted</span>
                   </button>
-                  <button mat-menu-item (click)="quickUpdateStatus(lead, 'qualified')">
+                  <button mat-menu-item (click)="quickUpdateStatus(lead, 'qualified'); $event.stopPropagation()">
                     <mat-icon>verified</mat-icon>
                     <span>Mark as Qualified</span>
                   </button>
-                  <button mat-menu-item (click)="quickUpdateStatus(lead, 'converted')">
+                  <button mat-menu-item (click)="quickUpdateStatus(lead, 'converted'); $event.stopPropagation()">
                     <mat-icon>check_circle</mat-icon>
                     <span>Mark as Converted</span>
                   </button>
-                  <button mat-menu-item (click)="quickUpdateStatus(lead, 'lost')" class="danger-action">
+                  <button mat-menu-item (click)="quickUpdateStatus(lead, 'lost'); $event.stopPropagation()" class="danger-action">
                     <mat-icon>cancel</mat-icon>
                     <span>Mark as Lost</span>
                   </button>
                 </mat-menu>
-                <button mat-menu-item [matMenuTriggerFor]="quickStatusMenu">
+                <button mat-menu-item [matMenuTriggerFor]="quickStatusMenu" (click)="$event.stopPropagation()">
                   <mat-icon>speed</mat-icon>
                   <span>Quick Status</span>
                   <mat-icon class="submenu-arrow">chevron_right</mat-icon>
                 </button>
-                <button mat-menu-item (click)="assignLead(lead)">
+                <button mat-menu-item (click)="assignLead(lead); $event.stopPropagation()">
                   <mat-icon>person_add</mat-icon>
                   <span>Assign</span>
                 </button>
-                <button mat-menu-item (click)="contactLead(lead)">
+                <button mat-menu-item (click)="contactLead(lead); $event.stopPropagation()">
                   <mat-icon>phone</mat-icon>
                   <span>Contact</span>
                 </button>
                 <mat-divider></mat-divider>
-                <button mat-menu-item (click)="deleteLead(lead)" class="delete-action">
+                <button mat-menu-item (click)="deleteLead(lead); $event.stopPropagation()" class="delete-action">
                   <mat-icon>delete</mat-icon>
                   <span>Delete</span>
                 </button>
@@ -277,7 +278,7 @@ import { QuickAssignDialogComponent } from './quick-assign-dialog.component';
           </ng-container>
 
           <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row" (click)="viewLead(row)"></tr>
         </table>
 
         <!-- No results message -->
@@ -404,6 +405,10 @@ import { QuickAssignDialogComponent } from './quick-assign-dialog.component';
       border-bottom: 1px solid #f1f3f4;
       font-size: 14px;
       color: #1a1a1a;
+    }
+
+    .table-row {
+      cursor: pointer;
     }
 
     .table-row:hover {
@@ -653,6 +658,7 @@ import { QuickAssignDialogComponent } from './quick-assign-dialog.component';
 })
 export class LeadsListComponent implements OnInit {
   private leadService = inject(LeadService);
+  private userService = inject(UserService);
   private dialog = inject(MatDialog);
 
   // Signals
@@ -676,8 +682,19 @@ export class LeadsListComponent implements OnInit {
   selectedSources: LeadSource[] = [];
   selectedPriorities: LeadPriority[] = [];
 
+  // Managers cache
+  managers: Manager[] = [];
+
   ngOnInit(): void {
     this.loadLeads();
+    this.loadManagers();
+  }
+
+  private loadManagers(): void {
+    this.userService.getManagers().subscribe({
+      next: (managers) => this.managers = managers,
+      error: (err) => console.error('Error loading managers for list:', err)
+    });
   }
 
   loadLeads(): void {
@@ -985,5 +1002,11 @@ export class LeadsListComponent implements OnInit {
     if (diffDays < 30) return `${Math.floor(diffDays / 7)} week${Math.floor(diffDays / 7) > 1 ? 's' : ''} ago`;
     if (diffDays < 365) return `${Math.floor(diffDays / 30)} month${Math.floor(diffDays / 30) > 1 ? 's' : ''} ago`;
     return 'Over a year ago';
+  }
+
+  getManagerName(id?: string): string {
+    if (!id) return '';
+    const manager = this.managers.find(m => m.id?.toString() === id.toString());
+    return manager?.fullName || id;
   }
 }
