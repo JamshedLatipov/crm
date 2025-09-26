@@ -19,7 +19,10 @@
         </div>
         <div class="current-status">
           Текущий статус:
-          <mat-chip [class]="'status-chip status-' + data.currentStatus" selected>
+          <mat-chip
+            [class]="'status-chip status-' + data.currentStatus"
+            selected
+          >
             {{ getStatusLabel(data.currentStatus) }}
           </mat-chip>
         </div>
@@ -30,13 +33,31 @@
   <div class="status-section">
     <h3>Выберите новый статус</h3>
     <div class="status-grid">
-      <div *ngFor="let status of availableStatuses" class="status-option" [class.selected]="selectedStatus === status.value" [class.disabled]="status.value === data.currentStatus" (click)="status.value !== data.currentStatus && selectStatus(status.value)" role="button" [attr.aria-pressed]="selectedStatus === status.value">
-        <div class="status-icon"><mat-icon>{{ status.icon }}</mat-icon></div>
+      <div
+        *ngFor="let status of displayStatuses"
+        class="status-option"
+        [class.selected]="selectedStatus === status.value"
+        [class.disabled]="status.value === data.currentStatus"
+        (click)="
+          status.value !== data.currentStatus && selectStatus(status.value)
+        "
+        role="button"
+        tabindex="0"
+        (keydown.enter)="
+          status.value !== data.currentStatus && selectStatus(status.value)
+        "
+        [attr.aria-pressed]="selectedStatus === status.value"
+      >
+        <div class="status-icon">
+          <mat-icon>{{ status.icon }}</mat-icon>
+        </div>
         <div class="status-info">
           <div class="status-name">{{ status.label }}</div>
           <div class="status-description">{{ status.description }}</div>
         </div>
-        <div class="status-indicator" *ngIf="selectedStatus === status.value"><mat-icon>check_circle</mat-icon></div>
+        <div class="status-indicator" *ngIf="selectedStatus === status.value">
+          <mat-icon>check_circle</mat-icon>
+        </div>
       </div>
     </div>
   </div>
@@ -60,7 +81,14 @@
 
 <mat-dialog-actions class="dialog-actions">
   <button mat-button (click)="close()">Отмена</button>
-  <button mat-raised-button color="primary" (click)="changeStatus()" [disabled]="!selectedStatus || selectedStatus === data.currentStatus || loading">
+  <button
+    mat-raised-button
+    color="primary"
+    (click)="changeStatus()"
+    [disabled]="
+      !selectedStatus || selectedStatus === data.currentStatus || loading
+    "
+  >
     <mat-icon *ngIf="loading">hourglass_empty</mat-icon>
     <span *ngIf="!loading">Изменить статус</span>
     <span *ngIf="loading">Сохранение...</span>

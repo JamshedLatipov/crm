@@ -1,7 +1,11 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import {
+  MAT_DIALOG_DATA,
+  MatDialogModule,
+  MatDialogRef,
+} from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -13,18 +17,34 @@ import { MatChipsModule } from '@angular/material/chips';
 import { LeadService } from '../../services/lead.service';
 import { Lead, LeadStatus } from '../../models/lead.model';
 
-interface ChangeStatusData { lead: Lead; currentStatus: LeadStatus; }
+interface ChangeStatusData {
+  lead: Lead;
+  currentStatus: LeadStatus;
+}
 
 @Component({
   selector: 'app-change-status-dialog',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatDialogModule, MatButtonModule, MatSelectModule, MatFormFieldModule, MatInputModule, MatIconModule, MatCardModule, MatChipsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatDialogModule,
+    MatButtonModule,
+    MatSelectModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatIconModule,
+    MatCardModule,
+    MatChipsModule,
+  ],
   templateUrl: './change-status-dialog.component.html',
-  styleUrls: ['./change-status-dialog.component.scss']
+  styleUrls: ['./change-status-dialog.component.scss'],
 })
 export class ChangeStatusDialogComponent {
   private readonly leadService = inject(LeadService);
-  private readonly dialogRef = inject(MatDialogRef<ChangeStatusDialogComponent>);
+  private readonly dialogRef = inject(
+    MatDialogRef<ChangeStatusDialogComponent>
+  );
   readonly data = inject<ChangeStatusData>(MAT_DIALOG_DATA);
 
   selectedStatus: LeadStatus | null = null;
@@ -32,15 +52,65 @@ export class ChangeStatusDialogComponent {
   loading = false;
 
   availableStatuses = [
-    { value: LeadStatus.NEW, label: 'Новый', description: 'Лид только что создан и требует первичной обработки', icon: 'fiber_new' },
-    { value: LeadStatus.CONTACTED, label: 'Контакт установлен', description: 'Первичный контакт установлен, лид проявил интерес', icon: 'contact_phone' },
-    { value: LeadStatus.QUALIFIED, label: 'Квалифицирован', description: 'Лид соответствует критериям целевой аудитории', icon: 'verified' },
-    { value: LeadStatus.PROPOSAL_SENT, label: 'Предложение отправлено', description: 'Коммерческое предложение отправлено клиенту', icon: 'send' },
-    { value: LeadStatus.NEGOTIATING, label: 'Переговоры', description: 'Ведутся активные переговоры по условиям сделки', icon: 'handshake' },
-    { value: LeadStatus.CONVERTED, label: 'Конвертирован', description: 'Лид успешно конвертирован в клиента', icon: 'check_circle' },
-    { value: LeadStatus.REJECTED, label: 'Отклонен', description: 'Клиент отклонил предложение', icon: 'cancel' },
-    { value: LeadStatus.LOST, label: 'Потерян', description: 'Лид потерян по техническим или иным причинам', icon: 'remove_circle' }
+    {
+      value: LeadStatus.NEW,
+      label: 'Новый',
+      description: 'Лид только что создан и требует первичной обработки',
+      icon: 'fiber_new',
+    },
+    {
+      value: LeadStatus.CONTACTED,
+      label: 'Контакт установлен',
+      description: 'Первичный контакт установлен, лид проявил интерес',
+      icon: 'contact_phone',
+    },
+    {
+      value: LeadStatus.QUALIFIED,
+      label: 'Квалифицирован',
+      description: 'Лид соответствует критериям целевой аудитории',
+      icon: 'verified',
+    },
+    {
+      value: LeadStatus.PROPOSAL_SENT,
+      label: 'Предложение отправлено',
+      description: 'Коммерческое предложение отправлено клиенту',
+      icon: 'send',
+    },
+    {
+      value: LeadStatus.NEGOTIATING,
+      label: 'Переговоры',
+      description: 'Ведутся активные переговоры по условиям сделки',
+      icon: 'handshake',
+    },
+    {
+      value: LeadStatus.CONVERTED,
+      label: 'Конвертирован',
+      description: 'Лид успешно конвертирован в клиента',
+      icon: 'check_circle',
+    },
+    {
+      value: LeadStatus.REJECTED,
+      label: 'Отклонен',
+      description: 'Клиент отклонил предложение',
+      icon: 'cancel',
+    },
+    {
+      value: LeadStatus.LOST,
+      label: 'Потерян',
+      description: 'Лид потерян по техническим или иным причинам',
+      icon: 'remove_circle',
+    },
   ];
+
+  get displayStatuses() {
+    // Для существующего лида (есть id) не показываем опцию NEW
+    const isExisting =
+      !!this.data.lead?.id && this.data.currentStatus !== LeadStatus.NEW;
+    if (isExisting) {
+      return this.availableStatuses.filter((s) => s.value !== LeadStatus.NEW);
+    }
+    return this.availableStatuses;
+  }
 
   private statusLabels: Record<LeadStatus, string> = {
     [LeadStatus.NEW]: 'Новый',
@@ -50,7 +120,7 @@ export class ChangeStatusDialogComponent {
     [LeadStatus.NEGOTIATING]: 'Переговоры',
     [LeadStatus.CONVERTED]: 'Конвертирован',
     [LeadStatus.REJECTED]: 'Отклонен',
-    [LeadStatus.LOST]: 'Потерян'
+    [LeadStatus.LOST]: 'Потерян',
   };
 
   selectStatus(status: LeadStatus): void {
@@ -61,43 +131,86 @@ export class ChangeStatusDialogComponent {
     return this.statusLabels[status] || String(status);
   }
 
-  getNextSteps(status: LeadStatus): Array<{icon: string, description: string}> {
-    const steps: Record<LeadStatus, Array<{icon: string, description: string}>> = {
-      [LeadStatus.NEW]: [ { icon: 'call', description: 'Связаться с лидом в течение 24 часов' }, { icon: 'assignment', description: 'Провести квалификацию' } ],
-      [LeadStatus.CONTACTED]: [ { icon: 'quiz', description: 'Провести квалификационный разговор' }, { icon: 'event', description: 'Запланировать следующий контакт' } ],
-      [LeadStatus.QUALIFIED]: [ { icon: 'description', description: 'Подготовить коммерческое предложение' }, { icon: 'schedule', description: 'Презентация решения' } ],
-      [LeadStatus.PROPOSAL_SENT]: [ { icon: 'call', description: 'Отследить получение предложения' }, { icon: 'chat', description: 'Обсудить условия' } ],
-      [LeadStatus.NEGOTIATING]: [ { icon: 'gavel', description: 'Согласовать финальные условия' }, { icon: 'document_scanner', description: 'Подготовить договор' } ],
-      [LeadStatus.CONVERTED]: [ { icon: 'celebration', description: 'Поздравить команду с успехом!' }, { icon: 'support', description: 'Передать клиента в отдел поддержки' } ],
-      [LeadStatus.REJECTED]: [ { icon: 'feedback', description: 'Собрать обратную связь' }, { icon: 'schedule', description: 'Запланировать повторный контакт' } ],
-      [LeadStatus.LOST]: [ { icon: 'analytics', description: 'Проанализировать причины потери' }, { icon: 'school', description: 'Извлечь уроки для будущих лидов' } ]
+  getNextSteps(
+    status: LeadStatus
+  ): Array<{ icon: string; description: string }> {
+    const steps: Record<
+      LeadStatus,
+      Array<{ icon: string; description: string }>
+    > = {
+      [LeadStatus.NEW]: [
+        { icon: 'call', description: 'Связаться с лидом в течение 24 часов' },
+        { icon: 'assignment', description: 'Провести квалификацию' },
+      ],
+      [LeadStatus.CONTACTED]: [
+        { icon: 'quiz', description: 'Провести квалификационный разговор' },
+        { icon: 'event', description: 'Запланировать следующий контакт' },
+      ],
+      [LeadStatus.QUALIFIED]: [
+        {
+          icon: 'description',
+          description: 'Подготовить коммерческое предложение',
+        },
+        { icon: 'schedule', description: 'Презентация решения' },
+      ],
+      [LeadStatus.PROPOSAL_SENT]: [
+        { icon: 'call', description: 'Отследить получение предложения' },
+        { icon: 'chat', description: 'Обсудить условия' },
+      ],
+      [LeadStatus.NEGOTIATING]: [
+        { icon: 'gavel', description: 'Согласовать финальные условия' },
+        { icon: 'document_scanner', description: 'Подготовить договор' },
+      ],
+      [LeadStatus.CONVERTED]: [
+        { icon: 'celebration', description: 'Поздравить команду с успехом!' },
+        { icon: 'support', description: 'Передать клиента в отдел поддержки' },
+      ],
+      [LeadStatus.REJECTED]: [
+        { icon: 'feedback', description: 'Собрать обратную связь' },
+        { icon: 'schedule', description: 'Запланировать повторный контакт' },
+      ],
+      [LeadStatus.LOST]: [
+        { icon: 'analytics', description: 'Проанализировать причины потери' },
+        { icon: 'school', description: 'Извлечь уроки для будущих лидов' },
+      ],
     };
 
     return steps[status] || [];
   }
 
   changeStatus(): void {
-    if (!this.selectedStatus || this.selectedStatus === this.data.currentStatus) return;
+    if (!this.selectedStatus || this.selectedStatus === this.data.currentStatus)
+      return;
     this.loading = true;
-    this.leadService.updateLeadStatus(this.data.lead.id, this.selectedStatus).subscribe({
-      next: (updatedLead: any) => {
-        if (this.notes && this.notes.trim() && this.selectedStatus) {
-          this.leadService.addNote(this.data.lead.id, `Статус изменен на "${this.getStatusLabel(this.selectedStatus)}".\n\nКомментарий: ${this.notes.trim()}`).subscribe({
-            next: () => this.dialogRef.close(updatedLead),
-            error: () => this.dialogRef.close(updatedLead),
-          });
-        } else {
-          this.dialogRef.close(updatedLead);
-        }
-        this.loading = false;
-      },
-      error: (error: any) => {
-        console.error('Error updating status:', error);
-        this.loading = false;
-      }
-    });
+    this.leadService
+      .updateLeadStatus(this.data.lead.id, this.selectedStatus)
+      .subscribe({
+        next: (updatedLead: Lead) => {
+          if (this.notes && this.notes.trim() && this.selectedStatus) {
+            this.leadService
+              .addNote(
+                this.data.lead.id,
+                `Статус изменен на "${this.getStatusLabel(
+                  this.selectedStatus
+                )}".\n\nКомментарий: ${this.notes.trim()}`
+              )
+              .subscribe({
+                next: () => this.dialogRef.close(updatedLead),
+                error: () => this.dialogRef.close(updatedLead),
+              });
+          } else {
+            this.dialogRef.close(updatedLead);
+          }
+          this.loading = false;
+        },
+        error: (error: unknown) => {
+          console.error('Error updating status:', error);
+          this.loading = false;
+        },
+      });
   }
 
-  close(): void { this.dialogRef.close(); }
-
+  close(): void {
+    this.dialogRef.close();
+  }
 }
