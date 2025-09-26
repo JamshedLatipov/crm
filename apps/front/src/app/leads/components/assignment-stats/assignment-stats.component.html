@@ -1,0 +1,81 @@
+<div class="assignment-stats">
+  <h3>Статистика назначений</h3>
+  
+  <div class="stats-grid">
+    <mat-card class="stat-card total">
+      <mat-card-content>
+        <div class="stat-header">
+          <mat-icon>people</mat-icon>
+          <span class="stat-label">Всего лидов</span>
+        </div>
+        <div class="stat-value">{{ totalLeads }}</div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card assigned">
+      <mat-card-content>
+        <div class="stat-header">
+          <mat-icon>person_add</mat-icon>
+          <span class="stat-label">Назначено</span>
+        </div>
+        <div class="stat-value">{{ assignedLeads }}</div>
+        <div class="stat-percentage">{{ assignedPercentage }}%</div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card unassigned">
+      <mat-card-content>
+        <div class="stat-header">
+          <mat-icon>person_off</mat-icon>
+          <span class="stat-label">Не назначено</span>
+        </div>
+        <div class="stat-value">{{ unassignedLeads }}</div>
+        <div class="stat-percentage">{{ unassignedPercentage }}%</div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <div class="managers-stats" *ngIf="managerStats.length > 0">
+    <h4>Статистика по менеджерам</h4>
+    <div class="managers-list">
+      <mat-card *ngFor="let manager of managerStats" class="manager-card">
+        <mat-card-content>
+          <div class="manager-header">
+            <div class="manager-info">
+              <div class="manager-name">{{ manager.name }}</div>
+              <mat-chip 
+                [class]="'workload-chip ' + manager.workload" 
+                selected
+              >
+                {{ getWorkloadLabel(manager.workload) }}
+              </mat-chip>
+            </div>
+            <div class="manager-leads">{{ manager.totalLeads }} лидов</div>
+          </div>
+          
+          <div class="manager-metrics">
+            <div class="metric">
+              <span class="metric-label">Квалифицировано:</span>
+              <span class="metric-value">{{ manager.qualifiedLeads }}</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Конвертировано:</span>
+              <span class="metric-value">{{ manager.convertedLeads }}</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">Конверсия:</span>
+              <span class="metric-value">{{ manager.conversionRate }}%</span>
+            </div>
+          </div>
+
+          <mat-progress-bar 
+            [value]="manager.conversionRate" 
+            mode="determinate"
+            [color]="manager.conversionRate > 20 ? 'primary' : 'warn'"
+          ></mat-progress-bar>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div>
+

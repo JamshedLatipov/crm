@@ -1,0 +1,205 @@
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <h1>Дашборд лидов</h1>
+    <button mat-raised-button color="primary" routerLink="/leads/list">
+      <mat-icon>list</mat-icon>
+      Все лиды
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-container" *ngIf="loading()">
+    <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
+  </div>
+
+  <!-- Dashboard Content -->
+  <div class="dashboard-content" *ngIf="!loading() && statistics()">
+    <!-- Key Metrics -->
+    <div class="metrics-grid">
+      <mat-card class="metric-card total-leads">
+        <mat-card-content>
+          <div class="metric-header">
+            <mat-icon>people</mat-icon>
+            <span class="metric-label">Всего лидов</span>
+          </div>
+          <div class="metric-value">{{ statistics()?.totalLeads || 0 }}</div>
+          <div class="metric-trend positive" *ngIf="statistics()?.newLeads">
+            +{{ statistics()?.newLeads }} новых
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="metric-card qualified-leads">
+        <mat-card-content>
+          <div class="metric-header">
+            <mat-icon>verified</mat-icon>
+            <span class="metric-label">Квалифицированных</span>
+          </div>
+          <div class="metric-value">{{ statistics()?.qualifiedLeads || 0 }}</div>
+          <div class="metric-percentage">
+            {{ getPercentage(statistics()?.qualifiedLeads, statistics()?.totalLeads) }}%
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="metric-card converted-leads">
+        <mat-card-content>
+          <div class="metric-header">
+            <mat-icon>done_all</mat-icon>
+            <span class="metric-label">Конвертированных</span>
+          </div>
+          <div class="metric-value">{{ statistics()?.convertedLeads || 0 }}</div>
+          <div class="metric-percentage conversion">
+            {{ statistics()?.conversionRate || 0 }}% конверсия
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="metric-card average-score">
+        <mat-card-content>
+          <div class="metric-header">
+            <mat-icon>star</mat-icon>
+            <span class="metric-label">Средний скор</span>
+          </div>
+          <div class="metric-value">{{ statistics()?.averageScore || 0 }}</div>
+          <div class="metric-trend" [class.positive]="(statistics()?.averageScore || 0) > 50">
+            {{ (statistics()?.averageScore || 0) > 50 ? 'Высокое качество' : 'Требует внимания' }}
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="metric-card total-value">
+        <mat-card-content>
+          <div class="metric-header">
+            <mat-icon>attach_money</mat-icon>
+            <span class="metric-label">Общая ценность</span>
+          </div>
+          <div class="metric-value">{{ statistics()?.totalValue | currency:'RUB':'symbol':'1.0-0' }}</div>
+          <div class="metric-trend positive">
+            Потенциальная выручка
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Status Distribution -->
+    <div class="charts-grid">
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>Распределение по статусам</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="status-distribution">
+            <div class="status-item" *ngFor="let item of getStatusDistribution()">
+              <div class="status-info">
+                <mat-chip [class]="'status-chip status-' + item.status" selected>
+                  {{ item.label }}
+                </mat-chip>
+                <span class="status-count">{{ item.count }}</span>
+              </div>
+              <div class="status-bar">
+                <div class="status-progress" 
+                     [style.width.%]="getPercentage(item.count, statistics()?.totalLeads)">
+                </div>
+              </div>
+              <span class="status-percentage">
+                {{ getPercentage(item.count, statistics()?.totalLeads) }}%
+              </span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>Источники лидов</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="source-distribution">
+            <div class="source-item" *ngFor="let item of getSourceDistribution()">
+              <div class="source-info">
+                <span class="source-label">{{ item.label }}</span>
+                <span class="source-count">{{ item.count }}</span>
+              </div>
+              <div class="source-bar">
+                <div class="source-progress" 
+                     [style.width.%]="getPercentage(item.count, statistics()?.totalLeads)">
+                </div>
+              </div>
+              <span class="source-percentage">
+                {{ getPercentage(item.count, statistics()?.totalLeads) }}%
+              </span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>Приоритеты лидов</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="priority-distribution">
+            <div class="priority-item" *ngFor="let item of getPriorityDistribution()">
+              <div class="priority-info">
+                <mat-chip [class]="'priority-chip priority-' + item.priority" selected>
+                  {{ item.label }}
+                </mat-chip>
+                <span class="priority-count">{{ item.count }}</span>
+              </div>
+              <div class="priority-bar">
+                <div class="priority-progress" 
+                     [style.width.%]="getPercentage(item.count, statistics()?.totalLeads)">
+                </div>
+              </div>
+              <span class="priority-percentage">
+                {{ getPercentage(item.count, statistics()?.totalLeads) }}%
+              </span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions-grid">
+      <mat-card class="action-card" (click)="loadHighValueLeads()">
+        <mat-card-content>
+          <mat-icon class="action-icon high-value">diamond</mat-icon>
+          <h3>Высокоценные лиды</h3>
+          <p>{{ highValueLeads().length }} лидов с высокой ценностью</p>
+          <button mat-button color="primary">Просмотреть</button>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="action-card" (click)="loadStaleLeads()">
+        <mat-card-content>
+          <mat-icon class="action-icon stale">schedule</mat-icon>
+          <h3>Застоявшиеся лиды</h3>
+          <p>{{ staleLeads().length }} лидов требуют внимания</p>
+          <button mat-button color="warn">Проверить</button>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="action-card" routerLink="/leads/list">
+        <mat-card-content>
+          <mat-icon class="action-icon manage">manage_accounts</mat-icon>
+          <h3>Управление лидами</h3>
+          <p>Полный список и фильтрация лидов</p>
+          <button mat-button color="primary">Перейти</button>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-dashboard" *ngIf="!loading() && !statistics()?.totalLeads">
+    <mat-icon class="empty-icon">people_outline</mat-icon>
+    <h2>Добро пожаловать в CRM!</h2>
+    <p>Начните работу с создания первого лида</p>
+    <button mat-raised-button color="primary" routerLink="/leads/list">
+      <mat-icon>add</mat-icon>
+      Создать лид
+    </button>
+  </div>
+</div>

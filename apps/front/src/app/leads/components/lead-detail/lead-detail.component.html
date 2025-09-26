@@ -1,0 +1,344 @@
+<div class="lead-detail-header">
+  <div class="header-content">
+    <div class="lead-title">
+      <h2>{{ lead.name }}</h2>
+      <div class="status-section">
+        <mat-chip [class]="'status-chip status-' + lead.status" selected>
+          {{ getStatusLabel(lead.status) }}
+        </mat-chip>
+        <button
+          mat-icon-button
+          (click)="quickChangeStatus()"
+          class="change-status-btn"
+          matTooltip="Изменить статус"
+        >
+          <mat-icon>swap_horiz</mat-icon>
+        </button>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button mat-icon-button [matMenuTriggerFor]="actionsMenu">
+        <mat-icon>more_vert</mat-icon>
+      </button>
+      <mat-menu #actionsMenu="matMenu">
+        <button mat-menu-item (click)="editLead()">
+          <mat-icon>edit</mat-icon>
+          Редактировать
+        </button>
+        <button mat-menu-item (click)="contactLead()">
+          <mat-icon>phone</mat-icon>
+          Связаться
+        </button>
+        <button mat-menu-item (click)="assignLead()">
+          <mat-icon>person_add</mat-icon>
+          Назначить
+        </button>
+        <mat-divider></mat-divider>
+        <button mat-menu-item (click)="deleteLead()" class="delete-action">
+          <mat-icon>delete</mat-icon>
+          Удалить
+        </button>
+      </mat-menu>
+      <button mat-button (click)="close()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  </div>
+</div>
+
+<mat-dialog-content class="lead-detail-content">
+  <mat-tab-group>
+    <!-- Overview Tab -->
+    <mat-tab label="Обзор">
+      <div class="tab-content">
+        <!-- Key Metrics -->
+        <div class="metrics-row">
+          <mat-card class="metric-card">
+            <mat-card-content>
+              <div class="metric-value">{{ lead.score }}</div>
+              <div class="metric-label">Скор</div>
+            </mat-card-content>
+          </mat-card>
+
+          <mat-card class="metric-card">
+            <mat-card-content>
+              <div class="metric-value">
+                {{ lead.conversionProbability }}%
+              </div>
+              <div class="metric-label">Вероятность</div>
+            </mat-card-content>
+          </mat-card>
+
+          <mat-card class="metric-card" *ngIf="lead.estimatedValue">
+            <mat-card-content>
+              <div class="metric-value">
+                {{
+                  lead.estimatedValue
+                    | currency : 'RUB' : 'symbol' : '1.0-0'
+                }}
+              </div>
+              <div class="metric-label">Ценность</div>
+            </mat-card-content>
+          </mat-card>
+        </div>
+
+        <!-- Contact Information -->
+        <mat-card class="info-card">
+          <mat-card-header>
+            <mat-card-title>Контактная информация</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="info-grid">
+              <div class="info-item" *ngIf="lead.email">
+                <mat-icon class="info-icon">email</mat-icon>
+                <div>
+                  <div class="info-label">Email</div>
+                  <div class="info-value">
+                    <a [href]="'mailto:' + lead.email">{{ lead.email }}</a>
+                  </div>
+                </div>
+              </div>
+
+              <div class="info-item" *ngIf="lead.phone">
+                <mat-icon class="info-icon">phone</mat-icon>
+                <div>
+                  <div class="info-label">Телефон</div>
+                  <div class="info-value">
+                    <a [href]="'tel:' + lead.phone">{{ lead.phone }}</a>
+                  </div>
+                </div>
+              </div>
+
+              <div class="info-item" *ngIf="lead.company">
+                <mat-icon class="info-icon">business</mat-icon>
+                <div>
+                  <div class="info-label">Компания</div>
+                  <div class="info-value">{{ lead.company }}</div>
+                </div>
+              </div>
+
+              <div class="info-item" *ngIf="lead.position">
+                <mat-icon class="info-icon">work</mat-icon>
+                <div>
+                  <div class="info-label">Должность</div>
+                  <div class="info-value">{{ lead.position }}</div>
+                </div>
+              </div>
+
+              <div class="info-item" *ngIf="lead.website">
+                <mat-icon class="info-icon">language</mat-icon>
+                <div>
+                  <div class="info-label">Сайт</div>
+                  <div class="info-value">
+                    <a [href]="lead.website" target="_blank">{{
+                      lead.website
+                    }}</a>
+                  </div>
+                </div>
+              </div>
+
+              <div class="info-item" *ngIf="lead.industry">
+                <mat-icon class="info-icon">category</mat-icon>
+                <div>
+                  <div class="info-label">Отрасль</div>
+                  <div class="info-value">{{ lead.industry }}</div>
+                </div>
+              </div>
+
+              <div class="info-item" *ngIf="lead.country || lead.city">
+                <mat-icon class="info-icon">location_on</mat-icon>
+                <div>
+                  <div class="info-label">Местоположение</div>
+                  <div class="info-value">{{ getLocation() }}</div>
+                </div>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Lead Details -->
+        <mat-card class="info-card">
+          <mat-card-header>
+            <mat-card-title>Детали лида</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="info-grid">
+              <div class="info-item">
+                <mat-icon class="info-icon">source</mat-icon>
+                <div>
+                  <div class="info-label">Источник</div>
+                  <div class="info-value">
+                    {{ getSourceLabel(lead.source) }}
+                  </div>
+                </div>
+              </div>
+
+              <div class="info-item">
+                <mat-icon class="info-icon">priority_high</mat-icon>
+                <div>
+                  <div class="info-label">Приоритет</div>
+                  <div class="info-value">
+                    <mat-chip
+                      [class]="'priority-chip priority-' + lead.priority"
+                      selected
+                    >
+                      {{ getPriorityLabel(lead.priority) }}
+                    </mat-chip>
+                  </div>
+                </div>
+              </div>
+
+              <div class="info-item" *ngIf="lead.budget">
+                <mat-icon class="info-icon">attach_money</mat-icon>
+                <div>
+                  <div class="info-label">Бюджет</div>
+                  <div class="info-value">
+                    {{
+                      lead.budget | currency : 'RUB' : 'symbol' : '1.0-0'
+                    }}
+                  </div>
+                </div>
+              </div>
+
+              <div class="info-item" *ngIf="lead.decisionTimeframe">
+                <mat-icon class="info-icon">schedule</mat-icon>
+                <div>
+                  <div class="info-label">Временные рамки</div>
+                  <div class="info-value">{{ lead.decisionTimeframe }}</div>
+                </div>
+              </div>
+
+              <div class="info-item">
+                <mat-icon class="info-icon">access_time</mat-icon>
+                <div>
+                  <div class="info-label">Создан</div>
+                  <div class="info-value">
+                    {{ lead.createdAt | date : 'dd.MM.yyyy HH:mm' }}
+                  </div>
+                </div>
+              </div>
+
+              <div class="info-item" *ngIf="lead.lastContactedAt">
+                <mat-icon class="info-icon">call</mat-icon>
+                <div>
+                  <div class="info-label">Последний контакт</div>
+                  <div class="info-value">
+                    {{ lead.lastContactedAt | date : 'dd.MM.yyyy HH:mm' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Tags -->
+        <mat-card
+          class="info-card"
+          *ngIf="lead.tags && lead.tags.length > 0"
+        >
+          <mat-card-header>
+            <mat-card-title>Теги</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="tags-container">
+              <mat-chip *ngFor="let tag of lead.tags" class="tag-chip">
+                {{ tag }}
+              </mat-chip>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Notes -->
+        <mat-card class="info-card" *ngIf="lead.notes">
+          <mat-card-header>
+            <mat-card-title>Заметки</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <p class="notes-text">{{ lead.notes }}</p>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </mat-tab>
+
+    <!-- Activity Tab -->
+    <mat-tab label="Активность">
+      <div class="tab-content">
+        <div class="activity-loading" *ngIf="loadingActivities">
+          <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
+          <p>Загрузка активности...</p>
+        </div>
+
+        <div class="activity-list" *ngIf="!loadingActivities">
+          <div class="activity-item" *ngFor="let activity of activities">
+            <div class="activity-icon">
+              <mat-icon>{{ getActivityIcon(activity.type) }}</mat-icon>
+            </div>
+            <div class="activity-content">
+              <div class="activity-description">
+                {{ getActivityDescription(activity) }}
+              </div>
+              <div class="activity-meta">
+                <span class="activity-date">{{
+                  activity.createdAt | date : 'dd.MM.yyyy HH:mm'
+                }}</span>
+                <span class="activity-score" *ngIf="activity.scoreChange">
+                  Скор: {{ activity.scoreChange > 0 ? '+' : ''
+                  }}{{ activity.scoreChange }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="empty-activity" *ngIf="activities.length === 0">
+            <mat-icon class="empty-icon">history</mat-icon>
+            <p>Активность не найдена</p>
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+
+    <!-- UTM Tab -->
+    <mat-tab label="UTM данные" *ngIf="hasUtmData()">
+      <div class="tab-content">
+        <mat-card class="info-card">
+          <mat-card-header>
+            <mat-card-title>UTM параметры</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="info-grid">
+              <div class="info-item" *ngIf="lead.utmSource">
+                <div class="info-label">UTM Source</div>
+                <div class="info-value">{{ lead.utmSource }}</div>
+              </div>
+
+              <div class="info-item" *ngIf="lead.utmMedium">
+                <div class="info-label">UTM Medium</div>
+                <div class="info-value">{{ lead.utmMedium }}</div>
+              </div>
+
+              <div class="info-item" *ngIf="lead.utmCampaign">
+                <div class="info-label">UTM Campaign</div>
+                <div class="info-value">{{ lead.utmCampaign }}</div>
+              </div>
+
+              <div class="info-item" *ngIf="lead.utmTerm">
+                <div class="info-label">UTM Term</div>
+                <div class="info-value">{{ lead.utmTerm }}</div>
+              </div>
+
+              <div class="info-item" *ngIf="lead.utmContent">
+                <div class="info-label">UTM Content</div>
+                <div class="info-value">{{ lead.utmContent }}</div>
+              </div>
+
+              <div class="info-item" *ngIf="lead.referrer">
+                <div class="info-label">Referrer</div>
+                <div class="info-value">{{ lead.referrer }}</div>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</mat-dialog-content>

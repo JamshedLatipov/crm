@@ -1,0 +1,42 @@
+<div class="quick-assign-dialog">
+  <h2 mat-dialog-title>
+    <mat-icon>person_add</mat-icon>
+    Быстрое назначение
+  </h2>
+
+  <mat-dialog-content>
+    <p class="lead-info">
+      Назначить ответственного для лида: <strong>{{ data.lead.name }}</strong>
+    </p>
+
+    <mat-form-field class="full-width" appearance="outline">
+      <mat-label>Выберите менеджера</mat-label>
+      <mat-select [(ngModel)]="selectedManagerId" [disabled]="loading">
+        <mat-option value="">Снять назначение</mat-option>
+        <mat-option 
+          *ngFor="let manager of availableManagers" 
+          [value]="manager.id"
+          [disabled]="!manager.isAvailableForAssignment"
+        >
+          {{ manager.fullName }} 
+          <span class="workload-info">({{ manager.currentLeadsCount }}/{{ manager.maxLeadsCapacity }} лидов)</span>
+        </mat-option>
+      </mat-select>
+      <mat-icon matSuffix>person</mat-icon>
+    </mat-form-field>
+  </mat-dialog-content>
+
+  <mat-dialog-actions>
+    <button mat-button (click)="close()">Отмена</button>
+    <button 
+      mat-raised-button 
+      color="primary" 
+      (click)="assign()"
+      [disabled]="loading"
+    >
+      <mat-icon *ngIf="loading">hourglass_empty</mat-icon>
+      <span *ngIf="!loading">Назначить</span>
+      <span *ngIf="loading">Назначение...</span>
+    </button>
+  </mat-dialog-actions>
+</div>

@@ -1,0 +1,69 @@
+<div class="dialog-header">
+  <h2 mat-dialog-title>
+    <mat-icon>swap_horiz</mat-icon>
+    Изменить статус лида
+  </h2>
+  <button mat-icon-button (click)="close()" class="close-button">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content class="dialog-content">
+  <mat-card class="lead-info">
+    <mat-card-content>
+      <div class="lead-summary">
+        <div class="lead-name">{{ data.lead.name }}</div>
+        <div class="lead-details">
+          <span *ngIf="data.lead.company">{{ data.lead.company }}</span>
+          <span *ngIf="data.lead.email">{{ data.lead.email }}</span>
+        </div>
+        <div class="current-status">
+          Текущий статус:
+          <mat-chip [class]="'status-chip status-' + data.currentStatus" selected>
+            {{ getStatusLabel(data.currentStatus) }}
+          </mat-chip>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <div class="status-section">
+    <h3>Выберите новый статус</h3>
+    <div class="status-grid">
+      <div *ngFor="let status of availableStatuses" class="status-option" [class.selected]="selectedStatus === status.value" [class.disabled]="status.value === data.currentStatus" (click)="status.value !== data.currentStatus && selectStatus(status.value)" role="button" [attr.aria-pressed]="selectedStatus === status.value">
+        <div class="status-icon"><mat-icon>{{ status.icon }}</mat-icon></div>
+        <div class="status-info">
+          <div class="status-name">{{ status.label }}</div>
+          <div class="status-description">{{ status.description }}</div>
+        </div>
+        <div class="status-indicator" *ngIf="selectedStatus === status.value"><mat-icon>check_circle</mat-icon></div>
+      </div>
+    </div>
+  </div>
+
+  <mat-form-field class="full-width" appearance="outline">
+    <mat-label>Комментарий к изменению статуса</mat-label>
+    <textarea matInput [(ngModel)]="notes" rows="3"></textarea>
+    <mat-icon matSuffix>comment</mat-icon>
+  </mat-form-field>
+
+  <div class="status-flow" *ngIf="selectedStatus">
+    <h4>Следующие шаги:</h4>
+    <div class="next-steps">
+      <div *ngFor="let step of getNextSteps(selectedStatus)" class="step-item">
+        <mat-icon class="step-icon">{{ step.icon }}</mat-icon>
+        <span>{{ step.description }}</span>
+      </div>
+    </div>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions class="dialog-actions">
+  <button mat-button (click)="close()">Отмена</button>
+  <button mat-raised-button color="primary" (click)="changeStatus()" [disabled]="!selectedStatus || selectedStatus === data.currentStatus || loading">
+    <mat-icon *ngIf="loading">hourglass_empty</mat-icon>
+    <span *ngIf="!loading">Изменить статус</span>
+    <span *ngIf="loading">Сохранение...</span>
+  </button>
+</mat-dialog-actions>
++

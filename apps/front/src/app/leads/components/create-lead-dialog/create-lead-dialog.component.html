@@ -1,0 +1,53 @@
+<div class="dialog-header">
+  <h2 mat-dialog-title>Создать лид</h2>
+  <button mat-icon-button (click)="cancel()" class="close-button">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
+ 
+<mat-dialog-content class="dialog-content">
+  <form [formGroup]="leadForm" class="create-lead-form">
+    <!-- Basic Information -->
+    <div class="form-section">
+      <div class="section-header">
+        <mat-icon class="section-icon">person</mat-icon>
+        <h3>Основная информация</h3>
+      </div>
+      <div class="form-field-container">
+        <mat-form-field appearance="outline" class="full-width required-field">
+          <mat-label>Имя</mat-label>
+          <input matInput formControlName="name" >
+          <mat-icon matSuffix>person</mat-icon>
+          <mat-error *ngIf="leadForm.get('name')?.hasError('required')">Имя обязательно</mat-error>
+        </mat-form-field>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Email</mat-label>
+            <input matInput type="email" formControlName="email" >
+            <mat-icon matSuffix>email</mat-icon>
+            <mat-error *ngIf="leadForm.get('email')?.hasError('email')">Некорректный email</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Телефон</mat-label>
+            <input matInput formControlName="phone" >
+            <mat-icon matSuffix>phone</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <!-- more fields omitted for brevity -->
+      </div>
+    </div>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions class="dialog-actions">
+  <button mat-stroked-button (click)="cancel()" class="cancel-button">Отмена</button>
+  <button mat-raised-button color="primary" (click)="save()" [disabled]="leadForm.invalid || saving"> 
+    <mat-spinner diameter="20" *ngIf="saving" class="button-spinner"></mat-spinner>
+    <mat-icon *ngIf="!saving">add</mat-icon>
+    <span>{{ saving ? 'Создание...' : 'Создать лид' }}</span>
+  </button>
+</mat-dialog-actions>
+ 

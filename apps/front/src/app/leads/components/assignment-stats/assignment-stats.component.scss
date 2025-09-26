@@ -1,0 +1,62 @@
+.assignment-stats {
+  padding: 16px;
+}
+
+.assignment-stats h3 {
+  margin: 0 0 16px;
+  font-size: 1.125rem;
+  font-weight: 500;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  text-align: center;
+}
+
+.stat-card.total {
+  border-left: 4px solid #2196f3;
+}
+
+.stat-card.assigned {
+  border-left: 4px solid #4caf50;
+}
+
+.stat-card.unassigned {
+  border-left: 4px solid #ff9800;
+}
+
+.stat-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.stat-label { font-size: 0.875rem; }
+.stat-value { font-size: 2rem; font-weight: 500; margin-bottom: 4px; }
+.stat-percentage { font-size: 0.875rem; color: rgba(0,0,0,0.6); }
+
+.managers-stats h4 { margin: 0 0 16px; font-size: 1rem; font-weight: 500; }
+.managers-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.manager-card { background: #fafafa; }
+.manager-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; }
+.manager-name { font-weight:500; margin-bottom:4px; }
+.manager-leads { font-size:0.875rem; color:rgba(0,0,0,0.6); }
+.manager-metrics { display:grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap:8px; margin-bottom:12px; }
+.metric { display:flex; flex-direction:column; align-items:center; text-align:center; }
+.metric-label { font-size:0.75rem; color:rgba(0,0,0,0.6); margin-bottom:2px; }
+.metric-value { font-weight:500; }
+.workload-chip { font-size:0.75rem; min-height:20px; }
+.workload-chip.low { background-color:#e8f5e8 !important; color:#2e7d32 !important; }
+.workload-chip.medium { background-color:#fff3e0 !important; color:#f57c00 !important; }
+.workload-chip.high { background-color:#ffebee !important; color:#d32f2f !important; }
+.workload-chip.overloaded { background-color:#fce4ec !important; color:#c2185b !important; }
+
