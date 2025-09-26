@@ -238,19 +238,36 @@ import { QuickAssignDialogComponent } from './quick-assign-dialog.component';
                   <span>Change Status</span>
                 </button>
                 <mat-menu #quickStatusMenu="matMenu">
-                  <button mat-menu-item (click)="quickUpdateStatus(lead, 'contacted'); $event.stopPropagation()">
+                  <button mat-menu-item
+                    (click)="$event.stopPropagation(); lead.status !== LeadStatus.CONTACTED && quickUpdateStatus(lead, 'contacted')"
+                    [disabled]="lead.status === LeadStatus.CONTACTED"
+                    [attr.aria-disabled]="lead.status === LeadStatus.CONTACTED"
+                  >
                     <mat-icon>contact_phone</mat-icon>
                     <span>Mark as Contacted</span>
                   </button>
-                  <button mat-menu-item (click)="quickUpdateStatus(lead, 'qualified'); $event.stopPropagation()">
+                  <button mat-menu-item
+                    (click)="$event.stopPropagation(); lead.status !== LeadStatus.QUALIFIED && quickUpdateStatus(lead, 'qualified')"
+                    [disabled]="lead.status === LeadStatus.QUALIFIED"
+                    [attr.aria-disabled]="lead.status === LeadStatus.QUALIFIED"
+                  >
                     <mat-icon>verified</mat-icon>
                     <span>Mark as Qualified</span>
                   </button>
-                  <button mat-menu-item (click)="quickUpdateStatus(lead, 'converted'); $event.stopPropagation()">
+                  <button mat-menu-item
+                    (click)="$event.stopPropagation(); lead.status !== LeadStatus.CONVERTED && quickUpdateStatus(lead, 'converted')"
+                    [disabled]="lead.status === LeadStatus.CONVERTED"
+                    [attr.aria-disabled]="lead.status === LeadStatus.CONVERTED"
+                  >
                     <mat-icon>check_circle</mat-icon>
                     <span>Mark as Converted</span>
                   </button>
-                  <button mat-menu-item (click)="quickUpdateStatus(lead, 'lost'); $event.stopPropagation()" class="danger-action">
+                  <button mat-menu-item
+                    (click)="$event.stopPropagation(); lead.status !== LeadStatus.LOST && quickUpdateStatus(lead, 'lost')"
+                    [disabled]="lead.status === LeadStatus.LOST"
+                    [attr.aria-disabled]="lead.status === LeadStatus.LOST"
+                    class="danger-action"
+                  >
                     <mat-icon>cancel</mat-icon>
                     <span>Mark as Lost</span>
                   </button>
@@ -684,6 +701,9 @@ export class LeadsListComponent implements OnInit {
 
   // Managers cache
   managers: Manager[] = [];
+
+  // Expose LeadStatus to template for comparisons
+  readonly LeadStatus = LeadStatus;
 
   ngOnInit(): void {
     this.loadLeads();

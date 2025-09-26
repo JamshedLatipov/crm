@@ -67,18 +67,19 @@ interface ChangeStatusData {
       <!-- Status Selection -->
       <div class="status-section">
         <h3>Выберите новый статус</h3>
-        <div class="status-grid">
+          <div class="status-grid">
           <div
             *ngFor="let status of availableStatuses"
             class="status-option"
             [class.selected]="selectedStatus === status.value"
             [class.disabled]="status.value === data.currentStatus"
-            (click)="selectStatus(status.value)"
-            (keyup.enter)="selectStatus(status.value)"
-            (keyup.space)="selectStatus(status.value)"
-            tabindex="0"
+            (click)="status.value !== data.currentStatus && selectStatus(status.value)"
+            (keyup.enter)="status.value !== data.currentStatus && selectStatus(status.value)"
+            (keyup.space)="status.value !== data.currentStatus && selectStatus(status.value)"
+            [attr.tabindex]="status.value === data.currentStatus ? -1 : 0"
             role="button"
             [attr.aria-pressed]="selectedStatus === status.value"
+            [attr.aria-disabled]="status.value === data.currentStatus"
           >
             <div class="status-icon">
               <mat-icon>{{ status.icon }}</mat-icon>
@@ -243,6 +244,7 @@ interface ChangeStatusData {
       opacity: 0.5;
       cursor: not-allowed;
       background: #fafafa;
+      pointer-events: none;
     }
 
     .status-icon {
