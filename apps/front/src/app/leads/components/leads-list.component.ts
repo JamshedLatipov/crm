@@ -16,6 +16,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { Router } from '@angular/router';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 
@@ -30,7 +31,7 @@ import {
 } from '../models/lead.model';
 import { CreateLeadDialogComponent } from './create-lead-dialog.component';
 import { EditLeadDialogComponent } from './edit-lead-dialog.component';
-import { LeadDetailComponent } from './lead-detail.component';
+// LeadDetailComponent is now routed; don't import here
 import { ChangeStatusDialogComponent } from './change-status-dialog.component';
 import { AssignLeadDialogComponent } from './assign-lead-dialog.component';
 import { QuickAssignDialogComponent } from './quick-assign-dialog.component';
@@ -316,7 +317,6 @@ import { QuickAssignDialogComponent } from './quick-assign-dialog.component';
       padding: 24px;
       max-width: 1400px;
       margin: 0 auto;
-      background-color: #f8f9fa;
       min-height: 100vh;
     }
 
@@ -676,6 +676,7 @@ import { QuickAssignDialogComponent } from './quick-assign-dialog.component';
 export class LeadsListComponent implements OnInit {
   private leadService = inject(LeadService);
   private userService = inject(UserService);
+  private router = inject(Router);
   private dialog = inject(MatDialog);
 
   // Signals
@@ -819,18 +820,8 @@ export class LeadsListComponent implements OnInit {
   }
 
   viewLead(lead: Lead): void {
-    const dialogRef = this.dialog.open(LeadDetailComponent, {
-      width: '900px',
-      maxWidth: '95vw',
-      maxHeight: '90vh',
-      data: lead
-    });
-
-    dialogRef.afterClosed().subscribe((result: Lead | undefined) => {
-      if (result) {
-        this.loadLeads(); // Refresh the list if lead was updated
-      }
-    });
+  // navigate to routed lead detail view
+  this.router.navigate(['/leads/view', lead.id]);
   }
 
   editLead(lead: Lead): void {

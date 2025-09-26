@@ -1,11 +1,7 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import {
-  MAT_DIALOG_DATA,
-  MatDialogModule,
-  MatDialogRef,
-  MatDialog,
-} from '@angular/material/dialog';
+import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
@@ -660,14 +656,14 @@ import { AssignLeadDialogComponent } from './assign-lead-dialog.component';
     `,
   ],
 })
-export class LeadDetailComponent {
+export class LeadDetailComponent implements OnInit {
   private readonly leadService = inject(LeadService);
   private readonly userService = inject(UserService);
-  private readonly dialogRef = inject(MatDialogRef<LeadDetailComponent>);
   private readonly dialog = inject(MatDialog);
-  private readonly data = inject<Lead>(MAT_DIALOG_DATA);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
-  lead: Lead = this.data;
+  lead: Lead = {} as Lead;
   activities: LeadActivity[] = [];
   loadingActivities = false;
   managers: Manager[] = [];
@@ -707,9 +703,19 @@ export class LeadDetailComponent {
     [LeadPriority.URGENT]: 'Срочный',
   };
 
-  constructor() {
-    this.loadActivities();
+  ngOnInit(): void {
+  // load managers once
     this.loadManagers();
+
+    // listen to route params and load lead by id
+    this.route.paramMap.subscribe((params) => {
+      const id = params.get('id');
+      if (!id) {
+        this.router.navigate(['/leads/list']);
+        return;
+      }
+      this.loadLead(id);
+    });
   }
 
   private loadManagers(): void {
@@ -720,7 +726,21 @@ export class LeadDetailComponent {
     });
   }
 
+  private loadLead(id: string): void {
+    this.leadService.getLeadById(id).subscribe({
+      next: (lead) => {
+        this.lead = lead;
+        this.loadActivities();
+      },
+      error: (err) => {
+        console.error('Error loading lead:', err);
+        this.router.navigate(['/leads/list']);
+      },
+    });
+  }
+
   loadActivities(): void {
+    if (!this.lead?.id) return;
     this.loadingActivities = true;
     this.leadService.getLeadActivities(this.lead.id).subscribe({
       next: (activities) => {
@@ -826,8 +846,8 @@ export class LeadDetailComponent {
       width: '600px',
       maxWidth: '90vw',
       data: {
-        lead: this.lead,
-        currentStatus: this.lead.status,
+  lead: this.lead,
+  currentStatus: this.lead?.status,
       },
     });
 
@@ -843,8 +863,8 @@ export class LeadDetailComponent {
       width: '700px',
       maxWidth: '90vw',
       data: {
-        lead: this.lead,
-        currentAssignee: this.lead.assignedTo,
+  lead: this.lead,
+  currentAssignee: this.lead?.assignedTo,
       },
     });
 
@@ -856,10 +876,11 @@ export class LeadDetailComponent {
   }
 
   deleteLead(): void {
+    if (!this.lead) return;
     if (confirm(`Вы уверены, что хотите удалить лид "${this.lead.name}"?`)) {
       this.leadService.deleteLead(this.lead.id).subscribe({
         next: () => {
-          this.dialogRef.close(true);
+          this.router.navigate(['/leads/list']);
         },
         error: (error: unknown) => {
           console.error('Error deleting lead:', error);
@@ -869,6 +890,6 @@ export class LeadDetailComponent {
   }
 
   close(): void {
-    this.dialogRef.close();
+    this.router.navigate(['/leads/list']);
   }
 }

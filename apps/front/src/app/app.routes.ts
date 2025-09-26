@@ -6,6 +6,7 @@ import { IvrAdminComponent } from './ivr/ivr.component';
 import { LeadsComponent } from './leads/leads.component';
 import { LeadsListComponent } from './leads/components/leads-list.component';
 import { LeadsDashboardComponent } from './leads/components/leads-dashboard.component';
+import { LeadDetailComponent } from './leads/components/lead-detail.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { ContactsComponent } from './contacts/contacts.component';
 import { DealsComponent } from './deals/deals.component';
@@ -28,7 +29,8 @@ export const appRoutes: Route[] = [
         children: [
             { path: '', redirectTo: 'list', pathMatch: 'full' },
             { path: 'dashboard', component: LeadsDashboardComponent },
-            { path: 'list', component: LeadsListComponent }
+            { path: 'list', component: LeadsListComponent },
+            { path: 'view/:id', component: LeadDetailComponent }
         ]
     }
 ];
