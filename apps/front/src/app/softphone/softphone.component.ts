@@ -5,6 +5,7 @@ import {
   OnDestroy,
   inject,
 } from '@angular/core';
+import { environment } from '../../environments/environment';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs';
 import { CallsApiService } from '../calls/calls.service';
@@ -15,6 +16,7 @@ import {
   BUSY_RINGTONE_SRC,
   RINGTONE_SRC,
   RINGBACK_DEFAULT_LEVEL,
+  RINGBACK_INCOMING_LEVEL,
   REMOTE_AUDIO_ELEMENT_ID,
 } from './ringtone.service';
 import { FormsModule } from '@angular/forms'; // Import FormsModule for ngModel
@@ -100,8 +102,8 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   // Transfer UI
   transferTarget = '';
 
-  // Переменная для IP-адреса сервера Asterisk
-  private readonly asteriskHost = '127.0.0.1';
+  // Asterisk host is read from environment config (moved from hardcoded value)
+  private readonly asteriskHost = environment.asteriskHost || '127.0.0.1';
 
   private autoConnectAttempted = false;
   // lifecycle destroy notifier
@@ -223,6 +225,33 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
               if (this.autoExpandOnIncoming && !this.expanded) this.toggleExpand();
             } catch {
               /* ignore */
+            }
+            // Start incoming ringtone immediately and show desktop notification (if permitted)
+            try {
+              this.ringtone.startRingback(RINGBACK_INCOMING_LEVEL, RINGTONE_SRC);
+            } catch (e) {
+              console.warn('Failed to start incoming ringtone', e);
+            }
+            try {
+              if (typeof Notification !== 'undefined') {
+                if (Notification.permission === 'granted') {
+                  new Notification('Incoming call', {
+                    body: this.incomingFrom || 'Unknown caller',
+                    tag: 'softphone-incoming',
+                  });
+                } else if (Notification.permission !== 'denied') {
+                  Notification.requestPermission().then((perm) => {
+                    if (perm === 'granted') {
+                      new Notification('Incoming call', {
+                        body: this.incomingFrom || 'Unknown caller',
+                        tag: 'softphone-incoming',
+                      });
+                    }
+                  });
+                }
+              }
+            } catch (e) {
+              console.warn('Notification failed', e);
             }
           }
           try {

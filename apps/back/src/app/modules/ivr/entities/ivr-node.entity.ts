@@ -1,6 +1,20 @@
-import { Column, Entity, Index, ManyToOne, OneToMany, PrimaryGeneratedColumn, JoinColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  Index,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  JoinColumn,
+} from 'typeorm';
 
-export type IvrActionType = 'playback' | 'dial' | 'hangup' | 'goto' | 'menu' | 'queue';
+export type IvrActionType =
+  | 'playback'
+  | 'dial'
+  | 'hangup'
+  | 'goto'
+  | 'menu'
+  | 'queue';
 
 @Entity('ivr_nodes')
 export class IvrNode {
@@ -12,7 +26,7 @@ export class IvrNode {
   name!: string;
 
   // Relation to parent; use the same physical column 'parentId'
-  @ManyToOne(() => IvrNode, n => n.children, { onDelete: 'CASCADE' })
+  @ManyToOne(() => IvrNode, (n) => n.children, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'parentId' })
   parent?: IvrNode | null;
 
@@ -21,7 +35,7 @@ export class IvrNode {
   @Index()
   parentId?: string | null;
 
-  @OneToMany(() => IvrNode, n => n.parent)
+  @OneToMany(() => IvrNode, (n) => n.parent)
   children?: IvrNode[];
 
   // DTMF digit (0-9,*,#) that triggers this node when pressed at parent menu
@@ -46,6 +60,10 @@ export class IvrNode {
   // Optional TTS text (future use if integrating TTS)
   @Column({ type: 'text', nullable: true })
   ttsText?: string | null;
+
+  // Name of queue to enter when action === 'queue'
+  @Column({ type: 'varchar', length: 80, nullable: true })
+  queueName?: string | null;
 
   // Order within siblings
   @Column({ type: 'int', default: 0 })

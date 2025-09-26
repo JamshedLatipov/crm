@@ -115,10 +115,22 @@ export class SoftphoneService {
     const defaultOptions = {
       mediaConstraints: { audio: true, video: false },
       extraHeaders: ['X-Custom-Header: CRM Call'],
-      // 'pcConfig': {
-      //   'iceServers': [ { urls: [`stun:${'127.0.0.1'}:3478`] } ],
-      //   'rtcpMuxPolicy': 'require'
-      // }
+      'pcConfig': {
+        // Replace the STUN/TURN URLs below with your reachable host IP or public IP.
+        // TURN credentials should match turnserver/data config (user=webrtc:webrtcpass).
+        'iceServers': [
+          { urls: [`stun:192.168.90.129:3478`] },
+          {
+            urls: [
+              `turn:192.168.90.129:3478?transport=udp`,
+              `turn:192.168.90.129:3478?transport=tcp`
+            ],
+            username: 'webrtc',
+            credential: 'webrtcpass'
+          }
+        ],
+        'rtcpMuxPolicy': 'require'
+      }
     };
     const callOptions = options ?? defaultOptions;
     const session = this.ua.call(target, callOptions);

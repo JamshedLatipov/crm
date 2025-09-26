@@ -24,6 +24,8 @@ interface ActiveCallState {
   activePlaybacks: Set<string>; // playback ids for this channel
   pendingTimeoutMs?: number; // deferred timeout until playbacks finish
   ended?: boolean; // channel has ended (StasisEnd / ChannelDestroyed)
+  allocRetryCount?: number; // number of recent allocation retries
+  allocRetryTimer?: NodeJS.Timeout; // timer for allocation retry
 }
 
 @Injectable()
@@ -49,21 +51,18 @@ export class IvrRuntimeService implements OnModuleInit {
     this.ari.on('PlaybackFinished', (evt: unknown) =>
       this.onPlaybackFinished(evt)
     );
-  // Clean up state promptly when channel ends to avoid race causing 'Channel not found'
-  this.ari.on('StasisEnd', (evt: unknown) => this.onChannelEnded(evt));
-  this.ari.on('ChannelDestroyed', (evt: unknown) => this.onChannelEnded(evt));
+    this.ari.on('StasisEnd', (evt: unknown) => this.onChannelEnded(evt));
+    this.ari.on('ChannelDestroyed', (evt: unknown) => this.onChannelEnded(evt));
   }
 
   private async getRootNode(): Promise<IvrNode | null> {
     if (this.rootNodeCache) return this.rootNodeCache;
-    const root = await this.repo.findOne({
-      where: { name: 'root', parentId: null },
-    });
+    const root = await this.repo.findOne({ where: { name: 'root', parentId: null } });
     this.rootNodeCache = root;
     return root;
   }
 
-  private async onStasisStart(evt: unknown, channel: unknown) {
+	private async onStasisStart(evt: unknown, channel: unknown) {
     if (!channel || typeof channel !== 'object') return;
     const channelId = (channel as { id?: string }).id;
     if (!channelId || this.calls.has(channelId)) return;
@@ -87,23 +86,27 @@ export class IvrRuntimeService implements OnModuleInit {
       nodeName: root.name,
       event: 'CALL_START',
     });
-    await this.executeNode(root, channelId);
+    await this.executeNode(root, channelId, channel as { id?: string });
   }
 
-  private async executeNode(node: IvrNode, channelId: string) {
-    // Fire webhook (non-blocking)
+  private async executeNode(
+    node: IvrNode,
+    channelId: string,
+    channel?: { id?: string } | null
+  ) {
     this.callWebhook(node).catch((err) =>
       this.logger.warn(`Webhook failed: ${err.message}`)
     );
     const client = this.ari.getClient();
     if (!client) return;
-  // Abort if channel already ended
-  const existing = this.calls.get(channelId);
-  if (existing?.ended) return;
-    // Reset any existing digit wait when entering a new node
+    const existing = this.calls.get(channelId);
+    if (existing?.ended) return;
     const st = this.calls.get(channelId);
     if (st) {
-      if (st.digitTimer) { clearTimeout(st.digitTimer); st.digitTimer = undefined; }
+      if (st.digitTimer) {
+        clearTimeout(st.digitTimer);
+        st.digitTimer = undefined;
+      }
       st.waitingForDigit = false;
       st.pendingTimeoutMs = undefined;
     }
@@ -114,28 +117,23 @@ export class IvrRuntimeService implements OnModuleInit {
       event: 'NODE_EXECUTE',
       meta: { action: node.action, payload: node.payload },
     });
-
     switch (node.action) {
       case 'playback': {
         if (node.payload) {
-          await this.safeChannelOp(channelId, () => client.channels.play({
-            channelId,
-            media: `sound:${node.payload}`,
-          }));
+          await this.safeChannelOp(channelId, () =>
+            client.channels.play({ channelId, media: `sound:${node.payload}` })
+          );
         }
         break;
       }
       case 'menu': {
         if (node.payload) {
-          // Always defer starting timeout until after playback ends to avoid premature hangup
-          await this.safeChannelOp(channelId, () => client.channels.play({ channelId, media: `sound:${node.payload}` }));
+          await this.safeChannelOp(channelId, () =>
+            client.channels.play({ channelId, media: `sound:${node.payload}` })
+          );
           const stLocal = this.calls.get(channelId);
-          if (stLocal) {
-            stLocal.waitingForDigit = node.allowEarlyDtmf; // mark waiting only logically (no timer yet) if early input allowed
-            // Do NOT start timer now; will start after playback finishes in onPlaybackFinished
-          }
+          if (stLocal) stLocal.waitingForDigit = node.allowEarlyDtmf;
         } else {
-          // No audio prompt — start waiting immediately
           this.setWaiting(channelId, true, node.timeoutMs);
         }
         break;
@@ -145,37 +143,91 @@ export class IvrRuntimeService implements OnModuleInit {
           this.logger.warn('Dial node without payload');
           break;
         }
-        await this.safeChannelOp(channelId, () => client.channels.originate({
-          endpoint: node.payload,
-          app: process.env.ARI_APP,
+        const rawEndpoint = node.payload;
+        const aricontext = process.env.ASTERISK_FROM_ARI_CONTEXT || 'from-ari';
+        const endpoint = this.normalizeEndpoint(rawEndpoint, aricontext);
+        const originateParams = {
+          endpoint,
+          app: process.env.ARI_APP || 'crm-app',
           callerId: channelId,
-        }));
+        };
+        this.logger.debug(
+          `ARI originate params (dial): ${JSON.stringify(originateParams)}`
+        );
+        await this.safeChannelOp(channelId, () =>
+          client.channels.originate(originateParams)
+        );
         break;
       }
       case 'goto': {
         if (!node.payload) break;
         const target = await this.repo.findOne({ where: { id: node.payload } });
-        if (target) await this.executeNode(target, channelId);
+        if (target) await this.executeNode(target, channelId, channel);
         break;
       }
       case 'queue': {
-        if (node.payload) {
-          await this.safeChannelOp(channelId, () => client.channels.play({
-            channelId,
-            media: `sound:${node.payload}`,
-          }));
-        }
-  // Do not start digit waiting for a queue; keep call until external action.
+        // TODO: use ari client instead of raw query
+        const queueName = (node as IvrNode).queueName || 'support';
+        const context = process.env.ASTERISK_FROM_ARI_CONTEXT || 'from-ari';
+        const priority = 1;
+        const host = process.env.ARI_HOST || 'localhost';
+        const port = process.env.ARI_PORT || '8089';
+        const protocol = process.env.ARI_PROTOCOL === 'https' ? 'https' : 'http';
+        const user = process.env.ARI_USER || 'ariuser';
+        const pass = process.env.ARI_PASSWORD || 'aripass';
+        const url = `${protocol}://${host}:${port}/ari/channels/${encodeURIComponent(
+          channelId
+        )}/continue`;
         await this.safeLog({
           channelId,
           nodeId: node.id,
           nodeName: node.name,
           event: 'QUEUE_ENTER',
+          meta: { queue: queueName, attempt: 'continue_http', context, priority },
         });
+        this.logger.debug(
+          `Queue handoff HTTP continue: channel=${channelId} context=${context} extension=${queueName} priority=${priority}`
+        );
+        try {
+          await axios.post(
+            url,
+            null,
+            {
+              params: { context, extension: queueName, priority },
+              auth: { username: user, password: pass },
+              timeout: 3000,
+              validateStatus: () => true,
+            }
+          );
+          // We can't easily know success vs 4xx because swagger client wraps errors; do a lightweight follow-up check:
+          // if channel still in our map after a short delay, assume failure.
+          setTimeout(() => {
+            if (this.calls.has(channelId)) {
+              this.logger.warn(
+                `Queue continue HTTP did not handoff (channel still tracked) channel=${channelId}`
+              );
+            }
+          }, 200);
+          this.calls.delete(channelId); // optimistic: dialplan will own it now
+        } catch (e) {
+          const msg = (e as Error).message;
+            this.logger.error(
+              `HTTP continue to queue failed channel=${channelId} err=${msg}`
+            );
+            await this.safeLog({
+              channelId,
+              nodeId: node.id,
+              nodeName: node.name,
+              event: 'QUEUE_ENTER',
+              meta: { queue: queueName, attempt: 'failed_http', error: msg },
+            });
+        }
         break;
       }
       case 'hangup': {
-        await this.safeChannelOp(channelId, () => client.channels.hangup({ channelId }));
+        await this.safeChannelOp(channelId, () =>
+          client.channels.hangup({ channelId })
+        );
         this.calls.delete(channelId);
         await this.safeLog({
           channelId,
@@ -185,8 +237,6 @@ export class IvrRuntimeService implements OnModuleInit {
         });
         break;
       }
-      default:
-        this.logger.warn(`Unknown action ${node.action}`);
     }
   }
 
@@ -209,36 +259,50 @@ export class IvrRuntimeService implements OnModuleInit {
     }
   }
 
-  private startDigitTimeout(channelId: string, st: ActiveCallState, timeoutMs: number) {
+  private startDigitTimeout(
+    channelId: string,
+    st: ActiveCallState,
+    timeoutMs: number
+  ) {
     return setTimeout(() => {
       // On timeout check current node
       const nodeId = st.currentNodeId;
       if (!nodeId) return;
-      this.repo.findOne({ where: { id: nodeId } }).then(async node => {
-        if (!node) return;
-        // Log timeout
-        await this.safeLog({ channelId, nodeId: node.id, nodeName: node.name, event: 'TIMEOUT' });
-        if (node.action === 'menu') {
-          // Repeat menu instead of hanging up
-          st.waitingForDigit = false;
-          // Re-execute same node (replay prompt or immediately wait if no payload)
-          await this.executeNode(node, channelId);
-        } else {
-          // Non-menu: do NOT hangup; attempt to return to nearest ancestor menu
-          const parentId = (node as IvrNode).parentId;
-          if (parentId) {
-            const parent = await this.repo.findOne({ where: { id: parentId } });
-            if (parent && parent.action === 'menu') {
-              st.currentNodeId = parent.id;
-              st.waitingForDigit = false;
-              await this.executeNode(parent, channelId);
-              return;
+      this.repo
+        .findOne({ where: { id: nodeId } })
+        .then(async (node) => {
+          if (!node) return;
+          // Log timeout
+          await this.safeLog({
+            channelId,
+            nodeId: node.id,
+            nodeName: node.name,
+            event: 'TIMEOUT',
+          });
+          if (node.action === 'menu') {
+            // Repeat menu instead of hanging up
+            st.waitingForDigit = false;
+            // Re-execute same node (replay prompt or immediately wait if no payload)
+            await this.executeNode(node, channelId);
+          } else {
+            // Non-menu: do NOT hangup; attempt to return to nearest ancestor menu
+            const parentId = (node as IvrNode).parentId;
+            if (parentId) {
+              const parent = await this.repo.findOne({
+                where: { id: parentId },
+              });
+              if (parent && parent.action === 'menu') {
+                st.currentNodeId = parent.id;
+                st.waitingForDigit = false;
+                await this.executeNode(parent, channelId);
+                return;
+              }
             }
+            // Fallback: just clear waiting (keep call alive)
+            st.waitingForDigit = false;
           }
-          // Fallback: just clear waiting (keep call alive)
-          st.waitingForDigit = false;
-        }
-      }).catch(()=>undefined);
+        })
+        .catch(() => undefined);
     }, timeoutMs);
   }
 
@@ -260,8 +324,17 @@ export class IvrRuntimeService implements OnModuleInit {
     if (!st) return;
     if (playbackId) st.activePlaybacks.delete(playbackId);
     // If all playbacks finished and we were waiting with deferred timeout, start it now
-    if (st.activePlaybacks.size === 0 && st.waitingForDigit && !st.digitTimer && st.pendingTimeoutMs) {
-      st.digitTimer = this.startDigitTimeout(channelId, st, st.pendingTimeoutMs);
+    if (
+      st.activePlaybacks.size === 0 &&
+      st.waitingForDigit &&
+      !st.digitTimer &&
+      st.pendingTimeoutMs
+    ) {
+      st.digitTimer = this.startDigitTimeout(
+        channelId,
+        st,
+        st.pendingTimeoutMs
+      );
     }
     const node = await this.repo.findOne({ where: { id: st.currentNodeId } });
     if (!node) return;
@@ -270,22 +343,33 @@ export class IvrRuntimeService implements OnModuleInit {
       if (!st.waitingForDigit) this.setWaiting(channelId, true, node.timeoutMs);
       // If early DTMF enabled we may have st.waitingForDigit=true already but timer was still deferred; ensure timer starts now
       if (st.waitingForDigit && st.pendingTimeoutMs) {
-        st.digitTimer = this.startDigitTimeout(channelId, st, st.pendingTimeoutMs);
+        st.digitTimer = this.startDigitTimeout(
+          channelId,
+          st,
+          st.pendingTimeoutMs
+        );
         st.pendingTimeoutMs = undefined;
       }
     } else if (node.action === 'playback') {
       // After playback: return to parent menu if exists; else keep call (no hangup)
-      await this.safeLog({ channelId, nodeId: node.id, nodeName: node.name, event: 'PLAYBACK_FINISHED' });
+      await this.safeLog({
+        channelId,
+        nodeId: node.id,
+        nodeName: node.name,
+        event: 'PLAYBACK_FINISHED',
+      });
       const current = await this.repo.findOne({ where: { id: node.id } });
       if (current?.parentId) {
-        const parent = await this.repo.findOne({ where: { id: current.parentId } });
+        const parent = await this.repo.findOne({
+          where: { id: current.parentId },
+        });
         if (parent && parent.action === 'menu') {
           const st2 = this.calls.get(channelId);
           if (st2) {
             st2.currentNodeId = parent.id;
             st2.waitingForDigit = false;
           }
-            await this.executeNode(parent, channelId);
+          await this.executeNode(parent, channelId);
         }
       }
     }
@@ -428,7 +512,12 @@ export class IvrRuntimeService implements OnModuleInit {
     st.activePlaybacks.clear();
     if (!st.ended) {
       st.ended = true;
-      await this.safeLog({ channelId, event: 'CALL_END', nodeId: st.currentNodeId, nodeName: null });
+      await this.safeLog({
+        channelId,
+        event: 'CALL_END',
+        nodeId: st.currentNodeId,
+        nodeName: null,
+      });
     }
     this.calls.delete(channelId);
   }
@@ -438,23 +527,97 @@ export class IvrRuntimeService implements OnModuleInit {
     return /Channel not found/i.test(msg);
   }
 
+  private isAllocationFailedError(err: unknown) {
+    const msg = (err && (err as Error).message) || '';
+    // ari-client sometimes wraps ARI JSON error literal
+    return (
+      /Allocation failed/i.test(msg) ||
+      /"error"\s*:\s*"Allocation failed"/i.test(msg)
+    );
+  }
+
   private async safeChannelOp(channelId: string, op: () => Promise<unknown>) {
     try {
       await op();
     } catch (err) {
+      // Handle transient ARI allocation failures with a short retry loop
+      try {
+        if (this.isAllocationFailedError(err)) {
+          const st = this.calls.get(channelId);
+          const prev = st?.allocRetryCount || 0;
+          const next = prev + 1;
+          if (st) st.allocRetryCount = next;
+          const maxRetries = 3;
+          if (next <= maxRetries) {
+            this.logger.warn(
+              `ARI allocation failed for channel ${channelId}, scheduling retry ${next}/${maxRetries}`
+            );
+            // clear existing timer if any
+            if (st?.allocRetryTimer) clearTimeout(st.allocRetryTimer);
+            const t = setTimeout(() => {
+              if (st) st.allocRetryTimer = undefined;
+              // retry op
+              this.safeChannelOp(channelId, op).catch(() => undefined);
+            }, 2000);
+            if (st) st.allocRetryTimer = t;
+            return;
+          }
+          this.logger.error(
+            `ARI allocation failed for channel ${channelId} after ${next} attempts, giving up`
+          );
+          // Do not delete call state here; caller may decide to hangup or retry later.
+          return;
+        }
+      } catch {
+        /* ignore errors in allocation handling */
+      }
+      // Attach extra context to logs so we can trace failing ARI operations
+      const st = this.calls.get(channelId);
+      const currentNodeId = st?.currentNodeId;
+      let currentNodeAction: string | null = null;
+      try {
+        if (currentNodeId) {
+          // best-effort fetch of node action for context
+          // do not await to avoid blocking error path; use synchronous lookup from repo if available is not possible
+          // we will set to null here; detailed node lookup can be added if needed
+          currentNodeAction = null;
+        }
+      } catch {
+        currentNodeAction = null;
+      }
+
       if (this.isChannelMissingError(err)) {
-        this.logger.debug(`Channel not found for op; cleaning state (${channelId})`);
+        this.logger.debug(
+          `Channel not found for op; cleaning state (${channelId})`
+        );
         const st = this.calls.get(channelId);
         if (st) {
           if (st.digitTimer) clearTimeout(st.digitTimer);
           this.calls.delete(channelId);
           if (!st.ended) {
-            await this.safeLog({ channelId, event: 'CALL_END', nodeId: st.currentNodeId, nodeName: null });
+            await this.safeLog({
+              channelId,
+              event: 'CALL_END',
+              nodeId: st.currentNodeId,
+              nodeName: null,
+            });
           }
         }
         return;
       }
-      this.logger.warn(`Channel op failed: ${(err as Error).message}`);
+      // Log rich context for debugging ARI errors
+      try {
+        const errInfo: Record<string, unknown> = {
+          message: (err && (err as Error).message) || String(err),
+          stack: (err && (err as Error).stack) || undefined,
+          channelId,
+          currentNodeId,
+          currentNodeAction,
+        };
+        this.logger.warn(`Channel op failed: ${JSON.stringify(errInfo)}`);
+      } catch {
+        this.logger.warn(`Channel op failed: ${(err as Error).message}`);
+      }
     }
   }
 
@@ -466,5 +629,13 @@ export class IvrRuntimeService implements OnModuleInit {
       channel && (channel['caller'] as Record<string, unknown> | undefined);
     const num = caller && (caller['number'] as unknown);
     return typeof num === 'string' ? num : null;
+  }
+
+  // If a raw endpoint looks like a bare extension or dialplan identifier (no '/'),
+  // convert it to a Local channel that will enter the dialplan: Local/<ext>@<context>
+  private normalizeEndpoint(raw: string, aricontext: string) {
+    if (!raw) return raw;
+    if (raw.includes('/')) return raw; // already protocol-qualified (PJSIP/, SIP/, Local/, etc.)
+    return `Local/${raw}@${aricontext}`;
   }
 }

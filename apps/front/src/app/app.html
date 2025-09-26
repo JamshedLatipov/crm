@@ -1,4 +1,14 @@
-<router-outlet></router-outlet>
+<div class="app-layout">
+  <!-- Sidebar Navigation -->
+  <app-sidebar></app-sidebar>
 
-<!-- Global softphone present on every page -->
-<app-softphone></app-softphone>
+  <!-- Main Content Area -->
+  <div class="main-container">
+    <main class="main-content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+
+  <!-- Global softphone present on every page -->
+  <app-softphone></app-softphone>
+</div>

@@ -61,8 +61,8 @@
     "webpack-cli": "^5.1.4"
   },
   "scripts": {
-    "start:back": "nx serve back",
-    "start:front": "nx serve front",
+    "start:back": "nx serve back --host 0.0.0.0",
+    "start:front": "nx serve front --host 0.0.0.0",
     "build:back": "nx build back",
     "build:front": "nx build front",
     "test:back": "nx test back",
