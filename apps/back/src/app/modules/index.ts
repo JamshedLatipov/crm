@@ -8,6 +8,7 @@ import { IvrMediaModule } from './ivr-media/ivr-media.module';
 import { PipelineModule } from './pipeline/pipeline.module';
 import { DealsModule } from './deals/deals.module';
 import { ContactsModule } from './contacts/contacts.module';
+import { CompaniesModule } from './companies/companies.module';
 
 export const MODULES = [
     LeadModule,
@@ -20,4 +21,5 @@ export const MODULES = [
     PipelineModule,
     DealsModule,
     ContactsModule,
+    CompaniesModule,
 ];

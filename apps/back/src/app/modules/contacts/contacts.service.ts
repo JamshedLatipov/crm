@@ -32,7 +32,11 @@ export class ContactsService {
   }
 
   async createContact(dto: CreateContactDto): Promise<Contact> {
-    const contact = this.contactRepository.create(dto);
+    const contact = this.contactRepository.create({
+      ...dto,
+      // Обрабатываем companyName для обратной совместимости
+      companyName: dto.companyName || undefined,
+    });
     return this.contactRepository.save(contact);
   }
 
@@ -103,10 +107,14 @@ export class ContactsService {
   }
 
   async getContactsByCompany(companyName: string): Promise<Contact[]> {
-    return this.contactRepository.find({
-      where: { company: ILike(`%${companyName}%`), isActive: true },
-      order: { createdAt: 'DESC' },
-    });
+    // TODO: Обновить после добавления связи с Company entity
+    return this.contactRepository
+      .createQueryBuilder('contact')
+      .leftJoinAndSelect('contact.company', 'company')
+      .where('company.name ILIKE :companyName', { companyName: `%${companyName}%` })
+      .andWhere('contact.isActive = :isActive', { isActive: true })
+      .orderBy('contact.createdAt', 'DESC')
+      .getMany();
   }
 
   async getContactsByTag(tag: string): Promise<Contact[]> {

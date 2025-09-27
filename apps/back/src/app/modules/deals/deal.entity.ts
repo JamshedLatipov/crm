@@ -8,6 +8,9 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { PipelineStage } from '../pipeline/pipeline.entity';
+import { Company } from '../companies/entities/company.entity';
+import { Contact } from '../contacts/contact.entity';
+import { Lead } from '../leads/lead.entity';
 
 export enum DealStatus {
   OPEN = 'open',
@@ -33,20 +36,18 @@ export class Deal {
   @Column()
   title: string;
 
-  @Column({ nullable: true })
-  leadId?: string; // Связь с лидом (если сделка создана из лида)
+  // Связи с другими сущностями
+  @ManyToOne(() => Contact, { nullable: true })
+  @JoinColumn()
+  contact?: Contact;
 
-  @Column({ nullable: true })
-  contactId?: string; // Связь с контактом
+  @ManyToOne(() => Company, company => company.deals, { nullable: true })
+  @JoinColumn()
+  company?: Company;
 
-  // Контактная информация (deprecated - используйте contactId)
-  @Column('json', { nullable: true })
-  contact?: {
-    name: string;
-    email?: string;
-    phone?: string;
-    company?: string;
-  };
+  @ManyToOne(() => Lead, { nullable: true })
+  @JoinColumn()
+  lead?: Lead;
 
   @Column('decimal', { precision: 15, scale: 2 })
   amount: number;

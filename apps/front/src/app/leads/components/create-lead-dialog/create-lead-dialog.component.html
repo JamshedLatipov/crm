@@ -36,7 +36,133 @@
           </mat-form-field>
         </div>
 
-        <!-- more fields omitted for brevity -->
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Компания</mat-label>
+            <input matInput formControlName="company" >
+            <mat-icon matSuffix>business</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Должность</mat-label>
+            <input matInput formControlName="position" >
+            <mat-icon matSuffix>work</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Веб-сайт</mat-label>
+          <input matInput formControlName="website" placeholder="https://example.com">
+          <mat-icon matSuffix>web</mat-icon>
+        </mat-form-field>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Отрасль</mat-label>
+            <input matInput formControlName="industry" >
+            <mat-icon matSuffix>category</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Страна</mat-label>
+            <input matInput formControlName="country" >
+            <mat-icon matSuffix>public</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Город</mat-label>
+          <input matInput formControlName="city" >
+          <mat-icon matSuffix>location_city</mat-icon>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <!-- Lead Information -->
+    <div class="form-section">
+      <div class="section-header">
+        <mat-icon class="section-icon">business</mat-icon>
+        <h3>Информация о лиде</h3>
+      </div>
+      <div class="form-field-container">
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field required-field">
+            <mat-label>Источник</mat-label>
+            <mat-select formControlName="source">
+              <mat-option value="website">Веб-сайт</mat-option>
+              <mat-option value="phone">Телефонный звонок</mat-option>
+              <mat-option value="email">Email</mat-option>
+              <mat-option value="referral">Рекомендация</mat-option>
+              <mat-option value="social_media">Социальные сети</mat-option>
+              <mat-option value="advertising">Реклама</mat-option>
+              <mat-option value="other">Другое</mat-option>
+            </mat-select>
+            <mat-icon matSuffix>source</mat-icon>
+            <mat-error *ngIf="leadForm.get('source')?.hasError('required')">Источник обязателен</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Приоритет</mat-label>
+            <mat-select formControlName="priority">
+              <mat-option value="low">Низкий</mat-option>
+              <mat-option value="medium">Средний</mat-option>
+              <mat-option value="high">Высокий</mat-option>
+              <mat-option value="urgent">Срочный</mat-option>
+            </mat-select>
+            <mat-icon matSuffix>priority_high</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Заметки</mat-label>
+          <textarea matInput formControlName="notes" rows="3" placeholder="Дополнительная информация о лиде..."></textarea>
+          <mat-icon matSuffix>note</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Теги</mat-label>
+          <input matInput formControlName="tagsInput" placeholder="Введите теги через запятую">
+          <mat-icon matSuffix>label</mat-icon>
+          <mat-hint>Разделяйте теги запятыми</mat-hint>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <!-- Business Information -->
+    <div class="form-section">
+      <div class="section-header">
+        <mat-icon class="section-icon">monetization_on</mat-icon>
+        <h3>Бизнес-информация</h3>
+      </div>
+      <div class="form-field-container">
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Предполагаемая стоимость</mat-label>
+            <input matInput type="number" formControlName="estimatedValue" placeholder="0">
+            <mat-icon matSuffix>attach_money</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Бюджет</mat-label>
+            <input matInput type="number" formControlName="budget" placeholder="0">
+            <mat-icon matSuffix>account_balance_wallet</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Временные рамки принятия решения</mat-label>
+          <mat-select formControlName="decisionTimeframe">
+            <mat-option value="">Не указано</mat-option>
+            <mat-option value="immediate">Немедленно</mat-option>
+            <mat-option value="1_week">В течение недели</mat-option>
+            <mat-option value="1_month">В течение месяца</mat-option>
+            <mat-option value="3_months">В течение 3 месяцев</mat-option>
+            <mat-option value="6_months">В течение 6 месяцев</mat-option>
+            <mat-option value="1_year">В течение года</mat-option>
+            <mat-option value="no_timeframe">Без временных рамок</mat-option>
+          </mat-select>
+          <mat-icon matSuffix>schedule</mat-icon>
+        </mat-form-field>
       </div>
     </div>
   </form>

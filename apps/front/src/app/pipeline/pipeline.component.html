@@ -21,8 +21,9 @@
         <ng-container *ngFor="let deal of getDealsForStage(s.id)">
           <div class="deal" cdkDrag [cdkDragData]="deal">
             <div class="deal-title">{{ deal.title }}</div>
-            <div class="deal-contact">{{ deal.contact.name }}</div>
-            <div class="deal-company" *ngIf="deal.contact.company">{{ deal.contact.company }}</div>
+            <div class="deal-contact" *ngIf="deal.contact">{{ deal.contact.name }}</div>
+            <div class="deal-company" *ngIf="deal.company">{{ deal.company.name }}</div>
+            <div class="deal-lead" *ngIf="deal.lead">Лид: {{ deal.lead.name }}</div>
             <div class="deal-amount">{{ deal.amount | currency:deal.currency:'symbol':'1.0-0' }}</div>
             <div class="deal-probability">{{ deal.probability }}% вероятность</div>
             <div class="deal-date">{{ deal.expectedCloseDate | date:'shortDate' }}</div>

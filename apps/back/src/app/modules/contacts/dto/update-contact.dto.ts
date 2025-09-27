@@ -8,7 +8,8 @@ export class UpdateContactDto {
   lastName?: string;
   middleName?: string;
   position?: string;
-  company?: string;
+  companyId?: string; // Ссылка на компанию по ID
+  companyName?: string; // Поле для обратной совместимости
   email?: string;
   phone?: string;
   mobilePhone?: string;

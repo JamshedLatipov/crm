@@ -1,15 +1,11 @@
-export class ContactDto {
-  name: string;
-  email?: string;
-  phone?: string;
-  company?: string;
-}
-
 export class CreateDealDto {
   title: string;
-  leadId?: string;
-  contactId?: string; // Предпочтительный способ - ссылка на существующий контакт
-  contact?: ContactDto; // Deprecated - используйте contactId
+  
+  // Связи с другими сущностями (опциональные)
+  contactId?: string; // ID контакта
+  companyId?: string; // ID компании  
+  leadId?: number;    // ID лида
+  
   amount: number;
   currency: string;
   probability: number;

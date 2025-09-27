@@ -99,4 +99,35 @@ export class DealsController {
   async assignDeal(@Param('id') id: string, @Body('assignedTo') managerId: string) {
     return this.dealsService.assignDeal(id, managerId);
   }
+
+  // Связи с компаниями, контактами и лидами
+  @Patch(':id/link-company')
+  async linkToCompany(@Param('id') id: string, @Body('companyId') companyId: string) {
+    return this.dealsService.linkDealToCompany(id, companyId);
+  }
+
+  @Patch(':id/link-contact')
+  async linkToContact(@Param('id') id: string, @Body('contactId') contactId: string) {
+    return this.dealsService.linkDealToContact(id, contactId);
+  }
+
+  @Patch(':id/link-lead')
+  async linkToLead(@Param('id') id: string, @Body('leadId') leadId: number) {
+    return this.dealsService.linkDealToLead(id, leadId);
+  }
+
+  @Get('by-company/:companyId')
+  async getDealsByCompany(@Param('companyId') companyId: string) {
+    return this.dealsService.getDealsByCompany(companyId);
+  }
+
+  @Get('by-contact/:contactId')
+  async getDealsByContact(@Param('contactId') contactId: string) {
+    return this.dealsService.getDealsByContact(contactId);
+  }
+
+  @Get('by-lead/:leadId')
+  async getDealsByLead(@Param('leadId') leadId: number) {
+    return this.dealsService.getDealsByLead(leadId);
+  }
 }

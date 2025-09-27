@@ -102,4 +102,36 @@ export class DealsService {
   searchDeals(query: string): Observable<Deal[]> {
     return this.http.get<Deal[]>(`${this.apiUrl}/search?q=${encodeURIComponent(query)}`);
   }
+
+  // === Работа со связями с другими сущностями ===
+  
+  // Привязка сделки к компании
+  linkToCompany(dealId: string, companyId: string): Observable<Deal> {
+    return this.http.patch<Deal>(`${this.apiUrl}/${dealId}/link-company`, { companyId });
+  }
+
+  // Привязка сделки к контакту
+  linkToContact(dealId: string, contactId: string): Observable<Deal> {
+    return this.http.patch<Deal>(`${this.apiUrl}/${dealId}/link-contact`, { contactId });
+  }
+
+  // Привязка сделки к лиду
+  linkToLead(dealId: string, leadId: number): Observable<Deal> {
+    return this.http.patch<Deal>(`${this.apiUrl}/${dealId}/link-lead`, { leadId });
+  }
+
+  // Получение сделок по компании
+  getDealsByCompany(companyId: string): Observable<Deal[]> {
+    return this.http.get<Deal[]>(`${this.apiUrl}/by-company/${companyId}`);
+  }
+
+  // Получение сделок по контакту
+  getDealsByContact(contactId: string): Observable<Deal[]> {
+    return this.http.get<Deal[]>(`${this.apiUrl}/by-contact/${contactId}`);
+  }
+
+  // Получение сделок по лиду
+  getDealsByLead(leadId: number): Observable<Deal[]> {
+    return this.http.get<Deal[]>(`${this.apiUrl}/by-lead/${leadId}`);
+  }
 }

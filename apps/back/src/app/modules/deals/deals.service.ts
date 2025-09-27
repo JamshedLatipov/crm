@@ -14,7 +14,7 @@ export class DealsService {
 
   async listDeals(): Promise<Deal[]> {
     return this.dealRepository.find({
-      relations: ['stage'],
+      relations: ['stage', 'company', 'contact', 'lead'],
       order: { createdAt: 'DESC' },
     });
   }
@@ -22,7 +22,7 @@ export class DealsService {
   async getDealById(id: string): Promise<Deal> {
     const deal = await this.dealRepository.findOne({
       where: { id },
-      relations: ['stage'],
+      relations: ['stage', 'company', 'contact', 'lead'],
     });
 
     if (!deal) {
@@ -33,12 +33,36 @@ export class DealsService {
   }
 
   async createDeal(dto: CreateDealDto): Promise<Deal> {
+    // Создаем сделку без связей
     const deal = this.dealRepository.create({
-      ...dto,
+      title: dto.title,
+      amount: dto.amount,
+      currency: dto.currency,
+      probability: dto.probability,
       expectedCloseDate: new Date(dto.expectedCloseDate),
+      stageId: dto.stageId,
+      assignedTo: dto.assignedTo,
+      notes: dto.notes,
+      meta: dto.meta,
     });
 
-    return this.dealRepository.save(deal);
+    const savedDeal = await this.dealRepository.save(deal);
+
+    // Устанавливаем связи после создания, если они указаны
+    if (dto.contactId) {
+      await this.linkDealToContact(savedDeal.id, dto.contactId);
+    }
+    
+    if (dto.companyId) {
+      await this.linkDealToCompany(savedDeal.id, dto.companyId);
+    }
+    
+    if (dto.leadId) {
+      await this.linkDealToLead(savedDeal.id, dto.leadId);
+    }
+
+    // Возвращаем сделку со всеми связями
+    return this.getDealById(savedDeal.id);
   }
 
   async updateDeal(id: string, dto: UpdateDealDto): Promise<Deal> {
@@ -188,5 +212,60 @@ export class DealsService {
       weightedAmount,
       dealsCount: deals.length,
     };
+  }
+
+  // Методы для работы со связями
+  async linkDealToCompany(dealId: string, companyId: string): Promise<Deal> {
+    await this.dealRepository
+      .createQueryBuilder()
+      .relation(Deal, 'company')
+      .of(dealId)
+      .set(companyId);
+    
+    return this.getDealById(dealId);
+  }
+
+  async linkDealToContact(dealId: string, contactId: string): Promise<Deal> {
+    await this.dealRepository
+      .createQueryBuilder()
+      .relation(Deal, 'contact')
+      .of(dealId)
+      .set(contactId);
+    
+    return this.getDealById(dealId);
+  }
+
+  async linkDealToLead(dealId: string, leadId: number): Promise<Deal> {
+    await this.dealRepository
+      .createQueryBuilder()
+      .relation(Deal, 'lead')
+      .of(dealId)
+      .set(leadId);
+    
+    return this.getDealById(dealId);
+  }
+
+  async getDealsByCompany(companyId: string): Promise<Deal[]> {
+    return this.dealRepository.find({
+      where: { company: { id: companyId } },
+      relations: ['stage', 'company', 'contact', 'lead'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async getDealsByContact(contactId: string): Promise<Deal[]> {
+    return this.dealRepository.find({
+      where: { contact: { id: contactId } },
+      relations: ['stage', 'company', 'contact', 'lead'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async getDealsByLead(leadId: number): Promise<Deal[]> {
+    return this.dealRepository.find({
+      where: { lead: { id: leadId } },
+      relations: ['stage', 'company', 'contact', 'lead'],
+      order: { createdAt: 'DESC' },
+    });
   }
 }

@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import { Deal } from '../deals/deal.entity';
 
 export enum LeadStatus {
   NEW = 'new',
@@ -171,4 +172,8 @@ export class Lead {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  // Связи
+  @OneToMany(() => Deal, deal => deal.lead)
+  deals?: Deal[];
 }

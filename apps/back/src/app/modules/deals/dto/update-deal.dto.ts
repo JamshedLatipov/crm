@@ -1,10 +1,13 @@
 import { DealStatus } from '../deal.entity';
-import { ContactDto } from './create-deal.dto';
 
 export class UpdateDealDto {
   title?: string;
+  
+  // Связи с другими сущностями
   contactId?: string;
-  contact?: Partial<ContactDto>;
+  companyId?: string;
+  leadId?: number;
+  
   amount?: number;
   currency?: string;
   probability?: number;

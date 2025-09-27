@@ -9,6 +9,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatOptionModule } from '@angular/material/core';
 
 import { LeadService } from '../../services/lead.service';
 import { LeadPriority, CreateLeadRequest } from '../../models/lead.model';
@@ -16,7 +17,7 @@ import { LeadPriority, CreateLeadRequest } from '../../models/lead.model';
 @Component({
   selector: 'app-create-lead-dialog',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatChipsModule, MatIconModule, MatProgressSpinnerModule],
+  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatChipsModule, MatIconModule, MatProgressSpinnerModule, MatOptionModule],
   templateUrl: './create-lead-dialog.component.html',
   styleUrls: ['./create-lead-dialog.component.scss']
 })
@@ -34,8 +35,16 @@ export class CreateLeadDialogComponent {
       email: ['', [Validators.email]],
       phone: [''],
       company: [''],
+      position: [''],
+      website: [''],
+      industry: [''],
+      country: [''],
+      city: [''],
       source: ['', [Validators.required]],
       priority: [LeadPriority.MEDIUM],
+      estimatedValue: [''],
+      budget: [''],
+      decisionTimeframe: [''],
       notes: [''],
       tagsInput: [''],
     });
@@ -57,8 +66,16 @@ export class CreateLeadDialogComponent {
       email: formValue.email || undefined,
       phone: formValue.phone || undefined,
       company: formValue.company || undefined,
+      position: formValue.position || undefined,
+      website: formValue.website || undefined,
+      industry: formValue.industry || undefined,
+      country: formValue.country || undefined,
+      city: formValue.city || undefined,
       source: formValue.source,
       priority: formValue.priority || undefined,
+      estimatedValue: formValue.estimatedValue ? Number(formValue.estimatedValue) : undefined,
+      budget: formValue.budget ? Number(formValue.budget) : undefined,
+      decisionTimeframe: formValue.decisionTimeframe || undefined,
       notes: formValue.notes || undefined,
       tags: tags.length > 0 ? tags : undefined,
     };

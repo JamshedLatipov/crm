@@ -4,7 +4,12 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+  OneToMany,
 } from 'typeorm';
+import { Company } from '../companies/entities/company.entity';
+import { Deal } from '../deals/deal.entity';
 
 export enum ContactType {
   PERSON = 'person',
@@ -50,8 +55,17 @@ export class Contact {
   @Column({ nullable: true })
   position?: string; // Должность
 
+  // Связь с компанией
+  @Column({ type: 'uuid', nullable: true })
+  companyId?: string;
+
+  @ManyToOne(() => Company, company => company.contacts)
+  @JoinColumn({ name: 'companyId' })
+  company?: Company;
+
+  // Старое поле для обратной совместимости  
   @Column({ nullable: true })
-  company?: string;
+  companyName?: string;
 
   // Контактная информация
   @Column({ nullable: true })
@@ -133,4 +147,8 @@ export class Contact {
 
   @Column('timestamp', { nullable: true })
   lastContactDate?: Date;
+
+  // Связи
+  @OneToMany(() => Deal, deal => deal.contact)
+  deals?: Deal[];
 }
