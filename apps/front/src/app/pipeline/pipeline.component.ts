@@ -100,6 +100,8 @@ export class PipelineComponent implements OnInit {
           const dealIndex = this.deals.findIndex(d => d.id === movedDeal.id);
           if (dealIndex !== -1) {
             this.deals[dealIndex].stageId = targetStageId;
+            // Rebuild the grouped deals to reflect the change
+            this.rebuildDealsByStage();
           }
         },
         error: () => {

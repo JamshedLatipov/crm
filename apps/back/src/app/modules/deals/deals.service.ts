@@ -66,20 +66,16 @@ export class DealsService {
   }
 
   async updateDeal(id: string, dto: UpdateDealDto): Promise<Deal> {
-    const deal = await this.getDealById(id);
-
-    // Update fields
-    Object.assign(deal, dto);
-
-    if (dto.expectedCloseDate) {
-      deal.expectedCloseDate = new Date(dto.expectedCloseDate);
-    }
-
-    if (dto.actualCloseDate) {
-      deal.actualCloseDate = new Date(dto.actualCloseDate);
-    }
-
-    return this.dealRepository.save(deal);
+    // Используем прямой UPDATE запрос вместо загрузки и сохранения entity
+    await this.dealRepository
+      .createQueryBuilder()
+      .update(Deal)
+      .set(dto)
+      .where('id = :id', { id })
+      .execute();
+    
+    // Загружаем обновленную сделку
+    return this.getDealById(id);
   }
 
   async deleteDeal(id: string): Promise<void> {
