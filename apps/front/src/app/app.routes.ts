@@ -10,6 +10,7 @@ import { LeadDetailComponent } from './leads/components/lead-detail.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { ContactsComponent } from './contacts/contacts.component';
 import { DealsComponent } from './deals/deals.component';
+import { PipelineComponent } from './pipeline/pipeline.component';
 
 export const appRoutes: Route[] = [
     { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
@@ -22,6 +23,7 @@ export const appRoutes: Route[] = [
     { path: 'calls', redirectTo: 'softphone' }, // Redirect calls to softphone
     { path: 'reports', component: DashboardComponent, canActivate: [authGuard] }, // Temporary redirect
     { path: 'help', component: DashboardComponent, canActivate: [authGuard] }, // Temporary redirect
+    { path: 'pipeline', component: PipelineComponent, canActivate: [authGuard] },
     { 
         path: 'leads', 
         component: LeadsComponent, 

@@ -8,6 +8,8 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { MODULES } from './modules';
 import { CALLS_MIGRATIONS } from './modules/calls/migrations';
 import { USER_MIGRATIONS } from './modules/user/migrations';
+import { DEALS_MIGRATIONS } from './modules/deals/migrations';
+import { CONTACTS_MIGRATIONS } from './modules/contacts/migrations';
 
 @Module({
     imports: [
@@ -21,7 +23,7 @@ import { USER_MIGRATIONS } from './modules/user/migrations';
             database: process.env.DB_NAME || 'crm',
             synchronize: true,
             autoLoadEntities: true,
-            migrations: [...CALLS_MIGRATIONS, ...USER_MIGRATIONS],
+            migrations: [...CALLS_MIGRATIONS, ...USER_MIGRATIONS, ...DEALS_MIGRATIONS, ...CONTACTS_MIGRATIONS],
             migrationsRun: true,
         }),
         ClientsModule.register([
