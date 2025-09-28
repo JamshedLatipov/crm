@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PipelineStage, PipelineLead } from './pipeline.entity';
+import { Deal } from '../deals/deal.entity';
 import { CreateStageDto } from './dto/create-stage.dto';
 import { UpdateStageDto } from './dto/update-stage.dto';
 import { CreateLeadDto } from './dto/create-lead.dto';
@@ -16,6 +17,8 @@ export class PipelineService {
     private stagesRepo: Repository<PipelineStage>,
     @InjectRepository(PipelineLead)
     private leadsRepo: Repository<PipelineLead>,
+    @InjectRepository(Deal)
+    private dealsRepo: Repository<Deal>,
   ) {}
 
   // Stages
@@ -76,14 +79,14 @@ export class PipelineService {
   // Simple analytics: conversion rates per stage (counts only)
   async analytics() {
     const stages = await this.stagesRepo.find({ order: { position: 'ASC' } });
-    const leads = await this.leadsRepo.find();
-    const total = leads.length || 1;
+    const deals = await this.dealsRepo.find();
+    const total = deals.length || 1;
     const byStage = stages.map((s) => ({
       id: s.id,
       name: s.name,
-      count: leads.filter((l) => l.stageId === s.id).length,
-      conversion: +( (leads.filter((l) => l.stageId === s.id).length / total) * 100 ).toFixed(2),
+      count: deals.filter((d) => d.stageId === s.id).length,
+      conversion: +( (deals.filter((d) => d.stageId === s.id).length / total) * 100 ).toFixed(2),
     }));
-    return { total: leads.length, byStage };
+    return { total: deals.length, byStage };
   }
 }
