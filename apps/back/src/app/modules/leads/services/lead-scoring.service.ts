@@ -174,7 +174,7 @@ export class LeadScoringService {
   private scoreCompanySize(lead: Lead, rule: LeadScoringRule): number {
     // Простая логика оценки размера компании
     // В реальности можно использовать API для обогащения данных
-    const companyName = lead.company?.toLowerCase() || '';
+    const companyName = lead.company?.id?.toLowerCase() || '';
     
     if (companyName.includes('corp') || companyName.includes('corporation') || 
         companyName.includes('ltd') || companyName.includes('inc')) {
@@ -190,7 +190,7 @@ export class LeadScoringService {
     const targetIndustries = Array.isArray(rule.conditions?.targetIndustries) 
       ? rule.conditions.targetIndustries as string[]
       : [];
-    const companyName = lead.company?.toLowerCase() || '';
+    const companyName = lead.company?.id?.toLowerCase() || '';
     
     for (const industry of targetIndustries) {
       if (companyName.includes(industry.toLowerCase())) {

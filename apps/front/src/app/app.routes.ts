@@ -9,19 +9,25 @@ import { LeadsDashboardComponent } from './leads/components/leads-dashboard.comp
 import { LeadDetailComponent } from './leads/components/lead-detail.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { ContactsComponent } from './contacts/contacts.component';
+import { ContactDetailComponent } from './contacts/components/contact-detail.component';
 import { DealsComponent } from './deals/deals.component';
+import { PipelineComponent } from './pipeline/pipeline.component';
+import { CreateStageComponent } from './pipeline/create-stage.component';
 
 export const appRoutes: Route[] = [
     { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     { path: 'login', component: LoginComponent },
     { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
     { path: 'contacts', component: ContactsComponent, canActivate: [authGuard] },
+    { path: 'contacts/view/:id', component: ContactDetailComponent, canActivate: [authGuard] },
     { path: 'deals', component: DealsComponent, canActivate: [authGuard] },
     { path: 'softphone', component: SoftphoneComponent, canActivate: [authGuard] },
     { path: 'ivr', component: IvrAdminComponent, canActivate: [authGuard] },
     { path: 'calls', redirectTo: 'softphone' }, // Redirect calls to softphone
     { path: 'reports', component: DashboardComponent, canActivate: [authGuard] }, // Temporary redirect
     { path: 'help', component: DashboardComponent, canActivate: [authGuard] }, // Temporary redirect
+    { path: 'pipeline', component: PipelineComponent, canActivate: [authGuard] },
+    { path: 'pipeline/create-stage', component: CreateStageComponent, canActivate: [authGuard] },
     { 
         path: 'leads', 
         component: LeadsComponent, 

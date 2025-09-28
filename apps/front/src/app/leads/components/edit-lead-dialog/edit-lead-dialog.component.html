@@ -42,11 +42,7 @@
         </div>
 
         <div class="form-row">
-          <mat-form-field appearance="outline" class="form-field">
-            <mat-label>Компания</mat-label>
-            <input matInput formControlName="company" placeholder="Название компании">
-            <mat-icon matSuffix>business</mat-icon>
-          </mat-form-field>
+          <app-company-autocomplete [control]="companyControl" [idControl]="companyIdControl" placeholder="Название компании"></app-company-autocomplete>
 
           <mat-form-field appearance="outline" class="form-field">
             <mat-label>Должность</mat-label>

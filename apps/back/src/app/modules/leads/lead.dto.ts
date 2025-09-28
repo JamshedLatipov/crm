@@ -1,148 +1,237 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { LeadStatus, LeadSource, LeadPriority } from './lead.entity';
+import { IsString, IsOptional, IsEmail, IsEnum, IsNumber, IsArray, IsDateString } from 'class-validator';
 
 export class CreateLeadDto {
   @ApiProperty()
+  @IsString()
   name: string;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsEmail()
   email?: string;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   phone?: string;
 
   @ApiProperty({ required: false })
-  company?: string;
+  @IsOptional()
+  @IsString()
+  companyId?: string;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   position?: string;
 
   @ApiProperty({ enum: LeadStatus, required: false })
+  @IsOptional()
+  @IsEnum(LeadStatus)
   status?: LeadStatus;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
   score?: number;
 
   @ApiProperty({ enum: LeadSource, required: false })
+  @IsOptional()
+  @IsEnum(LeadSource)
   source?: LeadSource;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   sourceDetails?: string;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   campaign?: string;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   utmSource?: string;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   utmMedium?: string;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   utmCampaign?: string;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   utmContent?: string;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   utmTerm?: string;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   assignedTo?: string;
 
   @ApiProperty({ enum: LeadPriority, required: false })
+  @IsOptional()
+  @IsEnum(LeadPriority)
   priority?: LeadPriority;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
   estimatedValue?: number;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   notes?: string;
 
   @ApiProperty({ required: false })
+  @IsOptional()
   customFields?: Record<string, string | number | boolean>;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsArray()
   tags?: string[];
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsDateString()
   nextFollowUpDate?: Date;
 }
 
 export class UpdateLeadDto {
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   name?: string;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsEmail()
   email?: string;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   phone?: string;
 
   @ApiProperty({ required: false })
-  company?: string;
+  @IsOptional()
+  @IsString()
+  companyId?: string;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   position?: string;
 
   @ApiProperty({ enum: LeadStatus, required: false })
+  @IsOptional()
+  @IsEnum(LeadStatus)
   status?: LeadStatus;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
   score?: number;
 
   @ApiProperty({ enum: LeadSource, required: false })
+  @IsOptional()
+  @IsEnum(LeadSource)
   source?: LeadSource;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   sourceDetails?: string;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   campaign?: string;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   utmSource?: string;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   utmMedium?: string;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   utmCampaign?: string;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   utmContent?: string;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   utmTerm?: string;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   assignedTo?: string;
 
   @ApiProperty({ enum: LeadPriority, required: false })
+  @IsOptional()
+  @IsEnum(LeadPriority)
   priority?: LeadPriority;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
   estimatedValue?: number;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   notes?: string;
 
   @ApiProperty({ required: false })
+  @IsOptional()
   customFields?: Record<string, string | number | boolean>;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsArray()
   tags?: string[];
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsDateString()
   nextFollowUpDate?: Date;
 
   @ApiProperty({ required: false })
+  @IsOptional()
   isQualified?: boolean;
 
   @ApiProperty({ required: false })
+  @IsOptional()
   isUnsubscribed?: boolean;
 
   @ApiProperty({ required: false })
+  @IsOptional()
   isDoNotCall?: boolean;
 }
 

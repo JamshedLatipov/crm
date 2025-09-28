@@ -1,96 +1,120 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTableModule } from '@angular/material/table';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { ContactsService } from './contacts.service';
+import { Router } from '@angular/router';
+import { Contact, ContactsStats } from './contact.interfaces';
 
 @Component({
   selector: 'app-contacts',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatIconModule, MatButtonModule],
-  template: `
-    <div class="page-container">
-      <div class="page-header">
-        <h1>Contacts</h1>
-        <p class="subtitle">Manage your customer contacts</p>
-      </div>
-
-      <mat-card class="coming-soon-card">
-        <div class="coming-soon-content">
-          <mat-icon class="large-icon">people</mat-icon>
-          <h2>Contacts Module</h2>
-          <p>Coming soon! This section will contain your contact management system.</p>
-          <button mat-raised-button color="primary">
-            <mat-icon>add</mat-icon>
-            Add Contact
-          </button>
-        </div>
-      </mat-card>
-    </div>
-  `,
-  styles: [`
-    .page-container {
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .page-header {
-      margin-bottom: 32px;
-    }
-
-    .page-header h1 {
-      font-size: 32px;
-      font-weight: 700;
-      color: #1f2937;
-      margin: 0 0 8px 0;
-    }
-
-    .subtitle {
-      color: #6b7280;
-      font-size: 16px;
-      margin: 0;
-    }
-
-    .coming-soon-card {
-      padding: 64px;
-      text-align: center;
-      border-radius: 16px;
-      border: 1px solid #e5e7eb;
-    }
-
-    .coming-soon-content {
-      max-width: 400px;
-      margin: 0 auto;
-    }
-
-    .large-icon {
-      font-size: 64px;
-      width: 64px;
-      height: 64px;
-      color: #a855f7;
-      margin-bottom: 24px;
-    }
-
-    .coming-soon-content h2 {
-      font-size: 24px;
-      font-weight: 600;
-      color: #1f2937;
-      margin: 0 0 16px 0;
-    }
-
-    .coming-soon-content p {
-      color: #6b7280;
-      margin: 0 0 32px 0;
-      line-height: 1.6;
-    }
-
-    button {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin: 0 auto;
-    }
-  `]
+  imports: [
+    CommonModule,
+    MatCardModule,
+    MatIconModule,
+    MatButtonModule,
+    MatProgressSpinnerModule,
+    MatTableModule,
+    MatTooltipModule,
+    MatDialogModule,
+  ],
+  templateUrl: './contacts.component.html',
+  styleUrls: ['./contacts.component.scss'],
 })
-export class ContactsComponent {
+export class ContactsComponent implements OnInit {
+  contacts: Contact[] = [];
+  stats: ContactsStats | null = null;
+  loading = true;
+  displayedColumns = ['name', 'email', 'phone', 'company', 'actions'];
+
+  private readonly contactsService = inject(ContactsService);
+  private readonly snackBar = inject(MatSnackBar);
+  private readonly router = inject(Router);
+  private readonly dialog = inject(MatDialog);
+
+  ngOnInit(): void {
+    this.loadData();
+  }
+
+  loadData(): void {
+    this.loading = true;
+
+    // Загружаем контакты и статистику параллельно
+    Promise.all([
+      this.contactsService.listContacts().toPromise(),
+      this.contactsService.getContactsStats().toPromise(),
+    ])
+      .then(([contacts, stats]) => {
+        this.contacts = contacts || [];
+        this.stats = stats || null;
+        this.loading = false;
+      })
+      .catch((error) => {
+        console.error('Error loading contacts:', error);
+        this.snackBar.open('Ошибка загрузки контактов', 'Закрыть', {
+          duration: 3000,
+        });
+        this.loading = false;
+      });
+  }
+
+  trackByContactId(index: number, contact: Contact): string {
+    return contact.id;
+  }
+
+  formatDate(dateString: string): string {
+    return new Date(dateString).toLocaleDateString('ru-RU');
+  }
+
+  // Действия с контактами
+  openCreateDialog(): void {
+    import('./components/create-contact-dialog.component').then((m) => {
+      const dialogRef = this.dialog.open(m.CreateContactDialogComponent, { width: '520px' });
+      interface CreatedContact { id: string }
+      dialogRef.afterClosed().subscribe((created: CreatedContact | null) => {
+        if (created) {
+          this.snackBar.open('Контакт создан', 'Закрыть', { duration: 2000 });
+          this.loadData();
+          this.router.navigate(['/contacts/view', created.id]);
+        }
+      });
+    });
+  }
+
+  viewContact(contact: Contact): void {
+    this.snackBar.open(
+      `Просмотр контакта "${contact.name}" - в разработке`,
+      'Закрыть',
+      { duration: 3000 }
+    );
+  }
+
+  deleteContact(contact: Contact): void {
+    if (confirm(`Вы уверены, что хотите удалить контакт "${contact.name}"?`)) {
+      this.contactsService.deleteContact(contact.id).subscribe({
+        next: () => {
+          this.snackBar.open('Контакт удален', 'Закрыть', { duration: 3000 });
+          this.loadData();
+        },
+        error: (error) => {
+          console.error('Error deleting contact:', error);
+          this.snackBar.open('Ошибка удаления контакта', 'Закрыть', {
+            duration: 3000,
+          });
+        },
+      });
+    }
+  }
+
+  goToDetail(contact: Contact): void {
+    // navigate to contact detail page
+    this.router.navigate(['/contacts/view', contact.id]);
+  }
 }

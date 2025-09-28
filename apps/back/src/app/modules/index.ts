@@ -5,6 +5,10 @@ import { CallsModule } from "./calls/calls.module";
 import { AriModule } from "./ari/ari.module";
 import { IvrModule } from "./ivr/ivr.module";
 import { IvrMediaModule } from './ivr-media/ivr-media.module';
+import { PipelineModule } from './pipeline/pipeline.module';
+import { DealsModule } from './deals/deals.module';
+import { ContactsModule } from './contacts/contacts.module';
+import { CompaniesModule } from './companies/companies.module';
 
 export const MODULES = [
     LeadModule,
@@ -14,4 +18,8 @@ export const MODULES = [
     AriModule,
     IvrModule,
     IvrMediaModule,
+    PipelineModule,
+    DealsModule,
+    ContactsModule,
+    CompaniesModule,
 ];

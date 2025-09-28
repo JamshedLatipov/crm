@@ -268,6 +268,13 @@ export class LeadService {
     return this.updateLeadStatus(leadId, LeadStatus.CONTACTED);
   }
 
+  // Create contact from lead via pipeline module
+  createContactFromLead(leadId: string): Observable<any> {
+    // returns created contact
+    // pipeline endpoints are mounted under /pipeline
+    return this.http.post<any>(`${environment.apiBase}/pipeline/leads/${leadId}/create-contact`, {});
+  }
+
   getLeadStatistics(): Observable<LeadStatistics> {
     return this.getStatistics();
   }

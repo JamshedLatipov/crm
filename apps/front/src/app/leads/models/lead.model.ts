@@ -1,3 +1,5 @@
+import { Company } from '../../pipeline/dtos';
+
 export * from './enums';
 
 export enum LeadStatus {
@@ -65,7 +67,7 @@ export interface Lead {
   name: string;
   email?: string;
   phone?: string;
-  company?: string;
+  company?: Company;
   position?: string;
   website?: string;
   industry?: string;

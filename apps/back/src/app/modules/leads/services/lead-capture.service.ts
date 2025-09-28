@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Lead, LeadSource } from '../lead.entity';
 import { LeadActivity, ActivityType } from '../entities/lead-activity.entity';
 import { LeadScoringService } from './lead-scoring.service';
+import { Company } from '../../companies/entities/company.entity';
 
 export interface WebhookData {
   name: string;
@@ -68,7 +69,7 @@ export class LeadCaptureService {
     if (existingLead) {
       // Обновляем существующий лид
       const updatedData: Partial<Lead> = {
-        company: data.company || existingLead.company,
+        company: { id: data.company || existingLead.company.id } as Company,
         position: data.position || existingLead.position,
         utmSource: data.utm_source || existingLead.utmSource,
         utmMedium: data.utm_medium || existingLead.utmMedium,
@@ -122,7 +123,7 @@ export class LeadCaptureService {
       name: data.name,
       email: data.email,
       phone: data.phone,
-      company: data.company,
+      company: { id: data.company },
       position: data.position,
       source: this.mapSource(data.source),
       sourceDetails: data.form_name,

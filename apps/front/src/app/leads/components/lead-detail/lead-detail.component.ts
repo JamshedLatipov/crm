@@ -217,6 +217,20 @@ export class LeadDetailComponent implements OnInit {
     console.log('Edit lead:', this.lead);
   }
 
+  createContactFromLead(): void {
+    if (!this.lead?.id) return;
+    this.leadService.createContactFromLead(this.lead.id).subscribe({
+      next: (contact) => {
+        console.log('Created contact from lead:', contact);
+        // Link contact id locally
+        (this.lead as any).contact = contact.id;
+      },
+      error: (err) => {
+        console.error('Error creating contact from lead:', err);
+      }
+    });
+  }
+
   contactLead(): void {
     this.leadService.markAsContacted(this.lead.id).subscribe({
       next: () => {
