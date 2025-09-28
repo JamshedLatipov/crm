@@ -10,14 +10,19 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatOptionModule } from '@angular/material/core';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 
 import { LeadService } from '../../services/lead.service';
 import { LeadPriority, CreateLeadRequest } from '../../models/lead.model';
+import { CompaniesService } from '../../../services/companies.service';
+import { CompanyAutocompleteComponent } from '../../../shared/components/company-autocomplete/company-autocomplete.component';
+import { Company } from '../../../pipeline/dtos';
+// Company type is available via pipeline dtos when needed
 
 @Component({
   selector: 'app-create-lead-dialog',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatChipsModule, MatIconModule, MatProgressSpinnerModule, MatOptionModule],
+  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatChipsModule, MatIconModule, MatProgressSpinnerModule, MatOptionModule, MatAutocompleteModule, CompanyAutocompleteComponent],
   templateUrl: './create-lead-dialog.component.html',
   styleUrls: ['./create-lead-dialog.component.scss']
 })
@@ -25,9 +30,11 @@ export class CreateLeadDialogComponent {
   private readonly fb = inject(FormBuilder);
   private readonly leadService = inject(LeadService);
   private readonly dialogRef = inject(MatDialogRef<CreateLeadDialogComponent>);
+  private readonly companiesService = inject(CompaniesService);
 
   leadForm: FormGroup;
   saving = false;
+  // company autocomplete handled by shared component
 
   constructor() {
     this.leadForm = this.fb.group({
@@ -35,6 +42,7 @@ export class CreateLeadDialogComponent {
       email: ['', [Validators.email]],
       phone: [''],
       company: [''],
+      companyId: [''],
       position: [''],
       website: [''],
       industry: [''],
@@ -48,7 +56,25 @@ export class CreateLeadDialogComponent {
       notes: [''],
       tagsInput: [''],
     });
+
+    // company autocomplete is provided by CompanyAutocompleteComponent
   }
+
+  get companyControl() {
+    return this.leadForm.get('company') as import('@angular/forms').FormControl<string | null>;
+  }
+
+  get companyIdControl() {
+    return this.leadForm.get('companyId') as import('@angular/forms').FormControl<string | null>;
+  }
+
+  onCompanySelected(company: Company | null) {
+    if (!company) return;
+    this.leadForm.patchValue({ company: company.name || company.legalName });
+    this.companyIdControl.setValue(company.id ?? null);
+  }
+
+  // inline company creation handled by shared component
 
   save(): void {
     if (this.leadForm.invalid) return;
@@ -85,7 +111,7 @@ export class CreateLeadDialogComponent {
         this.saving = false;
         this.dialogRef.close(true);
       },
-      error: (error: any) => {
+      error: (error: unknown) => {
         console.error('Error creating lead:', error);
         this.saving = false;
       },

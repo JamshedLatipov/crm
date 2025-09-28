@@ -10,6 +10,7 @@ import {
   CompanySize, 
   Industry 
 } from '../pipeline/dtos';
+import { environment } from '../../environments/environment';
 
 export interface CompanyFilters {
   search?: string;
@@ -44,7 +45,7 @@ export interface CompanyStats {
 })
 export class CompaniesService {
   private http = inject(HttpClient);
-  private apiUrl = '/api/companies';
+  private apiUrl = environment.apiBase + '/companies';
   
   private companiesSubject = new BehaviorSubject<Company[]>([]);
   public companies$ = this.companiesSubject.asObservable();

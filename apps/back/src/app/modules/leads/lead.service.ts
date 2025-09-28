@@ -49,6 +49,7 @@ export class LeadService {
   ) {}
 
   async create(data: Partial<Lead>): Promise<Lead> {
+    console.log('Creating lead with data:', data);
     const lead = await this.leadRepo.save(data);
     
     // Записываем создание лида в активность

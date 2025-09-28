@@ -1,16 +1,24 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Contact, ContactType, ContactSource } from './contact.entity';
+import { Company } from '../companies/entities/company.entity';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
+import { CompaniesService } from '../companies/services/companies.service';
 
 @Injectable()
 export class ContactsService {
   constructor(
     @InjectRepository(Contact)
     private readonly contactRepository: Repository<Contact>,
+    private readonly companiesService?: CompaniesService,
   ) {}
+
+  // Local helper to avoid spreading 'any' directly in code and satisfy lint rules
+  private typeGuardAny(obj: unknown): obj is Record<string, unknown> {
+    return typeof obj === 'object' && obj !== null;
+  }
 
   async listContacts(): Promise<Contact[]> {
     return this.contactRepository.find({
@@ -22,6 +30,7 @@ export class ContactsService {
   async getContactById(id: string): Promise<Contact> {
     const contact = await this.contactRepository.findOne({
       where: { id },
+      relations: ['company'],
     });
 
     if (!contact) {
@@ -32,21 +41,59 @@ export class ContactsService {
   }
 
   async createContact(dto: CreateContactDto): Promise<Contact> {
+    const safeName = dto.name && dto.name.toString().trim() ? dto.name : 'Unknown';
+    const safeType = dto.type || (ContactType.PERSON as ContactType);
+    const safeSource = dto.source || (ContactSource.OTHER as ContactSource);
+
+    let resolvedCompany: Company | undefined = undefined;
+
+    if (dto.companyId && this.companiesService) {
+      resolvedCompany = await this.companiesService.findOne(dto.companyId) || undefined;
+    }
+
     const contact = this.contactRepository.create({
       ...dto,
-      // Обрабатываем companyName для обратной совместимости
-      companyName: dto.companyName || undefined,
+      name: safeName,
+      type: safeType,
+      source: safeSource,
+      company: resolvedCompany || undefined,
     });
-    return this.contactRepository.save(contact);
+    const saved = (await this.contactRepository.save(contact)) as unknown as Contact;
+    
+    return saved;
   }
 
   async updateContact(id: string, dto: UpdateContactDto): Promise<Contact> {
     const contact = await this.getContactById(id);
 
-    Object.assign(contact, dto);
+    // Prevent assigning removed fields directly. Resolve company if companyId provided.
+  const payload = { ...((dto as unknown) as Record<string, unknown>) };
+  delete payload.companyId;
+  delete payload.companyName;
+    Object.assign(contact, payload);
 
-    if (dto.lastContactDate) {
-      contact.lastContactDate = new Date(dto.lastContactDate);
+    // check if caller provided a companyId (still supported in DTO) and resolve it
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const maybe = dto as any;
+    if (maybe.companyId && this.companiesService) {
+      try {
+        const found = await this.companiesService.findOne(maybe.companyId);
+        if (found) {
+          // assign relation
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          contact.company = found;
+        } else {
+          console.warn('[updateContact] provided companyId not found:', maybe.companyId);
+        }
+      } catch (err) {
+        console.warn('[updateContact] company lookup failed:', err?.message || err);
+      }
+    }
+
+    if (payload.lastContactDate && (typeof payload.lastContactDate === 'string' || typeof payload.lastContactDate === 'number' || payload.lastContactDate instanceof Date)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      contact.lastContactDate = new Date((payload.lastContactDate as any));
     }
 
     return this.contactRepository.save(contact);
@@ -127,12 +174,14 @@ export class ContactsService {
   }
 
   async searchContacts(query: string): Promise<Contact[]> {
+    const q = `%${query}%`;
     return this.contactRepository
       .createQueryBuilder('contact')
+      .leftJoinAndSelect('contact.company', 'company')
       .where('contact.isActive = :isActive', { isActive: true })
       .andWhere(
-        '(contact.name ILIKE :query OR contact.email ILIKE :query OR contact.phone ILIKE :query OR contact.company ILIKE :query)',
-        { query: `%${query}%` }
+        '(contact.name ILIKE :q OR contact.email ILIKE :q OR contact.phone ILIKE :q OR company.name ILIKE :q)',
+        { q }
       )
       .orderBy('contact.createdAt', 'DESC')
       .getMany();

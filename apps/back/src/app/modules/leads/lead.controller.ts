@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Patch, Delete, Query, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Delete, Query, BadRequestException, Req } from '@nestjs/common';
 import { LeadService } from './lead.service';
 import { Lead, LeadStatus, LeadSource, LeadPriority } from './lead.entity';
 import { ApiTags, ApiBody, ApiQuery } from '@nestjs/swagger';
@@ -47,7 +47,20 @@ export class LeadController {
 
   @Post()
   @ApiBody({ type: CreateLeadDto })
-  async create(@Body() data: CreateLeadDto): Promise<Lead> {
+  async create(@Body() data: CreateLeadDto, @Req() req: unknown): Promise<Lead> {
+    console.log('Creating lead — parsed DTO:', req);
+    if (req && typeof req === 'object' && req !== null) {
+      const r = req as { rawBody?: unknown; headers?: Record<string, unknown> };
+      if (typeof r.rawBody === 'string') {
+        console.log('Creating lead — rawBody from middleware:', r.rawBody);
+      }
+      const headers = r.headers || {};
+      const contentType = (headers['content-type'] || headers['Content-Type']) as string | undefined;
+      const contentLength = (headers['content-length'] || headers['Content-Length']) as string | undefined;
+      const transferEncoding = (headers['transfer-encoding'] || headers['Transfer-Encoding']) as string | undefined;
+      const xff = (headers['x-forwarded-for'] || headers['X-Forwarded-For']) as string | undefined;
+      console.log('Creating lead — headers:', { contentType, contentLength, transferEncoding, xForwardedFor: xff });
+    }
     return this.leadService.create(data);
   }
 

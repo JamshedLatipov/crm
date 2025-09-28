@@ -55,17 +55,10 @@ export class Contact {
   @Column({ nullable: true })
   position?: string; // Должность
 
-  // Связь с компанией
-  @Column({ type: 'uuid', nullable: true })
-  companyId?: string;
-
-  @ManyToOne(() => Company, company => company.contacts)
+  // Связь с компанией (используем relation; FK column will be managed by TypeORM)
+  @ManyToOne(() => Company, company => company.contacts, { nullable: true })
   @JoinColumn({ name: 'companyId' })
   company?: Company;
-
-  // Старое поле для обратной совместимости  
-  @Column({ nullable: true })
-  companyName?: string;
 
   // Контактная информация
   @Column({ nullable: true })

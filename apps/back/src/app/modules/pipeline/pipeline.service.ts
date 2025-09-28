@@ -10,6 +10,7 @@ import { UpdateStageDto } from './dto/update-stage.dto';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
 import { ContactsService } from '../contacts/contacts.service';
+import { ContactSource } from '../contacts/contact.entity';
 import { DataSource } from 'typeorm';
 
 @Injectable()
@@ -138,20 +139,71 @@ export class PipelineService {
     }
 
     // Map available fields to contact DTO
-    const contactDto: any = {
+    type LeadMeta = Partial<{
+      firstName: string;
+      lastName: string;
+      email: string;
+      phone: string;
+      mobilePhone: string;
+      website: string;
+      companyId: string;
+      companyName: string;
+      address: Record<string, string>;
+      socialMedia: Record<string, string>;
+      source: string;
+      assignedTo: string;
+      tags: string[];
+    }>;
+
+    const meta = (pipelineLead && pipelineLead.meta) ? (pipelineLead.meta as LeadMeta) : {} as LeadMeta;
+
+    // If mainLead has a full name, try to split to first/last
+    let mainFirst: string | undefined;
+    let mainLast: string | undefined;
+    if (mainLead && mainLead.name) {
+      const parts = mainLead.name.trim().split(/\s+/);
+      if (parts.length === 1) {
+        mainFirst = parts[0];
+      } else if (parts.length >= 2) {
+        mainFirst = parts[0];
+        mainLast = parts.slice(1).join(' ');
+      }
+    }
+
+    const contactDto = {
       name: (pipelineLead ? pipelineLead.title : mainLead?.name) || 'Unknown',
-      email: pipelineLead ? ((pipelineLead.meta && (pipelineLead.meta as any).email) || undefined) : mainLead?.email,
-      phone: pipelineLead ? ((pipelineLead.meta && (pipelineLead.meta as any).phone) || undefined) : mainLead?.phone,
-      source: pipelineLead ? ((pipelineLead.meta && (pipelineLead.meta as any).source) || undefined) : mainLead?.source,
+      firstName: meta.firstName || mainFirst || undefined,
+      lastName: meta.lastName || mainLast || undefined,
+      email: meta.email || mainLead?.email || undefined,
+      phone: meta.phone || mainLead?.phone || undefined,
+      mobilePhone: meta.mobilePhone || undefined,
+      website: meta.website || mainLead?.website || undefined,
+      companyId: meta.companyId || undefined,
+      companyName: meta.companyName || mainLead?.company || undefined,
+      // Normalize address: prefer structured meta, else assemble from lead fields
+      address: meta.address || (mainLead ? {
+        street: mainLead.address || undefined,
+        city: mainLead.city || undefined,
+        country: mainLead.country || undefined,
+      } : undefined),
+      socialMedia: meta.socialMedia || undefined,
+      source: ((): ContactSource | undefined => {
+        const s = meta.source || (mainLead ? mainLead.source : undefined);
+        if (!s) return undefined;
+        const asStr = String(s);
+        return (Object.values(ContactSource) as string[]).includes(asStr) ? asStr as ContactSource : undefined;
+      })(),
+      assignedTo: meta.assignedTo || mainLead?.assignedTo || undefined,
+      tags: meta.tags || mainLead?.tags || undefined,
       notes: `Created from lead ${pipelineLead ? pipelineLead.id : mainLead?.id}`,
       isActive: true,
-    };
+    } as import('../contacts/dto/create-contact.dto').CreateContactDto;
 
     const created = await this.contactsService.createContact(contactDto);
 
     // Save reference back on pipelineLead if it exists, otherwise do nothing to main leads table
     if (pipelineLead) {
-      pipelineLead.contact = created.id as any;
+      pipelineLead.contact = created.id;
       await this.leadsRepo.save(pipelineLead);
     } else if (mainLead) {
       // Optionally, if desired, we could store the contact id on main lead; current main Lead entity has no contact column.

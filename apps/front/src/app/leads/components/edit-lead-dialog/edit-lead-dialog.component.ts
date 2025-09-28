@@ -9,6 +9,11 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { CompaniesService } from '../../../services/companies.service';
+import { CompanyAutocompleteComponent } from '../../../shared/components/company-autocomplete/company-autocomplete.component';
+import { Company } from '../../../pipeline/dtos';
+// rxjs operators not needed (autocomplete provided by shared component)
 import { Lead, LeadPriority, UpdateLeadRequest } from '../../models/lead.model';
 import { LeadService } from '../../services/lead.service';
 
@@ -26,6 +31,8 @@ import { LeadService } from '../../services/lead.service';
     MatIconModule,
     MatChipsModule,
     MatProgressSpinnerModule,
+    MatAutocompleteModule,
+    CompanyAutocompleteComponent,
   ],
   templateUrl: './edit-lead-dialog.component.html',
   styleUrls: ['./edit-lead-dialog.component.scss'],
@@ -34,11 +41,13 @@ export class EditLeadDialogComponent {
   private fb = inject(FormBuilder);
   private leadService = inject(LeadService);
   private dialogRef = inject(MatDialogRef<EditLeadDialogComponent>);
+  private readonly companiesService = inject(CompaniesService);
   
   data = inject(MAT_DIALOG_DATA) as { lead: Lead };
 
   editForm: FormGroup;
   loading = false;
+  // autocomplete handled by shared component
 
   priorityOptions = [
     { value: LeadPriority.LOW, label: 'Низкий' },
@@ -50,6 +59,23 @@ export class EditLeadDialogComponent {
   constructor() {
     this.editForm = this.createForm();
     this.populateForm();
+    // company autocomplete provided by CompanyAutocompleteComponent
+    // ensure companyId control exists
+    this.editForm.addControl('companyId', this.fb.control(null));
+  }
+
+  get companyControl() {
+    return this.editForm.get('company') as import('@angular/forms').FormControl<string | null>;
+  }
+
+  get companyIdControl() {
+    return this.editForm.get('companyId') as import('@angular/forms').FormControl<string | null>;
+  }
+
+  onCompanySelected(company: Company | null) {
+    if (!company) return;
+    this.editForm.patchValue({ company: company.name || company.legalName });
+    this.companyIdControl.setValue(company.id ?? null);
   }
 
   private createForm(): FormGroup {

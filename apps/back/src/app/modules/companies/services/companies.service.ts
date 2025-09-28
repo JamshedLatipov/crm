@@ -2,50 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, In } from 'typeorm';
 import { Company, CompanyType, CompanySize, Industry } from '../entities/company.entity';
-
-export interface CreateCompanyDto {
-  name: string;
-  legalName?: string;
-  inn?: string;
-  kpp?: string;
-  ogrn?: string;
-  type?: CompanyType;
-  industry?: Industry;
-  size?: CompanySize;
-  employeeCount?: number;
-  annualRevenue?: number;
-  website?: string;
-  phone?: string;
-  email?: string;
-  address?: string;
-  city?: string;
-  region?: string;
-  country?: string;
-  postalCode?: string;
-  socialMedia?: {
-    linkedin?: string;
-    facebook?: string;
-    twitter?: string;
-    instagram?: string;
-    vk?: string;
-    telegram?: string;
-  };
-  description?: string;
-  notes?: string;
-  tags?: string[];
-  foundedDate?: Date;
-  source?: string;
-  ownerId?: string;
-}
-
-export interface UpdateCompanyDto extends Partial<CreateCompanyDto> {
-  isActive?: boolean;
-  isBlacklisted?: boolean;
-  blacklistReason?: string;
-  rating?: number;
-  lastContactDate?: Date;
-  lastActivityDate?: Date;
-}
+import { CreateCompanyDto } from '../dto/create-company.dto';
+import { UpdateCompanyDto } from '../dto/update-company.dto';
 
 export interface CompanyFilters {
   search?: string;
@@ -73,12 +31,32 @@ export class CompaniesService {
   ) {}
 
   async create(createCompanyDto: CreateCompanyDto): Promise<Company> {
-    const company = this.companiesRepository.create({
-      ...createCompanyDto,
+    // Prevent creating companies with duplicate INN
+    if (createCompanyDto.inn) {
+      const existing = await this.companiesRepository.findOne({ where: { inn: createCompanyDto.inn } });
+      if (existing) {
+        return existing; // idempotent create by INN
+      }
+    }
+
+    // Normalize tags: trim, unique
+    const tags = (createCompanyDto.tags || []).map(t => t.trim()).filter(Boolean);
+    const uniqueTags = Array.from(new Set(tags));
+
+  // Local DTO input shape where date-like fields may be string | Date
+  type CreateCompanyDtoInput = Omit<CreateCompanyDto, 'foundedDate'> & { foundedDate?: string | Date };
+  const { foundedDate: dtoFoundedDate, ...restCreate } = createCompanyDto as CreateCompanyDtoInput;
+  const founded = dtoFoundedDate ? new Date(dtoFoundedDate as string) : undefined;
+
+    const companyPayload: Partial<Company> = {
+      ...(restCreate as Partial<Company>),
+      foundedDate: founded,
+      tags: uniqueTags,
       firstContactDate: new Date(),
       lastActivityDate: new Date(),
-    });
-    
+    };
+
+    const company = this.companiesRepository.create(companyPayload);
     return await this.companiesRepository.save(company);
   }
 
@@ -170,10 +148,25 @@ export class CompaniesService {
   }
 
   async update(id: string, updateCompanyDto: UpdateCompanyDto): Promise<Company> {
-    await this.companiesRepository.update(id, {
-      ...updateCompanyDto,
-      lastActivityDate: new Date(),
-    });
+    const tags = updateCompanyDto.tags ? (updateCompanyDto.tags || []).map(t => t.trim()).filter(Boolean) : undefined;
+    const uniqueTags = tags ? Array.from(new Set(tags)) : undefined;
+
+    // Convert any incoming date-like strings into Date and avoid spreading string-typed dates
+  type UpdateCompanyDtoInput = Omit<UpdateCompanyDto, 'foundedDate' | 'lastContactDate' | 'lastActivityDate'> & { foundedDate?: string | Date; lastContactDate?: string | Date; lastActivityDate?: string | Date };
+  const { foundedDate: updFoundedDate, lastContactDate: updLastContactDate, ...restUpdate } = updateCompanyDto as UpdateCompanyDtoInput;
+  const lastContact = updLastContactDate ? new Date(updLastContactDate as string) : undefined;
+  const foundedUpd = updFoundedDate ? new Date(updFoundedDate as string) : undefined;
+    const lastActivity = new Date();
+
+    const updatePayload: Partial<Company> = {
+      ...(restUpdate as Partial<Company>),
+      foundedDate: foundedUpd,
+      tags: uniqueTags,
+      lastContactDate: lastContact,
+      lastActivityDate: lastActivity,
+    };
+
+    await this.companiesRepository.update(id, updatePayload);
     return this.findOne(id);
   }
 
