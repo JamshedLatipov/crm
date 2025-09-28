@@ -1,0 +1,120 @@
+<div class="page-container">
+  <div class="page-header">
+    <div class="header-content">
+      <div>
+        <h1>Контакты</h1>
+        <p class="subtitle">Управление контактами клиентов</p>
+      </div>
+      <button mat-raised-button  color="primary" (click)="openCreateDialog()">
+        <mat-icon>add</mat-icon>
+        <span>Создать контакт</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Contacts table -->
+  <div *ngIf="!loading; else loadingTemplate">
+    <div *ngIf="contacts.length === 0" class="empty-state">
+      <mat-icon class="empty-icon">person_search</mat-icon>
+      <h3>Контакты не найдены</h3>
+      <p>Попробуйте добавить новые контакты</p>
+      <button mat-raised-button color="primary" (click)="openCreateDialog()">
+        <mat-icon>add</mat-icon>
+        <span>Создать контакт</span>
+      </button>
+    </div>
+
+    <div *ngIf="contacts.length > 0" class="table-container">
+      <table
+        mat-table
+        [dataSource]="contacts"
+        class="mat-elevation-z1 contacts-table"
+      >
+        <!-- Name Column -->
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>Имя</th>
+          <td mat-cell *matCellDef="let contact">
+            <div class="name-cell">
+              <mat-icon class="avatar-icon">{{
+                contact.type === 'company' ? 'business' : 'person'
+              }}</mat-icon>
+              <div class="name-meta">
+                <div class="contact-name"><button mat-button class="name-link" (click)="goToDetail(contact)">{{ contact.name }}</button></div>
+                <div class="contact-details" *ngIf="contact.position">
+                  {{ contact.position }}
+                </div>
+              </div>
+            </div>
+          </td>
+        </ng-container>
+
+        <!-- Email Column -->
+        <ng-container matColumnDef="email">
+          <th mat-header-cell *matHeaderCellDef>E-mail</th>
+          <td mat-cell *matCellDef="let contact">
+            <a *ngIf="contact.email" [href]="'mailto:' + contact.email">{{
+              contact.email
+            }}</a>
+            <span *ngIf="!contact.email" class="muted">—</span>
+          </td>
+        </ng-container>
+
+        <!-- Phone Column -->
+        <ng-container matColumnDef="phone">
+          <th mat-header-cell *matHeaderCellDef>Телефон</th>
+          <td mat-cell *matCellDef="let contact">
+            <a *ngIf="contact.phone" [href]="'tel:' + contact.phone">{{
+              contact.phone
+            }}</a>
+            <span *ngIf="!contact.phone" class="muted">—</span>
+          </td>
+        </ng-container>
+
+        <!-- Company Column -->
+        <ng-container matColumnDef="company">
+          <th mat-header-cell *matHeaderCellDef>Компания</th>
+          <td mat-cell *matCellDef="let contact">
+            {{ contact.company || '—' }}
+          </td>
+        </ng-container>
+
+        <!-- Actions Column -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef></th>
+              <td mat-cell *matCellDef="let contact" class="actions-cell">
+                <button mat-icon-button matTooltip="Просмотр" (click)="goToDetail(contact)">
+                  <mat-icon>visibility</mat-icon>
+                </button>
+                <button
+                  mat-icon-button
+                  matTooltip="Удалить"
+                  (click)="deleteContact(contact)"
+                  [disabled]="loading"
+                >
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </td>
+        </ng-container>
+
+        <tr
+          mat-header-row
+          *matHeaderRowDef="['name', 'email', 'phone', 'company', 'actions']"
+        ></tr>
+        <tr
+          mat-row
+          *matRowDef="
+            let row;
+            columns: ['name', 'email', 'phone', 'company', 'actions']
+          "
+        ></tr>
+      </table>
+    </div>
+  </div>
+
+  <ng-template #loadingTemplate>
+    <div class="loading-container">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>Загрузка контактов...</p>
+    </div>
+  </ng-template>
+</div>

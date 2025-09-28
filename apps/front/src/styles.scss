@@ -46,7 +46,7 @@ body {
 
 
 :root {
-  --primary-color: #0c7ff2;
+  --primary-color: #4285f4;
   --background-color: #f8f9fa;
   --surface-color: #ffffff;
   --muted-color: #e9ecef;
@@ -79,3 +79,41 @@ body {
 
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+/* Primary buttons visual style overrides (applies to Angular Material primary buttons) */
+.mat-raised-button.mat-primary,
+.mat-flat-button.mat-primary,
+button.mat-raised-button.mat-primary,
+button.mat-flat-button.mat-primary,
+button[mat-raised-button][color="primary"],
+button[mat-flat-button][color="primary"] {
+  background-color: #4285f4 !important;
+  color: #ffffff !important;
+  border-radius: 8px !important;
+  padding: 8px 16px !important;
+  font-weight: 500 !important;
+  box-shadow: none !important;
+}
+
+/* Ensure icons inside primary buttons are white */
+.mat-raised-button.mat-primary .mat-icon,
+.mat-flat-button.mat-primary .mat-icon,
+button[mat-raised-button][color="primary"] .mat-icon,
+button[mat-flat-button][color="primary"] .mat-icon {
+  color: #ffffff !important;
+}
+
+/* Slight hover/active states to match a standard primary button */
+.mat-raised-button.mat-primary:hover,
+.mat-flat-button.mat-primary:hover,
+button[mat-raised-button][color="primary"]:hover,
+button[mat-flat-button][color="primary"]:hover {
+  background-color: #3977e6 !important; /* slightly darker */
+}
+
+/* Disabled primary buttons */
+.mat-raised-button.mat-primary.mat-button-disabled,
+button[mat-raised-button][color="primary"].mat-button-disabled {
+  background-color: rgba(66,133,244,0.5) !important;
+  color: rgba(255,255,255,0.7) !important;
+}

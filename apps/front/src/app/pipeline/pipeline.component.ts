@@ -5,12 +5,14 @@ import { Router } from '@angular/router';
 import { DragDropModule, CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import { PipelineService } from './pipeline.service';
 import { DealsService } from './deals.service';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 import { Deal, Stage, PipelineAnalytics, StageType } from './dtos';
 
 @Component({
   selector: 'app-pipeline',
   standalone: true,
-  imports: [CommonModule, FormsModule, DragDropModule],
+  imports: [CommonModule, FormsModule, DragDropModule, MatIconModule, MatButtonModule],
   templateUrl: './pipeline.component.html',
   styleUrls: ['./pipeline.component.scss'],
 })

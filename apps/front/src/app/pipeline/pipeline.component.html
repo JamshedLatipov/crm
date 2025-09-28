@@ -7,8 +7,9 @@
     <div class="flex items-center gap-2">
       <button (click)="triggerAutomation()" class="px-3 py-2 rounded-full  border border-[#3d5245]">Run Automation</button>
       <button (click)="load()" class="px-3 py-2 rounded-full  border border-[#3d5245]">Refresh</button>
-      <button (click)="createStage()" class="flex items-center gap-2 rounded-full bg-[var(--primary-color)] px-4 py-2 text-sm font-bold text-white">
-        <span>Add Stage</span>
+      <button mat-raised-button color="primary" (click)="createStage()" class="flex items-center gap-2 px-4 py-2 text-sm font-bold">
+        <mat-icon>add</mat-icon>
+        <span>Добавить этап</span>
       </button>
     </div>
   </div>
