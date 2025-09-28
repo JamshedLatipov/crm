@@ -20,7 +20,7 @@ export class CreateLeadDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
-  company?: string;
+  companyId?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
@@ -131,7 +131,7 @@ export class UpdateLeadDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
-  company?: string;
+  companyId?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()

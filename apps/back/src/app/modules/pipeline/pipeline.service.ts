@@ -12,6 +12,9 @@ import { UpdateLeadDto } from './dto/update-lead.dto';
 import { ContactsService } from '../contacts/contacts.service';
 import { ContactSource } from '../contacts/contact.entity';
 import { DataSource } from 'typeorm';
+import { CreateContactDto } from '../contacts/dto/create-contact.dto';
+import { Company } from '../companies/entities/company.entity';
+import { CompaniesService } from '../companies/services/companies.service';
 
 @Injectable()
 export class PipelineService {
@@ -24,9 +27,10 @@ export class PipelineService {
     private leadsRepo: Repository<PipelineLead>,
     @InjectRepository(Deal)
     private dealsRepo: Repository<Deal>,
-  private dataSource: DataSource,
-  private contactsService: ContactsService,
-  private leadService: LeadService,
+    private dataSource: DataSource,
+    private contactsService: ContactsService,
+    private leadService: LeadService,
+    private companiesService: CompaniesService,
   ) {}
 
   // Stages
@@ -68,7 +72,9 @@ export class PipelineService {
     for (const lead of leads) {
       try {
         if (lead.meta && (lead.meta as any).triggerNext) {
-          const idx = lead.stageId ? stageIndexById.get(lead.stageId) ?? -1 : -1;
+          const idx = lead.stageId
+            ? stageIndexById.get(lead.stageId) ?? -1
+            : -1;
           const next = stages[idx + 1];
           if (next) {
             lead.stageId = next.id;
@@ -93,7 +99,10 @@ export class PipelineService {
       id: s.id,
       name: s.name,
       count: deals.filter((d) => d.stageId === s.id).length,
-      conversion: +( (deals.filter((d) => d.stageId === s.id).length / total) * 100 ).toFixed(2),
+      conversion: +(
+        (deals.filter((d) => d.stageId === s.id).length / total) *
+        100
+      ).toFixed(2),
     }));
     return { total: deals.length, byStage };
   }
@@ -112,50 +121,21 @@ export class PipelineService {
     });
   }
 
-  // Create Contact from a PipelineLead
   async createContactFromLead(leadId: string) {
-    // Try to detect whether the provided id is a UUID for pipeline_leads or a numeric id for main leads
-    let pipelineLead: PipelineLead | null = null;
     let mainLead: Lead | null = null;
+    
+    const asNumber = Number(leadId);
 
-    // First, attempt to load as pipeline lead (UUID). If it fails due to invalid UUID, fall back.
-    try {
-      pipelineLead = await this.leadsRepo.findOneBy({ id: leadId });
-    } catch (err) {
-      // ignore parse errors from DB driver; we'll try numeric lookup next
-      pipelineLead = null;
+    
+    if (!Number.isNaN(asNumber) && Number.isInteger(asNumber)) {
+      mainLead = await this.leadService.findById(asNumber);
+      if (!mainLead) throw new NotFoundException(`Lead ${leadId} not found`);
+    } else {
+      throw new NotFoundException(`Lead ${leadId} not found`);
     }
 
-    if (!pipelineLead) {
-      // If leadId looks like an integer, try to load from main leads via LeadService
-      const asNumber = Number(leadId);
-      if (!Number.isNaN(asNumber) && Number.isInteger(asNumber)) {
-        mainLead = await this.leadService.findById(asNumber);
-        if (!mainLead) throw new NotFoundException(`Lead ${leadId} not found`);
-      } else {
-        // If not numeric and not found as pipeline lead, return not found
-        throw new NotFoundException(`Lead ${leadId} not found`);
-      }
-    }
+    console.log('Main lead data:', mainLead);
 
-    // Map available fields to contact DTO
-    type LeadMeta = Partial<{
-      firstName: string;
-      lastName: string;
-      email: string;
-      phone: string;
-      mobilePhone: string;
-      website: string;
-      companyId: string;
-      companyName: string;
-      address: Record<string, string>;
-      socialMedia: Record<string, string>;
-      source: string;
-      assignedTo: string;
-      tags: string[];
-    }>;
-
-    const meta = (pipelineLead && pipelineLead.meta) ? (pipelineLead.meta as LeadMeta) : {} as LeadMeta;
 
     // If mainLead has a full name, try to split to first/last
     let mainFirst: string | undefined;
@@ -170,47 +150,38 @@ export class PipelineService {
       }
     }
 
-    const contactDto = {
-      name: (pipelineLead ? pipelineLead.title : mainLead?.name) || 'Unknown',
-      firstName: meta.firstName || mainFirst || undefined,
-      lastName: meta.lastName || mainLast || undefined,
-      email: meta.email || mainLead?.email || undefined,
-      phone: meta.phone || mainLead?.phone || undefined,
-      mobilePhone: meta.mobilePhone || undefined,
-      website: meta.website || mainLead?.website || undefined,
-      companyId: meta.companyId || undefined,
-      companyName: meta.companyName || mainLead?.company || undefined,
+    const contactDto: CreateContactDto = {
+      name: mainLead?.name || 'Unknown',
+      firstName: mainFirst || undefined,
+      lastName: mainLast || undefined,
+      email: mainLead?.email || mainLead?.email || undefined,
+      phone: mainLead?.phone || mainLead?.phone || undefined,
+      mobilePhone: mainLead?.phone || undefined,
+      website: mainLead.website || mainLead?.website || undefined,
+      companyId: mainLead.company.id || undefined,
       // Normalize address: prefer structured meta, else assemble from lead fields
-      address: meta.address || (mainLead ? {
-        street: mainLead.address || undefined,
-        city: mainLead.city || undefined,
-        country: mainLead.country || undefined,
-      } : undefined),
-      socialMedia: meta.socialMedia || undefined,
+      address:
+        (mainLead
+          ? {
+              street: mainLead.address || undefined,
+              city: mainLead.city || undefined,
+              country: mainLead.country || undefined,
+            }
+          : undefined),
       source: ((): ContactSource | undefined => {
-        const s = meta.source || (mainLead ? mainLead.source : undefined);
+        const s = mainLead.source || (mainLead ? mainLead.source : undefined);
         if (!s) return undefined;
         const asStr = String(s);
-        return (Object.values(ContactSource) as string[]).includes(asStr) ? asStr as ContactSource : undefined;
+        return (Object.values(ContactSource) as string[]).includes(asStr)
+          ? (asStr as ContactSource)
+          : undefined;
       })(),
-      assignedTo: meta.assignedTo || mainLead?.assignedTo || undefined,
-      tags: meta.tags || mainLead?.tags || undefined,
-      notes: `Created from lead ${pipelineLead ? pipelineLead.id : mainLead?.id}`,
+      assignedTo: mainLead.assignedTo || undefined,
+      tags: mainLead.tags || undefined,
+      notes: `Created from lead ${mainLead?.id}`,
       isActive: true,
-    } as import('../contacts/dto/create-contact.dto').CreateContactDto;
+    };
 
-    const created = await this.contactsService.createContact(contactDto);
-
-    // Save reference back on pipelineLead if it exists, otherwise do nothing to main leads table
-    if (pipelineLead) {
-      pipelineLead.contact = created.id;
-      await this.leadsRepo.save(pipelineLead);
-    } else if (mainLead) {
-      // Optionally, if desired, we could store the contact id on main lead; current main Lead entity has no contact column.
-      // For now, log and return created contact.
-      this.logger.log(`Created contact ${created.id} from main lead ${mainLead.id}`);
-    }
-
-    return created;
+    return await this.contactsService.createContact(contactDto);
   }
 }

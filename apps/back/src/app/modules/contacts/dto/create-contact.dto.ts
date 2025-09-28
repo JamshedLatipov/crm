@@ -1,5 +1,5 @@
 import { ContactType, ContactSource } from '../contact.entity';
-import { IsEnum, IsString, IsNotEmpty, IsOptional, IsEmail, IsUUID, IsArray, ValidateNested, IsObject, IsUrl } from 'class-validator';
+import { IsEnum, IsString, IsNotEmpty, IsOptional, IsEmail, IsUUID, IsArray, ValidateNested, IsObject, IsUrl, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class ContactAddressDto {
@@ -84,11 +84,7 @@ export class CreateContactDto {
 
   @IsOptional()
   @IsUUID()
-  companyId?: string; // Ссылка на компанию по ID
-
-  @IsOptional()
-  @IsString()
-  companyName?: string; // Поле для обратной совместимости
+  companyId?: string;
 
   @IsOptional()
   @IsEmail()
@@ -140,4 +136,9 @@ export class CreateContactDto {
   @IsOptional()
   @IsObject()
   customFields?: Record<string, unknown>;
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+
 }

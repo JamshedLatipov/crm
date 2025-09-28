@@ -71,7 +71,7 @@ export class CreateLeadDialogComponent {
   onCompanySelected(company: Company | null) {
     if (!company) return;
     this.leadForm.patchValue({ company: company.name || company.legalName });
-    this.companyIdControl.setValue(company.id ?? null);
+    this.companyControl.setValue(company.id ?? null);
   }
 
   // inline company creation handled by shared component
@@ -91,7 +91,7 @@ export class CreateLeadDialogComponent {
       name: formValue.name,
       email: formValue.email || undefined,
       phone: formValue.phone || undefined,
-      company: formValue.company || undefined,
+      company: formValue.company.id || undefined,
       position: formValue.position || undefined,
       website: formValue.website || undefined,
       industry: formValue.industry || undefined,

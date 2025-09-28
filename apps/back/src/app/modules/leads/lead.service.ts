@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike, MoreThan, LessThan, SelectQueryBuilder } from 'typeorm';
+import {
+  Repository,
+  ILike,
+  MoreThan,
+  LessThan,
+  SelectQueryBuilder,
+} from 'typeorm';
 import { Lead, LeadStatus, LeadSource, LeadPriority } from './lead.entity';
 import { LeadActivity, ActivityType } from './entities/lead-activity.entity';
 import { LeadScoringService } from './services/lead-scoring.service';
@@ -51,7 +57,7 @@ export class LeadService {
   async create(data: Partial<Lead>): Promise<Lead> {
     console.log('Creating lead with data:', data);
     const lead = await this.leadRepo.save(data);
-    
+
     // Записываем создание лида в активность
     await this.activityRepo.save({
       leadId: lead.id,
@@ -60,13 +66,14 @@ export class LeadService {
       description: `Новый лид создан: ${lead.name}`,
       metadata: {
         source: lead.source,
-        priority: lead.priority
-      }
+        priority: lead.priority,
+      },
     });
 
     // Автоматическое назначение лида
     if (!lead.assignedTo) {
-      const assignedManager = await this.distributionService.distributeLeadAutomatically(lead.id);
+      const assignedManager =
+        await this.distributionService.distributeLeadAutomatically(lead.id);
       if (assignedManager) {
         lead.assignedTo = assignedManager;
       }
@@ -80,7 +87,11 @@ export class LeadService {
     return this.leadRepo.findOneBy({ id: lead.id }) || lead;
   }
 
-  async findAll(filters?: LeadFilters, page = 1, limit = 50): Promise<{
+  async findAll(
+    filters?: LeadFilters,
+    page = 1,
+    limit = 50
+  ): Promise<{
     leads: Lead[];
     total: number;
     page: number;
@@ -98,6 +109,7 @@ export class LeadService {
 
     // Применяем пагинацию
     const leads = await queryBuilder
+      .leftJoinAndSelect('lead.company', 'company')
       .orderBy('lead.createdAt', 'DESC')
       .skip((page - 1) * limit)
       .take(limit)
@@ -107,87 +119,112 @@ export class LeadService {
       leads,
       total,
       page,
-      totalPages: Math.ceil(total / limit)
+      totalPages: Math.ceil(total / limit),
     };
   }
 
-  private applyFilters(queryBuilder: SelectQueryBuilder<Lead>, filters: LeadFilters): void {
+  private applyFilters(
+    queryBuilder: SelectQueryBuilder<Lead>,
+    filters: LeadFilters
+  ): void {
     if (filters.status && filters.status.length > 0) {
-      queryBuilder.andWhere('lead.status IN (:...statuses)', { statuses: filters.status });
+      queryBuilder.andWhere('lead.status IN (:...statuses)', {
+        statuses: filters.status,
+      });
     }
 
     if (filters.source && filters.source.length > 0) {
-      queryBuilder.andWhere('lead.source IN (:...sources)', { sources: filters.source });
+      queryBuilder.andWhere('lead.source IN (:...sources)', {
+        sources: filters.source,
+      });
     }
 
     if (filters.priority && filters.priority.length > 0) {
-      queryBuilder.andWhere('lead.priority IN (:...priorities)', { priorities: filters.priority });
+      queryBuilder.andWhere('lead.priority IN (:...priorities)', {
+        priorities: filters.priority,
+      });
     }
 
     if (filters.assignedTo && filters.assignedTo.length > 0) {
-      queryBuilder.andWhere('lead.assignedTo IN (:...managers)', { managers: filters.assignedTo });
+      queryBuilder.andWhere('lead.assignedTo IN (:...managers)', {
+        managers: filters.assignedTo,
+      });
     }
 
     if (filters.scoreMin !== undefined) {
-      queryBuilder.andWhere('lead.score >= :scoreMin', { scoreMin: filters.scoreMin });
+      queryBuilder.andWhere('lead.score >= :scoreMin', {
+        scoreMin: filters.scoreMin,
+      });
     }
 
     if (filters.scoreMax !== undefined) {
-      queryBuilder.andWhere('lead.score <= :scoreMax', { scoreMax: filters.scoreMax });
+      queryBuilder.andWhere('lead.score <= :scoreMax', {
+        scoreMax: filters.scoreMax,
+      });
     }
 
     if (filters.estimatedValueMin !== undefined) {
-      queryBuilder.andWhere('lead.estimatedValue >= :estimatedValueMin', { 
-        estimatedValueMin: filters.estimatedValueMin 
+      queryBuilder.andWhere('lead.estimatedValue >= :estimatedValueMin', {
+        estimatedValueMin: filters.estimatedValueMin,
       });
     }
 
     if (filters.estimatedValueMax !== undefined) {
-      queryBuilder.andWhere('lead.estimatedValue <= :estimatedValueMax', { 
-        estimatedValueMax: filters.estimatedValueMax 
+      queryBuilder.andWhere('lead.estimatedValue <= :estimatedValueMax', {
+        estimatedValueMax: filters.estimatedValueMax,
       });
     }
 
     if (filters.createdAfter) {
-      queryBuilder.andWhere('lead.createdAt >= :createdAfter', { createdAfter: filters.createdAfter });
+      queryBuilder.andWhere('lead.createdAt >= :createdAfter', {
+        createdAfter: filters.createdAfter,
+      });
     }
 
     if (filters.createdBefore) {
-      queryBuilder.andWhere('lead.createdAt <= :createdBefore', { createdBefore: filters.createdBefore });
+      queryBuilder.andWhere('lead.createdAt <= :createdBefore', {
+        createdBefore: filters.createdBefore,
+      });
     }
 
     if (filters.isQualified !== undefined) {
-      queryBuilder.andWhere('lead.isQualified = :isQualified', { isQualified: filters.isQualified });
+      queryBuilder.andWhere('lead.isQualified = :isQualified', {
+        isQualified: filters.isQualified,
+      });
     }
 
     if (filters.hasEmail !== undefined) {
       if (filters.hasEmail) {
-        queryBuilder.andWhere('lead.email IS NOT NULL AND lead.email != \'\'');
+        queryBuilder.andWhere("lead.email IS NOT NULL AND lead.email != ''");
       } else {
-        queryBuilder.andWhere('(lead.email IS NULL OR lead.email = \'\')');
+        queryBuilder.andWhere("(lead.email IS NULL OR lead.email = '')");
       }
     }
 
     if (filters.hasPhone !== undefined) {
       if (filters.hasPhone) {
-        queryBuilder.andWhere('lead.phone IS NOT NULL AND lead.phone != \'\'');
+        queryBuilder.andWhere("lead.phone IS NOT NULL AND lead.phone != ''");
       } else {
-        queryBuilder.andWhere('(lead.phone IS NULL OR lead.phone = \'\')');
+        queryBuilder.andWhere("(lead.phone IS NULL OR lead.phone = '')");
       }
     }
 
     if (filters.hasCompany !== undefined) {
       if (filters.hasCompany) {
-        queryBuilder.andWhere('lead.company IS NOT NULL AND lead.company != \'\'');
+        queryBuilder.andWhere(
+          "lead.company IS NOT NULL AND lead.company != ''"
+        );
       } else {
-        queryBuilder.andWhere('(lead.company IS NULL OR lead.company = \'\')');
+        queryBuilder.andWhere("(lead.company IS NULL OR lead.company = '')");
       }
     }
 
     if (filters.tags && filters.tags.length > 0) {
       // PostgreSQL JSON операторы для поиска в массиве тегов
       for (let i = 0; i < filters.tags.length; i++) {
-        queryBuilder.andWhere(`JSON_CONTAINS(lead.tags, :tag${i})`, { [`tag${i}`]: `"${filters.tags[i]}"` });
+        queryBuilder.andWhere(`JSON_CONTAINS(lead.tags, :tag${i})`, {
+          [`tag${i}`]: `"${filters.tags[i]}"`,
+        });
       }
     }
 
@@ -200,7 +237,10 @@ export class LeadService {
   }
 
   async findById(id: number): Promise<Lead | null> {
-    return this.leadRepo.findOneBy({ id });
+    return this.leadRepo.findOne({
+      where: { id },
+      relations: ['company', 'deals'],
+    });
   }
 
   async update(id: number, data: Partial<Lead>): Promise<Lead> {
@@ -210,7 +250,7 @@ export class LeadService {
     }
 
     await this.leadRepo.update(id, data);
-    
+
     // Записываем изменения в активность
     const changedFields = this.getChangedFields(existingLead, data);
     if (changedFields.length > 0) {
@@ -219,10 +259,10 @@ export class LeadService {
         type: ActivityType.NOTE_ADDED,
         title: 'Лид обновлен',
         description: `Изменены поля: ${changedFields.join(', ')}`,
-        metadata: { 
+        metadata: {
           changedFields: changedFields.join(','),
-          hasChanges: true
-        }
+          hasChanges: true,
+        },
       });
     }
 
@@ -241,19 +281,19 @@ export class LeadService {
 
   private getChangedFields(existing: Lead, updates: Partial<Lead>): string[] {
     const changed: string[] = [];
-    
+
     for (const [key, newValue] of Object.entries(updates)) {
       if (key in existing && existing[key as keyof Lead] !== newValue) {
         changed.push(key);
       }
     }
-    
+
     return changed;
   }
 
   async assignLead(id: number, user: string): Promise<Lead> {
     const updated = await this.update(id, { assignedTo: user });
-    
+
     // Обновляем счетчик лидов у пользователя
     const parsedUserId = Number(user);
     if (Number.isNaN(parsedUserId)) {
@@ -265,7 +305,7 @@ export class LeadService {
         type: ActivityType.ASSIGNED,
         title: 'Лид назначен менеджеру',
         description: `Лид назначен менеджеру: ${user} (non-numeric id)`,
-        metadata: { assignedTo: user }
+        metadata: { assignedTo: user },
       });
       return updated;
     }
@@ -274,43 +314,47 @@ export class LeadService {
     if (userEntity) {
       await this.userService.updateLeadCount(userEntity.id, 1);
     }
-    
+
     // If we reached here, either userEntity was found and count updated, or user was numeric but not found.
     await this.activityRepo.save({
       leadId: id,
       type: ActivityType.ASSIGNED,
       title: 'Лид назначен менеджеру',
       description: `Лид назначен менеджеру: ${user}`,
-      metadata: { assignedTo: user }
+      metadata: { assignedTo: user },
     });
 
     return updated;
   }
 
-  async autoAssignLead(id: number, criteria: {
-    industry?: string;
-    territory?: string;
-    criteria: string[];
-  }): Promise<Lead | null> {
-    const optimalManager = await this.userService.getOptimalManagerForAssignment(criteria);
-    
+  async autoAssignLead(
+    id: number,
+    criteria: {
+      industry?: string;
+      territory?: string;
+      criteria: string[];
+    }
+  ): Promise<Lead | null> {
+    const optimalManager =
+      await this.userService.getOptimalManagerForAssignment(criteria);
+
     if (optimalManager) {
       return await this.assignLead(id, optimalManager.id.toString());
     }
-    
+
     return null;
   }
 
   async scoreLead(id: number, score: number): Promise<Lead> {
     const updated = await this.update(id, { score });
-    
+
     await this.activityRepo.save({
       leadId: id,
       type: ActivityType.SCORE_UPDATED,
       title: 'Обновлен скор лида',
       description: `Скор изменен на: ${score}`,
       scorePoints: score,
-      metadata: { newScore: score }
+      metadata: { newScore: score },
     });
 
     return updated;
@@ -323,16 +367,16 @@ export class LeadService {
     }
 
     const updated = await this.update(id, { status });
-    
+
     await this.activityRepo.save({
       leadId: id,
       type: ActivityType.STATUS_CHANGED,
       title: 'Изменен статус лида',
       description: `Статус изменен с ${existingLead.status} на ${status}`,
-      metadata: { 
-        oldStatus: existingLead.status, 
-        newStatus: status 
-      }
+      metadata: {
+        oldStatus: existingLead.status,
+        newStatus: status,
+      },
     });
 
     return updated;
@@ -345,42 +389,60 @@ export class LeadService {
       title: 'Добавлена заметка',
       description: note,
       userId,
-      metadata: { note }
+      metadata: { note },
     });
   }
 
-  async logActivity(id: number, activity: Partial<LeadActivity>): Promise<LeadActivity> {
+  async logActivity(
+    id: number,
+    activity: Partial<LeadActivity>
+  ): Promise<LeadActivity> {
     return this.activityRepo.save({
       ...activity,
-      leadId: id
+      leadId: id,
     });
   }
 
   async getActivities(leadId: number): Promise<LeadActivity[]> {
     return this.activityRepo.find({
       where: { leadId },
-      order: { createdAt: 'DESC' }
+      order: { createdAt: 'DESC' },
     });
   }
 
   async getStatistics(filters?: LeadFilters): Promise<LeadStats> {
     const queryBuilder = this.leadRepo.createQueryBuilder('lead');
-    
+
     if (filters) {
       this.applyFilters(queryBuilder, filters);
     }
 
     const leads = await queryBuilder.getMany();
-    
+
     const total = leads.length;
-    const byStatus = this.groupBy(leads, 'status') as Record<LeadStatus, number>;
-    const bySource = this.groupBy(leads, 'source') as Record<LeadSource, number>;
-    const byPriority = this.groupBy(leads, 'priority') as Record<LeadPriority, number>;
-    
-    const averageScore = leads.reduce((sum, lead) => sum + lead.score, 0) / total || 0;
-    const convertedCount = leads.filter(lead => lead.status === LeadStatus.CONVERTED).length;
+    const byStatus = this.groupBy(leads, 'status') as Record<
+      LeadStatus,
+      number
+    >;
+    const bySource = this.groupBy(leads, 'source') as Record<
+      LeadSource,
+      number
+    >;
+    const byPriority = this.groupBy(leads, 'priority') as Record<
+      LeadPriority,
+      number
+    >;
+
+    const averageScore =
+      leads.reduce((sum, lead) => sum + lead.score, 0) / total || 0;
+    const convertedCount = leads.filter(
+      (lead) => lead.status === LeadStatus.CONVERTED
+    ).length;
     const conversionRate = total > 0 ? (convertedCount / total) * 100 : 0;
-    const totalEstimatedValue = leads.reduce((sum, lead) => sum + (lead.estimatedValue || 0), 0);
+    const totalEstimatedValue = leads.reduce(
+      (sum, lead) => sum + (lead.estimatedValue || 0),
+      0
+    );
 
     return {
       total,
@@ -389,7 +451,7 @@ export class LeadService {
       byPriority,
       averageScore: Math.round(averageScore * 100) / 100,
       conversionRate: Math.round(conversionRate * 100) / 100,
-      totalEstimatedValue
+      totalEstimatedValue,
     };
   }
 
@@ -407,26 +469,26 @@ export class LeadService {
         { name: ILike(`%${query}%`) },
         { email: ILike(`%${query}%`) },
         { phone: ILike(`%${query}%`) },
-        { company: ILike(`%${query}%`) }
+        { company: ILike(`%${query}%`) },
       ],
       take: limit,
-      order: { score: 'DESC' }
+      order: { score: 'DESC' },
     });
   }
 
   async getLeadsByManager(managerId: string): Promise<Lead[]> {
     return this.leadRepo.find({
       where: { assignedTo: managerId },
-      order: { createdAt: 'DESC' }
+      order: { createdAt: 'DESC' },
     });
   }
 
   async getHighValueLeads(minValue = 10000): Promise<Lead[]> {
     return this.leadRepo.find({
       where: {
-        estimatedValue: MoreThan(minValue)
+        estimatedValue: MoreThan(minValue),
       },
-      order: { estimatedValue: 'DESC' }
+      order: { estimatedValue: 'DESC' },
     });
   }
 
@@ -437,16 +499,16 @@ export class LeadService {
     return this.leadRepo.find({
       where: {
         lastContactDate: LessThan(cutoffDate),
-        status: LeadStatus.NEW || LeadStatus.CONTACTED
+        status: LeadStatus.NEW || LeadStatus.CONTACTED,
       },
-      order: { lastContactDate: 'ASC' }
+      order: { lastContactDate: 'ASC' },
     });
   }
 
   async updateLastContact(id: number): Promise<void> {
-    await this.leadRepo.update(id, { 
+    await this.leadRepo.update(id, {
       lastContactDate: new Date(),
-      contactAttempts: () => 'contactAttempts + 1'
+      contactAttempts: () => 'contactAttempts + 1',
     });
 
     await this.activityRepo.save({
@@ -454,22 +516,24 @@ export class LeadService {
       type: ActivityType.PHONE_CALL_MADE,
       title: 'Контакт с лидом',
       description: 'Обновлена дата последнего контакта',
-      metadata: { lastContactDate: new Date().toISOString() }
+      metadata: { lastContactDate: new Date().toISOString() },
     });
   }
 
   async qualifyLead(id: number, isQualified = true): Promise<Lead> {
-    const updated = await this.update(id, { 
+    const updated = await this.update(id, {
       isQualified,
-      status: isQualified ? LeadStatus.QUALIFIED : LeadStatus.NEW
+      status: isQualified ? LeadStatus.QUALIFIED : LeadStatus.NEW,
     });
-    
+
     await this.activityRepo.save({
       leadId: id,
       type: ActivityType.STATUS_CHANGED,
       title: isQualified ? 'Лид квалифицирован' : 'Квалификация лида отменена',
-      description: `Лид ${isQualified ? 'квалифицирован' : 'дисквалифицирован'}`,
-      metadata: { isQualified }
+      description: `Лид ${
+        isQualified ? 'квалифицирован' : 'дисквалифицирован'
+      }`,
+      metadata: { isQualified },
     });
 
     return updated;
@@ -483,7 +547,7 @@ export class LeadService {
 
     const existingTags = lead.tags || [];
     const newTags = [...new Set([...existingTags, ...tags])];
-    
+
     return this.update(id, { tags: newTags });
   }
 
@@ -494,20 +558,21 @@ export class LeadService {
     }
 
     const existingTags = lead.tags || [];
-    const newTags = existingTags.filter(tag => !tags.includes(tag));
-    
+    const newTags = existingTags.filter((tag) => !tags.includes(tag));
+
     return this.update(id, { tags: newTags });
   }
 
   async scheduleFollowUp(id: number, date: Date, note?: string): Promise<Lead> {
     const updated = await this.update(id, { nextFollowUpDate: date });
-    
+
     await this.activityRepo.save({
       leadId: id,
       type: ActivityType.TASK_CREATED,
       title: 'Запланирован follow-up',
-      description: note || `Follow-up запланирован на ${date.toLocaleDateString()}`,
-      metadata: { followUpDate: date.toISOString(), note: note || '' }
+      description:
+        note || `Follow-up запланирован на ${date.toLocaleDateString()}`,
+      metadata: { followUpDate: date.toISOString(), note: note || '' },
     });
 
     return updated;

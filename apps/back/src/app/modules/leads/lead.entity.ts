@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToOne } from 'typeorm';
 import { Deal } from '../deals/deal.entity';
+import { Company } from '../companies/entities/company.entity';
 
 export enum LeadStatus {
   NEW = 'new',
@@ -56,8 +57,8 @@ export class Lead {
   @Column({ nullable: true })
   phone: string;
 
-  @Column({ nullable: true })
-  company: string;
+  @ManyToOne(() => Company, company => company.leads)
+  company: Company;
 
   @Column({ nullable: true })
   position: string;

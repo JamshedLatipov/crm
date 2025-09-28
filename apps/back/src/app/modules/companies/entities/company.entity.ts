@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Contact } from '../../contacts/contact.entity';
 import { Deal } from '../../deals/deal.entity';
+import { Lead } from '../../leads/lead.entity';
 
 export enum CompanySize {
   STARTUP = 'startup',
@@ -139,6 +140,10 @@ export class Company {
   // Связи
   @OneToMany(() => Contact, contact => contact.company, { cascade: true })
   contacts: Contact[];
+
+    // Связи
+  @OneToMany(() => Lead, lead => lead.company, { cascade: true })
+  leads: Lead[];
 
   @OneToMany(() => Deal, deal => deal.company, { cascade: true })
   deals: Deal[];
