@@ -1,12 +1,15 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PipelineStage, PipelineLead } from './pipeline.entity';
+import { LeadService } from '../leads/lead.service';
+import { Lead } from '../leads/lead.entity';
 import { Deal } from '../deals/deal.entity';
 import { CreateStageDto } from './dto/create-stage.dto';
 import { UpdateStageDto } from './dto/update-stage.dto';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
+import { ContactsService } from '../contacts/contacts.service';
 import { DataSource } from 'typeorm';
 
 @Injectable()
@@ -21,6 +24,8 @@ export class PipelineService {
     @InjectRepository(Deal)
     private dealsRepo: Repository<Deal>,
   private dataSource: DataSource,
+  private contactsService: ContactsService,
+  private leadService: LeadService,
   ) {}
 
   // Stages
@@ -104,5 +109,56 @@ export class PipelineService {
       // Return reordered list
       return manager.find(PipelineStage, { order: { position: 'ASC' } });
     });
+  }
+
+  // Create Contact from a PipelineLead
+  async createContactFromLead(leadId: string) {
+    // Try to detect whether the provided id is a UUID for pipeline_leads or a numeric id for main leads
+    let pipelineLead: PipelineLead | null = null;
+    let mainLead: Lead | null = null;
+
+    // First, attempt to load as pipeline lead (UUID). If it fails due to invalid UUID, fall back.
+    try {
+      pipelineLead = await this.leadsRepo.findOneBy({ id: leadId });
+    } catch (err) {
+      // ignore parse errors from DB driver; we'll try numeric lookup next
+      pipelineLead = null;
+    }
+
+    if (!pipelineLead) {
+      // If leadId looks like an integer, try to load from main leads via LeadService
+      const asNumber = Number(leadId);
+      if (!Number.isNaN(asNumber) && Number.isInteger(asNumber)) {
+        mainLead = await this.leadService.findById(asNumber);
+        if (!mainLead) throw new NotFoundException(`Lead ${leadId} not found`);
+      } else {
+        // If not numeric and not found as pipeline lead, return not found
+        throw new NotFoundException(`Lead ${leadId} not found`);
+      }
+    }
+
+    // Map available fields to contact DTO
+    const contactDto: any = {
+      name: (pipelineLead ? pipelineLead.title : mainLead?.name) || 'Unknown',
+      email: pipelineLead ? ((pipelineLead.meta && (pipelineLead.meta as any).email) || undefined) : mainLead?.email,
+      phone: pipelineLead ? ((pipelineLead.meta && (pipelineLead.meta as any).phone) || undefined) : mainLead?.phone,
+      source: pipelineLead ? ((pipelineLead.meta && (pipelineLead.meta as any).source) || undefined) : mainLead?.source,
+      notes: `Created from lead ${pipelineLead ? pipelineLead.id : mainLead?.id}`,
+      isActive: true,
+    };
+
+    const created = await this.contactsService.createContact(contactDto);
+
+    // Save reference back on pipelineLead if it exists, otherwise do nothing to main leads table
+    if (pipelineLead) {
+      pipelineLead.contact = created.id as any;
+      await this.leadsRepo.save(pipelineLead);
+    } else if (mainLead) {
+      // Optionally, if desired, we could store the contact id on main lead; current main Lead entity has no contact column.
+      // For now, log and return created contact.
+      this.logger.log(`Created contact ${created.id} from main lead ${mainLead.id}`);
+    }
+
+    return created;
   }
 }

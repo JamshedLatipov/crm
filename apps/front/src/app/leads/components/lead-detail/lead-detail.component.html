@@ -33,6 +33,10 @@
           <mat-icon>person_add</mat-icon>
           Назначить
         </button>
+        <button mat-menu-item (click)="createContactFromLead()">
+          <mat-icon>person</mat-icon>
+          Создать контакт из лида
+        </button>
         <mat-divider></mat-divider>
         <button mat-menu-item (click)="deleteLead()" class="delete-action">
           <mat-icon>delete</mat-icon>

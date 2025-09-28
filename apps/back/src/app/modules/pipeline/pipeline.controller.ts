@@ -23,6 +23,11 @@ export class PipelineController {
     return this.svc.reorderStages(dto.stageIds || []);
   }
 
+  @Post('leads/:id/create-contact')
+  createContactFromLead(@Param('id') id: string) {
+    return this.svc.createContactFromLead(id);
+  }
+
   @Get('stages')
   listStages() {
     return this.svc.listStages();
