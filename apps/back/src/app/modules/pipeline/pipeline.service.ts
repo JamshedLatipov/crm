@@ -7,6 +7,7 @@ import { CreateStageDto } from './dto/create-stage.dto';
 import { UpdateStageDto } from './dto/update-stage.dto';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
+import { DataSource } from 'typeorm';
 
 @Injectable()
 export class PipelineService {
@@ -19,6 +20,7 @@ export class PipelineService {
     private leadsRepo: Repository<PipelineLead>,
     @InjectRepository(Deal)
     private dealsRepo: Repository<Deal>,
+  private dataSource: DataSource,
   ) {}
 
   // Stages
@@ -88,5 +90,19 @@ export class PipelineService {
       conversion: +( (deals.filter((d) => d.stageId === s.id).length / total) * 100 ).toFixed(2),
     }));
     return { total: deals.length, byStage };
+  }
+
+  // Reorder stages by an array of stage IDs; positions will be updated to the array index order
+  async reorderStages(stageIds: string[]) {
+    if (!Array.isArray(stageIds)) return this.listStages();
+
+    return this.dataSource.transaction(async (manager) => {
+      for (let i = 0; i < stageIds.length; i++) {
+        const id = stageIds[i];
+        await manager.update(PipelineStage, { id }, { position: i });
+      }
+      // Return reordered list
+      return manager.find(PipelineStage, { order: { position: 'ASC' } });
+    });
   }
 }

@@ -11,6 +11,7 @@ import { DashboardComponent } from './dashboard/dashboard.component';
 import { ContactsComponent } from './contacts/contacts.component';
 import { DealsComponent } from './deals/deals.component';
 import { PipelineComponent } from './pipeline/pipeline.component';
+import { CreateStageComponent } from './pipeline/create-stage.component';
 
 export const appRoutes: Route[] = [
     { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
@@ -24,6 +25,7 @@ export const appRoutes: Route[] = [
     { path: 'reports', component: DashboardComponent, canActivate: [authGuard] }, // Temporary redirect
     { path: 'help', component: DashboardComponent, canActivate: [authGuard] }, // Temporary redirect
     { path: 'pipeline', component: PipelineComponent, canActivate: [authGuard] },
+    { path: 'pipeline/create-stage', component: CreateStageComponent, canActivate: [authGuard] },
     { 
         path: 'leads', 
         component: LeadsComponent, 

@@ -1,10 +1,11 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { DragDropModule, CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import { PipelineService } from './pipeline.service';
 import { DealsService } from './deals.service';
-import { Deal, Stage, PipelineAnalytics, StageType, CreateStageDto } from './dtos';
+import { Deal, Stage, PipelineAnalytics, StageType } from './dtos';
 
 @Component({
   selector: 'app-pipeline',
@@ -25,6 +26,7 @@ export class PipelineComponent implements OnInit {
   
   private readonly pipelineService = inject(PipelineService);
   private readonly dealsService = inject(DealsService);
+  private readonly router = inject(Router);
 
   ngOnInit(): void {
     this.load();
@@ -121,18 +123,7 @@ export class PipelineComponent implements OnInit {
   }
 
   createStage() {
-    if (!this.newStageName) return;
-    
-    const dto: CreateStageDto = {
-      name: this.newStageName,
-      type: StageType.DEAL_PROGRESSION,
-      position: this.stages.length,
-      probability: 50 // Default probability
-    };
-    
-    this.pipelineService.createStage(dto).subscribe(() => {
-      this.newStageName = '';
-      this.load();
-    });
+  // Navigate to dedicated create-stage page
+  this.router.navigate(['/pipeline/create-stage']);
   }
 }

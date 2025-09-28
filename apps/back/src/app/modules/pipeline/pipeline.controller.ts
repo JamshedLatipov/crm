@@ -5,6 +5,10 @@ import { UpdateStageDto } from './dto/update-stage.dto';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
 
+class ReorderDto {
+  stageIds: string[];
+}
+
 @Controller('pipeline')
 export class PipelineController {
   constructor(private readonly svc: PipelineService) {}
@@ -12,6 +16,11 @@ export class PipelineController {
   @Post('stages')
   createStage(@Body() dto: CreateStageDto) {
     return this.svc.createStage(dto);
+  }
+
+  @Post('stages/reorder')
+  reorderStages(@Body() dto: ReorderDto) {
+    return this.svc.reorderStages(dto.stageIds || []);
   }
 
   @Get('stages')
