@@ -203,7 +203,9 @@ export interface UpdateDealDto {
 // === ЭТАПЫ ВОРОНКИ (Pipeline Stages) ===
 export enum StageType {
   LEAD_QUALIFICATION = 'lead_qualification', // Для лидов
-  DEAL_PROGRESSION = 'deal_progression'      // Для сделок
+  DEAL_PROGRESSION = 'deal_progression',      // Для сделок
+  WON_STAGE = 'won_stage',                    // Финальные этапы - выиграны
+  LOST_STAGE = 'lost_stage'                   // Финальные этапы - проиграны
 }
 
 export interface Stage {
@@ -455,4 +457,77 @@ export interface UpdateContactDto extends Partial<CreateContactDto> {
   isBlacklisted?: boolean;
   blacklistReason?: string;
   lastContactDate?: Date;
+}
+
+// === ИСТОРИЯ СДЕЛОК (Deal History) ===
+export enum DealChangeType {
+  CREATED = 'created',
+  UPDATED = 'updated',
+  DELETED = 'deleted',
+  STATUS_CHANGED = 'status_changed',
+  STAGE_MOVED = 'stage_moved',
+  ASSIGNED = 'assigned',
+  AMOUNT_CHANGED = 'amount_changed',
+  PROBABILITY_CHANGED = 'probability_changed',
+  WON = 'won',
+  LOST = 'lost',
+  REOPENED = 'reopened',
+  NOTE_ADDED = 'note_added',
+  CONTACT_LINKED = 'contact_linked',
+  COMPANY_LINKED = 'company_linked',
+  LEAD_LINKED = 'lead_linked',
+  DATE_CHANGED = 'date_changed'
+}
+
+export interface DealHistory {
+  id: number;
+  dealId: string;
+  fieldName?: string;
+  oldValue?: string;
+  newValue?: string;
+  changeType: DealChangeType;
+  userId?: string;
+  userName?: string;
+  description?: string;
+  metadata?: Record<string, unknown>;
+  createdAt: Date;
+}
+
+export interface DealHistoryFilters {
+  changeType?: DealChangeType[];
+  userId?: string[];
+  fieldName?: string[];
+  dateFrom?: Date;
+  dateTo?: Date;
+}
+
+export interface DealHistoryResponse {
+  history: DealHistory[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
+export interface DealHistoryStats {
+  [key: string]: number;
+}
+
+export interface UserActivityStats {
+  userId: string;
+  userName?: string;
+  changesCount: number;
+  lastActivity?: Date;
+}
+
+export interface StageMovementStats {
+  fromStage?: string;
+  toStage?: string;
+  count: number;
+}
+
+export interface MostActiveDeal {
+  dealId: string;
+  dealTitle?: string;
+  changesCount: number;
+  lastChange?: Date;
 }

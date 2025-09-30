@@ -15,6 +15,10 @@ export class PipelineService {
     return this.http.get<Stage[]>(url);
   }
 
+  listAllStages(): Observable<Stage[]> {
+    return this.http.get<Stage[]>(`${this.apiUrl}/stages`);
+  }
+
   getStageById(id: string): Observable<Stage> {
     return this.http.get<Stage>(`${this.apiUrl}/stages/${id}`);
   }

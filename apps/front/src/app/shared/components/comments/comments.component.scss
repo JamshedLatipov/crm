@@ -1,0 +1,130 @@
+.comments-section {
+      margin-top: 24px;
+    }
+
+    .comments-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .comments-header h3 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      color: var(--text-primary, #333);
+    }
+
+    .comment-count {
+      color: var(--text-secondary, #666);
+      font-weight: normal;
+      font-size: 0.9em;
+    }
+
+    .comment-form-card {
+      margin-bottom: 16px;
+    }
+
+    .full-width {
+      width: 100%;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px;
+      color: var(--text-secondary, #666);
+    }
+
+    .loading-container p {
+      margin-top: 16px;
+    }
+
+    .no-comments {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px;
+      color: var(--text-secondary, #666);
+      text-align: center;
+    }
+
+    .no-comments mat-icon {
+      font-size: 48px;
+      width: 48px;
+      height: 48px;
+      margin-bottom: 16px;
+      opacity: 0.6;
+    }
+
+    .comments-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .comment-card {
+      transition: box-shadow 0.2s ease;
+    }
+
+    .comment-card:hover {
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .comment-author {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .author-name {
+      font-weight: 500;
+      color: var(--text-primary, #333);
+    }
+
+    .comment-date {
+      color: var(--text-secondary, #666);
+      font-size: 0.85em;
+    }
+
+    .edited-indicator {
+      color: var(--text-secondary, #666);
+      font-size: 0.8em;
+      font-style: italic;
+    }
+
+    .comment-actions {
+      margin-left: auto;
+    }
+
+    .comment-text {
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.5;
+      color: var(--text-primary, #333);
+    }
+
+    .delete-action {
+      color: #f44336;
+    }
+
+    mat-card-header {
+      display: flex;
+      align-items: center;
+      padding-bottom: 8px;
+    }
+
+    mat-paginator {
+      margin-top: 16px;
+    }

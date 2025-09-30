@@ -17,13 +17,29 @@ import { UserService, Manager } from '../../../shared/services/user.service';
 import {
   Lead,
   LeadActivity,
-  LeadStatus,
   LeadSource,
-  LeadPriority,
   ActivityType,
 } from '../../models/lead.model';
 import { ChangeStatusDialogComponent } from '../change-status-dialog/change-status-dialog.component';
 import { AssignLeadDialogComponent } from '../assign-lead-dialog/assign-lead-dialog.component';
+import { EditLeadDialogComponent } from '../edit-lead-dialog/edit-lead-dialog.component';
+import { ConvertToDealDialogComponent } from '../convert-to-deal-dialog/convert-to-deal-dialog.component';
+import { CommentsComponent } from '../../../shared/components/comments/comments.component';
+import { CommentEntityType } from '../../../shared/interfaces/comment.interface';
+import { LeadStatusComponent } from '../lead-status/lead-status.component';
+import { LeadPriorityComponent } from '../lead-priority/lead-priority.component';
+import { LeadActionsComponent } from '../lead-actions/lead-actions.component';
+
+interface HistoryEntry {
+  field: string;
+  fieldName: string;
+  oldValue: string | number | boolean | null;
+  newValue: string | number | boolean | null;
+  changedAt: string;
+  changedBy?: string;
+  timestamp: string;
+  userName?: string;
+}
 
 @Component({
   selector: 'app-lead-detail',
@@ -40,6 +56,10 @@ import { AssignLeadDialogComponent } from '../assign-lead-dialog/assign-lead-dia
     MatDividerModule,
     MatMenuModule,
     MatTooltipModule,
+    CommentsComponent,
+    LeadStatusComponent,
+    LeadPriorityComponent,
+    LeadActionsComponent,
   ],
   templateUrl: './lead-detail.component.html',
   styleUrls: ['./lead-detail.component.scss'],
@@ -53,21 +73,16 @@ export class LeadDetailComponent implements OnInit {
 
   lead: Lead = {} as Lead;
   activities: LeadActivity[] = [];
+  history: HistoryEntry[] = [];
   loadingActivities = false;
+  loadingLead = false;
+  error = '';
   managers: Manager[] = [];
 
-  // Status and source mappings
-  private statusLabels = {
-    [LeadStatus.NEW]: 'Новый',
-    [LeadStatus.CONTACTED]: 'Контакт установлен',
-    [LeadStatus.QUALIFIED]: 'Квалифицирован',
-    [LeadStatus.PROPOSAL_SENT]: 'Предложение отправлено',
-    [LeadStatus.NEGOTIATING]: 'Переговоры',
-    [LeadStatus.CONVERTED]: 'Конвертирован',
-    [LeadStatus.REJECTED]: 'Отклонен',
-    [LeadStatus.LOST]: 'Потерян',
-  };
+  // Для компонента комментариев
+  readonly CommentEntityType = CommentEntityType;
 
+  // Status and source mappings
   private sourceLabels = {
     [LeadSource.WEBSITE]: 'Сайт',
     [LeadSource.FACEBOOK]: 'Facebook',
@@ -82,13 +97,6 @@ export class LeadDetailComponent implements OnInit {
     [LeadSource.COLD_OUTREACH]: 'Холодный обзвон',
     [LeadSource.PARTNER]: 'Партнер',
     [LeadSource.OTHER]: 'Другое',
-  };
-
-  private priorityLabels = {
-    [LeadPriority.LOW]: 'Низкий',
-    [LeadPriority.MEDIUM]: 'Средний',
-    [LeadPriority.HIGH]: 'Высокий',
-    [LeadPriority.URGENT]: 'Срочный',
   };
 
   ngOnInit(): void {
@@ -142,16 +150,8 @@ export class LeadDetailComponent implements OnInit {
     });
   }
 
-  getStatusLabel(status: LeadStatus): string {
-    return this.statusLabels[status] || status;
-  }
-
   getSourceLabel(source: LeadSource): string {
     return this.sourceLabels[source] || source;
-  }
-
-  getPriorityLabel(priority: LeadPriority): string {
-    return this.priorityLabels[priority] || priority;
   }
 
   getLocation(): string {
@@ -213,8 +213,20 @@ export class LeadDetailComponent implements OnInit {
   }
 
   editLead(): void {
-    // TODO: Implement edit functionality
-    console.log('Edit lead:', this.lead);
+    const dialogRef = this.dialog.open(EditLeadDialogComponent, {
+      width: '800px',
+      maxWidth: '90vw',
+      data: {
+        lead: this.lead
+      },
+    });
+
+    dialogRef.afterClosed().subscribe((result: Lead | undefined) => {
+      if (result) {
+        this.lead = result; // Обновляем данные лида
+        console.log('Lead updated:', result);
+      }
+    });
   }
 
   createContactFromLead(): void {
@@ -222,20 +234,37 @@ export class LeadDetailComponent implements OnInit {
     this.leadService.createContactFromLead(this.lead.id).subscribe({
       next: (contact) => {
         console.log('Created contact from lead:', contact);
-        // Link contact id locally
-        (this.lead as any).contact = contact.id;
+        // Link contact id locally (temporary field not in interface)
+        (this.lead as Lead & { contact?: string }).contact = contact.id;
+        // Переходим к карточке созданного контакта
+        this.goToContact(contact.id);
       },
       error: (err) => {
         console.error('Error creating contact from lead:', err);
+        alert('Ошибка при создании контакта из лида');
       }
     });
+  }
+
+  goToContact(contactId?: string): void {
+    if (contactId) {
+      // Переходим к существующему контакту
+      this.router.navigate(['/contacts/view', contactId]);
+    } else if (this.lead?.email || this.lead?.phone) {
+      // Проверяем, есть ли уже контакт с таким email или телефоном
+      // Это можно реализовать через поиск контактов
+      // Пока что создаем новый контакт
+      this.createContactFromLead();
+    } else {
+      alert('Недостаточно данных для создания контакта');
+    }
   }
 
   contactLead(): void {
     this.leadService.markAsContacted(this.lead.id).subscribe({
       next: () => {
-        // Refresh lead data
-        console.log('Lead marked as contacted');
+        // Обновляем дату последнего контакта
+        this.lead.lastContactedAt = new Date();
       },
       error: (error: unknown) => {
         console.error('Error marking lead as contacted:', error);
@@ -293,5 +322,58 @@ export class LeadDetailComponent implements OnInit {
 
   close(): void {
     this.router.navigate(['/leads/list']);
+  }
+
+  getActivityLabel(type: ActivityType): string {
+    const labels: Record<ActivityType, string> = {
+      [ActivityType.FORM_SUBMITTED]: 'Форма отправлена',
+      [ActivityType.EMAIL_OPENED]: 'Email открыт',
+      [ActivityType.EMAIL_CLICKED]: 'Ссылка в email нажата',
+      [ActivityType.EMAIL_REPLIED]: 'Ответ на email',
+      [ActivityType.WEBSITE_VISITED]: 'Посещение сайта',
+      [ActivityType.PHONE_CALL_MADE]: 'Исходящий звонок',
+      [ActivityType.PHONE_CALL_RECEIVED]: 'Входящий звонок',
+      [ActivityType.MEETING_SCHEDULED]: 'Встреча запланирована',
+      [ActivityType.MEETING_ATTENDED]: 'Встреча проведена',
+      [ActivityType.DEMO_REQUESTED]: 'Запрос демо',
+      [ActivityType.DEMO_ATTENDED]: 'Демо проведено',
+      [ActivityType.PROPOSAL_SENT]: 'Предложение отправлено',
+      [ActivityType.PROPOSAL_VIEWED]: 'Предложение просмотрено',
+      [ActivityType.CONTRACT_SENT]: 'Контракт отправлен',
+      [ActivityType.CONTRACT_SIGNED]: 'Контракт подписан',
+      [ActivityType.PAYMENT_RECEIVED]: 'Оплата получена',
+      [ActivityType.SUPPORT_TICKET_CREATED]: 'Тикет создан',
+      [ActivityType.SOCIAL_MEDIA_ENGAGEMENT]: 'Активность в соц.сетях',
+      [ActivityType.WEBINAR_ATTENDED]: 'Вебинар посещен',
+      [ActivityType.DOWNLOAD_COMPLETED]: 'Загрузка завершена',
+      [ActivityType.NOTE_ADDED]: 'Заметка добавлена',
+      [ActivityType.STATUS_CHANGED]: 'Статус изменен',
+      [ActivityType.ASSIGNED]: 'Назначено'
+    };
+    return labels[type] || type;
+  }
+
+  goBack(): void {
+    this.router.navigate(['/leads/list']);
+  }
+
+  convertToDeal(): void {
+    if (!this.lead?.id) return;
+    
+    const dialogRef = this.dialog.open(ConvertToDealDialogComponent, {
+      width: '800px',
+      maxWidth: '90vw',
+      data: {
+        lead: this.lead
+      },
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        console.log('Lead converted to deal:', result);
+        // Перенаправляем на страницу созданной сделки
+        this.router.navigate(['/deals/view', result.id]);
+      }
+    });
   }
 }

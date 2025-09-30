@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Param, Patch, Delete, Query, BadRequestException, Req } from '@nestjs/common';
 import { LeadService } from './lead.service';
 import { Lead, LeadStatus, LeadSource, LeadPriority } from './lead.entity';
+import { ChangeType } from './entities/lead-history.entity';
 import { ApiTags, ApiBody, ApiQuery } from '@nestjs/swagger';
 import { 
   CreateLeadDto, 
@@ -38,6 +39,11 @@ function parseSourceArray(param: string | string[]): LeadSource[] | undefined {
 function parsePriorityArray(param: string | string[]): LeadPriority[] | undefined {
   const parsed = parseArrayParam(param);
   return parsed ? parsed.filter(s => Object.values(LeadPriority).includes(s as LeadPriority)) as LeadPriority[] : undefined;
+}
+
+function parseChangeTypeArray(param: string | string[]): ChangeType[] | undefined {
+  const parsed = parseArrayParam(param);
+  return parsed ? parsed.filter(s => Object.values(ChangeType).includes(s as ChangeType)) as ChangeType[] : undefined;
 }
 
 @ApiTags('leads')
@@ -221,5 +227,94 @@ export class LeadController {
   async delete(@Param('id') id: number): Promise<{ success: boolean }> {
     const success = await this.leadService.delete(id);
     return { success };
+  }
+
+  @Post(':id/convert-to-deal')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'Название сделки (опционально)' },
+        amount: { type: 'number', description: 'Сумма сделки', minimum: 0 },
+        currency: { type: 'string', description: 'Валюта (по умолчанию RUB)' },
+        probability: { type: 'number', description: 'Вероятность закрытия в % (0-100)' },
+        expectedCloseDate: { type: 'string', format: 'date', description: 'Ожидаемая дата закрытия' },
+        stageId: { type: 'string', description: 'ID этапа воронки' },
+        notes: { type: 'string', description: 'Заметки (опционально)' }
+      },
+      required: ['amount', 'expectedCloseDate', 'stageId']
+    }
+  })
+  async convertToDeal(
+    @Param('id') id: number,
+    @Body() body: {
+      title?: string;
+      amount: number;
+      currency?: string;
+      probability?: number;
+      expectedCloseDate: string;
+      stageId: string;
+      notes?: string;
+    }
+  ) {
+    return this.leadService.convertToDeal(id, {
+      ...body,
+      expectedCloseDate: new Date(body.expectedCloseDate)
+    });
+  }
+
+  /**
+   * Получить историю изменений лида
+   */
+  @Get(':id/history')
+  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Номер страницы' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Количество записей на странице' })
+  @ApiQuery({ name: 'changeType', required: false, type: String, description: 'Тип изменения (можно несколько через запятую)' })
+  @ApiQuery({ name: 'userId', required: false, type: String, description: 'ID пользователя (можно несколько через запятую)' })
+  @ApiQuery({ name: 'fieldName', required: false, type: String, description: 'Название поля (можно несколько через запятую)' })
+  @ApiQuery({ name: 'dateFrom', required: false, type: String, description: 'Дата начала (ISO формат)' })
+  @ApiQuery({ name: 'dateTo', required: false, type: String, description: 'Дата окончания (ISO формат)' })
+  async getLeadHistory(
+    @Param('id') id: number,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('changeType') changeType?: string | string[],
+    @Query('userId') userId?: string | string[],
+    @Query('fieldName') fieldName?: string | string[],
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string
+  ) {
+    const filters = {
+      changeType: parseChangeTypeArray(changeType),
+      userId: parseArrayParam(userId),
+      fieldName: parseArrayParam(fieldName),
+      dateFrom: dateFrom ? new Date(dateFrom) : undefined,
+      dateTo: dateTo ? new Date(dateTo) : undefined
+    };
+
+    return this.leadService.getLeadHistory(
+      id,
+      filters,
+      page || 1,
+      limit || 50
+    );
+  }
+
+  /**
+   * Получить статистику изменений лида
+   */
+  @Get(':id/history/stats')
+  @ApiQuery({ name: 'dateFrom', required: false, type: String, description: 'Дата начала (ISO формат)' })
+  @ApiQuery({ name: 'dateTo', required: false, type: String, description: 'Дата окончания (ISO формат)' })
+  async getLeadChangeStatistics(
+    @Param('id') id: number,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string
+  ) {
+    return this.leadService.getLeadChangeStatistics(
+      id,
+      dateFrom ? new Date(dateFrom) : undefined,
+      dateTo ? new Date(dateTo) : undefined
+    );
   }
 }

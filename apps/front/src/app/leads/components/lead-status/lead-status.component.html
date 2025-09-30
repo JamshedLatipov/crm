@@ -1,0 +1,12 @@
+<mat-chip 
+  [class]="getStatusClass()" 
+  selected>
+  <span class="status-content">
+    <span 
+      *ngIf="showIcon" 
+      class="status-indicator"
+      [class]="'indicator-' + status">
+    </span>
+    {{ getStatusLabel() }}
+  </span>
+</mat-chip>

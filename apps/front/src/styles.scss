@@ -11,6 +11,9 @@
 @use '@fontsource/roboto/500.css' as roboto500;
 @use '@fontsource/material-icons' as materialIcons;
 
+// Import analytics modal styles - компонентные стили загружаются автоматически
+// @use 'app/pipeline/analytics-modal.component.scss';
+
 html {
   @include mat.theme((
     color: (
@@ -116,4 +119,7 @@ button[mat-flat-button][color="primary"]:hover {
 button[mat-raised-button][color="primary"].mat-button-disabled {
   background-color: rgba(66,133,244,0.5) !important;
   color: rgba(255,255,255,0.7) !important;
+}
+.mat-mdc-dialog-surface {
+    overflow: hidden !important;
 }

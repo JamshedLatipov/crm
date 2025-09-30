@@ -1,0 +1,660 @@
+/* Статистика истории сделок */
+.stats-card {
+  margin-bottom: 24px;
+
+  .mat-card-header {
+    .stats-avatar {
+      background: linear-gradient(135deg, #4caf50, #66bb6a);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      
+      mat-icon {
+        font-size: 24px;
+        width: 24px;
+        height: 24px;
+      }
+    }
+
+    .header-actions {
+      margin-left: auto;
+    }
+  }
+}
+
+/* Загрузка */
+.loading-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 20px;
+  
+  p {
+    margin-top: 16px;
+    color: #666;
+  }
+}
+
+/* Контент вкладок */
+.stats-content {
+  .mat-tab-group {
+    .mat-tab-body-content {
+      padding: 0;
+    }
+  }
+
+  .tab-content {
+    padding: 24px;
+    min-height: 300px;
+  }
+}
+
+/* Сетка статистики */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+
+  .stat-card {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+
+    &:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      transform: translateY(-2px);
+    }
+
+    &.primary-stat {
+      background: linear-gradient(135deg, #2196f3, #21cbf3);
+      color: white;
+      border: none;
+
+      .stat-icon {
+        background: rgba(255,255,255,0.2);
+      }
+
+      .stat-value {
+        color: white;
+      }
+
+      .stat-label {
+        color: rgba(255,255,255,0.9);
+      }
+    }
+
+    .stat-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      background: #f5f5f5;
+
+      &.update {
+        background: linear-gradient(135deg, #2196f3, #42a5f5);
+        color: white;
+      }
+
+      &.stage {
+        background: linear-gradient(135deg, #ff9800, #ffb74d);
+        color: white;
+      }
+
+      &.amount {
+        background: linear-gradient(135deg, #9c27b0, #ba68c8);
+        color: white;
+      }
+
+      mat-icon {
+        font-size: 24px;
+        width: 24px;
+        height: 24px;
+      }
+    }
+
+    .stat-content {
+      flex: 1;
+
+      .stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: 4px;
+        color: #333;
+      }
+
+      .stat-label {
+        font-size: 14px;
+        color: #666;
+        font-weight: 500;
+      }
+    }
+  }
+}
+
+/* Детальная статистика */
+.detailed-stats {
+  h4 {
+    margin-bottom: 20px;
+    color: #333;
+    font-weight: 600;
+  }
+
+  .stats-list {
+    .stats-item {
+      display: flex;
+      align-items: center;
+      padding: 16px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      transition: all 0.3s ease;
+
+      &:hover {
+        background-color: #f9f9f9;
+        border-color: #ccc;
+      }
+
+      .item-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 16px;
+        background: #f5f5f5;
+        color: #666;
+
+        mat-icon {
+          font-size: 20px;
+          width: 20px;
+          height: 20px;
+        }
+      }
+
+      .item-content {
+        flex: 1;
+
+        .item-label {
+          font-weight: 600;
+          color: #333;
+          margin-bottom: 4px;
+        }
+
+        .item-description {
+          font-size: 13px;
+          color: #666;
+        }
+      }
+
+      .item-value {
+        text-align: right;
+        min-width: 80px;
+
+        .value {
+          font-size: 18px;
+          font-weight: 700;
+          color: #333;
+          display: block;
+          margin-bottom: 4px;
+        }
+
+        .progress-bar {
+          width: 60px;
+          height: 4px;
+          background: #e0e0e0;
+          border-radius: 2px;
+          overflow: hidden;
+
+          .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #2196f3, #42a5f5);
+            transition: width 0.3s ease;
+          }
+        }
+      }
+
+      /* Стили для разных типов */
+      &.type-created .item-icon {
+        background: linear-gradient(135deg, #4caf50, #66bb6a);
+        color: white;
+      }
+
+      &.type-updated .item-icon {
+        background: linear-gradient(135deg, #2196f3, #42a5f5);
+        color: white;
+      }
+
+      &.type-stage_moved .item-icon {
+        background: linear-gradient(135deg, #ff9800, #ffb74d);
+        color: white;
+      }
+
+      &.type-amount_changed .item-icon {
+        background: linear-gradient(135deg, #9c27b0, #ba68c8);
+        color: white;
+      }
+
+      &.type-won .item-icon {
+        background: linear-gradient(135deg, #4caf50, #8bc34a);
+        color: white;
+      }
+
+      &.type-lost .item-icon {
+        background: linear-gradient(135deg, #f44336, #ef5350);
+        color: white;
+      }
+    }
+  }
+}
+
+/* Пустые состояния */
+.empty-stats,
+.empty-activity,
+.empty-movement,
+.empty-global {
+  text-align: center;
+  padding: 60px 20px;
+
+  .empty-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    color: #ccc;
+    margin-bottom: 16px;
+  }
+
+  h4 {
+    margin-bottom: 8px;
+    color: #666;
+  }
+
+  p {
+    color: #999;
+  }
+}
+
+/* Активность пользователей */
+.user-activity-section {
+  h4 {
+    margin-bottom: 20px;
+    color: #333;
+    font-weight: 600;
+  }
+
+  .activity-list {
+    .activity-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      background: white;
+
+      &:hover {
+        background-color: #f9f9f9;
+      }
+
+      .user-info {
+        display: flex;
+        align-items: center;
+        flex: 1;
+
+        .user-avatar {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #607d8b, #90a4ae);
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-right: 16px;
+
+          mat-icon {
+            font-size: 24px;
+            width: 24px;
+            height: 24px;
+          }
+        }
+
+        .user-details {
+          .user-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+          }
+
+          .user-meta {
+            font-size: 13px;
+            color: #666;
+
+            .last-activity {
+              font-style: italic;
+            }
+          }
+        }
+      }
+
+      .activity-stats {
+        .high-activity {
+          background-color: #e8f5e8;
+          color: #2e7d32;
+        }
+
+        .medium-activity {
+          background-color: #fff3e0;
+          color: #ef6c00;
+        }
+
+        .low-activity {
+          background-color: #e3f2fd;
+          color: #1565c0;
+        }
+
+        .minimal-activity {
+          background-color: #f5f5f5;
+          color: #666;
+        }
+      }
+    }
+  }
+}
+
+/* Движение по этапам */
+.stage-movement-section {
+  h4 {
+    margin-bottom: 20px;
+    color: #333;
+    font-weight: 600;
+  }
+
+  .movement-list {
+    .movement-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      background: white;
+
+      &:hover {
+        background-color: #f9f9f9;
+      }
+
+      .movement-flow {
+        display: flex;
+        align-items: center;
+        flex: 1;
+
+        .stage-from,
+        .stage-to {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 12px;
+          background: #f5f5f5;
+          border-radius: 6px;
+          font-size: 14px;
+          color: #333;
+
+          mat-icon {
+            font-size: 16px;
+            width: 16px;
+            height: 16px;
+            color: #666;
+          }
+        }
+
+        .movement-arrow {
+          margin: 0 16px;
+          color: #666;
+
+          mat-icon {
+            font-size: 20px;
+            width: 20px;
+            height: 20px;
+          }
+        }
+      }
+
+      .movement-count {
+        margin-left: 16px;
+      }
+    }
+  }
+}
+
+/* Глобальная статистика */
+.global-stats-section {
+  margin-bottom: 32px;
+
+  h4 {
+    margin-bottom: 20px;
+    color: #333;
+    font-weight: 600;
+  }
+
+  .global-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+
+    .global-stat {
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+
+      .global-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #673ab7, #9575cd);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        mat-icon {
+          font-size: 24px;
+          width: 24px;
+          height: 24px;
+        }
+      }
+
+      .global-content {
+        .global-value {
+          font-size: 24px;
+          font-weight: 700;
+          color: #333;
+          margin-bottom: 4px;
+        }
+
+        .global-label {
+          font-size: 14px;
+          color: #666;
+        }
+      }
+    }
+  }
+}
+
+/* Активные сделки */
+.active-deals-section {
+  h4 {
+    margin-bottom: 20px;
+    color: #333;
+    font-weight: 600;
+  }
+
+  .deals-list {
+    .deal-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      background: white;
+
+      &:hover {
+        background-color: #f9f9f9;
+      }
+
+      .deal-info {
+        flex: 1;
+
+        .deal-title {
+          font-weight: 600;
+          color: #333;
+          margin-bottom: 4px;
+        }
+
+        .deal-meta {
+          font-size: 13px;
+          color: #666;
+
+          .last-change {
+            font-style: italic;
+          }
+        }
+      }
+
+      .deal-activity {
+        margin-left: 16px;
+      }
+    }
+  }
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .global-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .activity-item,
+  .movement-item,
+  .deal-item {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 12px;
+
+    .activity-stats,
+    .movement-count,
+    .deal-activity {
+      margin-left: 0 !important;
+      align-self: stretch;
+    }
+  }
+
+  .movement-flow {
+    flex-direction: column;
+    align-items: flex-start !important;
+
+    .movement-arrow {
+      margin: 8px 0 !important;
+      transform: rotate(90deg);
+    }
+  }
+}
+
+/* Темная тема */
+@media (prefers-color-scheme: dark) {
+  .stats-card {
+    background: #424242;
+    color: white;
+
+    .stat-card {
+      background: #616161;
+      border-color: #757575;
+      color: white;
+
+      .stat-icon {
+        background: #757575;
+        color: white;
+      }
+
+      .stat-value {
+        color: white;
+      }
+
+      .stat-label {
+        color: #e0e0e0;
+      }
+    }
+  }
+
+  .stats-item,
+  .activity-item,
+  .movement-item,
+  .deal-item,
+  .global-stat {
+    background: #616161 !important;
+    border-color: #757575 !important;
+    color: white;
+
+    &:hover {
+      background: #757575 !important;
+    }
+
+    .item-label,
+    .user-name,
+    .deal-title,
+    .global-value {
+      color: white;
+    }
+
+    .item-description,
+    .user-meta,
+    .deal-meta,
+    .global-label {
+      color: #e0e0e0;
+    }
+  }
+
+  .stage-from,
+  .stage-to {
+    background: #757575 !important;
+    color: white !important;
+  }
+
+  .empty-stats,
+  .empty-activity,
+  .empty-movement,
+  .empty-global {
+    h4 {
+      color: #e0e0e0;
+    }
+
+    p {
+      color: #bdbdbd;
+    }
+  }
+}

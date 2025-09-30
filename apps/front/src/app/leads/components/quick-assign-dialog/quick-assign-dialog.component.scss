@@ -1,27 +1,484 @@
-.quick-assign-dialog h2 {
+// Переменные для анимаций и цветов
+:root {
+  --dialog-border-radius: 16px;
+  --dialog-shadow: 0 24px 38px 3px rgba(0, 0, 0, 0.14), 0 9px 46px 8px rgba(0, 0, 0, 0.12), 0 11px 15px -7px rgba(0, 0, 0, 0.2);
+  --transition-standard: 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  --transition-enter: 0.225s cubic-bezier(0.0, 0.0, 0.2, 1);
+  --transition-exit: 0.195s cubic-bezier(0.4, 0.0, 1, 1);
+}
+
+.quick-assign-dialog {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
+  flex-direction: column;
+  min-height: 0;
+  border-radius: var(--dialog-border-radius);
+  overflow: hidden;
+  background: var(--mat-sys-surface);
+  min-width: 480px;
+  max-width: 90vw;
+
+  // Заголовок диалога
+  .dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px 16px;
+    background: linear-gradient(135deg, var(--mat-sys-tertiary-container) 0%, var(--mat-sys-primary-container) 100%);
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+
+    h2 {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 0;
+      font-size: 1.375rem;
+      font-weight: 600;
+      color: var(--mat-sys-on-tertiary-container);
+
+      .header-icon {
+        font-size: 24px;
+        width: 24px;
+        height: 24px;
+        color: var(--mat-sys-tertiary);
+        animation: flash 2s infinite;
+      }
+    }
+
+    .close-button {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      color: var(--mat-sys-on-surface-variant);
+      transition: all var(--transition-standard);
+
+      &:hover {
+        background-color: rgba(var(--mat-sys-on-surface-variant), 0.08);
+        transform: scale(1.1);
+      }
+    }
+  }
+
+  // Содержимое диалога
+  .dialog-content {
+    padding: 24px;
+    max-height: 60vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--mat-sys-outline-variant) transparent;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background-color: var(--mat-sys-outline-variant);
+      border-radius: 3px;
+    }
+  }
+
+  // Информация о лиде
+  .lead-info-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+    background: var(--mat-sys-surface-container-low);
+    border-radius: 16px;
+    border: 1px solid var(--mat-sys-outline-variant);
+
+    .lead-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: var(--mat-sys-primary-container);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+
+      mat-icon {
+        color: var(--mat-sys-on-primary-container);
+        font-size: 24px;
+      }
+    }
+
+    .lead-details {
+      flex: 1;
+
+      .lead-name {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--mat-sys-on-surface);
+        margin: 0 0 8px 0;
+      }
+
+      .lead-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+
+        .company, .email {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          color: var(--mat-sys-on-surface-variant);
+          font-size: 0.875rem;
+
+          mat-icon {
+            font-size: 16px;
+            width: 16px;
+            height: 16px;
+          }
+        }
+      }
+    }
+  }
+
+  // Текущий ответственный
+  .current-assignee-section {
+    margin-bottom: 20px;
+
+    .section-label {
+      font-size: 0.875rem;
+      color: var(--mat-sys-on-surface-variant);
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .current-assignee-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--mat-sys-secondary-container);
+      border-radius: 12px;
+      border: 1px solid var(--mat-sys-secondary);
+
+      .assignee-name {
+        flex: 1;
+        font-weight: 500;
+        color: var(--mat-sys-on-secondary-container);
+      }
+
+      .change-icon {
+        color: var(--mat-sys-secondary);
+        animation: pulse 2s infinite;
+      }
+    }
+  }
+
+  // Выбор менеджера
+  .manager-selection-section {
+    .full-width {
+      width: 100%;
+    }
+
+    // Стили для выпадающего списка
+    .unassign-option {
+      border-bottom: 1px solid var(--mat-sys-outline-variant);
+      margin-bottom: 8px;
+
+      .option-content {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--mat-sys-error);
+        font-weight: 500;
+
+        mat-icon {
+          font-size: 20px;
+        }
+      }
+    }
+
+    .overloaded-option {
+      background-color: var(--mat-sys-error-container);
+      color: var(--mat-sys-on-error-container);
+    }
+
+    .manager-option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 4px 0;
+
+      .manager-option-details {
+        flex: 1;
+
+        .manager-name {
+          font-weight: 500;
+          margin-bottom: 2px;
+          color: var(--mat-sys-on-surface);
+        }
+
+        .manager-workload {
+          font-size: 0.8125rem;
+          color: var(--mat-sys-on-surface-variant);
+
+          &.warning {
+            color: var(--mat-sys-error);
+            font-weight: 500;
+          }
+        }
+      }
+
+      .status-badge {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        &.available {
+          background-color: var(--mat-sys-tertiary-container);
+
+          mat-icon {
+            color: var(--mat-sys-tertiary);
+            font-size: 16px;
+          }
+        }
+
+        &.busy {
+          background-color: var(--mat-sys-error-container);
+
+          mat-icon {
+            color: var(--mat-sys-error);
+            font-size: 16px;
+          }
+        }
+      }
+    }
+
+    // Информация о выбранном менеджере
+    .selected-manager-info {
+      margin-top: 16px;
+      animation: slideIn var(--transition-enter);
+
+      .info-card {
+        padding: 20px;
+        background: var(--mat-sys-primary-container);
+        border-radius: 16px;
+        border: 1px solid var(--mat-sys-primary);
+
+        .manager-preview {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          margin-bottom: 16px;
+
+          .manager-details {
+            flex: 1;
+
+            .name {
+              font-size: 1.125rem;
+              font-weight: 600;
+              color: var(--mat-sys-on-primary-container);
+              margin-bottom: 4px;
+            }
+
+            .role {
+              font-size: 0.875rem;
+              color: var(--mat-sys-primary);
+              font-weight: 500;
+              margin-bottom: 2px;
+            }
+
+            .department {
+              font-size: 0.8125rem;
+              color: var(--mat-sys-on-primary-container);
+              opacity: 0.8;
+            }
+          }
+        }
+
+        .workload-indicator {
+          .workload-label {
+            font-size: 0.875rem;
+            color: var(--mat-sys-on-primary-container);
+            margin-bottom: 6px;
+            font-weight: 500;
+          }
+
+          .workload-bar {
+            height: 8px;
+            background: rgba(var(--mat-sys-on-primary-container), 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 6px;
+
+            .progress {
+              height: 100%;
+              background: var(--mat-sys-tertiary);
+              border-radius: 4px;
+              transition: width var(--transition-standard);
+
+              &.warning {
+                background: var(--mat-sys-error);
+              }
+            }
+          }
+
+          .workload-text {
+            font-size: 0.8125rem;
+            color: var(--mat-sys-on-primary-container);
+            text-align: center;
+            opacity: 0.9;
+          }
+        }
+      }
+    }
+  }
+
+  // Действия диалога
+  .dialog-actions {
+    padding: 16px 24px 20px;
+    justify-content: flex-end;
+    gap: 16px;
+    border-top: 1px solid var(--mat-sys-outline-variant);
+    background: var(--mat-sys-surface-container-low);
+
+    .cancel-button {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--mat-sys-on-surface-variant);
+      transition: all var(--transition-standard);
+
+      &:hover {
+        background-color: var(--mat-sys-surface-container);
+        color: var(--mat-sys-on-surface);
+      }
+    }
+
+    .assign-button {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 140px;
+      border-radius: 12px;
+      font-weight: 600;
+      transition: all var(--transition-standard);
+
+      &:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(var(--mat-sys-primary), 0.3);
+      }
+
+      &:disabled {
+        opacity: 0.6;
+      }
+
+      .spinning {
+        animation: spin 1s linear infinite;
+      }
+    }
+  }
 }
 
-.lead-info {
-  margin-bottom: 16px;
-  padding: 12px;
-  background: #f5f5f5;
-  border-radius: 4px;
+// Анимации
+@keyframes flash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; transform: scale(1.1); }
 }
 
-.full-width {
-  width: 100%;
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }
 
-.workload-info {
-  color: #666;
-  font-size: 0.875rem;
+@keyframes slideIn {
+  0% { 
+    opacity: 0; 
+    transform: translateY(10px); 
+  }
+  100% { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
 }
 
-mat-dialog-actions {
-  justify-content: flex-end;
-  gap: 8px;
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+// Адаптивность
+@media (max-width: 768px) {
+  .quick-assign-dialog {
+    min-width: 0;
+    max-width: 95vw;
+
+    .dialog-header {
+      padding: 16px 20px 12px;
+
+      h2 {
+        font-size: 1.25rem;
+
+        .header-icon {
+          font-size: 20px;
+          width: 20px;
+          height: 20px;
+        }
+      }
+    }
+
+    .dialog-content {
+      padding: 20px;
+    }
+
+    .lead-info-card {
+      flex-direction: column;
+      text-align: center;
+      gap: 12px;
+
+      .lead-details {
+        .lead-meta {
+          justify-content: center;
+          flex-direction: column;
+          gap: 8px;
+        }
+      }
+    }
+
+    .selected-manager-info .info-card .manager-preview {
+      flex-direction: column;
+      text-align: center;
+      gap: 12px;
+    }
+
+    .dialog-actions {
+      padding: 16px 20px 20px;
+      flex-direction: column;
+
+      .cancel-button, .assign-button {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  }
+}
+
+// Фокус и доступность
+.close-button:focus {
+  outline: 2px solid var(--mat-sys-primary);
+  outline-offset: 2px;
+}
+
+// Стили для выпадающего списка Material
+::ng-deep .mat-mdc-select-panel {
+  .mat-mdc-option {
+    min-height: 56px !important;
+    padding: 8px 16px !important;
+
+    &.overloaded-option {
+      background-color: var(--mat-sys-error-container) !important;
+    }
+  }
 }

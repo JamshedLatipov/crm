@@ -30,7 +30,7 @@ export class ContactsService {
   async getContactById(id: string): Promise<Contact> {
     const contact = await this.contactRepository.findOne({
       where: { id },
-      relations: ['company'],
+      relations: ['company', 'deals'],
     });
 
     if (!contact) {

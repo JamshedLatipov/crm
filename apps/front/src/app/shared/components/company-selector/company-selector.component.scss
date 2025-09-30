@@ -1,0 +1,48 @@
+.company-option {
+  display: flex;
+  align-items: center;
+  width: 100%;
+
+  .company-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+
+    .company-name {
+      font-weight: 500;
+      color: var(--text-primary);
+      font-size: 14px;
+    }
+
+    .company-details {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .company-website {
+      font-size: 11px;
+      color: var(--text-hint);
+      margin-top: 1px;
+      font-style: italic;
+    }
+  }
+}
+
+.create-company-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--primary-color);
+  font-weight: 500;
+
+  mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+  }
+}
+
+.full-width {
+  width: 100%;
+}

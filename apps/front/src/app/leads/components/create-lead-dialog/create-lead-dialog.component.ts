@@ -14,15 +14,14 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
 
 import { LeadService } from '../../services/lead.service';
 import { LeadPriority, CreateLeadRequest } from '../../models/lead.model';
-import { CompaniesService } from '../../../services/companies.service';
-import { CompanyAutocompleteComponent } from '../../../shared/components/company-autocomplete/company-autocomplete.component';
-import { Company } from '../../../pipeline/dtos';
-// Company type is available via pipeline dtos when needed
+import { CompanySelectorComponent } from '../../../shared/components/company-selector/company-selector.component';
+import { ContactSelectorComponent } from '../../../contacts/components/contact-selector.component';
+import { Contact } from '../../../contacts/contact.interfaces';
 
 @Component({
   selector: 'app-create-lead-dialog',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatChipsModule, MatIconModule, MatProgressSpinnerModule, MatOptionModule, MatAutocompleteModule, CompanyAutocompleteComponent],
+  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatChipsModule, MatIconModule, MatProgressSpinnerModule, MatOptionModule, MatAutocompleteModule, CompanySelectorComponent, ContactSelectorComponent],
   templateUrl: './create-lead-dialog.component.html',
   styleUrls: ['./create-lead-dialog.component.scss']
 })
@@ -30,14 +29,13 @@ export class CreateLeadDialogComponent {
   private readonly fb = inject(FormBuilder);
   private readonly leadService = inject(LeadService);
   private readonly dialogRef = inject(MatDialogRef<CreateLeadDialogComponent>);
-  private readonly companiesService = inject(CompaniesService);
 
   leadForm: FormGroup;
   saving = false;
-  // company autocomplete handled by shared component
 
   constructor() {
     this.leadForm = this.fb.group({
+      contact: [null, [Validators.required]], // Выбранный контакт
       name: ['', [Validators.required]],
       email: ['', [Validators.email]],
       phone: [''],
@@ -58,28 +56,34 @@ export class CreateLeadDialogComponent {
     });
 
     // company autocomplete is provided by CompanyAutocompleteComponent
+    
+    // Отслеживаем изменения выбранного контакта
+    this.leadForm.get('contact')?.valueChanges.subscribe((contact: Contact | null) => {
+      if (contact) {
+        this.fillFormFromContact(contact);
+      }
+    });
   }
 
-  get companyControl() {
-    return this.leadForm.get('company') as import('@angular/forms').FormControl<string | null>;
+  fillFormFromContact(contact: Contact): void {
+    // Заполняем форму данными из выбранного контакта
+    this.leadForm.patchValue({
+      name: contact.name,
+      email: contact.email || '',
+      phone: contact.phone || '',
+      position: contact.position || '',
+      website: contact.website || '',
+      company: contact.companyName || '',
+      companyId: contact.companyId || ''
+    });
   }
-
-  get companyIdControl() {
-    return this.leadForm.get('companyId') as import('@angular/forms').FormControl<string | null>;
-  }
-
-  onCompanySelected(company: Company | null) {
-    if (!company) return;
-    this.leadForm.patchValue({ company: company.name || company.legalName });
-    this.companyControl.setValue(company.id ?? null);
-  }
-
-  // inline company creation handled by shared component
 
   save(): void {
     if (this.leadForm.invalid) return;
     this.saving = true;
     const formValue = this.leadForm.value;
+    const selectedContact: Contact = formValue.contact;
+    
     const tags = formValue.tagsInput
       ? formValue.tagsInput
           .split(',')
@@ -88,10 +92,11 @@ export class CreateLeadDialogComponent {
       : [];
 
     const createRequest: CreateLeadRequest = {
+      contactId: selectedContact?.id, // Привязываем к выбранному контакту
       name: formValue.name,
       email: formValue.email || undefined,
       phone: formValue.phone || undefined,
-      company: formValue.company.id || undefined,
+      companyId: formValue.companyId || undefined, // ID компании из селектора
       position: formValue.position || undefined,
       website: formValue.website || undefined,
       industry: formValue.industry || undefined,

@@ -3,6 +3,11 @@ import { LeadStatus, LeadSource, LeadPriority } from './lead.entity';
 import { IsString, IsOptional, IsEmail, IsEnum, IsNumber, IsArray, IsDateString } from 'class-validator';
 
 export class CreateLeadDto {
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  contactId?: string;
+
   @ApiProperty()
   @IsString()
   name: string;

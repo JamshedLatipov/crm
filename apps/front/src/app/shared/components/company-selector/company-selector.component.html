@@ -1,0 +1,39 @@
+<mat-form-field appearance="outline" class="form-field">
+  <mat-label>{{ placeholder }}</mat-label>
+  <input
+    matInput
+    [formControl]="searchControl"
+    [matAutocomplete]="auto"
+    placeholder="Начните вводить название компании..."
+  >
+  <mat-icon matSuffix>business</mat-icon>
+  
+  <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayCompany" (optionSelected)="onCompanySelected($event)">
+    <!-- Опции компаний -->
+    <mat-option 
+      *ngFor="let company of filteredCompanies$ | async" 
+      [value]="company"
+      class="company-option"
+    >
+      <div class="company-option-content">
+        <div class="company-name">{{ company.name || company.legalName }}</div>
+        <div class="company-details" *ngIf="company.inn || company.industry">
+          <span *ngIf="company.inn" class="company-inn">ИНН: {{ company.inn }}</span>
+          <span *ngIf="company.industry" class="company-industry">{{ company.industry }}</span>
+        </div>
+      </div>
+    </mat-option>
+    
+    <!-- Опция создания новой компании -->
+    <mat-option 
+      *ngIf="(searchControl.value && searchControl.value.length > 0) && (filteredCompanies$ | async)?.length === 0"
+      class="create-option"
+      (click)="createNewCompany()"
+    >
+      <div class="create-option-content">
+        <mat-icon>add_business</mat-icon>
+        <span>Создать компанию "{{ searchControl.value }}"</span>
+      </div>
+    </mat-option>
+  </mat-autocomplete>
+</mat-form-field>

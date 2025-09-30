@@ -117,6 +117,7 @@
               {{ getStatusLabel(lead.status) }}
             </span>
             <button
+              *ngIf="canChangeStatus(lead)"
               mat-icon-button
               class="status-change-btn"
               (click)="changeStatus(lead); $event.stopPropagation()"
@@ -124,6 +125,13 @@
             >
               <mat-icon>edit</mat-icon>
             </button>
+            <mat-icon
+              *ngIf="!canChangeStatus(lead)"
+              class="status-locked-icon"
+              matTooltip="Статус заблокирован"
+            >
+              lock
+            </mat-icon>
           </div>
         </td>
       </ng-container>
@@ -274,6 +282,14 @@
             >
               <mat-icon>phone</mat-icon>
               <span>Contact</span>
+            </button>
+            <button
+              mat-menu-item
+              (click)="convertToDeal(lead); $event.stopPropagation()"
+              [disabled]="lead.status === LeadStatus.CONVERTED"
+            >
+              <mat-icon>trending_up</mat-icon>
+              <span>Convert to Deal</span>
             </button>
             <mat-divider></mat-divider>
             <button

@@ -7,12 +7,32 @@ import {
   Body,
   Param,
   Query,
+  UseGuards,
 } from '@nestjs/common';
+import { ApiTags, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { DealsService } from './deals.service';
 import { CreateDealDto } from './dto/create-deal.dto';
 import { UpdateDealDto } from './dto/update-deal.dto';
 import { DealStatus } from './deal.entity';
+import { DealChangeType } from './entities/deal-history.entity';
+import { JwtAuthGuard } from '../user/jwt-auth.guard';
+import { CurrentUser, CurrentUserPayload } from '../user/current-user.decorator';
 
+// Helper function to parse array parameters
+function parseArrayParam(param: string | string[]): string[] | undefined {
+  if (!param) return undefined;
+  if (Array.isArray(param)) return param;
+  return param.split(',').map(s => s.trim()).filter(s => s.length > 0);
+}
+
+function parseDealChangeTypeArray(param: string | string[]): DealChangeType[] | undefined {
+  const parsed = parseArrayParam(param);
+  return parsed ? parsed.filter(s => Object.values(DealChangeType).includes(s as DealChangeType)) as DealChangeType[] : undefined;
+}
+
+@ApiTags('deals')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('deals')
 export class DealsController {
   constructor(private readonly dealsService: DealsService) {}
@@ -59,13 +79,20 @@ export class DealsController {
   }
 
   @Post()
-  async createDeal(@Body() dto: CreateDealDto) {
-    return this.dealsService.createDeal(dto);
+  async createDeal(
+    @Body() dto: CreateDealDto,
+    @CurrentUser() user: CurrentUserPayload
+  ) {
+    return this.dealsService.createDeal(dto, user.sub, user.username);
   }
 
   @Patch(':id')
-  async updateDeal(@Param('id') id: string, @Body() dto: UpdateDealDto) {
-    return this.dealsService.updateDeal(id, dto);
+  async updateDeal(
+    @Param('id') id: string,
+    @Body() dto: UpdateDealDto,
+    @CurrentUser() user: CurrentUserPayload
+  ) {
+    return this.dealsService.updateDeal(id, dto, user.sub, user.username);
   }
 
   @Delete(':id')
@@ -76,18 +103,30 @@ export class DealsController {
 
   // Специальные операции
   @Patch(':id/move-stage')
-  async moveToStage(@Param('id') id: string, @Body('stageId') stageId: string) {
-    return this.dealsService.moveToStage(id, stageId);
+  async moveToStage(
+    @Param('id') id: string,
+    @Body('stageId') stageId: string,
+    @CurrentUser() user: CurrentUserPayload
+  ) {
+    return this.dealsService.moveToStage(id, stageId, user.sub, user.username);
   }
 
   @Patch(':id/win')
-  async winDeal(@Param('id') id: string, @Body('amount') actualAmount?: number) {
-    return this.dealsService.winDeal(id, actualAmount);
+  async winDeal(
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserPayload,
+    @Body('amount') actualAmount?: number
+  ) {
+    return this.dealsService.winDeal(id, actualAmount, user.sub, user.username);
   }
 
   @Patch(':id/lose')
-  async loseDeal(@Param('id') id: string, @Body('notes') reason: string) {
-    return this.dealsService.loseDeal(id, reason);
+  async loseDeal(
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserPayload,
+    @Body('reason') reason?: string
+  ) {
+    return this.dealsService.loseDeal(id, reason, user.sub, user.username);
   }
 
   @Patch(':id/probability')
@@ -96,8 +135,12 @@ export class DealsController {
   }
 
   @Patch(':id/assign')
-  async assignDeal(@Param('id') id: string, @Body('assignedTo') managerId: string) {
-    return this.dealsService.assignDeal(id, managerId);
+  async assignDeal(
+    @Param('id') id: string,
+    @Body('assignedTo') managerId: string,
+    @CurrentUser() user: CurrentUserPayload
+  ) {
+    return this.dealsService.assignDeal(id, managerId, user.sub, user.username);
   }
 
   // Связи с компаниями, контактами и лидами
@@ -129,5 +172,95 @@ export class DealsController {
   @Get('by-lead/:leadId')
   async getDealsByLead(@Param('leadId') leadId: number) {
     return this.dealsService.getDealsByLead(leadId);
+  }
+
+  /**
+   * Получить историю изменений сделки
+   */
+  @Get(':id/history')
+  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Номер страницы' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Количество записей на странице' })
+  @ApiQuery({ name: 'changeType', required: false, type: String, description: 'Тип изменения (можно несколько через запятую)' })
+  @ApiQuery({ name: 'userId', required: false, type: String, description: 'ID пользователя (можно несколько через запятую)' })
+  @ApiQuery({ name: 'fieldName', required: false, type: String, description: 'Название поля (можно несколько через запятую)' })
+  @ApiQuery({ name: 'dateFrom', required: false, type: String, description: 'Дата начала (ISO формат)' })
+  @ApiQuery({ name: 'dateTo', required: false, type: String, description: 'Дата окончания (ISO формат)' })
+  async getDealHistory(
+    @Param('id') id: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('changeType') changeType?: string | string[],
+    @Query('userId') userId?: string | string[],
+    @Query('fieldName') fieldName?: string | string[],
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string
+  ) {
+    const filters = {
+      changeType: parseDealChangeTypeArray(changeType),
+      userId: parseArrayParam(userId),
+      fieldName: parseArrayParam(fieldName),
+      dateFrom: dateFrom ? new Date(dateFrom) : undefined,
+      dateTo: dateTo ? new Date(dateTo) : undefined
+    };
+
+    return this.dealsService.getDealHistory(
+      id,
+      filters,
+      page || 1,
+      limit || 50
+    );
+  }
+
+  /**
+   * Получить статистику изменений сделки
+   */
+  @Get(':id/history/stats')
+  @ApiQuery({ name: 'dateFrom', required: false, type: String, description: 'Дата начала (ISO формат)' })
+  @ApiQuery({ name: 'dateTo', required: false, type: String, description: 'Дата окончания (ISO формат)' })
+  async getDealChangeStatistics(
+    @Param('id') id: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string
+  ) {
+    return this.dealsService.getDealChangeStatistics(
+      id,
+      dateFrom ? new Date(dateFrom) : undefined,
+      dateTo ? new Date(dateTo) : undefined
+    );
+  }
+
+  /**
+   * Получить статистику движения по этапам
+   */
+  @Get('history/stage-movement-stats')
+  @ApiQuery({ name: 'dateFrom', required: false, type: String, description: 'Дата начала (ISO формат)' })
+  @ApiQuery({ name: 'dateTo', required: false, type: String, description: 'Дата окончания (ISO формат)' })
+  async getStageMovementStats(
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string
+  ) {
+    return this.dealsService.getStageMovementStats(
+      dateFrom ? new Date(dateFrom) : undefined,
+      dateTo ? new Date(dateTo) : undefined
+    );
+  }
+
+  /**
+   * Получить самые активные сделки
+   */
+  @Get('history/most-active')
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Количество сделок' })
+  @ApiQuery({ name: 'dateFrom', required: false, type: String, description: 'Дата начала (ISO формат)' })
+  @ApiQuery({ name: 'dateTo', required: false, type: String, description: 'Дата окончания (ISO формат)' })
+  async getMostActiveDeals(
+    @Query('limit') limit?: number,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string
+  ) {
+    return this.dealsService.getMostActiveDeals(
+      limit || 10,
+      dateFrom ? new Date(dateFrom) : undefined,
+      dateTo ? new Date(dateTo) : undefined
+    );
   }
 }

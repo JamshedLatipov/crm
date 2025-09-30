@@ -38,6 +38,16 @@ export class AuthService {
 
   user = this._user.asReadonly();
 
+  getToken(): string | null {
+    const data = this.getStoredAuth();
+    if (!data) return null;
+    if (data.exp && Date.now() / 1000 > data.exp) {
+      this.clearStoredAuth();
+      return null;
+    }
+    return data.token;
+  }
+
   isAuthenticated(): boolean {
     const data = this.getStoredAuth();
     if (!data) return false;
@@ -46,6 +56,19 @@ export class AuthService {
       return false;
     }
     return !!this._user();
+  }
+
+  getUserId(): string | null {
+    const token = this.getToken();
+    if (!token) return null;
+    const decoded = this.decodeJwt(token);
+    return decoded?.sub?.toString() || null;
+  }
+
+  getUserData(): JwtPayload | null {
+    const token = this.getToken();
+    if (!token) return null;
+    return this.decodeJwt(token) || null;
   }
 
   async login(

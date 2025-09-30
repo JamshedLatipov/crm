@@ -9,6 +9,7 @@ import { PipelineModule } from './pipeline/pipeline.module';
 import { DealsModule } from './deals/deals.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { CompaniesModule } from './companies/companies.module';
+import { CommentsModule } from './comments/comments.module';
 
 export const MODULES = [
     LeadModule,
@@ -22,4 +23,5 @@ export const MODULES = [
     DealsModule,
     ContactsModule,
     CompaniesModule,
+    CommentsModule,
 ];

@@ -1,0 +1,121 @@
+<div class="comments-section">
+  <!-- Заголовок и счетчик -->
+  <div class="comments-header">
+    <h3>
+      <mat-icon>comment</mat-icon>
+      Комментарии
+      <span *ngIf="commentsData()?.total" class="comment-count"
+        >({{ commentsData()?.total }})</span
+      >
+    </h3>
+  </div>
+
+  <!-- Загрузка -->
+  <div class="loading-container" *ngIf="isLoading()">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Загрузка комментариев...</p>
+  </div>
+
+  <!-- Список комментариев -->
+  <div class="comments-list" *ngIf="!isLoading()">
+    <div *ngIf="comments().length === 0" class="no-comments">
+      <mat-icon>chat_bubble_outline</mat-icon>
+      <p>Пока нет комментариев. Будьте первым!</p>
+    </div>
+
+    <mat-card
+      *ngFor="let comment of comments(); trackBy: trackByCommentId"
+      class="comment-card"
+    >
+      <mat-card-header>
+        <div class="comment-author">
+          <mat-icon>person</mat-icon>
+          <span class="author-name">{{ comment.userName }}</span>
+          <span class="comment-date">{{ formatDate(comment.createdAt) }}</span>
+          <span
+            *ngIf="comment.updatedAt !== comment.createdAt"
+            class="edited-indicator"
+            title="Отредактирован {{ formatDate(comment.updatedAt) }}"
+          >
+            (изменен)
+          </span>
+        </div>
+
+        <div class="comment-actions" *ngIf="canEditComment(comment)">
+          <button mat-icon-button [matMenuTriggerFor]="commentMenu">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #commentMenu="matMenu">
+            <button mat-menu-item (click)="startEdit(comment)">
+              <mat-icon>edit</mat-icon>
+              Редактировать
+            </button>
+            <button
+              mat-menu-item
+              (click)="deleteComment(comment)"
+              class="delete-action"
+            >
+              <mat-icon>delete</mat-icon>
+              Удалить
+            </button>
+          </mat-menu>
+        </div>
+      </mat-card-header>
+
+      <mat-card-content>
+        <div class="comment-text">{{ comment.text }}</div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Пагинация -->
+  <mat-paginator
+    *ngIf="commentsData()?.totalPages && commentsData()!.totalPages > 1"
+    [length]="commentsData()?.total || 0"
+    [pageSize]="pageSize"
+    [pageIndex]="currentPage - 1"
+    [pageSizeOptions]="[10, 20, 50]"
+    (page)="onPageChange($event)"
+    showFirstLastButtons
+  ></mat-paginator>
+
+  <!-- Форма добавления комментария -->
+
+  <mat-form-field class="full-width" *ngIf="isAuthenticated()">
+    <mat-label>Добавить комментарий...</mat-label>
+    <textarea
+      matInput
+      [formControl]="newCommentText"
+      [disabled]="isSubmitting()"
+      placeholder="Введите ваш комментарий"
+      rows="3"
+      maxlength="2000"
+    ></textarea>
+    <mat-hint align="end">{{ newCommentText.value?.length }}/2000</mat-hint>
+  </mat-form-field>
+
+  <div class="form-actions">
+    <button
+      mat-raised-button
+      color="primary"
+      (click)="addComment()"
+      [disabled]="!canSubmit() || isSubmitting()"
+    >
+      <mat-icon *ngIf="isSubmitting()">hourglass_empty</mat-icon>
+      <mat-icon *ngIf="!isSubmitting() && !editingComment()">send</mat-icon>
+      <mat-icon *ngIf="!isSubmitting() && editingComment()">save</mat-icon>
+      {{
+        isSubmitting()
+          ? 'Сохранение...'
+          : editingComment()
+          ? 'Сохранить'
+          : 'Отправить'
+      }}
+    </button>
+
+    <button mat-button (click)="cancelEdit()" *ngIf="editingComment()">
+      <mat-icon>cancel</mat-icon>
+      Отмена
+    </button>
+  </div>
+</div>

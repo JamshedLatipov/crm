@@ -1,0 +1,609 @@
+/* Global styles for analytics modal */
+.analytics-modal-panel .mdc-dialog__surface {
+  border-radius: 12px !important;
+}
+
+.analytics-modal-panel .mat-mdc-dialog-container {
+  --mdc-dialog-container-color: #ffffff;
+  box-shadow: 0 11px 15px -7px rgba(0, 0, 0, 0.2),
+              0 24px 38px 3px rgba(0, 0, 0, 0.14),
+              0 9px 46px 8px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Responsive modal styles */
+@media (max-width: 768px) {
+  .analytics-modal-panel {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+  }
+  
+  .analytics-modal-panel .mdc-dialog__surface {
+    border-radius: 0 !important;
+  }
+}
+
+.analytics-modal {
+  width: 100%;
+  max-width: 900px;
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+      padding: 0 24px;
+      border-bottom: 1px solid #e0e0e0;
+      margin-bottom: 0;
+    }
+
+    .modal-header h2 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      color: #333;
+    }
+
+    .close-button {
+      margin-left: auto;
+    }
+
+    .modal-content {
+      padding: 24px;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+
+    .no-data {
+      text-align: center;
+      padding: 40px 20px;
+      color: #666;
+    }
+
+    .no-data .large-icon {
+      font-size: 64px;
+      width: 64px;
+      height: 64px;
+      color: #ccc;
+      margin-bottom: 16px;
+    }
+
+    .no-data .subtitle {
+      font-size: 14px;
+      margin-top: 8px;
+    }
+
+    .summary-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .summary-card {
+      text-align: center;
+    }
+
+    .summary-card .metric-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #2e7d32;
+      margin-bottom: 8px;
+    }
+
+    .summary-card .metric-label {
+      font-size: 14px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stages-analytics h3 {
+      margin-bottom: 16px;
+      color: #333;
+      font-weight: 600;
+    }
+
+    .stages-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .stage-card mat-card-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .stage-metrics {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .metric {
+      text-align: center;
+      padding: 8px;
+      background: #f5f5f5;
+      border-radius: 4px;
+    }
+
+    .metric .metric-value {
+      display: block;
+      font-size: 18px;
+      font-weight: bold;
+      color: #1976d2;
+      margin-bottom: 4px;
+    }
+
+    .metric .metric-label {
+      font-size: 12px;
+      color: #666;
+      text-transform: uppercase;
+    }
+
+    .additional-metrics {
+      margin-bottom: 16px;
+    }
+
+    .metric-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .metric-row mat-icon {
+      color: #666;
+    }
+
+    .metric-info .metric-value {
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .metric-info .metric-label {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+      border-top: 1px solid #e0e0e0;
+    }
+
+    .left-actions,
+    .right-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    // Стили для табов
+    .analytics-tabs {
+      width: 100%;
+    }
+
+    .tab-content {
+      padding: 20px 0;
+    }
+
+    // Стили для pipeline chart
+    .chart-container {
+      margin: 24px 0;
+    }
+
+    .funnel-chart {
+      padding: 20px;
+      background: #fafafa;
+      border-radius: 8px;
+    }
+
+    .funnel-stages {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin-bottom: 24px;
+      align-items: center;
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto 24px auto;
+      padding: 0 20px;
+    }
+
+    .funnel-stage-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+
+    .funnel-stage {
+      position: relative;
+      min-height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      padding: 16px 24px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      margin-bottom: 8px;
+      
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+        filter: brightness(1.1);
+      }
+      
+      // Создаем эффект воронки через уменьшение ширины
+      &:nth-child(1) { width: 95%; }
+    }
+
+    .funnel-stage-wrapper:nth-child(1) .funnel-stage { width: 95%; }
+    .funnel-stage-wrapper:nth-child(2) .funnel-stage { width: 85%; }
+    .funnel-stage-wrapper:nth-child(3) .funnel-stage { width: 75%; }
+    .funnel-stage-wrapper:nth-child(4) .funnel-stage { width: 65%; }
+    .funnel-stage-wrapper:nth-child(5) .funnel-stage { width: 55%; }
+    .funnel-stage-wrapper:nth-child(6) .funnel-stage { width: 45%; }
+
+    .funnel-arrow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 8px 0;
+      gap: 4px;
+
+      .arrow-line {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        
+        mat-icon {
+          font-size: 28px;
+          width: 28px;
+          height: 28px;
+          color: #666;
+          animation: bounce 2s infinite;
+        }
+      }
+
+      .conversion-info {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        background: #f8f9fa;
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+        min-width: 140px;
+
+        .conversion-rate {
+          font-size: 12px;
+          font-weight: 600;
+          color: #28a745;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .conversion-loss {
+          font-size: 11px;
+          color: #dc3545;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          font-weight: 500;
+
+          mat-icon {
+            font-size: 14px;
+            width: 14px;
+            height: 14px;
+          }
+        }
+      }
+    }
+
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+      }
+      40% {
+        transform: translateY(-4px);
+      }
+      60% {
+        transform: translateY(-2px);
+      }
+    }
+
+      .funnel-content {
+        text-align: center;
+        width: 100%;
+        
+        .funnel-stage-name {
+          font-weight: 600;
+          font-size: 16px;
+          margin-bottom: 8px;
+          text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+          line-height: 1.3;
+        }
+
+        .funnel-metrics {
+          display: flex;
+          gap: 16px;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 8px;
+          flex-wrap: wrap;
+          
+          .funnel-count {
+            font-size: 18px;
+            font-weight: 700;
+          }
+          
+          .funnel-percentage {
+            font-size: 14px;
+            opacity: 0.95;
+            background: rgba(255,255,255,0.25);
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+          }
+          
+          .funnel-amount {
+            font-size: 12px;
+            opacity: 0.85;
+          }
+        }
+
+        .funnel-conversion {
+          font-size: 12px;
+          opacity: 0.9;
+          font-weight: 500;
+          background: rgba(255,255,255,0.2);
+          padding: 3px 8px;
+          border-radius: 10px;
+          display: inline-block;
+        }
+      }
+    }
+
+    .funnel-metrics-summary {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      padding-top: 16px;
+      border-top: 1px solid #e0e0e0;
+      flex-wrap: wrap;
+
+      .metric-summary {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 20px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        min-width: 140px;
+
+        mat-icon {
+          color: #2196f3;
+          font-size: 24px;
+          width: 24px;
+          height: 24px;
+        }
+
+        .metric-info {
+          display: flex;
+          flex-direction: column;
+          
+          .metric-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
+            font-weight: 500;
+          }
+          
+          .metric-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+          }
+        }
+      }
+    }
+
+
+
+    // Стили для таблицы (в стиле приложения)
+    .table-header {
+      margin-bottom: 24px;
+    }
+
+    .table-header h3 {
+      margin: 0 0 4px 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .table-subtitle {
+      margin: 0;
+      font-size: 14px;
+      color: #5f6368;
+    }
+
+    .table-container {
+      background-color: white;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    .analytics-table {
+      width: 100%;
+      background-color: white;
+    }
+
+    .analytics-table .mat-mdc-header-row {
+      background-color: #f8f9fa;
+      border-bottom: 1px solid #e1e4e8;
+    }
+
+    .analytics-table .mat-mdc-header-cell {
+      font-size: 12px;
+      font-weight: 600;
+      color: #6c757d;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 16px 12px;
+      border-bottom: none;
+    }
+
+    .analytics-table .mat-mdc-cell {
+      padding: 16px 12px;
+      border-bottom: 1px solid #f1f3f4;
+      font-size: 14px;
+      color: #1a1a1a;
+    }
+
+    .analytics-table .table-row {
+      cursor: default;
+      transition: background-color 0.2s ease;
+    }
+
+    .analytics-table .table-row:hover {
+      background-color: #f8f9fa;
+    }
+
+    // Стили для ячеек таблицы
+    .stage-name-cell {
+      font-weight: 500;
+    }
+
+    .stage-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .stage-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .stage-name {
+      color: #1a1a1a;
+    }
+
+    .count-cell {
+      text-align: center;
+    }
+
+    .count-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 32px;
+      height: 24px;
+      padding: 0 8px;
+      background-color: #e3f2fd;
+      color: #1976d2;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .amount-cell {
+      text-align: right;
+      font-weight: 500;
+      color: #2e7d32;
+    }
+
+    .conversion-cell {
+      text-align: center;
+    }
+
+    .conversion-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: 500;
+      color: white;
+    }
+
+    .conversion-badge.high {
+      background-color: #34a853;
+    }
+
+    .conversion-badge.medium-high {
+      background-color: #fbbc04;
+    }
+
+    .conversion-badge.medium {
+      background-color: #ff9800;
+    }
+
+    .conversion-badge.low {
+      background-color: #ea4335;
+    }
+
+    .time-cell {
+      color: #5f6368;
+      font-size: 13px;
+    }
+
+@media (max-width: 768px) {
+  .analytics-modal {
+    max-width: 95vw;
+  }
+      
+  .summary-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .stages-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .stage-metrics {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  // Адаптивные стили для pipeline chart
+  .pipeline-flow {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .pipeline-stage-container {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .pipeline-stage {
+    min-width: 160px;
+    min-height: 100px;
+  }
+
+  .pipeline-arrow {
+    transform: rotate(90deg);
+  }
+
+  .pipeline-legend {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+}

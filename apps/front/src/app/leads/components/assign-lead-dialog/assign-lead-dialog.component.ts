@@ -18,6 +18,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { LeadService } from '../../services/lead.service';
 import { Lead } from '../../models/lead.model';
 import { Manager, UserService } from '../../../shared/services/user.service';
+import { UserAvatarComponent } from '../../../shared/components/user-avatar/user-avatar.component';
 
 interface AssignLeadData { lead: Lead; currentAssignee?: string; }
 
@@ -28,7 +29,7 @@ interface AssignLeadData { lead: Lead; currentAssignee?: string; }
     CommonModule, FormsModule, ReactiveFormsModule, MatDialogModule, MatButtonModule,
     MatSelectModule, MatFormFieldModule, MatInputModule, MatIconModule, MatCardModule,
     MatChipsModule, MatAutocompleteModule, MatCheckboxModule, MatListModule, MatDividerModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule, UserAvatarComponent
   ],
   templateUrl: './assign-lead-dialog.component.html',
   styleUrls: ['./assign-lead-dialog.component.scss']
@@ -42,7 +43,6 @@ export class AssignLeadDialogComponent {
 
   assignForm: FormGroup;
   selectedManager: Manager | null = null;
-  selectedTeamMembers: string[] = [];
   loading = false;
 
   availableManagers: Manager[] = [];
@@ -61,7 +61,8 @@ export class AssignLeadDialogComponent {
       notes: [''],
       highPriority: [false],
       notifyAssignee: [true],
-      scheduleFollowUp: [false]
+      scheduleFollowUp: [false],
+      selectedTeamMembers: [[]]
     });
 
     this.loadManagers();
@@ -77,9 +78,13 @@ export class AssignLeadDialogComponent {
 
   selectManager(manager: Manager): void { if (manager.currentLeadsCount < manager.maxLeadsCapacity) this.selectedManager = manager; }
 
+  get selectedTeamMembers(): string[] {
+    return this.assignForm.get('selectedTeamMembers')?.value || [];
+  }
+
   getRoleLabel(roles: string[]): string { if (!roles || roles.length === 0) return 'Неизвестная роль'; const role = roles.find(r => this.roleLabels[r as keyof typeof this.roleLabels]); return this.roleLabels[role as keyof typeof this.roleLabels] || roles[0]; }
 
-  getAssignmentPreview(): string { const type = this.assignForm.get('assignmentType')?.value; switch (type) { case 'single': return this.selectedManager ? `Лид будет назначен менеджеру ${this.selectedManager.fullName} (${this.getRoleLabel(this.selectedManager.roles)})` : ''; case 'team': return this.selectedTeamMembers.length > 0 ? `Лид будет назначен команде: ${this.selectedTeamMembers.map(id => this.availableManagers.find(m => m.id === id)?.fullName).filter(Boolean).join(', ')}` : ''; case 'auto': return 'Система автоматически выберет наиболее подходящего менеджера'; default: return ''; } }
+  getAssignmentPreview(): string { const type = this.assignForm.get('assignmentType')?.value; switch (type) { case 'single': return this.selectedManager ? `Лид будет назначен менеджеру ${this.selectedManager.fullName} (${this.getRoleLabel(this.selectedManager.roles)})` : ''; case 'team': return this.selectedTeamMembers.length > 0 ? `Лид будет назначен команде: ${this.selectedTeamMembers.map((id: string) => this.availableManagers.find(m => m.id === id)?.fullName).filter(Boolean).join(', ')}` : ''; case 'auto': return 'Система автоматически выберет наиболее подходящего менеджера'; default: return ''; } }
 
   isAssignmentValid(): boolean { const type = this.assignForm.get('assignmentType')?.value; if (type === 'single') return !!this.selectedManager; if (type === 'team') return this.selectedTeamMembers.length > 0; return type === 'auto'; }
 
@@ -92,6 +97,10 @@ export class AssignLeadDialogComponent {
     else { const available = this.availableManagers.filter(m => m.currentLeadsCount < m.maxLeadsCapacity).sort((a,b)=>a.currentLeadsCount-b.currentLeadsCount)[0]; assigneeId = available?.id.toString() || this.availableManagers[0].id.toString(); }
 
     this.leadService.assignLead(this.data.lead.id, assigneeId).subscribe({ next: (updatedLead) => { const notes = this.assignForm.get('notes')?.value; if (notes?.trim()) { const assignedManager = this.availableManagers.find(m => m.id.toString() === assigneeId); const noteContent = `Назначен ответственный: ${assignedManager?.fullName || assigneeId}.\n\nКомментарий: ${notes.trim()}`; this.leadService.addNote(this.data.lead.id, noteContent).subscribe({ next: () => this.dialogRef.close(updatedLead), error: () => this.dialogRef.close(updatedLead) }); } else { this.dialogRef.close(updatedLead); } }, error: (error) => { console.error('Error assigning lead:', error); this.loading = false; } });
+  }
+
+  trackByManagerId(index: number, manager: Manager): string {
+    return manager.id;
   }
 
   close(): void { this.dialogRef.close(); }

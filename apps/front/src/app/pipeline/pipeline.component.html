@@ -5,6 +5,14 @@
       <p class="mt-1 text-base font-normal text-[#9eb7a8]">Drag and drop to customize your sales process.</p>
     </div>
     <div class="flex items-center gap-2">
+      <button (click)="openAnalytics()" 
+              [disabled]="isLoadingAnalytics"
+              class="px-3 py-2 rounded-full border border-[#3d5245] flex items-center gap-2"
+              [class.opacity-50]="isLoadingAnalytics">
+        <mat-icon *ngIf="!isLoadingAnalytics">analytics</mat-icon>
+        <mat-icon *ngIf="isLoadingAnalytics" class="animate-spin">refresh</mat-icon>
+        {{ isLoadingAnalytics ? 'Загрузка...' : 'Аналитика' }}
+      </button>
       <button (click)="triggerAutomation()" class="px-3 py-2 rounded-full  border border-[#3d5245]">Run Automation</button>
       <button (click)="load()" class="px-3 py-2 rounded-full  border border-[#3d5245]">Refresh</button>
       <button mat-raised-button color="primary" (click)="createStage()" class="flex items-center gap-2 px-4 py-2 text-sm font-bold">
@@ -15,30 +23,66 @@
   </div>
 
   <div class="mt-6">
-    <div class="pipeline-grid">
-      <div *ngFor="let s of stages" class="stage">
-        <h3>{{ s.name }}</h3>
-        <div class="deals" cdkDropList [id]="'stage-'+s.id" [class.drag-over]="activeDropListId === 'stage-'+s.id" [cdkDropListConnectedTo]="getConnectedListIds()" [cdkDropListData]="getDealsForStage(s.id)" (cdkDropListDropped)="dropToStage($event, s.id)" (cdkDropListEntered)="onDropListEntered($event, s.id)" (cdkDropListExited)="onDropListExited($event, s.id)">
-          <ng-container *ngFor="let deal of getDealsForStage(s.id)">
-            <div class="deal" cdkDrag [cdkDragData]="deal">
-              <div class="deal-title">{{ deal.title }}</div>
-              <div class="deal-contact" *ngIf="deal.contact">{{ deal.contact.name }}</div>
-              <div class="deal-company" *ngIf="deal.company">{{ deal.company.name }}</div>
-              <div class="deal-lead" *ngIf="deal.lead">Лид: {{ deal.lead.name }}</div>
-              <div class="deal-amount">{{ deal.amount | currency:deal.currency:'symbol':'1.0-0' }}</div>
-              <div class="deal-probability">{{ deal.probability }}% вероятность</div>
-              <div class="deal-date">{{ deal.expectedCloseDate | date:'shortDate' }}</div>
-            </div>
-          </ng-container>
+    <div class="pipeline-container">
+      <div class="pipeline-grid" #pipelineGrid>
+        <div *ngFor="let s of stages" class="stage" [id]="'stage-' + s.id"
+             [class.won-stage]="s.type === 'won_stage'"
+             [class.lost-stage]="s.type === 'lost_stage'">
+          <div class="stage-header">
+            <h3 class="flex items-center gap-2">
+              {{ s.name }}
+              <span *ngIf="s.type === 'won_stage'" class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded">Won</span>
+              <span *ngIf="s.type === 'lost_stage'" class="px-2 py-1 text-xs bg-red-100 text-red-800 rounded">Lost</span>
+            </h3>
+            <span class="stage-count">{{ getDealsForStage(s.id).length }}</span>
+          </div>
+          <div class="deals" cdkDropList [id]="'stage-'+s.id" [class.drag-over]="activeDropListId === 'stage-'+s.id" [cdkDropListConnectedTo]="getConnectedListIds()" [cdkDropListData]="getDealsForStage(s.id)" (cdkDropListDropped)="dropToStage($event, s.id)" (cdkDropListEntered)="onDropListEntered($event, s.id)" (cdkDropListExited)="onDropListExited($event, s.id)">
+            <ng-container *ngFor="let deal of getDealsForStage(s.id)">
+              <div class="deal" 
+                   cdkDrag 
+                   [cdkDragData]="deal"
+                   (cdkDragStarted)="onDragStarted()"
+                   (cdkDragEnded)="onDragEnded()">
+                <div class="deal-header">
+                  <div class="deal-title">{{ deal.title }}</div>
+                  <div class="deal-actions">
+                    <button mat-icon-button 
+                            class="contact-action-btn"
+                            [title]="deal.contact ? 'Изменить контакт' : 'Добавить контакт'"
+                            (click)="openContactSelector(deal, $event)">
+                      <mat-icon>{{ deal.contact ? 'person' : 'person_add' }}</mat-icon>
+                    </button>
+                  </div>
+                </div>
+                <div class="deal-status-row">
+                  <app-deal-status 
+                    [status]="getDealStatus(deal)" 
+                    size="small"
+                    [showIndicators]="true"
+                    [isOverdue]="isOverdue(deal)"
+                    [isHighValue]="isHighValue(deal)">
+                  </app-deal-status>
+                </div>
+                <div class="deal-contact" *ngIf="deal.contact">
+                  <mat-icon>person</mat-icon>
+                  {{ deal.contact.name }}
+                </div>
+                <div class="deal-company" *ngIf="deal.company">
+                  <mat-icon>business</mat-icon>
+                  {{ deal.company.name }}
+                </div>
+                <div class="deal-lead" *ngIf="deal.lead">
+                  <mat-icon>contacts</mat-icon>
+                  Лид: {{ deal.lead.name }}
+                </div>
+                <div class="deal-amount">{{ deal.amount | currency:deal.currency:'symbol':'1.0-0' }}</div>
+                <div class="deal-probability">{{ deal.probability }}% вероятность</div>
+                <div class="deal-date">{{ deal.expectedCloseDate | date:'shortDate' }}</div>
+              </div>
+            </ng-container>
+          </div>
         </div>
       </div>
-    </div>
-  </div>
-
-  <div class="analytics" *ngIf="analytics && analytics.byStage">
-    <h3>Analytics</h3>
-    <div *ngFor="let b of analytics.byStage">
-      {{ b.name }}: {{ b.count }} leads — {{ b.conversion }}%
     </div>
   </div>
 </div>

@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Body, Param, Patch } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Query } from '@nestjs/common';
 import { PipelineService } from './pipeline.service';
 import { CreateStageDto } from './dto/create-stage.dto';
 import { UpdateStageDto } from './dto/update-stage.dto';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
+import { StageType } from './pipeline.entity';
 
 class ReorderDto {
   stageIds: string[];
@@ -29,8 +30,8 @@ export class PipelineController {
   }
 
   @Get('stages')
-  listStages() {
-    return this.svc.listStages();
+  listStages(@Query('type') type?: StageType) {
+    return this.svc.listStages(type);
   }
 
   @Patch('stages/:id')

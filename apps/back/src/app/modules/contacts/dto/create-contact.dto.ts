@@ -58,6 +58,16 @@ export class ContactSocialMediaDto {
   vk?: string;
 }
 
+export class CompanyRefDto {
+  @IsOptional()
+  @IsUUID()
+  id?: string;
+
+  @IsOptional()
+  @IsString()
+  name?: string;
+}
+
 export class CreateContactDto {
   @IsEnum(ContactType)
   @IsOptional()
@@ -85,6 +95,11 @@ export class CreateContactDto {
   @IsOptional()
   @IsUUID()
   companyId?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CompanyRefDto)
+  company?: CompanyRefDto;
 
   @IsOptional()
   @IsEmail()

@@ -1,0 +1,66 @@
+<div [class]="'lead-actions layout-' + layout + ' context-' + context">
+  <!-- Основные действия -->
+  <div class="primary-actions">
+    <!-- Редактировать -->
+    <button
+      mat-stroked-button
+      color="primary"
+      (click)="onEditLead()"
+      [class]="getButtonClass()"
+      matTooltip="Редактировать лид"
+    >
+      <mat-icon>edit</mat-icon>
+      <span class="button-text">Редактировать</span>
+    </button>
+
+    <!-- Конвертировать в сделку -->
+    <button
+      mat-raised-button
+      color="accent"
+      *ngIf="!isConvertDisabled()"
+      (click)="onConvertToDeal()"
+      [class]="getButtonClass() + ' convert-btn'"
+      matTooltip="Конвертировать лид в сделку"
+    >
+      <mat-icon>trending_up</mat-icon>
+      <span class="button-text">Конвертировать в сделку</span>
+    </button>
+  </div>
+
+  <!-- Дополнительные действия -->
+  <div class="secondary-actions" *ngIf="context !== 'card'">
+    <!-- Меню дополнительных действий -->
+    <button
+      mat-icon-button
+      [matMenuTriggerFor]="moreMenu"
+      [class]="getButtonClass()"
+      matTooltip="Дополнительные действия"
+    >
+      <mat-icon>more_vert</mat-icon>
+    </button>
+
+    <mat-menu #moreMenu="matMenu">
+      <button mat-menu-item (click)="onContactLead()">
+        <mat-icon>phone</mat-icon>
+        <span>Связаться</span>
+      </button>
+      
+      <button mat-menu-item (click)="onAssignLead()">
+        <mat-icon>person_add</mat-icon>
+        <span>Назначить ответственного</span>
+      </button>
+      
+      <button mat-menu-item (click)="onChangeStatus()">
+        <mat-icon>update</mat-icon>
+        <span>Изменить статус</span>
+      </button>
+      
+      <mat-divider></mat-divider>
+      
+      <button mat-menu-item (click)="onDeleteLead()" class="delete-action">
+        <mat-icon>delete</mat-icon>
+        <span>Удалить лид</span>
+      </button>
+    </mat-menu>
+  </div>
+</div>

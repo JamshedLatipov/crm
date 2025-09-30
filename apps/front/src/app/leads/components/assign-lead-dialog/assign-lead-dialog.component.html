@@ -1,138 +1,236 @@
-<div class="dialog-header">
-  <h2 mat-dialog-title>
-    <mat-icon>person_add</mat-icon>
-    Назначить ответственного
-  </h2>
-  <button mat-icon-button (click)="close()" class="close-button">
-    <mat-icon>close</mat-icon>
-  </button>
-</div>
+<div class="assign-dialog-container">
+  <div class="dialog-header">
+    <h2 mat-dialog-title>
+      <mat-icon class="header-icon">person_add</mat-icon>
+      Назначить ответственного
+    </h2>
+    <button mat-icon-button (click)="close()" class="close-button" aria-label="Закрыть">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
 
-<mat-dialog-content class="dialog-content">
-  <mat-card class="lead-info">
-    <mat-card-content>
-      <div class="lead-summary">
-        <div class="lead-name">{{ data.lead.name }}</div>
+  <mat-dialog-content class="dialog-content">
+    <!-- Информация о лиде -->
+    <div class="lead-info-section">
+      <div class="lead-header">
+        <div class="lead-icon">
+          <mat-icon>business</mat-icon>
+        </div>
         <div class="lead-details">
-          <span *ngIf="data.lead.company">{{ data.lead.company }}</span>
-          <span *ngIf="data.lead.email">{{ data.lead.email }}</span>
-        </div>
-        <div class="current-assignee" *ngIf="data.currentAssignee">
-          Текущий ответственный:
-          <mat-chip class="assignee-chip" selected>
-            {{ getCurrentAssigneeName() }}
-          </mat-chip>
-        </div>
-+
-        <div class="no-assignee" *ngIf="!data.currentAssignee">
-          <mat-icon>person_off</mat-icon>
-          Ответственный не назначен
+          <h3 class="lead-name">{{ data.lead.name }}</h3>
+          <div class="lead-meta">
+            <span *ngIf="data.lead.company" class="company">
+              <mat-icon>domain</mat-icon>
+              {{ data.lead.company }}
+            </span>
+            <span *ngIf="data.lead.email" class="email">
+              <mat-icon>email</mat-icon>
+              {{ data.lead.email }}
+            </span>
+          </div>
         </div>
       </div>
-    </mat-card-content>
-  </mat-card>
+      
+      <div class="current-assignment" *ngIf="data.currentAssignee">
+        <div class="assignment-label">Текущий ответственный:</div>
+        <div class="current-assignee-card">
+          <app-user-avatar [fullName]="getCurrentAssigneeName()" size="small"></app-user-avatar>
+          <span class="assignee-name">{{ getCurrentAssigneeName() }}</span>
+          <mat-icon class="reassign-icon">swap_horiz</mat-icon>
+        </div>
+      </div>
 
-  <form [formGroup]="assignForm" class="assign-form">
-    <mat-form-field class="full-width" appearance="outline">
-      <mat-label>Тип назначения</mat-label>
-      <mat-select formControlName="assignmentType">
-        <mat-option value="single">Один ответственный</mat-option>
-        <mat-option value="team">Команда</mat-option>
-        <mat-option value="auto">Автоматическое распределение</mat-option>
-      </mat-select>
-      <mat-icon matSuffix>assignment_ind</mat-icon>
-    </mat-form-field>
+      <div class="no-assignment" *ngIf="!data.currentAssignee">
+        <mat-icon class="no-assignment-icon">person_off</mat-icon>
+        <span>Ответственный не назначен</span>
+      </div>
+    </div>
 
-    <div *ngIf="assignForm.get('assignmentType')?.value === 'single'" class="manager-selection">
-      <h3>Выберите менеджера</h3>
-      <div class="managers-grid">
-        <div *ngFor="let manager of availableManagers" class="manager-card"
-             [class.selected]="selectedManager?.id === manager.id"
-             [class.overloaded]="manager.isOverloaded"
-             (click)="selectManager(manager)" tabindex="0" role="button">
-          <div class="manager-avatar"><mat-icon>person</mat-icon></div>
-          <div class="manager-info">
-            <div class="manager-name">{{ manager.fullName }}</div>
-            <div class="manager-role">{{ getRoleLabel(manager.roles) }}</div>
-            <div class="manager-department">{{ manager.department }}</div>
-            <div class="manager-workload" [class.high]="manager.isOverloaded">
-              Активных лидов: {{ manager.currentLeadsCount }} / {{ manager.maxLeadsCapacity }}
+    <!-- Форма назначения -->
+    <form [formGroup]="assignForm" class="assign-form">
+      <mat-form-field class="full-width" appearance="outline">
+        <mat-label>Тип назначения</mat-label>
+        <mat-select formControlName="assignmentType">
+          <mat-option value="single">
+            <mat-icon>person</mat-icon>
+            Один ответственный
+          </mat-option>
+          <mat-option value="team">
+            <mat-icon>group</mat-icon>
+            Команда
+          </mat-option>
+          <mat-option value="auto">
+            <mat-icon>auto_awesome</mat-icon>
+            Автоматическое распределение
+          </mat-option>
+        </mat-select>
+        <mat-icon matSuffix>assignment_ind</mat-icon>
+      </mat-form-field>
+
+      <!-- Выбор одного менеджера -->
+      <div *ngIf="assignForm.get('assignmentType')?.value === 'single'" class="manager-selection">
+        <h3 class="section-title">
+          <mat-icon>person_search</mat-icon>
+          Выберите менеджера
+        </h3>
+        <div class="managers-grid">
+          <div *ngFor="let manager of availableManagers; trackBy: trackByManagerId" 
+               class="manager-card"
+               [class.selected]="selectedManager?.id === manager.id"
+               [class.overloaded]="manager.isOverloaded"
+               [class.unavailable]="!manager.isAvailableForAssignment"
+               (click)="selectManager(manager)" 
+               tabindex="0" 
+               role="button"
+               [attr.aria-label]="'Выбрать менеджера ' + manager.fullName">
+            
+            <div class="manager-card-content">
+              <div class="manager-avatar-section">
+                <app-user-avatar [fullName]="manager.fullName" size="medium"></app-user-avatar>
+                <div class="status-indicator" [class.available]="manager.isAvailableForAssignment" [class.busy]="!manager.isAvailableForAssignment">
+                  <mat-icon *ngIf="manager.isAvailableForAssignment">check_circle</mat-icon>
+                  <mat-icon *ngIf="!manager.isAvailableForAssignment">block</mat-icon>
+                </div>
+              </div>
+              
+              <div class="manager-info">
+                <div class="manager-name">{{ manager.fullName }}</div>
+                <div class="manager-role">{{ getRoleLabel(manager.roles) }}</div>
+                <div class="manager-department" *ngIf="manager.department">{{ manager.department }}</div>
+                
+                <div class="workload-section">
+                  <div class="workload-text" [class.high]="manager.isOverloaded">
+                    Активных лидов: {{ manager.currentLeadsCount }} / {{ manager.maxLeadsCapacity }}
+                  </div>
+                  <div class="workload-bar">
+                    <div class="workload-progress" 
+                         [style.width.%]="(manager.currentLeadsCount / manager.maxLeadsCapacity) * 100"
+                         [class.warning]="manager.isOverloaded">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="selection-indicator" *ngIf="selectedManager?.id === manager.id">
+                <mat-icon>check_circle</mat-icon>
+              </div>
             </div>
-+          </div>
-          <div class="manager-status">
-            <mat-icon *ngIf="manager.isOverloaded" class="warning-icon">warning</mat-icon>
-            <mat-icon *ngIf="!manager.isOverloaded && manager.isAvailableForAssignment" class="available-icon">check_circle</mat-icon>
           </div>
         </div>
       </div>
-    </div>
 
-    <div *ngIf="assignForm.get('assignmentType')?.value === 'team'" class="team-selection">
-      <h3>Выберите команду</h3>
-      <mat-selection-list [(ngModel)]="selectedTeamMembers" [multiple]="true">
-        <mat-list-option *ngFor="let manager of availableManagers" [value]="manager.id" [disabled]="!manager.isAvailableForAssignment">
-          <div class="team-member-item">
-            <div class="member-avatar"><mat-icon>person</mat-icon></div>
-            <div class="member-info">
-              <div class="member-name">{{ manager.fullName }}</div>
-              <div class="member-role">{{ getRoleLabel(manager.roles) }}</div>
-+            </div>
-            <mat-icon *ngIf="!manager.isAvailableForAssignment" class="warning-icon">block</mat-icon>
-          </div>
-        </mat-list-option>
-      </mat-selection-list>
-    </div>
+      <!-- Выбор команды -->
+      <div *ngIf="assignForm.get('assignmentType')?.value === 'team'" class="team-selection">
+        <h3 class="section-title">
+          <mat-icon>group_add</mat-icon>
+          Выберите команду
+        </h3>
+        <mat-selection-list formControlName="selectedTeamMembers" [multiple]="true" class="team-list">
+          <mat-list-option *ngFor="let manager of availableManagers" 
+                           [value]="manager.id" 
+                           [disabled]="!manager.isAvailableForAssignment">
+            <div class="team-member-item">
+              <app-user-avatar [fullName]="manager.fullName" size="small"></app-user-avatar>
+              <div class="member-info">
+                <div class="member-name">{{ manager.fullName }}</div>
+                <div class="member-role">{{ getRoleLabel(manager.roles) }}</div>
+                <div class="member-workload">{{ manager.currentLeadsCount }}/{{ manager.maxLeadsCapacity }} лидов</div>
+              </div>
+              <mat-icon *ngIf="!manager.isAvailableForAssignment" class="warning-icon">block</mat-icon>
+            </div>
+          </mat-list-option>
+        </mat-selection-list>
+      </div>
 
-    <div *ngIf="assignForm.get('assignmentType')?.value === 'auto'" class="auto-assignment">
-      <mat-card class="auto-card">
-        <mat-card-content>
-          <div class="auto-info">
+      <!-- Автоматическое назначение -->
+      <div *ngIf="assignForm.get('assignmentType')?.value === 'auto'" class="auto-assignment">
+        <div class="auto-card">
+          <div class="auto-header">
             <mat-icon class="auto-icon">auto_awesome</mat-icon>
-            <div>
+            <div class="auto-text">
               <h4>Автоматическое назначение</h4>
-              <p>Система автоматически назначит наиболее подходящего менеджера с подходящими навыками</p>
+              <p>Система найдет наиболее подходящего менеджера</p>
             </div>
           </div>
 
           <mat-form-field class="full-width" appearance="outline">
             <mat-label>Критерии назначения</mat-label>
             <mat-select formControlName="autoAssignCriteria" multiple>
-              <mat-option value="workload">Наименьшая загрузка</mat-option>
-              <mat-option value="expertise">Экспертиза в отрасле</mat-option>
-              <mat-option value="performance">Лучшие показатели</mat-option>
-              <mat-option value="geography">Географическое соотвествие</mat-option>
+              <mat-option value="workload">
+                <mat-icon>bar_chart</mat-icon>
+                Наименьшая загрузка
+              </mat-option>
+              <mat-option value="expertise">
+                <mat-icon>school</mat-icon>
+                Экспертиза в отрасли
+              </mat-option>
+              <mat-option value="performance">
+                <mat-icon>trending_up</mat-icon>
+                Лучшие показатели
+              </mat-option>
+              <mat-option value="geography">
+                <mat-icon>map</mat-icon>
+                Географическое соответствие
+              </mat-option>
             </mat-select>
+            <mat-icon matSuffix>tune</mat-icon>
           </mat-form-field>
-        </mat-card-content>
-      </mat-card>
+        </div>
+      </div>
+
+      <!-- Дополнительные настройки -->
+      <div class="additional-settings">
+        <mat-form-field class="full-width" appearance="outline">
+          <mat-label>Комментарий к назначению</mat-label>
+          <textarea matInput formControlName="notes" rows="3" placeholder="Добавьте комментарий..."></textarea>
+          <mat-icon matSuffix>comment</mat-icon>
+        </mat-form-field>
+
+        <div class="settings-section">
+          <h4 class="settings-title">Дополнительные параметры</h4>
+          <div class="checkboxes-grid">
+            <mat-checkbox formControlName="highPriority" class="checkbox-item">
+              <mat-icon>priority_high</mat-icon>
+              Приоритетное назначение
+            </mat-checkbox>
+            <mat-checkbox formControlName="notifyAssignee" class="checkbox-item">
+              <mat-icon>notifications</mat-icon>
+              Уведомить ответственного
+            </mat-checkbox>
+            <mat-checkbox formControlName="scheduleFollowUp" class="checkbox-item">
+              <mat-icon>schedule</mat-icon>
+              Запланировать follow-up
+            </mat-checkbox>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <!-- Предварительный просмотр -->
+    <div class="assignment-preview" *ngIf="getAssignmentPreview()">
+      <div class="preview-header">
+        <mat-icon>preview</mat-icon>
+        <h4>Предварительный просмотр</h4>
+      </div>
+      <div class="preview-content">{{ getAssignmentPreview() }}</div>
     </div>
+  </mat-dialog-content>
 
-    <mat-form-field class="full-width" appearance="outline">
-      <mat-label>Комментарий к назначению</mat-label>
-      <textarea matInput formControlName="notes" rows="3"></textarea>
-      <mat-icon matSuffix>comment</mat-icon>
-    </mat-form-field>
-
-    <div class="priority-section">
-      <mat-checkbox formControlName="highPriority">Приоритетное назначение</mat-checkbox>
-      <mat-checkbox formControlName="notifyAssignee">Уведомить ответственного</mat-checkbox>
-      <mat-checkbox formControlName="scheduleFollowUp">Запланировать follow-up</mat-checkbox>
-    </div>
-+
-  </form>
-
-  <div class="assignment-preview" *ngIf="getAssignmentPreview()">
-    <h4>Предварительный просмотр назначения:</h4>
-    <div class="preview-content">{{ getAssignmentPreview() }}</div>
-  </div>
-</mat-dialog-content>
-
-<mat-dialog-actions class="dialog-actions">
-  <button mat-button (click)="close()">Отмена</button>
-  <button mat-raised-button color="primary" (click)="assignLead()" [disabled]="!isAssignmentValid() || loading">
-    <mat-icon *ngIf="loading">hourglass_empty</mat-icon>
-    <span *ngIf="!loading">Назначить</span>
-    <span *ngIf="loading">Назначение...</span>
-  </button>
-</mat-dialog-actions>
-+
+  <!-- Действия -->
+  <mat-dialog-actions class="dialog-actions">
+    <button mat-button (click)="close()" class="cancel-button">
+      <mat-icon>close</mat-icon>
+      Отмена
+    </button>
+    <button mat-raised-button 
+            color="primary" 
+            (click)="assignLead()" 
+            [disabled]="!isAssignmentValid() || loading"
+            class="assign-button">
+      <mat-icon *ngIf="loading" class="spinning">hourglass_empty</mat-icon>
+      <mat-icon *ngIf="!loading">check</mat-icon>
+      <span *ngIf="!loading">Назначить</span>
+      <span *ngIf="loading">Назначение...</span>
+    </button>
+  </mat-dialog-actions>
+</div>

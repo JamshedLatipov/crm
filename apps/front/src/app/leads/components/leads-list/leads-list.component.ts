@@ -37,6 +37,7 @@ import { EditLeadDialogComponent } from '../edit-lead-dialog.component';
 import { ChangeStatusDialogComponent } from '../change-status-dialog.component';
 import { AssignLeadDialogComponent } from '../assign-lead-dialog.component';
 import { QuickAssignDialogComponent } from '../quick-assign-dialog.component';
+import { ConvertToDealDialogComponent } from '../convert-to-deal-dialog/convert-to-deal-dialog.component';
 
 @Component({
   selector: 'app-leads-list',
@@ -252,6 +253,13 @@ export class LeadsListComponent implements OnInit {
   }
 
   changeStatus(lead: Lead): void {
+    // Проверяем, находится ли лид в финальном статусе
+    const finalStatuses = [LeadStatus.CONVERTED, LeadStatus.REJECTED, LeadStatus.LOST];
+    if (finalStatuses.includes(lead.status)) {
+      // Можно показать уведомление, что статус нельзя изменить
+      return;
+    }
+
     const dialogRef = this.dialog.open(ChangeStatusDialogComponent, {
       width: '600px',
       maxWidth: '90vw',
@@ -266,6 +274,11 @@ export class LeadsListComponent implements OnInit {
         this.loadLeads(); // Refresh the list
       }
     });
+  }
+
+  canChangeStatus(lead: Lead): boolean {
+    const finalStatuses = [LeadStatus.CONVERTED, LeadStatus.REJECTED, LeadStatus.LOST];
+    return !finalStatuses.includes(lead.status);
   }
 
   assignLead(lead: Lead): void {
@@ -342,6 +355,21 @@ export class LeadsListComponent implements OnInit {
         },
       });
     }
+  }
+
+  convertToDeal(lead: Lead): void {
+    const dialogRef = this.dialog.open(ConvertToDealDialogComponent, {
+      width: '700px',
+      maxWidth: '90vw',
+      data: { lead },
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        // Deal was created successfully
+        this.loadLeads(); // Refresh the list to show lead status change
+      }
+    });
   }
 
   // Helper methods for labels

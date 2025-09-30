@@ -11,6 +11,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { LeadService } from '../../services/lead.service';
 import { Lead } from '../../models/lead.model';
 import { Manager, UserService } from '../../../shared/services/user.service';
+import { UserAvatarComponent } from '../../../shared/components/user-avatar/user-avatar.component';
 
 interface QuickAssignData {
   lead: Lead;
@@ -28,6 +29,7 @@ interface QuickAssignData {
     MatFormFieldModule,
     MatIconModule,
     MatProgressSpinnerModule,
+    UserAvatarComponent,
   ],
   templateUrl: './quick-assign-dialog.component.html',
   styleUrls: ['./quick-assign-dialog.component.scss'],
@@ -81,6 +83,15 @@ export class QuickAssignDialogComponent {
       // Пока просто закрываем диалог
       this.dialogRef.close();
     }
+  }
+
+  trackByManagerId(index: number, manager: Manager): string {
+    return manager.id;
+  }
+
+  getSelectedManager(): Manager | null {
+    if (!this.selectedManagerId) return null;
+    return this.availableManagers.find(m => m.id === this.selectedManagerId) || null;
   }
 
   close(): void {

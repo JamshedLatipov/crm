@@ -1,0 +1,12 @@
+<mat-chip 
+  [class]="getPriorityClass()" 
+  selected>
+  <span class="priority-content">
+    <span 
+      *ngIf="showIcon" 
+      class="priority-indicator"
+      [class]="'indicator-' + priority">
+    </span>
+    {{ getPriorityLabel() }}
+  </span>
+</mat-chip>

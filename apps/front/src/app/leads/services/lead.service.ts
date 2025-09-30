@@ -278,4 +278,23 @@ export class LeadService {
   getLeadStatistics(): Observable<LeadStatistics> {
     return this.getStatistics();
   }
+
+  // Convert lead to deal
+  convertToDeal(
+    leadId: string,
+    dealData: {
+      title?: string;
+      amount: number;
+      currency?: string;
+      probability?: number;
+      expectedCloseDate: Date;
+      stageId: string;
+      notes?: string;
+    }
+  ): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/${leadId}/convert-to-deal`, {
+      ...dealData,
+      expectedCloseDate: dealData.expectedCloseDate.toISOString()
+    });
+  }
 }

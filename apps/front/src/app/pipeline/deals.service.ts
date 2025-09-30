@@ -1,7 +1,18 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Deal, CreateDealDto, UpdateDealDto, DealStatus } from './dtos';
+import { 
+  Deal, 
+  CreateDealDto, 
+  UpdateDealDto, 
+  DealStatus,
+  DealHistoryFilters,
+  DealHistoryResponse,
+  DealHistoryStats,
+  UserActivityStats,
+  StageMovementStats,
+  MostActiveDeal
+} from './dtos';
 import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
@@ -133,5 +144,149 @@ export class DealsService {
   // Получение сделок по лиду
   getDealsByLead(leadId: number): Observable<Deal[]> {
     return this.http.get<Deal[]>(`${this.apiUrl}/by-lead/${leadId}`);
+  }
+
+  // === МЕТОДЫ ИСТОРИИ СДЕЛОК ===
+  
+  // Получение истории конкретной сделки
+  getDealHistory(
+    dealId: string, 
+    filters?: DealHistoryFilters, 
+    page = 1, 
+    limit = 50
+  ): Observable<DealHistoryResponse> {
+    let params = new HttpParams()
+      .set('page', page.toString())
+      .set('limit', limit.toString());
+
+    if (filters) {
+      if (filters.changeType?.length) {
+        params = params.set('changeType', filters.changeType.join(','));
+      }
+      if (filters.userId?.length) {
+        params = params.set('userId', filters.userId.join(','));
+      }
+      if (filters.fieldName?.length) {
+        params = params.set('fieldName', filters.fieldName.join(','));
+      }
+      if (filters.dateFrom) {
+        params = params.set('dateFrom', filters.dateFrom.toISOString());
+      }
+      if (filters.dateTo) {
+        params = params.set('dateTo', filters.dateTo.toISOString());
+      }
+    }
+
+    return this.http.get<DealHistoryResponse>(`${this.apiUrl}/${dealId}/history`, { params });
+  }
+
+  // Получение статистики изменений сделки
+  getDealHistoryStats(
+    dealId: string, 
+    dateFrom?: Date, 
+    dateTo?: Date
+  ): Observable<DealHistoryStats> {
+    let params = new HttpParams();
+    
+    if (dateFrom) {
+      params = params.set('dateFrom', dateFrom.toISOString());
+    }
+    if (dateTo) {
+      params = params.set('dateTo', dateTo.toISOString());
+    }
+
+    return this.http.get<DealHistoryStats>(`${this.apiUrl}/${dealId}/history/stats`, { params });
+  }
+
+  // Получение последних изменений по всем сделкам
+  getRecentChanges(
+    filters?: DealHistoryFilters, 
+    page = 1, 
+    limit = 20
+  ): Observable<DealHistoryResponse> {
+    let params = new HttpParams()
+      .set('page', page.toString())
+      .set('limit', limit.toString());
+
+    if (filters) {
+      if (filters.changeType?.length) {
+        params = params.set('changeType', filters.changeType.join(','));
+      }
+      if (filters.userId?.length) {
+        params = params.set('userId', filters.userId.join(','));
+      }
+      if (filters.dateFrom) {
+        params = params.set('dateFrom', filters.dateFrom.toISOString());
+      }
+      if (filters.dateTo) {
+        params = params.set('dateTo', filters.dateTo.toISOString());
+      }
+    }
+
+    return this.http.get<DealHistoryResponse>(`${this.apiUrl}/history/recent`, { params });
+  }
+
+  // Получение общей статистики изменений
+  getHistoryStats(dateFrom?: Date, dateTo?: Date): Observable<DealHistoryStats> {
+    let params = new HttpParams();
+    
+    if (dateFrom) {
+      params = params.set('dateFrom', dateFrom.toISOString());
+    }
+    if (dateTo) {
+      params = params.set('dateTo', dateTo.toISOString());
+    }
+
+    return this.http.get<DealHistoryStats>(`${this.apiUrl}/history/stats`, { params });
+  }
+
+  // Получение активности пользователей
+  getUserActivity(
+    dateFrom?: Date, 
+    dateTo?: Date, 
+    limit = 10
+  ): Observable<UserActivityStats[]> {
+    let params = new HttpParams().set('limit', limit.toString());
+    
+    if (dateFrom) {
+      params = params.set('dateFrom', dateFrom.toISOString());
+    }
+    if (dateTo) {
+      params = params.set('dateTo', dateTo.toISOString());
+    }
+
+    return this.http.get<UserActivityStats[]>(`${this.apiUrl}/history/user-activity`, { params });
+  }
+
+  // Получение статистики движения по этапам
+  getStageMovementStats(dateFrom?: Date, dateTo?: Date): Observable<StageMovementStats[]> {
+    let params = new HttpParams();
+    
+    if (dateFrom) {
+      params = params.set('dateFrom', dateFrom.toISOString());
+    }
+    if (dateTo) {
+      params = params.set('dateTo', dateTo.toISOString());
+    }
+
+    return this.http.get<StageMovementStats[]>(`${this.apiUrl}/history/stage-movement`, { params });
+  }
+
+  // Получение самых активных сделок
+  getMostActiveDeals(
+    limit = 10, 
+    dateFrom?: Date, 
+    dateTo?: Date
+  ): Observable<MostActiveDeal[]> {
+    let params = new HttpParams().set('limit', limit.toString());
+    
+    if (dateFrom) {
+      params = params.set('dateFrom', dateFrom.toISOString());
+    }
+    if (dateTo) {
+      params = params.set('dateTo', dateTo.toISOString());
+    }
+
+    return this.http.get<MostActiveDeal[]>(`${this.apiUrl}/history/most-active-deals`, { params });
   }
 }

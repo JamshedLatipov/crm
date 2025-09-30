@@ -179,13 +179,29 @@
 .status-change-btn {
   width: 28px;
   height: 28px;
-  display: inline-flex;
+  display: flex !important;
   align-items: center;
   justify-content: center;
-  padding: 0;
-  box-sizing: border-box;
-  opacity: 0;
-  transition: opacity 0.2s, transform 0.12s;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+
+  &:hover {
+    opacity: 1;
+  }
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.status-locked-icon {
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+  color: #6c757d;
+  opacity: 0.6;
 }
 
 .status-container:hover .status-change-btn {

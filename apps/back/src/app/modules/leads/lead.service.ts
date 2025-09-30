@@ -9,9 +9,21 @@ import {
 } from 'typeorm';
 import { Lead, LeadStatus, LeadSource, LeadPriority } from './lead.entity';
 import { LeadActivity, ActivityType } from './entities/lead-activity.entity';
+import { ChangeType } from './entities/lead-history.entity';
 import { LeadScoringService } from './services/lead-scoring.service';
 import { LeadDistributionService } from './services/lead-distribution.service';
+import { LeadHistoryService } from './services/lead-history.service';
 import { UserService } from '../user/user.service';
+import { Company } from '../companies/entities/company.entity';
+import { Deal } from '../deals/deal.entity';
+import { CreateDealDto } from '../deals/dto/create-deal.dto';
+import { DealsService } from '../deals/deals.service';
+
+// Интерфейс для создания лида с дополнительными полями
+interface CreateLeadData extends Partial<Lead> {
+  contactId?: string;
+  companyId?: string | { id: string; [key: string]: unknown };
+}
 
 export interface LeadFilters {
   status?: LeadStatus[];
@@ -49,24 +61,67 @@ export class LeadService {
     private readonly leadRepo: Repository<Lead>,
     @InjectRepository(LeadActivity)
     private readonly activityRepo: Repository<LeadActivity>,
+    @InjectRepository(Deal)
+    private readonly dealRepo: Repository<Deal>,
     private readonly scoringService: LeadScoringService,
     private readonly distributionService: LeadDistributionService,
-    private readonly userService: UserService
+    private readonly historyService: LeadHistoryService,
+    private readonly userService: UserService,
+    private readonly dealsService: DealsService
   ) {}
 
-  async create(data: Partial<Lead>): Promise<Lead> {
+  async create(data: CreateLeadData, userId?: string, userName?: string): Promise<Lead> {
     console.log('Creating lead with data:', data);
-    const lead = await this.leadRepo.save(data);
+    
+    // Подготавливаем данные для сохранения
+    const { companyId, ...leadDataWithoutCompanyId } = data;
+    const leadData: Partial<Lead> = leadDataWithoutCompanyId;
+    
+    // Если передан companyId, устанавливаем связь с компанией
+    if (companyId) {
+      // Обрабатываем случай, когда companyId может быть объектом или строкой
+      const actualCompanyId = typeof companyId === 'string' ? companyId : companyId.id;
+      if (actualCompanyId) {
+        leadData.company = { id: actualCompanyId } as Company;
+      }
+    }
+    
+    const lead = await this.leadRepo.save(leadData);
 
-    // Записываем создание лида в активность
+    // Загружаем полные данные лида с компанией
+    const fullLead = await this.leadRepo.findOne({
+      where: { id: lead.id },
+      relations: ['company']
+    });
+
+    // Записываем создание лида в историю
+    await this.historyService.createHistoryEntry({
+      leadId: lead.id,
+      changeType: ChangeType.CREATED,
+      userId,
+      userName,
+      description: `Лид создан: ${lead.name}`,
+      metadata: {
+        'Источник': String(lead.source || 'Не указан'),
+        'Приоритет': String(lead.priority || 'Средний'),
+        'Компания': String(fullLead?.company?.name || fullLead?.company?.legalName || 'Не указана'),
+        'Email': String(lead.email || 'Не указан'),
+        'Телефон': String(lead.phone || 'Не указан')
+      }
+    });
+
+    // Записываем создание лида в активность (для обратной совместимости)
     await this.activityRepo.save({
       leadId: lead.id,
       type: ActivityType.NOTE_ADDED,
       title: 'Лид создан',
       description: `Новый лид создан: ${lead.name}`,
       metadata: {
-        source: lead.source,
-        priority: lead.priority,
+        'Источник': String(lead.source || 'Не указан'),
+        'Приоритет': String(lead.priority || 'Средний'),
+        'Компания': String(lead.company || 'Не указана'),
+        'Email': String(lead.email || 'Не указан'),
+        'Телефон': String(lead.phone || 'Не указан')
       },
     });
 
@@ -84,7 +139,7 @@ export class LeadService {
       await this.scoringService.calculateScore(lead.id, { lead });
     }
 
-    return this.leadRepo.findOneBy({ id: lead.id }) || lead;
+    return fullLead || lead;
   }
 
   async findAll(
@@ -243,16 +298,50 @@ export class LeadService {
     });
   }
 
-  async update(id: number, data: Partial<Lead>): Promise<Lead> {
+  async update(id: number, data: Partial<Lead>, userId?: string, userName?: string): Promise<Lead> {
     const existingLead = await this.findById(id);
     if (!existingLead) {
       throw new Error('Lead not found');
     }
 
+    // Проверяем, если пытаются изменить статус и лид находится в финальном состоянии
+    if (data.status && data.status !== existingLead.status) {
+      const finalStatuses = [LeadStatus.CONVERTED, LeadStatus.REJECTED, LeadStatus.LOST];
+      if (finalStatuses.includes(existingLead.status)) {
+        throw new Error(`Нельзя изменить статус лида в состоянии "${existingLead.status}". Лид находится в финальном состоянии.`);
+      }
+    }
+
+    // Сохраняем старые значения для записи в историю
+    const oldValues = { ...existingLead };
+
     await this.leadRepo.update(id, data);
 
-    // Записываем изменения в активность
+    // Записываем изменения в историю для каждого поля
     const changedFields = this.getChangedFields(existingLead, data);
+    for (const fieldName of changedFields) {
+      const oldValue = oldValues[fieldName as keyof Lead];
+      const newValue = data[fieldName as keyof Lead];
+      
+      await this.historyService.createHistoryEntry({
+        leadId: id,
+        fieldName,
+        oldValue: oldValue ? String(oldValue) : null,
+        newValue: newValue ? String(newValue) : null,
+        changeType: ChangeType.UPDATED,
+        userId,
+        userName,
+        description: `Изменено поле "${fieldName}": ${oldValue} → ${newValue}`,
+        metadata: {
+          'Поле': fieldName,
+          'Старое значение': String(oldValue || 'Не указано'),
+          'Новое значение': String(newValue || 'Не указано'),
+          'Дата изменения': new Date().toLocaleDateString('ru-RU')
+        }
+      });
+    }
+
+    // Записываем изменения в активность (для обратной совместимости)
     if (changedFields.length > 0) {
       await this.activityRepo.save({
         leadId: id,
@@ -260,8 +349,9 @@ export class LeadService {
         title: 'Лид обновлен',
         description: `Изменены поля: ${changedFields.join(', ')}`,
         metadata: {
-          changedFields: changedFields.join(','),
-          hasChanges: true,
+          'Измененные поля': changedFields.join(', '),
+          'Количество изменений': changedFields.length.toString(),
+          'Дата изменения': new Date().toLocaleDateString('ru-RU')
         },
       });
     }
@@ -291,8 +381,28 @@ export class LeadService {
     return changed;
   }
 
-  async assignLead(id: number, user: string): Promise<Lead> {
-    const updated = await this.update(id, { assignedTo: user });
+  async assignLead(id: number, user: string, assignedByUserId?: string, assignedByUserName?: string): Promise<Lead> {
+    const existingLead = await this.findById(id);
+    const oldAssignedTo = existingLead?.assignedTo;
+    
+    const updated = await this.update(id, { assignedTo: user }, assignedByUserId, assignedByUserName);
+
+    // Записываем назначение в историю
+    await this.historyService.createHistoryEntry({
+      leadId: id,
+      fieldName: 'assignedTo',
+      oldValue: oldAssignedTo || null,
+      newValue: user,
+      changeType: ChangeType.ASSIGNED,
+      userId: assignedByUserId,
+      userName: assignedByUserName,
+      description: `Лид назначен менеджеру: ${user}`,
+      metadata: { 
+        'Назначен менеджеру': String(user),
+        'Предыдущий менеджер': String(oldAssignedTo || 'Не назначен'),
+        'Дата назначения': new Date().toLocaleDateString('ru-RU')
+      }
+    });
 
     // Обновляем счетчик лидов у пользователя
     const parsedUserId = Number(user);
@@ -305,7 +415,10 @@ export class LeadService {
         type: ActivityType.ASSIGNED,
         title: 'Лид назначен менеджеру',
         description: `Лид назначен менеджеру: ${user} (non-numeric id)`,
-        metadata: { assignedTo: user },
+        metadata: { 
+          'Назначен менеджеру': String(user),
+          'Дата назначения': new Date().toLocaleDateString('ru-RU')
+        },
       });
       return updated;
     }
@@ -321,7 +434,10 @@ export class LeadService {
       type: ActivityType.ASSIGNED,
       title: 'Лид назначен менеджеру',
       description: `Лид назначен менеджеру: ${user}`,
-      metadata: { assignedTo: user },
+      metadata: { 
+        'Назначен менеджеру': String(user),
+        'Дата назначения': new Date().toLocaleDateString('ru-RU')
+      },
     });
 
     return updated;
@@ -345,8 +461,29 @@ export class LeadService {
     return null;
   }
 
-  async scoreLead(id: number, score: number): Promise<Lead> {
-    const updated = await this.update(id, { score });
+  async scoreLead(id: number, score: number, userId?: string, userName?: string): Promise<Lead> {
+    const existingLead = await this.findById(id);
+    const oldScore = existingLead?.score || 0;
+    
+    const updated = await this.update(id, { score }, userId, userName);
+
+    // Записываем изменение скора в историю
+    await this.historyService.createHistoryEntry({
+      leadId: id,
+      fieldName: 'score',
+      oldValue: String(oldScore),
+      newValue: String(score),
+      changeType: ChangeType.SCORED,
+      userId,
+      userName,
+      description: `Скор изменен с ${oldScore} на ${score}`,
+      metadata: { 
+        'Старый скор': oldScore.toString(),
+        'Новый скор': score.toString(),
+        'Изменение': (score - oldScore).toString(),
+        'Дата обновления': new Date().toLocaleDateString('ru-RU')
+      }
+    });
 
     await this.activityRepo.save({
       leadId: id,
@@ -354,28 +491,58 @@ export class LeadService {
       title: 'Обновлен скор лида',
       description: `Скор изменен на: ${score}`,
       scorePoints: score,
-      metadata: { newScore: score },
+      metadata: { 
+        'Новый скор': score.toString(),
+        'Дата обновления': new Date().toLocaleDateString('ru-RU')
+      },
     });
 
     return updated;
   }
 
-  async changeStatus(id: number, status: LeadStatus): Promise<Lead> {
+  async changeStatus(id: number, status: LeadStatus, userId?: string, userName?: string): Promise<Lead> {
     const existingLead = await this.findById(id);
     if (!existingLead) {
       throw new Error('Lead not found');
     }
 
-    const updated = await this.update(id, { status });
+    // Проверяем, находится ли лид в финальном статусе
+    const finalStatuses = [LeadStatus.CONVERTED, LeadStatus.REJECTED, LeadStatus.LOST];
+    if (finalStatuses.includes(existingLead.status)) {
+      throw new Error(`Нельзя изменить статус лида в состоянии "${existingLead.status}". Лид находится в финальном состоянии.`);
+    }
+
+    const oldStatus = existingLead.status;
+    const updated = await this.update(id, { status }, userId, userName);
+
+    // Записываем изменение статуса в историю
+    await this.historyService.createHistoryEntry({
+      leadId: id,
+      fieldName: 'status',
+      oldValue: oldStatus,
+      newValue: status,
+      changeType: ChangeType.STATUS_CHANGED,
+      userId,
+      userName,
+      description: `Статус изменен с ${oldStatus} на ${status}`,
+      metadata: {
+        'Предыдущий статус': String(oldStatus),
+        'Новый статус': String(status),
+        'Дата изменения': new Date().toLocaleDateString('ru-RU'),
+        'Время изменения': new Date().toLocaleTimeString('ru-RU')
+      }
+    });
 
     await this.activityRepo.save({
       leadId: id,
       type: ActivityType.STATUS_CHANGED,
       title: 'Изменен статус лида',
-      description: `Статус изменен с ${existingLead.status} на ${status}`,
+      description: `Статус изменен с ${oldStatus} на ${status}`,
       metadata: {
-        oldStatus: existingLead.status,
-        newStatus: status,
+        'Предыдущий статус': String(oldStatus),
+        'Новый статус': String(status),
+        'Дата изменения': new Date().toLocaleDateString('ru-RU'),
+        'Время изменения': new Date().toLocaleTimeString('ru-RU')
       },
     });
 
@@ -389,7 +556,11 @@ export class LeadService {
       title: 'Добавлена заметка',
       description: note,
       userId,
-      metadata: { note },
+      metadata: { 
+        'Заметка': String(note),
+        'Дата добавления': new Date().toLocaleDateString('ru-RU'),
+        'Автор': String(userId || 'Система')
+      },
     });
   }
 
@@ -516,14 +687,37 @@ export class LeadService {
       type: ActivityType.PHONE_CALL_MADE,
       title: 'Контакт с лидом',
       description: 'Обновлена дата последнего контакта',
-      metadata: { lastContactDate: new Date().toISOString() },
+      metadata: { 
+        'Дата контакта': new Date().toLocaleDateString('ru-RU'),
+        'Время контакта': new Date().toLocaleTimeString('ru-RU')
+      },
     });
   }
 
-  async qualifyLead(id: number, isQualified = true): Promise<Lead> {
+  async qualifyLead(id: number, isQualified = true, userId?: string, userName?: string): Promise<Lead> {
+    const existingLead = await this.findById(id);
+    const oldIsQualified = existingLead?.isQualified || false;
+    
     const updated = await this.update(id, {
       isQualified,
       status: isQualified ? LeadStatus.QUALIFIED : LeadStatus.NEW,
+    }, userId, userName);
+
+    // Записываем квалификацию в историю
+    await this.historyService.createHistoryEntry({
+      leadId: id,
+      fieldName: 'isQualified',
+      oldValue: String(oldIsQualified),
+      newValue: String(isQualified),
+      changeType: ChangeType.QUALIFIED,
+      userId,
+      userName,
+      description: `Лид ${isQualified ? 'квалифицирован' : 'дисквалифицирован'}`,
+      metadata: { 
+        'Квалифицирован': isQualified ? 'Да' : 'Нет',
+        'Предыдущий статус': oldIsQualified ? 'Квалифицирован' : 'Не квалифицирован',
+        'Дата квалификации': new Date().toLocaleDateString('ru-RU')
+      }
     });
 
     await this.activityRepo.save({
@@ -533,7 +727,10 @@ export class LeadService {
       description: `Лид ${
         isQualified ? 'квалифицирован' : 'дисквалифицирован'
       }`,
-      metadata: { isQualified },
+      metadata: { 
+        'Квалифицирован': isQualified ? 'Да' : 'Нет',
+        'Дата квалификации': new Date().toLocaleDateString('ru-RU')
+      },
     });
 
     return updated;
@@ -572,7 +769,11 @@ export class LeadService {
       title: 'Запланирован follow-up',
       description:
         note || `Follow-up запланирован на ${date.toLocaleDateString()}`,
-      metadata: { followUpDate: date.toISOString(), note: note || '' },
+      metadata: { 
+        'Дата follow-up': date.toLocaleDateString('ru-RU'), 
+        'Заметка': String(note || 'Нет заметки'),
+        'Запланировано': new Date().toLocaleDateString('ru-RU')
+      },
     });
 
     return updated;
@@ -581,5 +782,134 @@ export class LeadService {
   async delete(id: number): Promise<boolean> {
     const result = await this.leadRepo.delete(id);
     return result.affected ? result.affected > 0 : false;
+  }
+
+  /**
+   * Получить историю изменений лида
+   */
+  async getLeadHistory(
+    leadId: number,
+    filters?: Parameters<typeof this.historyService.getLeadHistory>[1],
+    page?: number,
+    limit?: number
+  ) {
+    return this.historyService.getLeadHistory(leadId, filters, page, limit);
+  }
+
+  /**
+   * Получить статистику изменений лида
+   */
+  async getLeadChangeStatistics(
+    leadId: number,
+    dateFrom?: Date,
+    dateTo?: Date
+  ) {
+    return this.historyService.getChangeStatistics(leadId, dateFrom, dateTo);
+  }
+
+  /**
+   * Конвертация лида в сделку
+   * @param leadId ID лида
+   * @param dealData Дополнительные данные для сделки
+   * @param userId ID пользователя, выполняющего конвертацию
+   * @param userName Имя пользователя, выполняющего конвертацию
+   * @returns Созданная сделка
+   */
+  async convertToDeal(
+    leadId: number, 
+    dealData: {
+      title?: string;
+      amount: number;
+      currency?: string;
+      probability?: number;
+      expectedCloseDate: Date;
+      stageId: string;
+      notes?: string;
+    },
+    userId?: string,
+    userName?: string
+  ): Promise<Deal> {
+    const lead = await this.findById(leadId);
+    if (!lead) {
+      throw new Error('Lead not found');
+    }
+
+    const oldStatus = lead.status;
+
+    // Создаем сделку на основе данных лида
+    const dealDto: CreateDealDto = {
+      title: dealData.title || `Deal from ${lead.name}`,
+      leadId: lead.id,
+      amount: dealData.amount,
+      currency: dealData.currency || 'RUB',
+      probability: dealData.probability || lead.conversionProbability || 50,
+      expectedCloseDate: dealData.expectedCloseDate.toISOString(),
+      stageId: dealData.stageId,
+      assignedTo: lead.assignedTo || 'unknown',
+      notes: dealData.notes || `Converted from lead #${lead.id}: ${lead.name}`,
+      meta: {
+        convertedFromLead: true,
+        'Конвертирован из лида': 'Да',
+        'ID лида': lead.id,
+        'Источник лида': lead.source || 'Не указан',
+        'Приоритет лида': lead.priority || 'Средний',
+        'Оценка лида': lead.score || 0,
+        'Дата конвертации': new Date().toLocaleDateString('ru-RU'),
+        'Компания': lead.company || 'Не указана',
+        'Отрасль': lead.industry || 'Не указана',
+        'Бюджет лида': lead.budget || 'Не указан',
+        'Временные рамки': lead.decisionTimeframe || 'Не указаны'
+      }
+    };
+
+    // Создаем сделку через DealsService для правильного связывания
+    const savedDeal = await this.dealsService.createDeal(dealDto, userId, userName);
+
+    // Обновляем статус лида на "CONVERTED"
+    await this.update(leadId, { 
+      status: LeadStatus.CONVERTED,
+      isQualified: true 
+    }, userId, userName);
+
+    // Записываем конвертацию в историю
+    await this.historyService.createHistoryEntry({
+      leadId: leadId,
+      fieldName: 'status',
+      oldValue: oldStatus,
+      newValue: LeadStatus.CONVERTED,
+      changeType: ChangeType.CONVERTED,
+      userId,
+      userName,
+      description: `Лид конвертирован в сделку #${savedDeal.id} "${savedDeal.title}"`,
+      metadata: {
+        'ID сделки': savedDeal.id,
+        'Название сделки': savedDeal.title,
+        'Сумма сделки': `${savedDeal.amount} ${savedDeal.currency}`,
+        'Вероятность': `${savedDeal.probability}%`,
+        'Дата конвертации': new Date().toLocaleDateString('ru-RU'),
+        'Время конвертации': new Date().toLocaleTimeString('ru-RU')
+      }
+    });
+
+    // Записываем активность конвертации
+    await this.activityRepo.save({
+      leadId: leadId,
+      type: ActivityType.STATUS_CHANGED,
+      title: 'Лид конвертирован в сделку',
+      description: `Лид успешно конвертирован в сделку #${savedDeal.id} "${savedDeal.title}"`,
+      metadata: {
+        'ID сделки': savedDeal.id,
+        'Название сделки': savedDeal.title,
+        'Сумма сделки': `${savedDeal.amount} ${savedDeal.currency}`,
+        'Дата конвертации': new Date().toLocaleDateString('ru-RU'),
+        'Время конвертации': new Date().toLocaleTimeString('ru-RU')
+      }
+    });
+
+    // Возвращаем сделку с полными данными (включая связи)
+    return this.dealRepo.findOne({
+      where: { id: savedDeal.id },
+      relations: ['lead', 'stage']
+    }) || savedDeal;
   }
 }

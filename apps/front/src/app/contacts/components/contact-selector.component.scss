@@ -1,0 +1,48 @@
+.contact-option {
+  display: flex;
+  align-items: center;
+  width: 100%;
+
+  .contact-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+
+    .contact-name {
+      font-weight: 500;
+      color: var(--text-primary);
+      font-size: 14px;
+    }
+
+    .contact-details {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .contact-company {
+      font-size: 11px;
+      color: var(--text-hint);
+      margin-top: 1px;
+      font-style: italic;
+    }
+  }
+}
+
+.create-contact-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--primary-color);
+  font-weight: 500;
+
+  mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+  }
+}
+
+.full-width {
+  width: 100%;
+}

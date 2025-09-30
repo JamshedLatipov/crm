@@ -9,87 +9,158 @@
 </div>
 
 <mat-dialog-content class="dialog-content">
-  <mat-card class="lead-info">
-    <mat-card-content>
-      <div class="lead-summary">
-        <div class="lead-name">{{ data.lead.name }}</div>
-        <div class="lead-details">
-          <span *ngIf="data.lead.company">{{ data.lead.company }}</span>
-          <span *ngIf="data.lead.email">{{ data.lead.email }}</span>
-        </div>
-        <div class="current-status">
-          Текущий статус:
-          <mat-chip
-            [class]="'status-chip status-' + data.currentStatus"
-            selected
-          >
-            {{ getStatusLabel(data.currentStatus) }}
-          </mat-chip>
+  <!-- Lead Info Header -->
+  <div class="lead-info-header">
+    <div class="lead-avatar">
+      <mat-icon>person</mat-icon>
+    </div>
+    <div class="lead-details">
+      <h3 class="lead-name">{{ data.lead.name }}</h3>
+      <div class="lead-meta">
+        <span *ngIf="data.lead.company" class="meta-item">
+          <mat-icon>business</mat-icon>
+          {{ data.lead.company }}
+        </span>
+        <span *ngIf="data.lead.email" class="meta-item">
+          <mat-icon>email</mat-icon>
+          {{ data.lead.email }}
+        </span>
+      </div>
+      <div class="current-status-display">
+        <span class="status-label">Текущий статус:</span>
+        <app-lead-status 
+          [status]="data.currentStatus" 
+          [size]="'medium'"
+          [showIcon]="true">
+        </app-lead-status>
+      </div>
+    </div>
+  </div>
+
+  <!-- Final Status Warning -->
+  <div class="final-status-warning" *ngIf="isFinalStatus">
+    <div class="warning-content">
+      <mat-icon class="warning-icon">lock</mat-icon>
+      <div class="warning-text">
+        <h3>Статус заблокирован</h3>
+        <p>{{ finalStatusMessage }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status Selection (only if not final status) -->
+  <div class="status-section" *ngIf="!isFinalStatus">
+    <div class="section-header">
+      <mat-icon class="section-icon">low_priority</mat-icon>
+      <h3>Выберите новый статус</h3>
+    </div>
+
+    <!-- Status Progress Overview -->
+    <div class="status-progress-overview" *ngIf="selectedStatus">
+      <div class="progress-header">
+        <span class="progress-label">Прогресс лида:</span>
+        <span class="progress-percentage">{{ getStatusProgress(selectedStatus) }}%</span>
+      </div>
+      <div class="progress-bar">
+        <div 
+          class="progress-fill" 
+          [style.width.%]="getStatusProgress(selectedStatus)"
+          [style.background]="getStatusColor(selectedStatus)">
         </div>
       </div>
-    </mat-card-content>
-  </mat-card>
-
-  <div class="status-section">
-    <h3>Выберите новый статус</h3>
+    </div>
+    
     <div class="status-grid">
       <div
         *ngFor="let status of displayStatuses"
         class="status-option"
         [class.selected]="selectedStatus === status.value"
         [class.disabled]="status.value === data.currentStatus"
-        (click)="
-          status.value !== data.currentStatus && selectStatus(status.value)
-        "
+        [class.current]="status.value === data.currentStatus"
+        [class.invalid-transition]="!isValidTransition(data.currentStatus, status.value) && status.value !== data.currentStatus"
+        (click)="status.value !== data.currentStatus && selectStatus(status.value)"
         role="button"
         tabindex="0"
-        (keydown.enter)="
-          status.value !== data.currentStatus && selectStatus(status.value)
-        "
+        (keydown.enter)="status.value !== data.currentStatus && selectStatus(status.value)"
         [attr.aria-pressed]="selectedStatus === status.value"
       >
-        <div class="status-icon">
-          <mat-icon>{{ status.icon }}</mat-icon>
-        </div>
-        <div class="status-info">
-          <div class="status-name">{{ status.label }}</div>
-          <div class="status-description">{{ status.description }}</div>
-        </div>
-        <div class="status-indicator" *ngIf="selectedStatus === status.value">
-          <mat-icon>check_circle</mat-icon>
+        <div class="status-option-content">
+          <div class="status-icon-wrapper" [style.border-color]="getStatusColor(status.value)">
+            <mat-icon class="status-icon" [style.color]="getStatusColor(status.value)">{{ status.icon }}</mat-icon>
+          </div>
+          <div class="status-text">
+            <div class="status-name">{{ status.label }}</div>
+            <div class="status-description">{{ status.description }}</div>
+            <div class="status-progress-mini">
+              <div class="mini-progress-bar">
+                <div 
+                  class="mini-progress-fill" 
+                  [style.width.%]="getStatusProgress(status.value)"
+                  [style.background]="getStatusColor(status.value)">
+                </div>
+              </div>
+              <span class="mini-progress-text">{{ getStatusProgress(status.value) }}%</span>
+            </div>
+          </div>
+          <div class="status-indicator" *ngIf="selectedStatus === status.value">
+            <mat-icon>check_circle</mat-icon>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <mat-form-field class="full-width" appearance="outline">
-    <mat-label>Комментарий к изменению статуса</mat-label>
-    <textarea matInput [(ngModel)]="notes" rows="3"></textarea>
-    <mat-icon matSuffix>comment</mat-icon>
-  </mat-form-field>
+  <!-- Comments Section (only if not final status) -->
+  <div class="comments-section" *ngIf="!isFinalStatus">
+    <div class="section-header">
+      <mat-icon class="section-icon">comment</mat-icon>
+      <h3>Комментарий к изменению</h3>
+    </div>
+    
+    <mat-form-field class="full-width" appearance="outline">
+      <mat-label>Добавить комментарий (необязательно)</mat-label>
+      <textarea 
+        matInput 
+        [(ngModel)]="notes" 
+        rows="3"
+        placeholder="Опишите причину изменения статуса или добавьте заметки..."></textarea>
+      <mat-icon matSuffix>edit_note</mat-icon>
+    </mat-form-field>
+  </div>
 
-  <div class="status-flow" *ngIf="selectedStatus">
-    <h4>Следующие шаги:</h4>
-    <div class="next-steps">
-      <div *ngFor="let step of getNextSteps(selectedStatus)" class="step-item">
-        <mat-icon class="step-icon">{{ step.icon }}</mat-icon>
-        <span>{{ step.description }}</span>
+  <!-- Next Steps (only if not final status) -->
+  <div class="next-steps-section" *ngIf="selectedStatus && !isFinalStatus">
+    <div class="section-header">
+      <mat-icon class="section-icon">trending_flat</mat-icon>
+      <h3>Следующие шаги</h3>
+    </div>
+    
+    <div class="next-steps-grid">
+      <div *ngFor="let step of getNextSteps(selectedStatus)" class="step-card">
+        <div class="step-icon-wrapper">
+          <mat-icon class="step-icon">{{ step.icon }}</mat-icon>
+        </div>
+        <span class="step-description">{{ step.description }}</span>
       </div>
     </div>
   </div>
 </mat-dialog-content>
 
 <mat-dialog-actions class="dialog-actions">
-  <button mat-button (click)="close()">Отмена</button>
+  <button mat-button (click)="close()" class="action-button cancel-button">
+    <mat-icon>close</mat-icon>
+    {{ isFinalStatus ? 'Закрыть' : 'Отмена' }}
+  </button>
   <button
+    *ngIf="!isFinalStatus"
     mat-raised-button
     color="primary"
     (click)="changeStatus()"
-    [disabled]="
-      !selectedStatus || selectedStatus === data.currentStatus || loading
-    "
+    [disabled]="!selectedStatus || selectedStatus === data.currentStatus || loading"
+    class="action-button primary-button"
   >
-    <mat-icon *ngIf="loading">hourglass_empty</mat-icon>
+    <mat-icon *ngIf="loading" class="loading-icon">hourglass_empty</mat-icon>
+    <mat-icon *ngIf="!loading">check</mat-icon>
     <span *ngIf="!loading">Изменить статус</span>
     <span *ngIf="loading">Сохранение...</span>
   </button>

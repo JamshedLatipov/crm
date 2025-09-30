@@ -7,6 +7,21 @@
  
 <mat-dialog-content class="dialog-content">
   <form [formGroup]="leadForm" class="create-lead-form">
+    <!-- Выбор контакта -->
+    <div class="form-section">
+      <div class="section-header">
+        <mat-icon class="section-icon">contacts</mat-icon>
+        <h3>Контакт</h3>
+      </div>
+      <div class="form-field-container">
+        <app-contact-selector
+          formControlName="contact"
+          placeholder="Выберите контакт или создайте новый"
+        ></app-contact-selector>
+        <mat-error *ngIf="leadForm.get('contact')?.hasError('required')">Контакт обязателен</mat-error>
+      </div>
+    </div>
+
     <!-- Basic Information -->
     <div class="form-section">
       <div class="section-header">
@@ -37,7 +52,7 @@
         </div>
 
         <div class="form-row">
-          <app-company-autocomplete [control]="companyControl" [idControl]="companyIdControl" placeholder="Компания"></app-company-autocomplete>
+          <app-company-selector formControlName="companyId" placeholder="Компания"></app-company-selector>
 
           <mat-form-field appearance="outline" class="form-field">
             <mat-label>Должность</mat-label>
@@ -89,8 +104,14 @@
               <mat-option value="phone">Телефонный звонок</mat-option>
               <mat-option value="email">Email</mat-option>
               <mat-option value="referral">Рекомендация</mat-option>
-              <mat-option value="social_media">Социальные сети</mat-option>
-              <mat-option value="advertising">Реклама</mat-option>
+              <mat-option value="facebook">Facebook</mat-option>
+              <mat-option value="linkedin">LinkedIn</mat-option>
+              <mat-option value="google_ads">Google Ads</mat-option>
+              <mat-option value="content_marketing">Контент-маркетинг</mat-option>
+              <mat-option value="webinar">Вебинар</mat-option>
+              <mat-option value="trade_show">Выставка</mat-option>
+              <mat-option value="cold_outreach">Холодный обзвон</mat-option>
+              <mat-option value="partner">Партнер</mat-option>
               <mat-option value="other">Другое</mat-option>
             </mat-select>
             <mat-icon matSuffix>source</mat-icon>

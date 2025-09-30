@@ -11,6 +11,8 @@ import { USER_MIGRATIONS } from './modules/user/migrations';
 import { DEALS_MIGRATIONS } from './modules/deals/migrations';
 import { CONTACTS_MIGRATIONS } from './modules/contacts/migrations';
 import { COMPANIES_MIGRATIONS } from './modules/companies/migrations';
+import { LEADS_MIGRATIONS } from './modules/leads/migrations';
+import { COMMENTS_MIGRATIONS } from './modules/comments/migrations';
 
 @Module({
     imports: [
@@ -24,7 +26,7 @@ import { COMPANIES_MIGRATIONS } from './modules/companies/migrations';
             database: process.env.DB_NAME || 'crm',
             synchronize: true,
             autoLoadEntities: true,
-            migrations: [...CALLS_MIGRATIONS, ...USER_MIGRATIONS, ...DEALS_MIGRATIONS, ...CONTACTS_MIGRATIONS, ...COMPANIES_MIGRATIONS],
+            migrations: [...CALLS_MIGRATIONS, ...USER_MIGRATIONS, ...DEALS_MIGRATIONS, ...CONTACTS_MIGRATIONS, ...COMPANIES_MIGRATIONS, ...LEADS_MIGRATIONS, ...COMMENTS_MIGRATIONS],
             migrationsRun: true,
         }),
         ClientsModule.register([

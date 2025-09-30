@@ -16,6 +16,7 @@ import { MatChipsModule } from '@angular/material/chips';
 
 import { LeadService } from '../../services/lead.service';
 import { Lead, LeadStatus } from '../../models/lead.model';
+import { LeadStatusComponent } from '../lead-status/lead-status.component';
 
 interface ChangeStatusData {
   lead: Lead;
@@ -36,6 +37,7 @@ interface ChangeStatusData {
     MatIconModule,
     MatCardModule,
     MatChipsModule,
+    LeadStatusComponent,
   ],
   templateUrl: './change-status-dialog.component.html',
   styleUrls: ['./change-status-dialog.component.scss'],
@@ -50,6 +52,27 @@ export class ChangeStatusDialogComponent {
   selectedStatus: LeadStatus | null = null;
   notes = '';
   loading = false;
+
+  // Финальные статусы, которые нельзя изменить
+  private finalStatuses = [LeadStatus.CONVERTED, LeadStatus.REJECTED, LeadStatus.LOST];
+
+  get isFinalStatus(): boolean {
+    return this.finalStatuses.includes(this.data.currentStatus);
+  }
+
+  get finalStatusMessage(): string {
+    const statusMessages: Record<LeadStatus, string> = {
+      [LeadStatus.CONVERTED]: 'Этот лид уже конвертирован в клиента. Изменение статуса невозможно.',
+      [LeadStatus.REJECTED]: 'Этот лид был отклонен. Изменение статуса невозможно.',
+      [LeadStatus.LOST]: 'Этот лид был потерян. Изменение статуса невозможно.',
+      [LeadStatus.NEW]: '',
+      [LeadStatus.CONTACTED]: '',
+      [LeadStatus.QUALIFIED]: '',
+      [LeadStatus.PROPOSAL_SENT]: '',
+      [LeadStatus.NEGOTIATING]: '',
+    };
+    return statusMessages[this.data.currentStatus] || '';
+  }
 
   availableStatuses = [
     {
@@ -110,6 +133,50 @@ export class ChangeStatusDialogComponent {
       return this.availableStatuses.filter((s) => s.value !== LeadStatus.NEW);
     }
     return this.availableStatuses;
+  }
+
+  getStatusProgress(status: LeadStatus): number {
+    const progressMap: Record<LeadStatus, number> = {
+      [LeadStatus.NEW]: 10,
+      [LeadStatus.CONTACTED]: 25,
+      [LeadStatus.QUALIFIED]: 40,
+      [LeadStatus.PROPOSAL_SENT]: 60,
+      [LeadStatus.NEGOTIATING]: 80,
+      [LeadStatus.CONVERTED]: 100,
+      [LeadStatus.REJECTED]: 0,
+      [LeadStatus.LOST]: 0,
+    };
+    return progressMap[status] || 0;
+  }
+
+  getStatusColor(status: LeadStatus): string {
+    const colorMap: Record<LeadStatus, string> = {
+      [LeadStatus.NEW]: '#4caf50',
+      [LeadStatus.CONTACTED]: '#2196f3',
+      [LeadStatus.QUALIFIED]: '#ffc107',
+      [LeadStatus.PROPOSAL_SENT]: '#9c27b0',
+      [LeadStatus.NEGOTIATING]: '#ff5722',
+      [LeadStatus.CONVERTED]: '#4caf50',
+      [LeadStatus.REJECTED]: '#f44336',
+      [LeadStatus.LOST]: '#616161',
+    };
+    return colorMap[status] || '#616161';
+  }
+
+  isValidTransition(fromStatus: LeadStatus, toStatus: LeadStatus): boolean {
+    // Определяем логические переходы между статусами
+    const validTransitions: Record<LeadStatus, LeadStatus[]> = {
+      [LeadStatus.NEW]: [LeadStatus.CONTACTED, LeadStatus.REJECTED, LeadStatus.LOST],
+      [LeadStatus.CONTACTED]: [LeadStatus.QUALIFIED, LeadStatus.REJECTED, LeadStatus.LOST],
+      [LeadStatus.QUALIFIED]: [LeadStatus.PROPOSAL_SENT, LeadStatus.NEGOTIATING, LeadStatus.REJECTED, LeadStatus.LOST],
+      [LeadStatus.PROPOSAL_SENT]: [LeadStatus.NEGOTIATING, LeadStatus.CONVERTED, LeadStatus.REJECTED, LeadStatus.LOST],
+      [LeadStatus.NEGOTIATING]: [LeadStatus.CONVERTED, LeadStatus.REJECTED, LeadStatus.LOST],
+      [LeadStatus.CONVERTED]: [], // Финальный статус
+      [LeadStatus.REJECTED]: [LeadStatus.CONTACTED], // Можно вернуть в работу
+      [LeadStatus.LOST]: [LeadStatus.CONTACTED], // Можно вернуть в работу
+    };
+
+    return validTransitions[fromStatus]?.includes(toStatus) || false;
   }
 
   private statusLabels: Record<LeadStatus, string> = {

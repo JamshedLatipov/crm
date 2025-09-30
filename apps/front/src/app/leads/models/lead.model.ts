@@ -1,4 +1,4 @@
-import { Company } from '../../pipeline/dtos';
+import { Company, Deal } from '../../pipeline/dtos';
 
 export * from './enums';
 
@@ -76,6 +76,7 @@ export interface Lead {
   address?: string;
   notes?: string;
   tags?: string[];
+  deals?: Deal[];
   
   // Lead management
   status: LeadStatus;
@@ -165,10 +166,12 @@ export interface LeadFilters {
 }
 
 export interface CreateLeadRequest {
+  contactId?: string; // ID связанного контакта
   name: string;
   email?: string;
   phone?: string;
-  company?: string;
+  company?: string; // Название компании
+  companyId?: string; // ID компании
   position?: string;
   website?: string;
   industry?: string;

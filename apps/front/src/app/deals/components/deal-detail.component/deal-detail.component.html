@@ -1,0 +1,437 @@
+<div class="deal-detail-page">
+  <!-- Загрузка -->
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Загрузка сделки...</p>
+  </div>
+
+  <!-- Ошибка -->
+  <div *ngIf="error" class="error-container">
+    <div class="error-card">
+      <mat-icon class="error-icon">sentiment_dissatisfied</mat-icon>
+      <h3>Сделка не найдена</h3>
+      <p>{{ error }}</p>
+      <button mat-raised-button color="primary" (click)="goBack()">
+        <mat-icon>arrow_back</mat-icon>
+        Вернуться к списку
+      </button>
+    </div>
+  </div>
+
+  <!-- Детали сделки -->
+  <div *ngIf="deal && !isLoading" class="deal-content">
+    <!-- Заголовок с градиентом -->
+    <div class="page-header">
+      <div class="header-background">
+        <div class="header-content">
+          <div class="breadcrumb">
+            <button mat-button (click)="goBack()" class="breadcrumb-link">
+              <mat-icon>arrow_back</mat-icon>
+              Сделки
+            </button>
+            <mat-icon class="separator">chevron_right</mat-icon>
+            <span class="current">{{ deal.title }}</span>
+          </div>
+
+          <div class="deal-header-info">
+            <div class="deal-main-info">
+              <h1>{{ deal.title }}</h1>
+              <div class="deal-meta">
+                <div class="deal-amount">
+                  <span class="amount-value">{{
+                    deal.amount || 0
+                      | currency : deal.currency : 'symbol' : '1.0-0'
+                  }}</span>
+                  <span class="amount-probability"
+                    >{{ deal.probability }}% вероятность</span
+                  >
+                </div>
+                <div class="deal-stage" *ngIf="deal.stage">
+                  <mat-icon>timeline</mat-icon>
+                  <span>{{ deal.stage.name }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="deal-status-badge">
+              <app-deal-status
+                [status]="deal.status"
+                [showIndicators]="true"
+                [isOverdue]="isOverdue()"
+                [isHighValue]="(deal.amount || 0) > 100000"
+                size="large"
+              >
+              </app-deal-status>
+            </div>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <button
+            mat-stroked-button
+            color="primary"
+            (click)="editDeal()"
+            class="action-btn"
+          >
+            <mat-icon>edit</mat-icon>
+            Редактировать
+          </button>
+          <button
+            mat-raised-button
+            color="accent"
+            *ngIf="deal.status === 'open'"
+            (click)="markAsWon()"
+            class="action-btn win-btn"
+          >
+            <mat-icon>check_circle</mat-icon>
+            Отметить выигранной
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Основная информация -->
+    <div class="main-content">
+      <div class="content-grid">
+        <!-- Левая колонка -->
+        <div class="left-column">
+          <!-- Финансовые показатели -->
+          <mat-card class="info-card highlight-card">
+            <mat-card-header>
+              <div mat-card-avatar class="card-avatar financial">
+                <mat-icon>account_balance_wallet</mat-icon>
+              </div>
+              <mat-card-title>Финансовые показатели</mat-card-title>
+              <mat-card-subtitle
+                >Денежные характеристики сделки</mat-card-subtitle
+              >
+            </mat-card-header>
+            <mat-card-content>
+              <div class="financial-grid">
+                <div class="financial-item primary">
+                  <div class="financial-icon">
+                    <mat-icon>monetization_on</mat-icon>
+                  </div>
+                  <div class="financial-info">
+                    <span class="label">Сумма сделки</span>
+                    <div class="value primary-value">
+                      {{
+                        deal.amount || 0
+                          | currency : deal.currency : 'symbol' : '1.0-0'
+                      }}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="financial-item">
+                  <div class="financial-icon">
+                    <mat-icon>trending_up</mat-icon>
+                  </div>
+                  <div class="financial-info">
+                    <span class="label">Вероятность</span>
+                    <div class="value">
+                      <div class="probability-display">
+                        <span class="probability-value"
+                          >{{ deal.probability }}%</span
+                        >
+                        <div class="probability-bar">
+                          <div
+                            class="probability-fill"
+                            [style.width.%]="deal.probability"
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="financial-item">
+                  <div class="financial-icon">
+                    <mat-icon>calculate</mat-icon>
+                  </div>
+                  <div class="financial-info">
+                    <span class="label">Взвешенная сумма</span>
+                    <div class="value weighted-value">
+                      {{
+                        ((deal.amount || 0) * deal.probability) / 100
+                          | currency : deal.currency : 'symbol' : '1.0-0'
+                      }}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="financial-item">
+                  <div class="financial-icon">
+                    <mat-icon>paid</mat-icon>
+                  </div>
+                  <div class="financial-info">
+                    <span class="label">Валюта</span>
+                    <div class="value currency-value">
+                      <span class="currency-symbol">{{
+                        getCurrencySymbol(deal.currency)
+                      }}</span>
+                      <span class="currency-name">{{
+                        getCurrencyName(deal.currency)
+                      }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Контактная информация -->
+          <mat-card class="info-card" *ngIf="deal.contact || deal.company">
+            <mat-card-header>
+              <div mat-card-avatar class="card-avatar contact">
+                <mat-icon>contacts</mat-icon>
+              </div>
+              <mat-card-title>Контактная информация</mat-card-title>
+              <mat-card-subtitle
+                >Связанные контакты и компании</mat-card-subtitle
+              >
+            </mat-card-header>
+            <mat-card-content>
+              <!-- Контакт -->
+              <div class="contact-section" *ngIf="deal.contact">
+                <div class="contact-card">
+                  <div class="contact-avatar">
+                    <mat-icon>account_circle</mat-icon>
+                  </div>
+                  <div class="contact-details">
+                    <h4 class="contact-name">{{ deal.contact.name }}</h4>
+                    <p class="contact-position" *ngIf="deal.contact.position">
+                      {{ deal.contact.position }}
+                    </p>
+
+                    <div class="contact-actions">
+                      <a
+                        *ngIf="deal.contact.email"
+                        [href]="'mailto:' + deal.contact.email"
+                        class="contact-action email"
+                        mat-stroked-button
+                      >
+                        <mat-icon>email</mat-icon>
+                        {{ deal.contact.email }}
+                      </a>
+                      <a
+                        *ngIf="deal.contact.phone"
+                        [href]="'tel:' + deal.contact.phone"
+                        class="contact-action phone"
+                        mat-stroked-button
+                      >
+                        <mat-icon>phone</mat-icon>
+                        {{ deal.contact.phone }}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Компания -->
+              <div class="company-section" *ngIf="deal.company">
+                <div class="company-card">
+                  <div class="company-avatar">
+                    <mat-icon>business</mat-icon>
+                  </div>
+                  <div class="company-details">
+                    <h4 class="company-name">{{ deal.company.name }}</h4>
+                  </div>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Заметки -->
+          <mat-card class="info-card notes-card" *ngIf="deal.notes">
+            <mat-card-header>
+              <div mat-card-avatar class="card-avatar notes">
+                <mat-icon>sticky_note_2</mat-icon>
+              </div>
+              <mat-card-title>Заметки</mat-card-title>
+              <mat-card-subtitle>Дополнительная информация</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="notes-content">{{ deal.notes }}</div>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- История и аналитика сделки -->
+          <div class="history-section">
+            <mat-tab-group mat-stretch-tabs="true" class="history-tabs">
+              <!-- Комментарии -->
+              <mat-tab label="Комментарии">
+                <div class="tab-content">
+                  <app-comments
+                    [entityType]="CommentEntityType.DEAL"
+                    [entityId]="deal.id"
+                  >
+                  </app-comments>
+                </div>
+              </mat-tab>
+
+              <!-- История изменений -->
+              <mat-tab label="История изменений">
+                <div class="tab-content">
+                  <app-deal-history [dealId]="deal.id"></app-deal-history>
+                </div>
+              </mat-tab>
+
+              <!-- Аналитика -->
+              <mat-tab label="Аналитика">
+                <div class="tab-content">
+                  <app-deal-history-stats
+                    [dealId]="deal.id"
+                  ></app-deal-history-stats>
+                </div>
+              </mat-tab>
+            </mat-tab-group>
+          </div>
+        </div>
+
+        <!-- Правая колонка -->
+        <div class="right-column">
+          <!-- Процесс продажи -->
+          <mat-card class="info-card process-card">
+            <mat-card-header>
+              <div mat-card-avatar class="card-avatar process">
+                <mat-icon>auto_graph</mat-icon>
+              </div>
+              <mat-card-title>Процесс продажи</mat-card-title>
+              <mat-card-subtitle>Информация о ходе сделки</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="process-timeline">
+                <div class="timeline-item" *ngIf="deal.stage">
+                  <div class="timeline-icon stage">
+                    <mat-icon>flag</mat-icon>
+                  </div>
+                  <div class="timeline-content">
+                    <span class="label">Текущий этап</span>
+                    <div class="value highlight">{{ deal.stage.name }}</div>
+                  </div>
+                </div>
+
+                <div class="timeline-item">
+                  <div class="timeline-icon user">
+                    <mat-icon>person_pin</mat-icon>
+                  </div>
+                  <div class="timeline-content">
+                    <span class="label">Ответственный</span>
+                    <div class="value">
+                      {{ assignedUserName || deal.assignedTo || 'Не назначен' }}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="timeline-item">
+                  <div class="timeline-icon date">
+                    <mat-icon>event</mat-icon>
+                  </div>
+                  <div class="timeline-content">
+                    <span class="label">Дата создания</span>
+                    <div class="value">
+                      {{ deal.createdAt | date : 'dd.MM.yyyy HH:mm' }}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="timeline-item">
+                  <div class="timeline-icon" [class.warning]="isOverdue()">
+                    <mat-icon>{{
+                      isOverdue() ? 'warning' : 'schedule'
+                    }}</mat-icon>
+                  </div>
+                  <div class="timeline-content">
+                    <span class="label">Ожидаемая дата закрытия</span>
+                    <div class="value" [class.overdue]="isOverdue()">
+                      {{ deal.expectedCloseDate | date : 'dd.MM.yyyy' }}
+                      <span class="overdue-badge" *ngIf="isOverdue()"
+                        >Просрочена</span
+                      >
+                    </div>
+                  </div>
+                </div>
+
+                <div class="timeline-item" *ngIf="deal.actualCloseDate">
+                  <div class="timeline-icon success">
+                    <mat-icon>check_circle</mat-icon>
+                  </div>
+                  <div class="timeline-content">
+                    <span class="label">Фактическая дата закрытия</span>
+                    <div class="value success">
+                      {{ deal.actualCloseDate | date : 'dd.MM.yyyy HH:mm' }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Связанный лид -->
+          <mat-card class="info-card lead-card" *ngIf="deal.lead">
+            <mat-card-header>
+              <div mat-card-avatar class="card-avatar lead">
+                <mat-icon>person_add</mat-icon>
+              </div>
+              <mat-card-title>Связанный лид</mat-card-title>
+              <mat-card-subtitle>Источник сделки</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="lead-info">
+                <div class="lead-name">{{ deal.lead.name }}</div>
+                <div class="lead-source" *ngIf="deal.lead.source">
+                  <mat-icon>source</mat-icon>
+                  <span>{{ deal.lead.source }}</span>
+                </div>
+              </div>
+
+              <!-- Кнопка перехода к лиду -->
+              <div class="lead-actions">
+                <button
+                  mat-raised-button
+                  color="primary"
+                  (click)="goToLead(deal.lead.id)"
+                  class="view-lead-btn"
+                >
+                  <mat-icon>open_in_new</mat-icon>
+                  Перейти к лиду
+                </button>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Дополнительные данные -->
+          <mat-card
+            class="info-card metadata-card"
+            *ngIf="deal.meta && hasMetadata()"
+          >
+            <mat-card-header>
+              <div mat-card-avatar class="card-avatar metadata">
+                <mat-icon>data_object</mat-icon>
+              </div>
+              <mat-card-title>Дополнительные данные</mat-card-title>
+              <mat-card-subtitle
+                >Дополнительная информация о сделке</mat-card-subtitle
+              >
+            </mat-card-header>
+            <mat-card-content>
+              <div class="metadata-list">
+                <div
+                  *ngFor="let item of getMetadataItems()"
+                  class="metadata-item"
+                >
+                  <div class="metadata-key">
+                    <mat-icon>label</mat-icon>
+                    <span>{{ item.key }}</span>
+                  </div>
+                  <div class="metadata-value">{{ item.value }}</div>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

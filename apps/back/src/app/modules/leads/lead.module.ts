@@ -2,45 +2,56 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Lead } from './lead.entity';
 import { LeadActivity } from './entities/lead-activity.entity';
+import { LeadHistory } from './entities/lead-history.entity';
 import { LeadScoringRule } from './entities/lead-scoring-rule.entity';
 import { LeadDistributionRule } from './entities/lead-distribution-rule.entity';
+import { Deal } from '../deals/deal.entity';
 import { LeadService } from './lead.service';
 import { LeadScoringService } from './services/lead-scoring.service';
 import { LeadDistributionService } from './services/lead-distribution.service';
 import { LeadCaptureService } from './services/lead-capture.service';
+import { LeadHistoryService } from './services/lead-history.service';
 import { LeadController } from './lead.controller';
 import { LeadScoringController } from './controllers/lead-scoring.controller';
 import { LeadDistributionController } from './controllers/lead-distribution.controller';
 import { LeadCaptureController } from './controllers/lead-capture.controller';
+import { LeadHistoryController } from './controllers/lead-history.controller';
 import { UserModule } from '../user/user.module';
+import { DealsModule } from '../deals/deals.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       Lead,
       LeadActivity,
+      LeadHistory,
       LeadScoringRule,
-      LeadDistributionRule
+      LeadDistributionRule,
+      Deal
     ]),
-    UserModule
+    UserModule,
+    DealsModule
   ],
   providers: [
     LeadService,
     LeadScoringService,
     LeadDistributionService,
-    LeadCaptureService
+    LeadCaptureService,
+    LeadHistoryService
   ],
   controllers: [
     LeadController,
     LeadScoringController,
     LeadDistributionController,
-    LeadCaptureController
+    LeadCaptureController,
+    LeadHistoryController
   ],
   exports: [
     LeadService,
     LeadScoringService,
     LeadDistributionService,
-    LeadCaptureService
+    LeadCaptureService,
+    LeadHistoryService
   ],
 })
 export class LeadModule {}

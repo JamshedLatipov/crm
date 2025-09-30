@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { PipelineStage, PipelineLead } from './pipeline.entity';
+import { PipelineStage, PipelineLead, StageType } from './pipeline.entity';
 import { LeadService } from '../leads/lead.service';
 import { Lead } from '../leads/lead.entity';
 import { Deal } from '../deals/deal.entity';
@@ -13,7 +13,6 @@ import { ContactsService } from '../contacts/contacts.service';
 import { ContactSource } from '../contacts/contact.entity';
 import { DataSource } from 'typeorm';
 import { CreateContactDto } from '../contacts/dto/create-contact.dto';
-import { Company } from '../companies/entities/company.entity';
 import { CompaniesService } from '../companies/services/companies.service';
 
 @Injectable()
@@ -35,22 +34,28 @@ export class PipelineService {
 
   // Stages
   createStage(dto: CreateStageDto) {
-    const st = this.stagesRepo.create(dto as any);
+    const st = this.stagesRepo.create(dto);
     return this.stagesRepo.save(st);
   }
 
-  listStages() {
+  listStages(type?: StageType) {
+    if (type) {
+      return this.stagesRepo.find({ 
+        where: { type },
+        order: { position: 'ASC' } 
+      });
+    }
     return this.stagesRepo.find({ order: { position: 'ASC' } });
   }
 
   async updateStage(id: string, dto: UpdateStageDto) {
-    await this.stagesRepo.update(id, dto as any);
+    await this.stagesRepo.update(id, dto);
     return this.stagesRepo.findOneBy({ id });
   }
 
   // Leads
   createLead(dto: CreateLeadDto) {
-    const l = this.leadsRepo.create(dto as any);
+    const l = this.leadsRepo.create(dto);
     return this.leadsRepo.save(l);
   }
 
@@ -59,7 +64,7 @@ export class PipelineService {
   }
 
   async updateLead(id: string, dto: UpdateLeadDto) {
-    await this.leadsRepo.update(id, dto as any);
+    await this.leadsRepo.update(id, dto);
     return this.leadsRepo.findOneBy({ id });
   }
 
@@ -71,7 +76,12 @@ export class PipelineService {
 
     for (const lead of leads) {
       try {
-        if (lead.meta && (lead.meta as any).triggerNext) {
+        interface LeadMeta {
+          triggerNext?: boolean;
+          [key: string]: unknown;
+        }
+        
+        if (lead.meta && (lead.meta as LeadMeta).triggerNext) {
           const idx = lead.stageId
             ? stageIndexById.get(lead.stageId) ?? -1
             : -1;
@@ -79,13 +89,13 @@ export class PipelineService {
           if (next) {
             lead.stageId = next.id;
             // clear trigger
-            if (lead.meta) delete (lead.meta as any).triggerNext;
+            if (lead.meta) delete (lead.meta as LeadMeta).triggerNext;
             await this.leadsRepo.save(lead);
             this.logger.log(`Moved lead ${lead.id} to stage ${next.name}`);
           }
         }
       } catch (err) {
-        this.logger.error('Automation error', err as any);
+        this.logger.error('Automation error', err);
       }
     }
   }
@@ -158,7 +168,7 @@ export class PipelineService {
       phone: mainLead?.phone || mainLead?.phone || undefined,
       mobilePhone: mainLead?.phone || undefined,
       website: mainLead.website || mainLead?.website || undefined,
-      companyId: mainLead.company.id || undefined,
+  company: mainLead && mainLead.company ? { id: mainLead.company.id, name: mainLead.company.name } : undefined,
       // Normalize address: prefer structured meta, else assemble from lead fields
       address:
         (mainLead

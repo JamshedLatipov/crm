@@ -1,0 +1,303 @@
+<div class="deal-form">
+  <div mat-dialog-title class="dialog-header">
+    <div class="header-content">
+      <div class="header-text">
+        <h2>{{ isEditMode ? 'Редактировать сделку' : 'Создать сделку' }}</h2>
+        <p class="header-subtitle">
+          {{
+            isEditMode
+              ? 'Обновите информацию о сделке'
+              : 'Заполните данные новой сделки'
+          }}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div mat-dialog-content class="dialog-content">
+    <form [formGroup]="dealForm" class="deal-form-content">
+      <!-- Основная информация -->
+      <div class="form-section">
+        <div class="section-header">
+          <mat-icon class="section-icon">info</mat-icon>
+          <h3>Основная информация</h3>
+        </div>
+
+        <div class="form-grid">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Название сделки</mat-label>
+            <input
+              matInput
+              formControlName="title"
+              placeholder="Введите название сделки"
+            />
+            <mat-icon matSuffix>title</mat-icon>
+            <mat-error *ngIf="dealForm.get('title')?.hasError('required')">
+              Название сделки обязательно
+            </mat-error>
+          </mat-form-field>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Сумма</mat-label>
+              <input
+                matInput
+                type="number"
+                formControlName="amount"
+                placeholder="0"
+              />
+              <mat-icon matSuffix>attach_money</mat-icon>
+              <mat-error *ngIf="dealForm.get('amount')?.hasError('required')">
+                Сумма обязательна
+              </mat-error>
+              <mat-error *ngIf="dealForm.get('amount')?.hasError('min')">
+                Сумма должна быть больше 0
+              </mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Валюта</mat-label>
+              <mat-select formControlName="currency">
+                <mat-option value="RUB">
+                  <span class="currency-option">
+                    <span class="currency-symbol">₽</span>
+                    <span>Рубль</span>
+                  </span>
+                </mat-option>
+                <mat-option value="USD">
+                  <span class="currency-option">
+                    <span class="currency-symbol">$</span>
+                    <span>Доллар</span>
+                  </span>
+                </mat-option>
+                <mat-option value="EUR">
+                  <span class="currency-option">
+                    <span class="currency-symbol">€</span>
+                    <span>Евро</span>
+                  </span>
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="probability-field">
+            <div class="probability-header">
+              <mat-icon class="probability-icon">trending_up</mat-icon>
+              <div class="probability-label">Вероятность закрытия</div>
+              <div class="probability-value">
+                {{ probabilityControl.value || 0 }}%
+              </div>
+            </div>
+            <mat-slider
+              min="0"
+              max="100"
+              step="5"
+              discrete
+              class="probability-slider"
+            >
+              <input matSliderThumb [formControl]="probabilityControl" />
+            </mat-slider>
+            <div class="probability-scale">
+              <span>0%</span>
+              <span>25%</span>
+              <span>50%</span>
+              <span>75%</span>
+              <span>100%</span>
+            </div>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Ожидаемая дата закрытия</mat-label>
+            <input
+              matInput
+              [matDatepicker]="picker"
+              formControlName="expectedCloseDate"
+            />
+            <mat-datepicker-toggle
+              matIconSuffix
+              [for]="picker"
+            ></mat-datepicker-toggle>
+            <mat-datepicker #picker></mat-datepicker>
+            <mat-error
+              *ngIf="dealForm.get('expectedCloseDate')?.hasError('required')"
+            >
+              Дата закрытия обязательна
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Связи -->
+      <div class="form-section">
+        <div class="section-header">
+          <mat-icon class="section-icon">link</mat-icon>
+          <h3>Связи и статус</h3>
+        </div>
+
+        <div class="form-grid">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Этап воронки</mat-label>
+            <mat-select formControlName="stageId">
+              <mat-option *ngFor="let stage of stages" [value]="stage.id">
+                <div class="stage-option">
+                  <span class="stage-name">{{ stage.name }}</span>
+                </div>
+              </mat-option>
+            </mat-select>
+            <mat-icon matSuffix>timeline</mat-icon>
+            <mat-error *ngIf="dealForm.get('stageId')?.hasError('required')">
+              Этап обязателен
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Контакт</mat-label>
+            <input
+              matInput
+              formControlName="contactSearch"
+              [matAutocomplete]="contactAuto"
+              placeholder="Начните вводить имя контакта"
+            />
+            <mat-icon matSuffix>person</mat-icon>
+            <mat-autocomplete
+              #contactAuto="matAutocomplete"
+              [displayWith]="displayContact"
+            >
+              <mat-option
+                *ngFor="let contact of filteredContacts | async"
+                [value]="contact"
+                (onSelectionChange)="onContactSelected(contact)"
+              >
+                <div class="contact-option">
+                  <div class="contact-avatar">
+                    <mat-icon>account_circle</mat-icon>
+                  </div>
+                  <div class="contact-info">
+                    <div class="contact-name">{{ contact.name }}</div>
+                    <div class="contact-details" *ngIf="contact.email">
+                      {{ contact.email }}
+                    </div>
+                  </div>
+                </div>
+              </mat-option>
+            </mat-autocomplete>
+            <mat-hint *ngIf="selectedContact" class="contact-hint">
+              <mat-icon>check_circle</mat-icon>
+              Выбран: {{ selectedContact.name }}
+            </mat-hint>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Статус</mat-label>
+            <mat-select formControlName="status">
+              <mat-option value="open">
+                <div class="status-option status-open">
+                  <mat-icon>radio_button_unchecked</mat-icon>
+                  <span>Открыта</span>
+                </div>
+              </mat-option>
+              <mat-option value="won">
+                <div class="status-option status-won">
+                  <mat-icon>check_circle</mat-icon>
+                  <span>Выиграна</span>
+                </div>
+              </mat-option>
+              <mat-option value="lost">
+                <div class="status-option status-lost">
+                  <mat-icon>cancel</mat-icon>
+                  <span>Проиграна</span>
+                </div>
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- Дополнительная информация -->
+      <div class="form-section">
+        <div class="section-header">
+          <mat-icon class="section-icon">assignment_ind</mat-icon>
+          <h3>Ответственность и заметки</h3>
+        </div>
+
+        <div class="form-grid">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Ответственный</mat-label>
+            <mat-select formControlName="assignedTo">
+              <mat-option value="">-- Выберите ответственного --</mat-option>
+              <mat-option *ngIf="availableUsers.length === 0" disabled>
+                <div class="loading-option">
+                  <mat-spinner diameter="20"></mat-spinner>
+                  <span>Загрузка пользователей...</span>
+                </div>
+              </mat-option>
+              <mat-option *ngFor="let user of availableUsers" [value]="user.id">
+                <div class="user-option">
+                  <div class="user-avatar">
+                    <mat-icon>account_circle</mat-icon>
+                  </div>
+                  <div class="user-info">
+                    <div class="user-name">{{ user.name }}</div>
+                    <div class="user-details">
+                      {{ user.role }} • {{ user.department }}
+                    </div>
+                    <div
+                      class="user-status"
+                      [class.user-available]="user.isAvailable"
+                      [class.user-busy]="!user.isAvailable"
+                    >
+                      {{ user.isAvailable ? 'Доступен' : 'Занят' }}
+                    </div>
+                  </div>
+                </div>
+              </mat-option>
+            </mat-select>
+            <mat-icon matSuffix>person_pin</mat-icon>
+            <mat-error *ngIf="dealForm.get('assignedTo')?.hasError('required')">
+              Ответственный обязателен
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Заметки</mat-label>
+            <textarea
+              matInput
+              formControlName="notes"
+              rows="4"
+              placeholder="Дополнительная информация о сделке, важные детали, комментарии..."
+            ></textarea>
+            <mat-icon matSuffix>note</mat-icon>
+          </mat-form-field>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div mat-dialog-actions class="dialog-actions">
+    <button mat-button mat-dialog-close class="cancel-button">
+      <mat-icon>close</mat-icon>
+      Отмена
+    </button>
+    <button
+      mat-raised-button
+      color="primary"
+      [disabled]="dealForm.invalid || isLoading"
+      (click)="onSubmit()"
+      class="submit-button"
+    >
+      <div class="button-content">
+        <mat-icon *ngIf="!isLoading">{{
+          isEditMode ? 'save' : 'add'
+        }}</mat-icon>
+        <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+        <span>{{
+          isLoading
+            ? 'Сохранение...'
+            : isEditMode
+            ? 'Сохранить изменения'
+            : 'Создать сделку'
+        }}</span>
+      </div>
+    </button>
+  </div>
+</div>

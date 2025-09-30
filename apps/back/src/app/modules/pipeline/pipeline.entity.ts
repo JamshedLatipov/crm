@@ -1,8 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
 export enum StageType {
   LEAD_QUALIFICATION = 'lead_qualification',
-  DEAL_PROGRESSION = 'deal_progression'
+  DEAL_PROGRESSION = 'deal_progression',
+  WON_STAGE = 'won_stage',
+  LOST_STAGE = 'lost_stage'
 }
 
 @Entity('pipeline_stages')

@@ -1,28 +1,677 @@
-.dialog-header { display:flex; justify-content:space-between; align-items:center; padding:20px 24px 0; margin-bottom:16px; }
-.dialog-header h2 { display:flex; align-items:center; gap:8px; margin:0; font-size:1.25rem; font-weight:500; }
-.close-button { margin-left:auto; }
-.dialog-content { padding:0 24px; max-height:70vh; overflow-y:auto; }
-.dialog-actions { padding:16px 24px 20px; justify-content:flex-end; gap:12px; }
-.lead-info { margin-bottom:24px; background:#f8f9fa; }
-.lead-summary { text-align:center; }
-.lead-name { font-size:1.125rem; font-weight:500; margin-bottom:8px; }
-.lead-details { color:rgba(0,0,0,0.6); margin-bottom:12px; }
-.assignee-chip { background-color:#e3f2fd; color:#1976d2; }
-.assign-form { display:flex; flex-direction:column; gap:16px; }
-.full-width { width:100%; }
-.managers-grid { display:grid; grid-template-columns:1fr; gap:12px; max-height:300px; overflow-y:auto; }
-.manager-card { display:flex; align-items:center; padding:16px; border:2px solid #e0e0e0; border-radius:8px; cursor:pointer; transition:all .2s; background:white; outline:none; }
-.manager-card:hover { border-color:#1976d2; background:#f5f5f5; }
-.manager-card.selected { border-color:#1976d2; background:#e3f2fd; }
-.manager-card.overloaded { border-color:#ff9800; background:#fff3e0; }
-.manager-avatar { width:48px; height:48px; border-radius:50%; background:#f0f0f0; display:flex; align-items:center; justify-content:center; margin-right:16px; flex-shrink:0; overflow:hidden; }
-.manager-info { flex:1; }
-.manager-name { font-weight:500; margin-bottom:4px; }
-.manager-role { font-size:0.875rem; color:#1976d2; margin-bottom:2px; }
-.manager-workload { font-size:0.75rem; color:rgba(0,0,0,0.6); }
-.warning-icon { color:#ff9800; }
-.available-icon { color:#4caf50; }
-.auto-card { background:#f8f9fa; }
-.priority-section { display:flex; flex-direction:column; gap:8px; padding:16px; background:#f8f9fa; border-radius:8px; }
-.assignment-preview { margin-top:16px; padding:16px; background:#e3f2fd; border-radius:8px; }
-.preview-content { font-size:0.875rem; color:rgba(0,0,0,0.8); }
+// Переменные для анимаций и цветов
+:root {
+  --dialog-border-radius: 16px;
+  --dialog-shadow: 0 24px 38px 3px rgba(0, 0, 0, 0.14), 0 9px 46px 8px rgba(0, 0, 0, 0.12), 0 11px 15px -7px rgba(0, 0, 0, 0.2);
+  --transition-standard: 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  --transition-enter: 0.225s cubic-bezier(0.0, 0.0, 0.2, 1);
+  --transition-exit: 0.195s cubic-bezier(0.4, 0.0, 1, 1);
+}
+
+.assign-dialog-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-radius: var(--dialog-border-radius);
+  overflow: hidden;
+  background: var(--mat-sys-surface);
+}
+
+// Заголовок диалога
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 32px 16px;
+  background: linear-gradient(135deg, var(--mat-sys-primary-container) 0%, var(--mat-sys-secondary-container) 100%);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+
+  h2 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: var(--mat-sys-on-primary-container);
+
+    .header-icon {
+      font-size: 28px;
+      width: 28px;
+      height: 28px;
+      color: var(--mat-sys-primary);
+    }
+  }
+
+  .close-button {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    color: var(--mat-sys-on-surface-variant);
+    transition: all var(--transition-standard);
+
+    &:hover {
+      background-color: rgba(var(--mat-sys-on-surface-variant), 0.08);
+      transform: scale(1.1);
+    }
+  }
+}
+
+// Содержимое диалога
+.dialog-content {
+  padding: 0 32px;
+  max-height: 70vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--mat-sys-outline-variant) transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--mat-sys-outline-variant);
+    border-radius: 3px;
+  }
+}
+
+// Информация о лиде
+.lead-info-section {
+  margin-bottom: 32px;
+  padding: 24px;
+  background: var(--mat-sys-surface-container-low);
+  border-radius: 16px;
+  border: 1px solid var(--mat-sys-outline-variant);
+
+  .lead-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 20px;
+
+    .lead-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: var(--mat-sys-primary-container);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+
+      mat-icon {
+        color: var(--mat-sys-on-primary-container);
+        font-size: 24px;
+      }
+    }
+
+    .lead-details {
+      flex: 1;
+
+      .lead-name {
+        font-size: 1.375rem;
+        font-weight: 600;
+        color: var(--mat-sys-on-surface);
+        margin: 0 0 8px 0;
+      }
+
+      .lead-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+
+        .company, .email {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          color: var(--mat-sys-on-surface-variant);
+          font-size: 0.875rem;
+
+          mat-icon {
+            font-size: 16px;
+            width: 16px;
+            height: 16px;
+          }
+        }
+      }
+    }
+  }
+
+  .current-assignment {
+    .assignment-label {
+      font-size: 0.875rem;
+      color: var(--mat-sys-on-surface-variant);
+      margin-bottom: 8px;
+    }
+
+    .current-assignee-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--mat-sys-primary-container);
+      border-radius: 12px;
+      border: 1px solid var(--mat-sys-primary);
+
+      .assignee-name {
+        flex: 1;
+        font-weight: 500;
+        color: var(--mat-sys-on-primary-container);
+      }
+
+      .reassign-icon {
+        color: var(--mat-sys-primary);
+        animation: pulse 2s infinite;
+      }
+    }
+  }
+
+  .no-assignment {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: var(--mat-sys-error-container);
+    border-radius: 12px;
+    color: var(--mat-sys-on-error-container);
+    font-size: 0.875rem;
+
+    .no-assignment-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+  }
+}
+
+// Форма назначения
+.assign-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+
+  .full-width {
+    width: 100%;
+  }
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 16px 0;
+    font-size: 1.125rem;
+    font-weight: 500;
+    color: var(--mat-sys-on-surface);
+
+    mat-icon {
+      color: var(--mat-sys-primary);
+    }
+  }
+}
+
+// Выбор менеджера
+.manager-selection {
+  margin-bottom: 24px;
+
+  .managers-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 4px;
+  }
+
+  .manager-card {
+    position: relative;
+    border: 2px solid var(--mat-sys-outline-variant);
+    border-radius: 16px;
+    background: var(--mat-sys-surface);
+    cursor: pointer;
+    transition: all var(--transition-standard);
+    overflow: hidden;
+
+    &:hover {
+      border-color: var(--mat-sys-primary);
+      background: var(--mat-sys-surface-container-low);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    &.selected {
+      border-color: var(--mat-sys-primary);
+      background: var(--mat-sys-primary-container);
+      box-shadow: 0 4px 20px rgba(var(--mat-sys-primary), 0.3);
+
+      .manager-card-content {
+        .manager-info .manager-name {
+          color: var(--mat-sys-on-primary-container);
+        }
+      }
+    }
+
+    &.overloaded {
+      border-color: var(--mat-sys-error);
+      background: var(--mat-sys-error-container);
+
+      .workload-progress.warning {
+        background: var(--mat-sys-error);
+      }
+    }
+
+    &.unavailable {
+      opacity: 0.6;
+      cursor: not-allowed;
+
+      &:hover {
+        transform: none;
+        box-shadow: none;
+      }
+    }
+
+    .manager-card-content {
+      display: flex;
+      align-items: center;
+      padding: 20px;
+      gap: 16px;
+      position: relative;
+
+      .manager-avatar-section {
+        position: relative;
+        flex-shrink: 0;
+
+        .status-indicator {
+          position: absolute;
+          bottom: -2px;
+          right: -2px;
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: var(--mat-sys-surface);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 2px solid var(--mat-sys-surface);
+
+          &.available mat-icon {
+            color: var(--mat-sys-tertiary);
+            font-size: 16px;
+          }
+
+          &.busy mat-icon {
+            color: var(--mat-sys-error);
+            font-size: 16px;
+          }
+        }
+      }
+
+      .manager-info {
+        flex: 1;
+
+        .manager-name {
+          font-size: 1.125rem;
+          font-weight: 600;
+          margin-bottom: 4px;
+          color: var(--mat-sys-on-surface);
+        }
+
+        .manager-role {
+          font-size: 0.875rem;
+          color: var(--mat-sys-primary);
+          font-weight: 500;
+          margin-bottom: 2px;
+        }
+
+        .manager-department {
+          font-size: 0.8125rem;
+          color: var(--mat-sys-on-surface-variant);
+          margin-bottom: 8px;
+        }
+
+        .workload-section {
+          .workload-text {
+            font-size: 0.8125rem;
+            color: var(--mat-sys-on-surface-variant);
+            margin-bottom: 6px;
+
+            &.high {
+              color: var(--mat-sys-error);
+              font-weight: 500;
+            }
+          }
+
+          .workload-bar {
+            height: 6px;
+            background: var(--mat-sys-surface-container-high);
+            border-radius: 3px;
+            overflow: hidden;
+
+            .workload-progress {
+              height: 100%;
+              background: var(--mat-sys-tertiary);
+              border-radius: 3px;
+              transition: width var(--transition-standard);
+
+              &.warning {
+                background: var(--mat-sys-error);
+              }
+            }
+          }
+        }
+      }
+
+      .selection-indicator {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        color: var(--mat-sys-primary);
+        animation: scaleIn var(--transition-enter);
+
+        mat-icon {
+          font-size: 24px;
+          filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+        }
+      }
+    }
+  }
+}
+
+// Выбор команды
+.team-selection {
+  .team-list {
+    border: 1px solid var(--mat-sys-outline-variant);
+    border-radius: 12px;
+    background: var(--mat-sys-surface);
+    max-height: 300px;
+    overflow-y: auto;
+
+    .team-member-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+
+      .member-info {
+        flex: 1;
+
+        .member-name {
+          font-weight: 500;
+          margin-bottom: 2px;
+        }
+
+        .member-role {
+          font-size: 0.875rem;
+          color: var(--mat-sys-primary);
+          margin-bottom: 2px;
+        }
+
+        .member-workload {
+          font-size: 0.8125rem;
+          color: var(--mat-sys-on-surface-variant);
+        }
+      }
+
+      .warning-icon {
+        color: var(--mat-sys-error);
+      }
+    }
+  }
+}
+
+// Автоматическое назначение
+.auto-assignment {
+  .auto-card {
+    padding: 24px;
+    background: linear-gradient(135deg, var(--mat-sys-tertiary-container) 0%, var(--mat-sys-secondary-container) 100%);
+    border-radius: 16px;
+    border: 1px solid var(--mat-sys-tertiary);
+
+    .auto-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+
+      .auto-icon {
+        font-size: 32px;
+        width: 32px;
+        height: 32px;
+        color: var(--mat-sys-tertiary);
+        animation: sparkle 2s infinite;
+      }
+
+      .auto-text {
+        h4 {
+          margin: 0 0 4px 0;
+          font-size: 1.125rem;
+          font-weight: 600;
+          color: var(--mat-sys-on-tertiary-container);
+        }
+
+        p {
+          margin: 0;
+          font-size: 0.875rem;
+          color: var(--mat-sys-on-tertiary-container);
+          opacity: 0.8;
+        }
+      }
+    }
+  }
+}
+
+// Дополнительные настройки
+.additional-settings {
+  .settings-section {
+    margin-top: 16px;
+
+    .settings-title {
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--mat-sys-on-surface);
+      margin: 0 0 16px 0;
+    }
+
+    .checkboxes-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+
+      .checkbox-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        transition: background-color var(--transition-standard);
+
+        &:hover {
+          background-color: var(--mat-sys-surface-container-low);
+        }
+
+        mat-icon {
+          font-size: 18px;
+          width: 18px;
+          height: 18px;
+          color: var(--mat-sys-on-surface-variant);
+        }
+      }
+    }
+  }
+}
+
+// Предварительный просмотр
+.assignment-preview {
+  margin-top: 24px;
+  padding: 20px;
+  background: var(--mat-sys-primary-container);
+  border-radius: 12px;
+  border: 1px solid var(--mat-sys-primary);
+
+  .preview-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+
+    mat-icon {
+      color: var(--mat-sys-primary);
+    }
+
+    h4 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--mat-sys-on-primary-container);
+    }
+  }
+
+  .preview-content {
+    font-size: 0.875rem;
+    color: var(--mat-sys-on-primary-container);
+    line-height: 1.5;
+  }
+}
+
+// Действия диалога
+.dialog-actions {
+  padding: 20px 32px 24px;
+  justify-content: flex-end;
+  gap: 16px;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+  background: var(--mat-sys-surface-container-low);
+
+  .cancel-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--mat-sys-on-surface-variant);
+    transition: all var(--transition-standard);
+
+    &:hover {
+      background-color: var(--mat-sys-surface-container);
+      color: var(--mat-sys-on-surface);
+    }
+  }
+
+  .assign-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 120px;
+    border-radius: 12px;
+    font-weight: 600;
+    transition: all var(--transition-standard);
+
+    &:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(var(--mat-sys-primary), 0.3);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+    }
+
+    .spinning {
+      animation: spin 1s linear infinite;
+    }
+  }
+}
+
+// Анимации
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes scaleIn {
+  0% { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes sparkle {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(-5deg) scale(1.1); }
+  75% { transform: rotate(5deg) scale(0.9); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+// Адаптивность
+@media (max-width: 768px) {
+  .dialog-header {
+    padding: 16px 20px 12px;
+
+    h2 {
+      font-size: 1.25rem;
+
+      .header-icon {
+        font-size: 24px;
+        width: 24px;
+        height: 24px;
+      }
+    }
+  }
+
+  .dialog-content {
+    padding: 0 20px;
+  }
+
+  .lead-info-section {
+    padding: 16px;
+
+    .lead-header {
+      .lead-details .lead-name {
+        font-size: 1.25rem;
+      }
+
+      .lead-meta {
+        flex-direction: column;
+        gap: 8px;
+      }
+    }
+  }
+
+  .manager-card .manager-card-content {
+    padding: 16px;
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+
+    .manager-info {
+      text-align: center;
+    }
+
+    .selection-indicator {
+      position: relative;
+      top: auto;
+      right: auto;
+    }
+  }
+
+  .dialog-actions {
+    padding: 16px 20px 20px;
+    flex-direction: column;
+
+    .cancel-button, .assign-button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}
+
+// Фокус и доступность
+.manager-card:focus {
+  outline: 2px solid var(--mat-sys-primary);
+  outline-offset: 2px;
+}
+
+.close-button:focus {
+  outline: 2px solid var(--mat-sys-primary);
+  outline-offset: 2px;
+}
