@@ -19,29 +19,29 @@ import {
 import { LeadActivity } from './entities/lead-activity.entity';
 
 // Helper function to parse array parameters
-function parseArrayParam(param: string | string[]): string[] | undefined {
+function parseArrayParam(param: string | string[] | undefined): string[] | undefined {
   if (!param) return undefined;
   if (Array.isArray(param)) return param;
   return param.split(',').map(s => s.trim()).filter(s => s.length > 0);
 }
 
 // Type-safe enum parsing functions
-function parseStatusArray(param: string | string[]): LeadStatus[] | undefined {
+function parseStatusArray(param: string | string[] | undefined): LeadStatus[] | undefined {
   const parsed = parseArrayParam(param);
   return parsed ? parsed.filter(s => Object.values(LeadStatus).includes(s as LeadStatus)) as LeadStatus[] : undefined;
 }
 
-function parseSourceArray(param: string | string[]): LeadSource[] | undefined {
+function parseSourceArray(param: string | string[] | undefined): LeadSource[] | undefined {
   const parsed = parseArrayParam(param);
   return parsed ? parsed.filter(s => Object.values(LeadSource).includes(s as LeadSource)) as LeadSource[] : undefined;
 }
 
-function parsePriorityArray(param: string | string[]): LeadPriority[] | undefined {
+function parsePriorityArray(param: string | string[] | undefined): LeadPriority[] | undefined {
   const parsed = parseArrayParam(param);
   return parsed ? parsed.filter(s => Object.values(LeadPriority).includes(s as LeadPriority)) as LeadPriority[] : undefined;
 }
 
-function parseChangeTypeArray(param: string | string[]): ChangeType[] | undefined {
+function parseChangeTypeArray(param: string | string[] | undefined): ChangeType[] | undefined {
   const parsed = parseArrayParam(param);
   return parsed ? parsed.filter(s => Object.values(ChangeType).includes(s as ChangeType)) as ChangeType[] : undefined;
 }

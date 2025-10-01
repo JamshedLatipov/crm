@@ -96,7 +96,7 @@ export interface CreateContactDto {
   customFields?: Record<string, unknown>;
 }
 
-export interface UpdateContactDto extends Partial<CreateContactDto> {}
+export type UpdateContactDto = Partial<CreateContactDto>;
 
 export interface ContactsStats {
   total: number;
@@ -117,4 +117,54 @@ export interface ContactFilters {
   search?: string;
   isActive?: boolean;
   isBlacklisted?: boolean;
+}
+
+export enum ActivityType {
+  CALL = 'call',
+  EMAIL = 'email',
+  MEETING = 'meeting',
+  NOTE = 'note',
+  TASK = 'task',
+  DEAL = 'deal',
+  SYSTEM = 'system'
+}
+
+export interface ContactActivity {
+  id: string;
+  contactId: string;
+  type: ActivityType;
+  title: string;
+  description?: string;
+  date: string;
+  userId?: string;
+  userName?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface Deal {
+  id: string;
+  title: string;
+  amount: number;
+  currency: string;
+  status: string;
+  stage?: string;
+  probability?: number;
+  createdAt: string;
+  updatedAt: string;
+  assignedTo?: string;
+  contactId?: string;
+  companyId?: string;
+}
+
+export interface CreateDealDto {
+  title: string;
+  amount: number;
+  currency?: string;
+  description?: string;
+  status?: string;
+  probability?: number;
+  expectedCloseDate?: string;
+  contactId?: string;
+  companyId?: string;
+  assignedTo?: string;
 }

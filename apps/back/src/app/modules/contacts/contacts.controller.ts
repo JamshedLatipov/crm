@@ -11,6 +11,7 @@ import {
 import { ContactsService } from './contacts.service';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
+import { CreateActivityDto } from './dto/create-activity.dto';
 import { ContactType, ContactSource } from './contact.entity';
 
 @Controller('contacts')
@@ -115,5 +116,16 @@ export class ContactsController {
   @Patch(':id/touch')
   async updateLastContactDate(@Param('id') id: string) {
     return this.contactsService.updateLastContactDate(id);
+  }
+
+  // Активность контактов
+  @Get(':id/activity')
+  async getContactActivity(@Param('id') id: string) {
+    return this.contactsService.getContactActivity(id);
+  }
+
+  @Post(':id/activity')
+  async addContactActivity(@Param('id') id: string, @Body() dto: CreateActivityDto) {
+    return this.contactsService.addContactActivity(id, dto);
   }
 }

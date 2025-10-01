@@ -32,6 +32,9 @@
     "@swc-node/register": "~1.9.1",
     "@swc/core": "~1.5.7",
     "@swc/helpers": "~0.5.11",
+    "@tailwindcss/aspect-ratio": "^0.4.2",
+    "@tailwindcss/forms": "^0.5.10",
+    "@tailwindcss/typography": "^0.5.19",
     "@types/jest": "^30.0.0",
     "@types/node": "~18.16.9",
     "@typescript-eslint/utils": "^8.29.0",
@@ -63,6 +66,7 @@
   "scripts": {
     "start:back": "nx serve back --host 0.0.0.0",
     "start:front": "nx serve front --host 0.0.0.0",
+    "build": "npm run build:back && npm run build:front",
     "build:back": "nx build back",
     "build:front": "nx build front",
     "test:back": "nx test back",

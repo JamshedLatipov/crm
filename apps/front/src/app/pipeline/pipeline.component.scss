@@ -1,5 +1,18 @@
 .pipeline-root {
+  position: absolute;
+  top: 0;
+  left: 280px; // Учитываем ширину sidebar'а
+  right: 0;
+  bottom: 0;
   padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; // Убираем скролл на уровне страницы
+}
+
+.pipeline-header {
+  flex-shrink: 0;
+  margin-bottom: 1.5rem;
 }
 
 .pipeline-container {
@@ -7,6 +20,9 @@
   overflow: hidden;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .pipeline-grid {
@@ -15,6 +31,8 @@
   overflow-x: auto;
   overflow-y: hidden;
   padding-bottom: 1rem;
+  height: 100%;
+  flex: 1;
   
   // Стили для скроллбара
   &::-webkit-scrollbar {
@@ -43,6 +61,9 @@
   width: 320px;
   min-width: 320px; // Фиксированная минимальная ширина
   flex-shrink: 0; // Предотвращает сжатие колонок
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   
   // Специальные стили для колонок "Выиграно"
   &.won-stage {
@@ -134,7 +155,6 @@
 .deal {
   background: white;
   padding: 0.75rem;
-  margin-bottom: 0.5rem;
   border-radius: 6px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
   cursor: move;
@@ -236,13 +256,90 @@
 }
 
 .deals {
-  min-height: 120px;
+  min-height: calc(100% - 80px); // Относительный размер вместо viewport
+  max-height: calc(100% - 80px); // Ограничиваем максимальную высоту
   transition: all 0.2s ease;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  position: relative;
+  overflow-y: auto; // Добавляем вертикальный скролл
+  overflow-x: hidden; // Скрываем горизонтальный скролл
+  
+  // Стили для скроллбара
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.05);
+    border-radius: 3px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.2);
+    border-radius: 3px;
+    
+    &:hover {
+      background: rgba(0,0,0,0.3);
+    }
+  }
+  
+  // Подсказка для пустых столбцов
+  &:empty::before {
+    content: 'Перетащите сделку сюда';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #999;
+    font-size: 0.9rem;
+    opacity: 0.6;
+    pointer-events: none;
+    text-align: center;
+    white-space: nowrap;
+  }
+  
+  // Улучшенное состояние при перетаскивании для пустых столбцов
+  &:empty.drag-over::before {
+    content: 'Отпустите чтобы переместить';
+    color: #4caf50;
+    font-weight: 600;
+    opacity: 1;
+  }
 }
 
 .deals.drag-over {
-  outline: 3px dashed rgba(76, 175, 80, 0.35);
-  background: rgba(76, 175, 80, 0.03);
+  outline: 3px dashed rgba(76, 175, 80, 0.5);
+  background: rgba(76, 175, 80, 0.05);
+  border-radius: 6px;
+  position: relative;
+  
+  // Добавляем анимированную границу
+  &::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, rgba(76, 175, 80, 0.3), rgba(76, 175, 80, 0.1));
+    border-radius: 8px;
+    z-index: -1;
+    animation: pulseDropZone 1.5s ease-in-out infinite;
+  }
+}
+
+@keyframes pulseDropZone {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.02);
+  }
 }
 
 .cdk-drag-placeholder {
@@ -261,12 +358,22 @@
     width: 280px;
     min-width: 280px;
   }
+  
+  .deals {
+    min-height: calc(100% - 120px);
+    max-height: calc(100% - 120px);
+  }
 }
 
 // Адаптивность для мобильных устройств
 @media (max-width: 768px) {
   .pipeline-root {
+    left: 0; // На мобильных sidebar скрыт, поэтому left: 0
     padding: 0.5rem;
+  }
+  
+  .pipeline-header {
+    margin-bottom: 1rem;
   }
   
   .stage {
@@ -276,6 +383,16 @@
   
   .pipeline-grid {
     gap: 0.75rem;
+  }
+  
+  .deals {
+    min-height: calc(100% - 100px); /* Используем относительные размеры */
+    max-height: calc(100% - 100px);
+    
+    // Более тонкий скроллбар для мобильных
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
   }
 }
 

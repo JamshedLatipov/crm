@@ -18,20 +18,17 @@
       }
     },
     "serve": {
-      "continuous": true,
-      "executor": "@nx/js:node",
-      "defaultConfiguration": "development",
+      "executor": "nx:run-commands",
       "dependsOn": ["build"],
       "options": {
-        "buildTarget": "back:build",
-        "runBuildTargetDependencies": false
+        "command": "node dist/apps/back/main.js"
       },
       "configurations": {
         "development": {
-          "buildTarget": "back:build:development"
+          "command": "node dist/apps/back/main.js"
         },
         "production": {
-          "buildTarget": "back:build:production"
+          "command": "node dist/apps/back/main.js"
         }
       }
     },

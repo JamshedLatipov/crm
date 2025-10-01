@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -26,6 +26,7 @@ interface ChangeStatusData {
 @Component({
   selector: 'app-change-status-dialog',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
     FormsModule,
@@ -43,15 +44,15 @@ interface ChangeStatusData {
   styleUrls: ['./change-status-dialog.component.scss'],
 })
 export class ChangeStatusDialogComponent {
+  readonly data = inject<ChangeStatusData>(MAT_DIALOG_DATA);
+  selectedStatus: LeadStatus | null = null;
+  notes = '';
+  loading = false;
+
   private readonly leadService = inject(LeadService);
   private readonly dialogRef = inject(
     MatDialogRef<ChangeStatusDialogComponent>
   );
-  readonly data = inject<ChangeStatusData>(MAT_DIALOG_DATA);
-
-  selectedStatus: LeadStatus | null = null;
-  notes = '';
-  loading = false;
 
   // Финальные статусы, которые нельзя изменить
   private finalStatuses = [LeadStatus.CONVERTED, LeadStatus.REJECTED, LeadStatus.LOST];

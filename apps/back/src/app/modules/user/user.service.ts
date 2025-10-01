@@ -1,13 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { User } from './user.entity';
-
-interface AutoAssignCriteria {
-  criteria: string[];
-  industry?: string;
-  territory?: string;
-}
+import { AutoAssignCriteriaDto, ManagerStatsResponseDto, CreateUserDto, UpdateUserDto } from './dto/user.dto';
 
 @Injectable()
 export class UserService {
@@ -16,10 +11,37 @@ export class UserService {
     private readonly userRepository: Repository<User>
   ) {}
 
+  async createUser(createUserDto: CreateUserDto): Promise<User> {
+    const user = this.userRepository.create(createUserDto);
+    return await this.userRepository.save(user);
+  }
+
+  async updateUser(id: number, updateUserDto: UpdateUserDto): Promise<User> {
+    const user = await this.findById(id);
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+    
+    Object.assign(user, updateUserDto);
+    return await this.userRepository.save(user);
+  }
+
   async getManagers(availableOnly = false): Promise<User[]> {
+    const managerRoles = ['sales_manager', 'senior_manager', 'team_lead', 'account_manager'];
+    
+    // Создаем условие для проверки каждой роли отдельно
+    const roleConditions = managerRoles
+      .map((role, index) => `user.roles LIKE :role${index}`)
+      .join(' OR ');
+    
+    const roleParams = managerRoles.reduce((acc, role, index) => {
+      acc[`role${index}`] = `%${role}%`;
+      return acc;
+    }, {} as Record<string, string>);
+
     const query = this.userRepository
       .createQueryBuilder('user')
-      .where("user.roles LIKE '%sales_manager%' OR user.roles LIKE '%senior_manager%' OR user.roles LIKE '%team_lead%' OR user.roles LIKE '%account_manager%'")
+      .where(`(${roleConditions})`, roleParams)
       .andWhere('user.isActive = :isActive', { isActive: true });
 
     if (availableOnly) {
@@ -38,30 +60,47 @@ export class UserService {
   }
 
   async findByIds(ids: number[]): Promise<User[]> {
+    if (ids.length === 0) return [];
     return await this.userRepository.find({ 
       where: { id: In(ids) } 
     });
   }
 
-  async getOptimalManagerForAssignment(criteria: AutoAssignCriteria): Promise<User | null> {
+  async findByUsername(username: string): Promise<User | null> {
+    return await this.userRepository.findOne({ where: { username } });
+  }
+
+  async getOptimalManagerForAssignment(criteria: AutoAssignCriteriaDto): Promise<User | null> {
+    const managerRoles = ['sales_manager', 'senior_manager', 'team_lead', 'account_manager'];
+    
+    // Создаем условие для проверки каждой роли отдельно
+    const roleConditions = managerRoles
+      .map((role, index) => `user.roles LIKE :role${index}`)
+      .join(' OR ');
+    
+    const roleParams = managerRoles.reduce((acc, role, index) => {
+      acc[`role${index}`] = `%${role}%`;
+      return acc;
+    }, {} as Record<string, string>);
+    
     const query = this.userRepository
       .createQueryBuilder('user')
-      .where("user.roles LIKE '%sales_manager%' OR user.roles LIKE '%senior_manager%' OR user.roles LIKE '%team_lead%' OR user.roles LIKE '%account_manager%'")
+      .where(`(${roleConditions})`, roleParams)
       .andWhere('user.isActive = :isActive', { isActive: true })
       .andWhere('user.isAvailableForAssignment = :isAvailable', { isAvailable: true })
       .andWhere('user.currentLeadsCount < user.maxLeadsCapacity');
 
     // Фильтрация по территории
     if (criteria.territory) {
-      query.andWhere("user.territories LIKE :territory", { 
-        territory: `%${criteria.territory}%` 
+      query.andWhere('user.territories::jsonb ? :territory', { 
+        territory: criteria.territory
       });
     }
 
     // Фильтрация по навыкам/отрасли
     if (criteria.industry) {
-      query.andWhere("user.skills LIKE :industry", { 
-        industry: `%${criteria.industry}%` 
+      query.andWhere('user.skills::jsonb ? :industry', { 
+        industry: criteria.industry
       });
     }
 
@@ -75,7 +114,6 @@ export class UserService {
     }
 
     if (criteria.criteria.includes('expertise')) {
-      // Приоритет опытным менеджерам
       query.addOrderBy('user.totalLeadsHandled', 'DESC');
     }
 
@@ -84,29 +122,22 @@ export class UserService {
   }
 
   async updateLeadCount(userId: number, increment: number): Promise<void> {
-    await this.userRepository
+    const result = await this.userRepository
       .createQueryBuilder()
       .update(User)
       .set({ 
-        currentLeadsCount: () => `currentLeadsCount + ${increment}`,
+        currentLeadsCount: () => `GREATEST(0, currentLeadsCount + ${increment})`,
         lastActiveAt: new Date()
       })
       .where('id = :id', { id: userId })
       .execute();
+
+    if (result.affected === 0) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
   }
 
-  async getManagersStatistics(): Promise<{
-    totalManagers: number;
-    availableManagers: number;
-    overloadedManagers: number;
-    averageWorkload: number;
-    topPerformers: Array<{
-      id: number;
-      name: string;
-      conversionRate: number;
-      totalLeads: number;
-    }>;
-  }> {
+  async getManagersStatistics(): Promise<ManagerStatsResponseDto> {
     const managers = await this.getManagers();
     
     const totalManagers = managers.length;
@@ -139,18 +170,24 @@ export class UserService {
   }
 
   async seedTestManagers(): Promise<void> {
-    // Создаем тестовых менеджеров если их нет
-    const existingCount = await this.userRepository.count({
-      where: [
-        { roles: In(['sales_manager']) },
-        { roles: In(['senior_manager']) },
-        { roles: In(['team_lead']) },
-        { roles: In(['account_manager']) }
-      ]
-    });
+    // Проверяем, есть ли уже менеджеры
+    const managerRoles = ['sales_manager', 'senior_manager', 'team_lead', 'account_manager'];
+    const roleConditions = managerRoles
+      .map((role, index) => `user.roles LIKE :role${index}`)
+      .join(' OR ');
+    
+    const roleParams = managerRoles.reduce((acc, role, index) => {
+      acc[`role${index}`] = `%${role}%`;
+      return acc;
+    }, {} as Record<string, string>);
+    
+    const existingManagersCount = await this.userRepository
+      .createQueryBuilder('user')
+      .where(`(${roleConditions})`, roleParams)
+      .getCount();
 
-    if (existingCount === 0) {
-      const testManagers = [
+    if (existingManagersCount === 0) {
+      const testManagers: CreateUserDto[] = [
         {
           username: 'a.petrov',
           password: 'password123',
@@ -159,11 +196,9 @@ export class UserService {
           lastName: 'Петров',
           email: 'a.petrov@company.com',
           department: 'Продажи',
-          currentLeadsCount: 3,
-          maxLeadsCapacity: 15,
-          conversionRate: 25.5,
           skills: ['IT', 'Enterprise'],
           territories: ['Москва', 'МО'],
+          maxLeadsCapacity: 15,
           isAvailableForAssignment: true
         },
         {
@@ -174,11 +209,9 @@ export class UserService {
           lastName: 'Иванова',
           email: 'm.ivanova@company.com',
           department: 'Продажи',
-          currentLeadsCount: 7,
-          maxLeadsCapacity: 20,
-          conversionRate: 32.1,
           skills: ['Healthcare', 'Finance'],
           territories: ['СПб', 'ЛО'],
+          maxLeadsCapacity: 20,
           isAvailableForAssignment: true
         },
         {
@@ -189,11 +222,9 @@ export class UserService {
           lastName: 'Сидоров',
           email: 'd.sidorov@company.com',
           department: 'Продажи',
-          currentLeadsCount: 12,
-          maxLeadsCapacity: 15,
-          conversionRate: 28.7,
           skills: ['Manufacturing', 'Logistics'],
           territories: ['Екатеринбург', 'УрФО'],
+          maxLeadsCapacity: 15,
           isAvailableForAssignment: true
         },
         {
@@ -204,11 +235,9 @@ export class UserService {
           lastName: 'Козлова',
           email: 'e.kozlova@company.com',
           department: 'Продажи',
-          currentLeadsCount: 5,
-          maxLeadsCapacity: 12,
-          conversionRate: 35.2,
           skills: ['Retail', 'E-commerce'],
           territories: ['Казань', 'ПФО'],
+          maxLeadsCapacity: 12,
           isAvailableForAssignment: true
         },
         {
@@ -219,16 +248,37 @@ export class UserService {
           lastName: 'Морозов',
           email: 'i.morozov@company.com',
           department: 'Продажи',
-          currentLeadsCount: 18,
-          maxLeadsCapacity: 15,
-          conversionRate: 42.8,
           skills: ['Enterprise', 'Government'],
           territories: ['Москва', 'Регионы'],
-          isAvailableForAssignment: false // Перегружен
+          maxLeadsCapacity: 15,
+          isAvailableForAssignment: false
         }
       ];
 
-      await this.userRepository.save(testManagers);
+      // Создаем пользователей и устанавливаем начальные значения
+      for (const managerDto of testManagers) {
+        const user = this.userRepository.create({
+          ...managerDto,
+          currentLeadsCount: Math.floor(Math.random() * (managerDto.maxLeadsCapacity || 15)),
+          conversionRate: 20 + Math.random() * 25, // 20-45%
+          totalLeadsHandled: Math.floor(Math.random() * 100),
+          totalRevenue: Math.floor(Math.random() * 1000000)
+        });
+        await this.userRepository.save(user);
+      }
     }
+  }
+
+  async deleteUser(id: number): Promise<void> {
+    const result = await this.userRepository.delete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return await this.userRepository.find({
+      order: { createdAt: 'DESC' }
+    });
   }
 }

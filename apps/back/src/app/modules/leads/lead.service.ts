@@ -315,7 +315,14 @@ export class LeadService {
     // Сохраняем старые значения для записи в историю
     const oldValues = { ...existingLead };
 
-    await this.leadRepo.update(id, data);
+    // Создаем safe update объект без вложенных relations
+    const updateData = { ...data };
+    delete (updateData as any).company;
+    delete (updateData as any).contact;
+    delete (updateData as any).assignedToUser;
+    delete (updateData as any).deals;
+
+    await this.leadRepo.update(id, updateData as any);
 
     // Записываем изменения в историю для каждого поля
     const changedFields = this.getChangedFields(existingLead, data);
@@ -907,9 +914,11 @@ export class LeadService {
     });
 
     // Возвращаем сделку с полными данными (включая связи)
-    return this.dealRepo.findOne({
+    const dealWithRelations = await this.dealRepo.findOne({
       where: { id: savedDeal.id },
       relations: ['lead', 'stage']
-    }) || savedDeal;
+    });
+    
+    return dealWithRelations || savedDeal;
   }
 }
