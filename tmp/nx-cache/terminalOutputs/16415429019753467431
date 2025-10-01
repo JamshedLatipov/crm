@@ -1,0 +1,26 @@
+
+[2m> [22m[2mnx run[22m back:build:development
+
+[2m> [22mwebpack-cli build --node-env=development
+
+chunk (runtime: main) [1m[32mmain.js[39m[22m (main) 633 KiB [1m[33m[entry][39m[22m [1m[32m[rendered][39m[22m
+webpack compiled [1m[32msuccessfully[39m[22m (135f7694737cf88c)
+
+
+
+[0m[7m[1m[32m NX [39m[22m[27m[0m  [32mSuccessfully ran target [1mbuild[22m for project back[39m
+
+
+C:\Users\Jamshed\Documents\work\crm_mono\node_modules\@nx\js\src\executors\node\node.impl.js:337
+    throw new Error(`Could not find ${fileToRun}. Make sure your build succeeded.`);
+          ^
+
+Error: Could not find C:\Users\Jamshed\Documents\work\crm_mono\dist\back\main.js. Make sure your build succeeded.
+    at fileToRunCorrectPath [90m(C:\Users\Jamshed\Documents\work\crm_mono\[39mnode_modules\[4m@nx[24m\js\src\executors\node\node.impl.js:337:11[90m)[39m
+    at [90mC:\Users\Jamshed\Documents\work\crm_mono\[39mnode_modules\[4m@nx[24m\js\src\executors\node\node.impl.js:116:49
+    at new Promise (<anonymous>)
+    at Object.start [90m(C:\Users\Jamshed\Documents\work\crm_mono\[39mnode_modules\[4m@nx[24m\js\src\executors\node\node.impl.js:110:36[90m)[39m
+[90m    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at async processQueue [90m(C:\Users\Jamshed\Documents\work\crm_mono\[39mnode_modules\[4m@nx[24m\js\src\executors\node\node.impl.js:81:13[90m)[39m
+
+Node.js v22.18.0

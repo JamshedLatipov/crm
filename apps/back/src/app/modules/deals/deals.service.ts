@@ -7,6 +7,8 @@ import { UpdateDealDto } from './dto/update-deal.dto';
 import { PipelineStage, StageType } from '../pipeline/pipeline.entity';
 import { DealHistoryService } from './services/deal-history.service';
 import { DealChangeType } from './entities/deal-history.entity';
+import { AssignmentService } from '../shared/services/assignment.service';
+import { UserService } from '../user/user.service';
 
 @Injectable()
 export class DealsService {
@@ -16,6 +18,8 @@ export class DealsService {
     @InjectRepository(PipelineStage)
     private readonly stageRepository: Repository<PipelineStage>,
     private readonly historyService: DealHistoryService,
+    private readonly assignmentService: AssignmentService,
+    private readonly userService: UserService,
   ) {}
 
   async listDeals(): Promise<Deal[]> {
@@ -320,7 +324,80 @@ export class DealsService {
   }
 
   async assignDeal(id: string, managerId: string, userId?: string, userName?: string): Promise<Deal> {
-    return this.updateDeal(id, { assignedTo: managerId }, userId, userName);
+    console.log('assignDeal called with:', { id, managerId, userId, userName });
+    const existingDeal = await this.getDealById(id);
+    const oldAssignedTo = existingDeal.assignedTo;
+    console.log('existing deal assignedTo:', oldAssignedTo, typeof oldAssignedTo);
+
+    // Если пользователь уже назначен, ничего не делаем
+    if (oldAssignedTo === managerId) {
+      return existingDeal;
+    }
+
+    // Получаем ID пользователя для назначения
+    let userIdNum: number;
+    const parsedUserId = Number(managerId);
+    if (!Number.isNaN(parsedUserId)) {
+      userIdNum = parsedUserId;
+    } else {
+      // Если managerId - это username, ищем пользователя
+      const userEntity = await this.userService.findByUsername(managerId);
+      if (!userEntity) {
+        throw new Error(`User not found: ${managerId}`);
+      }
+      userIdNum = userEntity.id;
+    }
+    console.log('userIdNum:', userIdNum);
+
+    // Снимаем предыдущее назначение через AssignmentService
+    if (oldAssignedTo) {
+      let oldUserId: number;
+      const parsedOldUserId = Number(oldAssignedTo);
+      if (!Number.isNaN(parsedOldUserId)) {
+        oldUserId = parsedOldUserId;
+      } else {
+        const oldUserEntity = await this.userService.findByUsername(oldAssignedTo);
+        if (oldUserEntity) {
+          oldUserId = oldUserEntity.id;
+        } else {
+          // Если старый пользователь не найден, пропускаем снятие назначения
+          console.warn(`Old assigned user not found: ${oldAssignedTo}`);
+        }
+      }
+
+      if (oldUserId) {
+        try {
+          await this.assignmentService.removeAssignment({
+            entityType: 'deal',
+            entityId: id,
+            userIds: [oldUserId],
+            reason: 'Reassigned to another user'
+          });
+        } catch (error) {
+          // Игнорируем ошибки снятия назначения, если записи нет
+          console.warn('Failed to remove old assignment:', error.message);
+        }
+      }
+    }
+
+    // Создаем новое назначение через AssignmentService
+    const assignmentResult = await this.assignmentService.createAssignment({
+      entityType: 'deal',
+      entityId: id,
+      assignedTo: [userIdNum],
+      assignedBy: userId ? parseInt(userId) : 0,
+      reason: 'Deal assigned to manager',
+      notifyAssignees: false // Отключаем уведомления, так как это внутреннее действие
+    });
+    console.log('assignment result:', assignmentResult);
+
+    // Обновляем поле assignedTo в сделке
+    const updateData = { assignedTo: managerId };
+    console.log('updating deal with:', updateData);
+    const updated = await this.updateDeal(id, updateData, userId, userName);
+    console.log('updated deal assignedTo:', updated.assignedTo, typeof updated.assignedTo);
+
+    return updated;
   }
 
   // Фильтрация и поиск
@@ -534,11 +611,13 @@ export class DealsService {
   }
 
   async getDealsByContact(contactId: string): Promise<Deal[]> {
-    return this.dealRepository.find({
+    const deals = await this.dealRepository.find({
       where: { contact: { id: contactId } },
       relations: ['stage', 'company', 'contact', 'lead'],
       order: { createdAt: 'DESC' },
     });
+    
+    return deals;
   }
 
   async getDealsByLead(leadId: number): Promise<Deal[]> {
@@ -584,5 +663,12 @@ export class DealsService {
    */
   async getMostActiveDeals(limit = 10, dateFrom?: Date, dateTo?: Date) {
     return this.historyService.getMostActiveDays(limit, dateFrom, dateTo);
+  }
+
+  /**
+   * Получить текущие назначения сделки
+   */
+  async getCurrentAssignments(dealId: string) {
+    return this.assignmentService.getCurrentAssignments('deal', dealId);
   }
 }

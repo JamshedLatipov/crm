@@ -2,9 +2,11 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Contact, ContactType, ContactSource } from './contact.entity';
+import { ContactActivity, ActivityType } from './contact-activity.entity';
 import { Company } from '../companies/entities/company.entity';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
+import { CreateActivityDto } from './dto/create-activity.dto';
 import { CompaniesService } from '../companies/services/companies.service';
 
 @Injectable()
@@ -12,6 +14,8 @@ export class ContactsService {
   constructor(
     @InjectRepository(Contact)
     private readonly contactRepository: Repository<Contact>,
+    @InjectRepository(ContactActivity)
+    private readonly activityRepository: Repository<ContactActivity>,
     private readonly companiesService?: CompaniesService,
   ) {}
 
@@ -266,5 +270,31 @@ export class ContactsService {
 
     // Возвращаем только группы с дубликатами
     return Object.values(emailGroups).filter(group => group.length > 1);
+  }
+
+  // === Активность контактов ===
+  async getContactActivity(contactId: string): Promise<ContactActivity[]> {
+    return this.activityRepository.find({
+      where: { contactId },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async addContactActivity(contactId: string, dto: CreateActivityDto): Promise<ContactActivity> {
+    // Проверяем существование контакта
+    const contact = await this.getContactById(contactId);
+    if (!contact) {
+      throw new NotFoundException(`Contact with ID ${contactId} not found`);
+    }
+
+    const activity = this.activityRepository.create({
+      contactId,
+      type: dto.type,
+      title: dto.title,
+      description: dto.description,
+      metadata: dto.metadata,
+    });
+
+    return this.activityRepository.save(activity);
   }
 }

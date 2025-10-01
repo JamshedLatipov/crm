@@ -1,8 +1,8 @@
-import { Controller, Get, Post, Body, Param, Patch, Delete, Query, BadRequestException, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Delete, Query, BadRequestException, Req, UseGuards } from '@nestjs/common';
 import { LeadService } from './lead.service';
 import { Lead, LeadStatus, LeadSource, LeadPriority } from './lead.entity';
 import { ChangeType } from './entities/lead-history.entity';
-import { ApiTags, ApiBody, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiBody, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { 
   CreateLeadDto, 
   UpdateLeadDto, 
@@ -17,36 +17,40 @@ import {
   LeadFiltersDto
 } from './lead.dto';
 import { LeadActivity } from './entities/lead-activity.entity';
+import { JwtAuthGuard } from '../user/jwt-auth.guard';
+import { CurrentUser, CurrentUserPayload } from '../user/current-user.decorator';
 
 // Helper function to parse array parameters
-function parseArrayParam(param: string | string[]): string[] | undefined {
+function parseArrayParam(param: string | string[] | undefined): string[] | undefined {
   if (!param) return undefined;
   if (Array.isArray(param)) return param;
   return param.split(',').map(s => s.trim()).filter(s => s.length > 0);
 }
 
 // Type-safe enum parsing functions
-function parseStatusArray(param: string | string[]): LeadStatus[] | undefined {
+function parseStatusArray(param: string | string[] | undefined): LeadStatus[] | undefined {
   const parsed = parseArrayParam(param);
   return parsed ? parsed.filter(s => Object.values(LeadStatus).includes(s as LeadStatus)) as LeadStatus[] : undefined;
 }
 
-function parseSourceArray(param: string | string[]): LeadSource[] | undefined {
+function parseSourceArray(param: string | string[] | undefined): LeadSource[] | undefined {
   const parsed = parseArrayParam(param);
   return parsed ? parsed.filter(s => Object.values(LeadSource).includes(s as LeadSource)) as LeadSource[] : undefined;
 }
 
-function parsePriorityArray(param: string | string[]): LeadPriority[] | undefined {
+function parsePriorityArray(param: string | string[] | undefined): LeadPriority[] | undefined {
   const parsed = parseArrayParam(param);
   return parsed ? parsed.filter(s => Object.values(LeadPriority).includes(s as LeadPriority)) as LeadPriority[] : undefined;
 }
 
-function parseChangeTypeArray(param: string | string[]): ChangeType[] | undefined {
+function parseChangeTypeArray(param: string | string[] | undefined): ChangeType[] | undefined {
   const parsed = parseArrayParam(param);
   return parsed ? parsed.filter(s => Object.values(ChangeType).includes(s as ChangeType)) as ChangeType[] : undefined;
 }
 
 @ApiTags('leads')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('leads')
 export class LeadController {
   constructor(private readonly leadService: LeadService) {}
@@ -148,6 +152,11 @@ export class LeadController {
     return this.leadService.getActivities(id);
   }
 
+  @Get(':id/assignments')
+  async getCurrentAssignments(@Param('id') id: number): Promise<any[]> {
+    return this.leadService.getCurrentAssignments(id);
+  }
+
   @Patch(':id')
   @ApiBody({ type: UpdateLeadDto })
   async update(@Param('id') id: number, @Body() data: UpdateLeadDto): Promise<Lead> {
@@ -156,12 +165,12 @@ export class LeadController {
 
   @Patch(':id/assign')
   @ApiBody({ type: AssignLeadDto })
-  async assignLead(@Param('id') id: number, @Body() body: AssignLeadDto): Promise<Lead> {
+  async assignLead(@Param('id') id: number, @Body() body: AssignLeadDto, @CurrentUser() user: CurrentUserPayload): Promise<Lead> {
     const userOrManager = body.managerId ?? body.user;
     if (!userOrManager) {
       throw new BadRequestException('Missing user or managerId in request body');
     }
-    return this.leadService.assignLead(id, userOrManager);
+    return this.leadService.assignLead(id, userOrManager, parseInt(user.sub), user.username);
   }
 
   @Post(':id/auto-assign')

@@ -78,6 +78,11 @@ export class DealsController {
     return this.dealsService.getDealById(id);
   }
 
+   @Get(':id/assignments')
+  async getCurrentAssignments(@Param('id') id: string) {
+    return this.dealsService.getCurrentAssignments(id);
+  }
+
   @Post()
   async createDeal(
     @Body() dto: CreateDealDto,
@@ -137,10 +142,10 @@ export class DealsController {
   @Patch(':id/assign')
   async assignDeal(
     @Param('id') id: string,
-    @Body('assignedTo') managerId: string,
+    @Body() body: { assignedTo: string },
     @CurrentUser() user: CurrentUserPayload
   ) {
-    return this.dealsService.assignDeal(id, managerId, user.sub, user.username);
+    return this.dealsService.assignDeal(id, body.assignedTo, user.sub, user.username);
   }
 
   // Связи с компаниями, контактами и лидами
@@ -166,7 +171,8 @@ export class DealsController {
 
   @Get('by-contact/:contactId')
   async getDealsByContact(@Param('contactId') contactId: string) {
-    return this.dealsService.getDealsByContact(contactId);
+    const result = await this.dealsService.getDealsByContact(contactId);
+    return result;
   }
 
   @Get('by-lead/:leadId')

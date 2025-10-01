@@ -14,6 +14,7 @@ import { ContactSource } from '../contacts/contact.entity';
 import { DataSource } from 'typeorm';
 import { CreateContactDto } from '../contacts/dto/create-contact.dto';
 import { CompaniesService } from '../companies/services/companies.service';
+import { AssignmentService } from '../shared/services/assignment.service';
 
 @Injectable()
 export class PipelineService {
@@ -30,6 +31,7 @@ export class PipelineService {
     private contactsService: ContactsService,
     private leadService: LeadService,
     private companiesService: CompaniesService,
+    private assignmentService: AssignmentService,
   ) {}
 
   // Stages
@@ -146,6 +148,9 @@ export class PipelineService {
 
     console.log('Main lead data:', mainLead);
 
+    // Получаем текущие назначения лида
+    const currentAssignments = await this.assignmentService.getCurrentAssignments('lead', mainLead.id.toString());
+    const assignedTo = currentAssignments.length > 0 ? currentAssignments[0].userId.toString() : undefined;
 
     // If mainLead has a full name, try to split to first/last
     let mainFirst: string | undefined;
@@ -186,7 +191,7 @@ export class PipelineService {
           ? (asStr as ContactSource)
           : undefined;
       })(),
-      assignedTo: mainLead.assignedTo || undefined,
+      assignedTo: assignedTo,
       tags: mainLead.tags || undefined,
       notes: `Created from lead ${mainLead?.id}`,
       isActive: true,

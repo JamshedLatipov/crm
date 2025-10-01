@@ -38,15 +38,15 @@ export class Deal {
 
   // Связи с другими сущностями
   @ManyToOne(() => Contact, { nullable: true })
-  @JoinColumn()
+  @JoinColumn({ name: 'contactId' })
   contact?: Contact;
 
   @ManyToOne(() => Company, company => company.deals, { nullable: true })
-  @JoinColumn()
+  @JoinColumn({ name: 'companyId' })
   company?: Company;
 
   @ManyToOne(() => Lead, { nullable: true })
-  @JoinColumn()
+  @JoinColumn({ name: 'leadId' })
   lead?: Lead;
 
   @Column('decimal', { precision: 15, scale: 2 })
@@ -78,7 +78,7 @@ export class Deal {
   })
   status: DealStatus;
 
-  @Column()
+  @Column({ type: 'varchar' })
   assignedTo: string; // ID менеджера
 
   @Column('text', { nullable: true })

@@ -4,6 +4,7 @@ import { RouterModule, Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { NotificationBellComponent } from '../components/notification-bell/notification-bell.component';
 
 interface MenuItem {
   icon: string;
@@ -21,6 +22,7 @@ interface MenuItem {
     MatIconModule,
     MatButtonModule,
     MatTooltipModule,
+    NotificationBellComponent,
   ],
   template: `
     <aside class="sidebar">
@@ -29,6 +31,9 @@ interface MenuItem {
         <div class="logo">
           <mat-icon class="logo-icon">business</mat-icon>
           <span class="logo-text">CRM</span>
+        </div>
+        <div class="header-actions">
+          <app-notification-bell></app-notification-bell>
         </div>
       </div>
 
@@ -94,12 +99,21 @@ interface MenuItem {
       .sidebar-header {
         padding: 24px 20px;
         border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
       }
 
       .logo {
         display: flex;
         align-items: center;
         gap: 12px;
+      }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
       }
 
       .logo-icon {
@@ -280,6 +294,7 @@ export class SidebarComponent {
     { icon: 'account_tree', label: 'Pipeline', route: '/pipeline' },
     { icon: 'handshake', label: 'Deals', route: '/deals' },
     { icon: 'phone', label: 'Calls', route: '/calls' },
+    { icon: 'group', label: 'Users', route: '/users' },
     { icon: 'assessment', label: 'Reports', route: '/reports' },
     { icon: 'help_outline', label: 'Help', route: '/help' },
   ];

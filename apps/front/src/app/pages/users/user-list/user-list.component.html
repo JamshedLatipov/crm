@@ -1,0 +1,361 @@
+<div class="user-list-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="title-section">
+        <h1>Управление пользователями</h1>
+        <p class="subtitle">
+          Всего: {{ userService.totalUsers() }} | Активных:
+          {{ userService.activeUsers() }} | Доступных:
+          {{ userService.availableUsers() }}
+        </p>
+      </div>
+      <div class="header-actions">
+        <button
+          mat-raised-button
+          color="primary"
+          (click)="createUser()"
+          [disabled]="userService.isLoading()"
+        >
+          <mat-icon>add</mat-icon>
+          Добавить пользователя
+        </button>
+        @if (selectedUsers().length > 0) {
+        <button mat-stroked-button [matMenuTriggerFor]="actionsMenu">
+          <mat-icon>more_vert</mat-icon>
+          Действия ({{ selectedUsers().length }})
+        </button>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-section">
+    <div class="filters-grid">
+      <!-- Search -->
+      <mat-form-field appearance="outline">
+        <mat-label>Поиск</mat-label>
+        <input
+          matInput
+          [formControl]="searchControl"
+          placeholder="Имя, email, департамент..."
+        />
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+
+      <!-- Status filter -->
+      <mat-form-field appearance="outline">
+        <mat-label>Статус</mat-label>
+        <mat-select [formControl]="statusControl">
+          <mat-option value="">Все</mat-option>
+          <mat-option value="active">Активные</mat-option>
+          <mat-option value="inactive">Неактивные</mat-option>
+          <mat-option value="available">Доступные</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <!-- Clear filters -->
+      @if (hasActiveFilters()) {
+      <button mat-stroked-button (click)="clearFilters()">
+        <mat-icon>clear</mat-icon>
+        Сбросить фильтры
+      </button>
+      }
+    </div>
+    <div class="results-info">
+      Показано: {{ paginatedUsers().length }} из {{ filteredUsers().length }}
+    </div>
+  </div>
+
+  <!-- Loading spinner -->
+  @if (userService.isLoading()) {
+  <div class="loading-container">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+  }
+
+  <!-- Error message -->
+  @if (userService.error()) {
+  <div class="error-container">
+    <mat-icon>error</mat-icon>
+    {{ userService.error() }}
+    <button mat-button (click)="userService.clearError()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+  }
+
+  <!-- Users table -->
+  @if (!userService.isLoading() && paginatedUsers().length > 0) {
+  <div class="modern-table-container">
+    <!-- Table Header -->
+    <div class="header-content">
+      <div class="header-actions">
+        @if (selectedUsers().length > 0) {
+        <div class="selected-info">
+          <span>Выбрано: {{ selectedUsers().length }}</span>
+          <button
+            mat-button
+            [matMenuTriggerFor]="bulkMenu"
+            class="bulk-actions-btn"
+          >
+            <mat-icon>more_vert</mat-icon>
+            Действия
+          </button>
+        </div>
+        }
+      </div>
+    </div>
+
+    <!-- Modern Table -->
+    <div class="table-wrapper">
+      <table class="modern-table">
+        <thead>
+          <tr>
+            <th class="select-column">
+              <mat-checkbox
+                (change)="$event ? toggleAllSelection() : null"
+                [checked]="isAllSelected()"
+                [indeterminate]="isPartiallySelected()"
+              >
+              </mat-checkbox>
+            </th>
+            <th class="user-column">Пользователь</th>
+            <th class="department-column">Департамент</th>
+            <th class="roles-column">Роли</th>
+            <th class="skills-column">Навыки</th>
+            <th class="workload-column">Нагрузка</th>
+            <th class="status-column">Статус</th>
+            <th class="actions-column">Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (user of paginatedUsers(); track user.id) {
+          <tr class="table-row" [class.selected]="isUserSelected(user)">
+            <td class="select-cell">
+              <mat-checkbox
+                (click)="$event.stopPropagation()"
+                (change)="$event ? toggleUserSelection(user) : null"
+                [checked]="isUserSelected(user)"
+              >
+              </mat-checkbox>
+            </td>
+
+            <td class="user-cell" (click)="viewUser(user)">
+              <div class="user-info">
+                <div class="user-avatar">
+                  <img
+                    [src]="user.avatar || getDefaultAvatar(user)"
+                    [alt]="user.firstName + ' ' + user.lastName"
+                  />
+                </div>
+                <div class="user-details">
+                  <div class="user-name">
+                    {{ user.firstName }} {{ user.lastName }}
+                  </div>
+                  <div class="user-email">{{ user.email }}</div>
+                  <div class="user-username">@{{ user.username }}</div>
+                </div>
+              </div>
+            </td>
+
+            <td class="department-cell">
+              <div class="department-chip">
+                <mat-icon>business</mat-icon>
+                <span>{{ user.department || 'Не указан' }}</span>
+              </div>
+            </td>
+
+            <td class="roles-cell">
+              <div class="roles-container">
+                @for (role of user.roles.slice(0, 2); track role) {
+                <span class="role-chip" [attr.data-role]="role">
+                  {{ getRoleDisplayName(role) }}
+                </span>
+                } @if (user.roles.length > 2) {
+                <span
+                  class="more-roles"
+                  [matTooltip]="getRolesTooltip(user.roles)"
+                >
+                  +{{ user.roles.length - 2 }}
+                </span>
+                }
+              </div>
+            </td>
+
+            <td class="skills-cell">
+              <div class="skills-container">
+                @if (user.skills && user.skills.length > 0) { @for (skill of
+                user.skills.slice(0, 2); track skill) {
+                <span class="skill-chip">{{ skill }}</span>
+                } @if (user.skills.length > 2) {
+                <span
+                  class="more-skills"
+                  [matTooltip]="getSkillsTooltip(user.skills)"
+                >
+                  +{{ user.skills.length - 2 }}
+                </span>
+                } } @else {
+                <span class="no-skills">Нет навыков</span>
+                }
+              </div>
+            </td>
+
+            <td class="workload-cell">
+              <div class="workload-info">
+                <div class="workload-bar">
+                  <div
+                    class="workload-progress"
+                    [style.width.%]="
+                      (user.currentLeadsCount / user.maxLeadsCapacity) * 100
+                    "
+                  ></div>
+                </div>
+                <div class="workload-text">
+                  {{ user.currentLeadsCount }} / {{ user.maxLeadsCapacity }}
+                </div>
+              </div>
+            </td>
+
+            <td class="status-cell">
+              <div class="status-container">
+                <div
+                  class="status-indicator"
+                  [class.active]="user.isActive"
+                  [class.inactive]="!user.isActive"
+                >
+                  <mat-icon>{{
+                    user.isActive ? 'check_circle' : 'cancel'
+                  }}</mat-icon>
+                  <span>{{ user.isActive ? 'Активен' : 'Неактивен' }}</span>
+                </div>
+                @if (user.isActive && user.isAvailableForAssignment) {
+                <div class="availability-badge">
+                  <mat-icon>access_time</mat-icon>
+                  <span>Доступен</span>
+                </div>
+                }
+              </div>
+            </td>
+
+            <td class="actions-cell">
+              <div class="actions-menu">
+                <button
+                  mat-icon-button
+                  [matMenuTriggerFor]="userMenu"
+                  class="actions-trigger"
+                >
+                  <mat-icon>more_vert</mat-icon>
+                </button>
+                <mat-menu #userMenu="matMenu">
+                  <button mat-menu-item (click)="viewUser(user)">
+                    <mat-icon>visibility</mat-icon>
+                    <span>Просмотр</span>
+                  </button>
+                  <button mat-menu-item (click)="editUser(user)">
+                    <mat-icon>edit</mat-icon>
+                    <span>Редактировать</span>
+                  </button>
+                  <button mat-menu-item (click)="toggleUserStatus(user)">
+                    <mat-icon>{{
+                      user.isActive ? 'block' : 'check_circle'
+                    }}</mat-icon>
+                    <span>{{
+                      user.isActive ? 'Деактивировать' : 'Активировать'
+                    }}</span>
+                  </button>
+                  <button mat-menu-item (click)="resetPassword(user)">
+                    <mat-icon>lock_reset</mat-icon>
+                    <span>Сбросить пароль</span>
+                  </button>
+                  <mat-divider></mat-divider>
+                  <button
+                    mat-menu-item
+                    (click)="deleteUser(user)"
+                    class="delete-action"
+                  >
+                    <mat-icon>delete</mat-icon>
+                    <span>Удалить</span>
+                  </button>
+                </mat-menu>
+              </div>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="table-footer">
+      <div class="footer-info">
+        Показано {{ paginatedUsers().length }} из
+        {{ filteredUsers().length }} пользователей
+      </div>
+      <mat-paginator
+        [length]="filteredUsers().length"
+        [pageSize]="pageSize()"
+        [pageIndex]="currentPage()"
+        [pageSizeOptions]="[10, 25, 50, 100]"
+        (page)="onPageChange($event)"
+        showFirstLastButtons
+      >
+      </mat-paginator>
+    </div>
+  </div>
+
+  <!-- Bulk Actions Menu -->
+  <mat-menu #bulkMenu="matMenu">
+    <button mat-menu-item (click)="bulkActivate()">
+      <mat-icon>check_circle</mat-icon>
+      <span>Активировать выбранных</span>
+    </button>
+    <button mat-menu-item (click)="bulkDeactivate()">
+      <mat-icon>block</mat-icon>
+      <span>Деактивировать выбранных</span>
+    </button>
+    <mat-divider></mat-divider>
+    <button mat-menu-item (click)="bulkDelete()" class="delete-action">
+      <mat-icon>delete</mat-icon>
+      <span>Удалить выбранных</span>
+    </button>
+  </mat-menu>
+  }
+
+  <!-- Empty state -->
+  @if (!userService.isLoading() && paginatedUsers().length === 0) {
+  <div class="empty-state">
+    <div class="empty-content">
+      <mat-icon>group_off</mat-icon>
+      <h3>Пользователи не найдены</h3>
+      <p>
+        @if (hasActiveFilters()) { Попробуйте изменить параметры поиска или
+        фильтры. } @else { Начните с добавления первого пользователя в систему.
+        }
+      </p>
+      <button mat-raised-button color="primary" (click)="createUser()">
+        <mat-icon>add</mat-icon>
+        Добавить пользователя
+      </button>
+    </div>
+  </div>
+  }
+
+  <!-- Bulk actions menu -->
+  <mat-menu #actionsMenu="matMenu">
+    <button mat-menu-item (click)="bulkActivate()">
+      <mat-icon>check_circle</mat-icon>
+      <span>Активировать выбранных</span>
+    </button>
+    <button mat-menu-item (click)="bulkDeactivate()">
+      <mat-icon>block</mat-icon>
+      <span>Деактивировать выбранных</span>
+    </button>
+    <mat-divider></mat-divider>
+    <button mat-menu-item (click)="bulkDelete()" class="delete-action">
+      <mat-icon>delete</mat-icon>
+      <span>Удалить выбранных</span>
+    </button>
+  </mat-menu>
+</div>

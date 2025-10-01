@@ -319,7 +319,16 @@
                   <div class="timeline-content">
                     <span class="label">Ответственный</span>
                     <div class="value">
-                      {{ assignedUserName || deal.assignedTo || 'Не назначен' }}
+                      <div class="assignee-info">
+                        <span>{{ assignedUserName || deal.assignedTo || 'Не назначен' }}</span>
+                        <button 
+                          mat-icon-button 
+                          (click)="changeAssignee()"
+                          class="change-assignee-btn"
+                          matTooltip="Изменить ответственного">
+                          <mat-icon>edit</mat-icon>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>

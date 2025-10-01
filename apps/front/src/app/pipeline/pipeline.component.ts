@@ -165,6 +165,8 @@ export class PipelineComponent implements OnInit, OnDestroy {
     this.activeDropListId = 'stage-' + stageId;
     // Auto-scroll to the entered stage
     this.scrollToStage(stageId);
+    // Auto-scroll within the stage column if needed
+    this.scrollWithinStage(stageId);
   }
 
   onDropListExited(event: unknown, stageId: string) {
@@ -252,6 +254,21 @@ export class PipelineComponent implements OnInit, OnDestroy {
         behavior: 'smooth'
       });
     }
+  }
+
+  private scrollWithinStage(stageId: string) {
+    const stageElement = document.getElementById('stage-' + stageId);
+    if (!stageElement) return;
+    
+    const dealsContainer = stageElement.querySelector('.deals') as HTMLElement;
+    if (!dealsContainer) return;
+    
+    // Прокручиваем к середине контейнера для лучшего UX при drop
+    const scrollTarget = Math.max(0, (dealsContainer.scrollHeight - dealsContainer.clientHeight) / 2);
+    dealsContainer.scrollTo({
+      top: scrollTarget,
+      behavior: 'smooth'
+    });
   }
 
   private startAutoScroll() {

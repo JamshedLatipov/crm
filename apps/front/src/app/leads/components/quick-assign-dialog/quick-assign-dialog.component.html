@@ -17,28 +17,36 @@
       </div>
       <div class="lead-details">
         <h3 class="lead-name">{{ data.lead.name }}</h3>
-        <div class="lead-meta" *ngIf="data.lead.company || data.lead.email">
-          <span *ngIf="data.lead.company" class="company">
-            <mat-icon>domain</mat-icon>
-            {{ data.lead.company }}
-          </span>
-          <span *ngIf="data.lead.email" class="email">
-            <mat-icon>email</mat-icon>
-            {{ data.lead.email }}
-          </span>
+        <div class="lead-meta">
+          @if (data.lead.company || data.lead.email) {
+            @if (data.lead.company) {
+              <span class="company">
+                <mat-icon>domain</mat-icon>
+                {{ data.lead.company }}
+              </span>
+            }
+            @if (data.lead.email) {
+              <span class="email">
+                <mat-icon>email</mat-icon>
+                {{ data.lead.email }}
+              </span>
+            }
+          }
         </div>
       </div>
     </div>
 
     <!-- Текущий ответственный -->
-    <div class="current-assignee-section" *ngIf="data.lead.assignedTo">
-      <div class="section-label">Текущий ответственный:</div>
-      <div class="current-assignee-card">
-        <app-user-avatar [fullName]="data.lead.assignedTo" size="small"></app-user-avatar>
-        <span class="assignee-name">{{ data.lead.assignedTo }}</span>
-        <mat-icon class="change-icon">swap_horiz</mat-icon>
+    @if (data.lead.assignedTo) {
+      <div class="current-assignee-section">
+        <div class="section-label">Текущий ответственный:</div>
+        <div class="current-assignee-card">
+          <app-user-avatar [fullName]="data.lead.assignedTo" size="small"></app-user-avatar>
+          <span class="assignee-name">{{ data.lead.assignedTo }}</span>
+          <mat-icon class="change-icon">swap_horiz</mat-icon>
+        </div>
       </div>
-    </div>
+    }
 
     <!-- Выбор менеджера -->
     <div class="manager-selection-section">

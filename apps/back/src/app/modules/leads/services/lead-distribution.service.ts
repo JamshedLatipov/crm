@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Lead } from '../lead.entity';
 import { LeadDistributionRule, DistributionMethod } from '../entities/lead-distribution-rule.entity';
 import { LeadActivity, ActivityType } from '../entities/lead-activity.entity';
+import { AssignmentService } from '../../shared/services/assignment.service';
 
 export interface DistributionContext {
   lead: Lead;
@@ -22,7 +23,8 @@ export class LeadDistributionService {
     @InjectRepository(LeadDistributionRule)
     private readonly distributionRuleRepo: Repository<LeadDistributionRule>,
     @InjectRepository(LeadActivity)
-    private readonly activityRepo: Repository<LeadActivity>
+    private readonly activityRepo: Repository<LeadActivity>,
+    private readonly assignmentService: AssignmentService
   ) {}
 
   async distributeLeadAutomatically(leadId: number, context?: Partial<DistributionContext>): Promise<string | null> {
@@ -48,8 +50,15 @@ export class LeadDistributionService {
         const assignedManager = await this.applyDistributionRule(rule, distributionContext);
         
         if (assignedManager) {
-          // Обновляем лида
-          await this.leadRepo.update(leadId, { assignedTo: assignedManager });
+          // Создаем назначение через AssignmentService
+          await this.assignmentService.createAssignment({
+            entityType: 'lead',
+            entityId: leadId.toString(),
+            assignedTo: [Number(assignedManager)],
+            assignedBy: 1, // system user
+            reason: `Auto-assigned by rule: ${rule.name}`,
+            notifyAssignees: false
+          });
           
           // Записываем активность
           await this.activityRepo.save({
@@ -260,20 +269,11 @@ export class LeadDistributionService {
   private async getManagerLoads(): Promise<Record<string, number>> {
     const loads: Record<string, number> = {};
     
-    // Подсчитываем активные лиды для каждого менеджера
-    const activeLeads = await this.leadRepo
-      .createQueryBuilder('lead')
-      .select('lead.assignedTo')
-      .addSelect('COUNT(*)', 'count')
-      .where('lead.assignedTo IS NOT NULL')
-      .andWhere('lead.status NOT IN (:...closedStatuses)', { 
-        closedStatuses: ['converted', 'rejected', 'lost'] 
-      })
-      .groupBy('lead.assignedTo')
-      .getRawMany();
-
-    for (const result of activeLeads) {
-      loads[result.lead_assignedTo] = parseInt(result.count);
+    // Получаем статистику назначений через AssignmentService
+    const assignmentStats = await this.assignmentService.getAssignmentStatistics('30d', 'user');
+    
+    for (const stat of assignmentStats) {
+      loads[stat.userId] = stat.activeAssignments;
     }
 
     return loads;
@@ -285,8 +285,29 @@ export class LeadDistributionService {
       return false;
     }
 
-    const oldManager = lead.assignedTo;
-    await this.leadRepo.update(leadId, { assignedTo: newManagerId });
+    // Получаем текущие назначения
+    const currentAssignments = await this.assignmentService.getCurrentAssignments('lead', leadId.toString());
+    const oldManager = currentAssignments.length > 0 ? currentAssignments[0].userId.toString() : null;
+
+    // Снимаем старые назначения
+    if (currentAssignments.length > 0) {
+      await this.assignmentService.removeAssignment({
+        entityType: 'lead',
+        entityId: leadId.toString(),
+        userIds: currentAssignments.map(a => a.userId),
+        reason: reason || 'Reassigned to another manager'
+      });
+    }
+
+    // Создаем новое назначение
+    await this.assignmentService.createAssignment({
+      entityType: 'lead',
+      entityId: leadId.toString(),
+      assignedTo: [Number(newManagerId)],
+      assignedBy: 1, // system user
+      reason: reason || 'Manual reassignment',
+      notifyAssignees: false
+    });
 
     // Записываем активность
     await this.activityRepo.save({
@@ -311,6 +332,25 @@ export class LeadDistributionService {
     conversionRate: number;
     averageScore: number;
   }> {
+    // Получаем назначения менеджера
+    const assignments = await this.assignmentService.getUserAssignments(Number(managerId), {
+      entityType: 'lead'
+    });
+
+    if (assignments.length === 0) {
+      return {
+        totalLeads: 0,
+        activeLeads: 0,
+        convertedLeads: 0,
+        conversionRate: 0,
+        averageScore: 0
+      };
+    }
+
+    // Получаем ID лидов
+    const leadIds = assignments.map(a => Number(a.entityId));
+    
+    // Получаем статистику по лидам
     const stats = await this.leadRepo
       .createQueryBuilder('lead')
       .select([
@@ -319,7 +359,7 @@ export class LeadDistributionService {
         'COUNT(CASE WHEN lead.status = \'converted\' THEN 1 END) as convertedLeads',
         'AVG(lead.score) as averageScore'
       ])
-      .where('lead.assignedTo = :managerId', { managerId })
+      .where('lead.id IN (:...leadIds)', { leadIds })
       .getRawOne();
 
     const totalLeads = parseInt(stats.totalLeads) || 0;

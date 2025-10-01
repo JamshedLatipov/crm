@@ -6,7 +6,8 @@ import { MatIconModule } from '@angular/material/icon';
   selector: 'app-softphone-call-actions',
   standalone: true,
   imports: [CommonModule, MatIconModule],
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection
+  changeDetection: ChangeDetectionStrategy.Default,
   template: `
     <div class="grid grid-cols-3 gap-4 w-full">
       <!-- Active call controls -->

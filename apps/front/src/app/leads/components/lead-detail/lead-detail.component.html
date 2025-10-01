@@ -62,6 +62,7 @@
                 (assignLead)="assignLead()"
                 (changeStatus)="quickChangeStatus()"
                 (deleteLead)="deleteLead()"
+                *ngIf="!isConverted"
               >
               </app-lead-actions>
             </div>
@@ -75,6 +76,12 @@
             [showIcon]="true"
           >
           </app-lead-status>
+          
+          <!-- Уведомление о конвертированном лиде -->
+          <div class="converted-notice" *ngIf="isConverted">
+            <mat-icon class="converted-icon">check_circle</mat-icon>
+            <span class="converted-text">Лид конвертирован в сделку</span>
+          </div>
         </div>
       </div>
     </div>
@@ -286,14 +293,14 @@
                   </div>
                 </div>
 
-                <div class="timeline-item" *ngIf="lead.assignedTo">
+                <div class="timeline-item" *ngIf="currentAssignments.length > 0">
                   <div class="timeline-icon user">
                     <mat-icon>person_pin</mat-icon>
                   </div>
                   <div class="timeline-content">
                     <span class="label">Ответственный</span>
                     <div class="value">
-                      {{ lead.assignedTo || 'Не назначен' }}
+                      {{ getAssigneeName }}
                     </div>
                   </div>
                 </div>
@@ -396,6 +403,12 @@
 
       <!-- История и активность лида -->
       <div class="history-section">
+        <!-- Уведомление для конвертированного лида -->
+        <div class="readonly-notice" *ngIf="isConverted">
+          <mat-icon>info</mat-icon>
+          <span>Этот лид конвертирован в сделку. Доступен только просмотр и добавление комментариев.</span>
+        </div>
+
         <mat-tab-group mat-stretch-tabs="true" class="history-tabs">
           <!-- Комментарии -->
           <mat-tab label="Комментарии" *ngIf="lead.id">

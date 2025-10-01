@@ -1,0 +1,602 @@
+<div class="user-form-container">
+  <!-- Hero Header -->
+  <div class="hero-header">
+    <div class="hero-content">
+      <button mat-icon-button (click)="goBack()" class="back-button">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+
+      <div class="hero-text">
+        <h1 class="hero-title">
+          {{ isEditMode() ? 'Редактирование пользователя' : 'Создать пользователя' }}
+        </h1>
+        <p class="hero-subtitle">
+          {{ isEditMode()
+            ? 'Обновите информацию о пользователе'
+            : 'Создайте новый аккаунт пользователя в системе'
+          }}
+        </p>
+        @if (isEditMode() && currentUser()) {
+          <div class="current-user-badge">
+            <mat-icon>person</mat-icon>
+            <span>{{ currentUser()?.firstName }} {{ currentUser()?.lastName }}</span>
+          </div>
+        }
+      </div>
+
+      <div class="hero-actions">
+        <button mat-stroked-button (click)="goBack()" [disabled]="isSubmitting()" class="cancel-btn">
+          <mat-icon>close</mat-icon>
+          Отмена
+        </button>
+        <button
+          mat-raised-button
+          color="primary"
+          (click)="save()"
+          [disabled]="userForm.invalid || isSubmitting()"
+          class="save-btn"
+        >
+          @if (isSubmitting()) {
+            <mat-spinner diameter="16" class="mr-2"></mat-spinner>
+          } @else {
+            <mat-icon>{{ isEditMode() ? 'save' : 'person_add' }}</mat-icon>
+          }
+          {{ isEditMode() ? 'Сохранить изменения' : 'Создать пользователя' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Progress indicator for create mode -->
+  @if (!isEditMode()) {
+    <div class="progress-container">
+      <div class="progress-steps">
+        @for (title of stepTitles; track $index; let isLast = $last) {
+          <div class="step"
+               [class.active]="currentStep() === $index + 1"
+               [class.completed]="currentStep() > $index + 1"
+               (click)="goToStep($index + 1)">
+            <div class="step-circle">
+              @if (currentStep() > $index + 1) {
+                <mat-icon>check</mat-icon>
+              } @else {
+                {{$index + 1}}
+              }
+            </div>
+            <span>{{title}}</span>
+          </div>
+          @if (!isLast) {
+            <div class="step-divider" [class.active]="currentStep() > $index + 1"></div>
+          }
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Error message -->
+  @if (userService.error()) {
+    <div class="error-alert">
+      <mat-icon>error_outline</mat-icon>
+      <div class="error-content">
+        <h4>Ошибка</h4>
+        <p>{{ userService.error() }}</p>
+      </div>
+      <button mat-icon-button (click)="userService.clearError()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  }
+
+  <form [formGroup]="userForm" class="form-content">
+    <!-- Step 1: Basic Information -->
+    @if (currentStep() === 1) {
+      <div class="form-section">
+      <div class="section-header">
+        <div class="section-icon">
+          <mat-icon>person</mat-icon>
+        </div>
+        <div class="section-title">
+          <h2>Основная информация</h2>
+          <p>Базовые данные пользователя для входа в систему</p>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <!-- Username -->
+        <div class="form-field full-width">
+          <mat-form-field appearance="outline" class="modern-field">
+            <mat-label>Логин пользователя</mat-label>
+            <input matInput formControlName="username" placeholder="user.name">
+            <mat-icon matSuffix>alternate_email</mat-icon>
+            @if (userForm.get('username')?.errors?.['required']) {
+              <mat-error>Логин обязателен для входа в систему</mat-error>
+            }
+            @if (userForm.get('username')?.errors?.['minlength']) {
+              <mat-error>Логин должен содержать минимум 3 символа</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <!-- Email -->
+        <div class="form-field full-width">
+          <mat-form-field appearance="outline" class="modern-field">
+            <mat-label>Электронная почта</mat-label>
+            <input matInput formControlName="email" type="email" placeholder="user@company.com">
+            <mat-icon matSuffix>email</mat-icon>
+            @if (userForm.get('email')?.errors?.['required']) {
+              <mat-error>Email обязателен для уведомлений</mat-error>
+            }
+            @if (userForm.get('email')?.errors?.['email']) {
+              <mat-error>Введите корректный email адрес</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <!-- First Name -->
+        <div class="form-field">
+          <mat-form-field appearance="outline" class="modern-field">
+            <mat-label>Имя</mat-label>
+            <input matInput formControlName="firstName" placeholder="Иван">
+            <mat-icon matSuffix>badge</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <!-- Last Name -->
+        <div class="form-field">
+          <mat-form-field appearance="outline" class="modern-field">
+            <mat-label>Фамилия</mat-label>
+            <input matInput formControlName="lastName" placeholder="Иванов">
+            <mat-icon matSuffix>badge</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <!-- Phone -->
+        <div class="form-field">
+          <mat-form-field appearance="outline" class="modern-field">
+            <mat-label>Телефон</mat-label>
+            <input matInput formControlName="phone" placeholder="+7 (999) 123-45-67">
+            <mat-icon matSuffix>phone</mat-icon>
+            @if (userForm.get('phone')?.errors?.['required']) {
+              <mat-error>Телефон обязателен</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <!-- Department -->
+        <div class="form-field">
+          <mat-form-field appearance="outline" class="modern-field">
+            <mat-label>Департамент</mat-label>
+            <mat-select formControlName="department">
+              @for (dept of availableDepartments(); track dept) {
+                <mat-option [value]="dept.value">{{ dept.label }}</mat-option>
+              }
+            </mat-select>
+            <mat-icon matSuffix>business</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <!-- Password fields for create mode -->
+        @if (!isEditMode()) {
+          <div class="password-section">
+            <div class="password-fields">
+              <div class="form-field">
+                <mat-form-field appearance="outline" class="modern-field">
+                  <mat-label>Пароль</mat-label>
+                  <input matInput formControlName="password" type="password" placeholder="Минимум 6 символов">
+                  <mat-icon matSuffix>lock</mat-icon>
+                  @if (userForm.get('password')?.errors?.['required']) {
+                    <mat-error>Пароль обязателен</mat-error>
+                  }
+                  @if (userForm.get('password')?.errors?.['minlength']) {
+                    <mat-error>Минимум 6 символов</mat-error>
+                  }
+                </mat-form-field>
+              </div>
+
+              <div class="form-field">
+                <mat-form-field appearance="outline" class="modern-field">
+                  <mat-label>Подтвердите пароль</mat-label>
+                  <input matInput formControlName="confirmPassword" type="password" placeholder="Повторите пароль">
+                  <mat-icon matSuffix>lock_outline</mat-icon>
+                  @if (userForm.get('confirmPassword')?.errors?.['required']) {
+                    <mat-error>Подтверждение пароля обязательно</mat-error>
+                  }
+                  @if (userForm.get('confirmPassword')?.errors?.['passwordMismatch']) {
+                    <mat-error>Пароли не совпадают</mat-error>
+                  }
+                </mat-form-field>
+              </div>
+            </div>
+
+            <div class="password-warning">
+              <mat-icon class="warning-icon">warning</mat-icon>
+              <div class="warning-text">
+                <strong>Важно!</strong> После создания пользователя пароль нельзя будет посмотреть.
+                Обязательно скопируйте его сейчас.
+              </div>
+            </div>
+
+            <div class="password-actions">
+              <button
+                mat-stroked-button
+                color="accent"
+                type="button"
+                (click)="generatePassword()"
+                class="generate-password-btn"
+              >
+                <mat-icon>refresh</mat-icon>
+                Сгенерировать пароль
+              </button>
+
+              <button
+                mat-stroked-button
+                color="primary"
+                type="button"
+                (click)="copyPassword()"
+                [disabled]="!userForm.get('password')?.value"
+                class="copy-password-btn"
+                [class.copied]="passwordCopied()"
+              >
+                <mat-icon>{{ passwordCopied() ? 'check' : 'content_copy' }}</mat-icon>
+                {{ passwordCopied() ? 'Скопировано!' : 'Копировать пароль' }}
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+    }
+
+    <!-- Step 2: Roles and Permissions -->
+    @if (currentStep() === 2) {
+      <div class="form-section">
+      <div class="section-header">
+        <div class="section-icon">
+          <mat-icon>admin_panel_settings</mat-icon>
+        </div>
+        <div class="section-title">
+          <h2>Роли и права доступа</h2>
+          <p>Определите уровень доступа и ответственности пользователя</p>
+        </div>
+      </div>
+
+      <!-- Roles Selection -->
+      <div class="roles-section">
+        <h3 class="subsection-title">
+          <mat-icon>security</mat-icon>
+          Роли в системе
+          <span class="required-indicator">*</span>
+        </h3>
+        <div class="roles-grid">
+          @for (role of availableRoles(); track role.value) {
+            <div class="role-card" [class.selected]="isRoleSelected(role.value)">
+              <mat-checkbox
+                [checked]="isRoleSelected(role.value)"
+                (change)="toggleRole(role.value, $event.checked)"
+                class="role-checkbox"
+              >
+                <div class="role-info">
+                  <div class="role-name">{{ role.label }}</div>
+                  <div class="role-description">{{ getRoleDescription(role.value) }}</div>
+                </div>
+              </mat-checkbox>
+            </div>
+          }
+        </div>
+        @if (userForm.get('roles')?.errors?.['required']) {
+          <div class="error-message">
+            <mat-icon>error_outline</mat-icon>
+            Выберите хотя бы одну роль для пользователя
+          </div>
+        }
+      </div>
+
+      <!-- Status Options -->
+      <div class="status-section">
+        <h3 class="subsection-title">
+          <mat-icon>toggle_on</mat-icon>
+          Статус и доступность
+        </h3>
+        <div class="status-options">
+          <div class="status-option">
+            <mat-checkbox formControlName="isActive" class="status-checkbox">
+              <div class="status-info">
+                <div class="status-name">Активный пользователь</div>
+                <div class="status-description">Пользователь может входить в систему</div>
+              </div>
+            </mat-checkbox>
+          </div>
+          <div class="status-option">
+            <mat-checkbox formControlName="isAvailableForAssignment" class="status-checkbox">
+              <div class="status-info">
+                <div class="status-name">Доступен для назначений</div>
+                <div class="status-description">Может получать новые задачи и лиды</div>
+              </div>
+            </mat-checkbox>
+          </div>
+        </div>
+      </div>
+    </div>
+    }
+
+    <!-- Step 3: Work Configuration and Skills -->
+    @if (currentStep() === 3) {
+      <div class="form-section">
+      <div class="section-header">
+        <div class="section-icon">
+          <mat-icon>work</mat-icon>
+        </div>
+        <div class="section-title">
+          <h2>Рабочие настройки</h2>
+          <p>Настройте рабочую нагрузку и зоны ответственности</p>
+        </div>
+      </div>
+
+      <div class="work-settings-grid">
+        <!-- Capacity and Manager -->
+        <div class="settings-card">
+          <h3 class="card-title">
+            <mat-icon>tune</mat-icon>
+            Нагрузка и подчинение
+          </h3>
+
+          <div class="capacity-section">
+            <label class="capacity-label">
+              Максимальная нагрузка:
+              <span class="capacity-value">{{ userForm.get('maxLeadsCapacity')?.value }} лидов</span>
+            </label>
+            <mat-slider
+              min="5"
+              max="50"
+              step="1"
+              discrete
+              [displayWith]="formatLabel"
+              class="capacity-slider"
+            >
+              <input matSliderThumb formControlName="maxLeadsCapacity">
+            </mat-slider>
+            <div class="capacity-hints">
+              <span>5 (Новичок)</span>
+              <span>50 (Эксперт)</span>
+            </div>
+          </div>
+
+          <mat-form-field appearance="outline" class="modern-field">
+            <mat-label>Руководитель</mat-label>
+            <mat-select formControlName="managerID">
+              <mat-option [value]="null">Без руководителя</mat-option>
+              @for (manager of availableManagers(); track manager.id) {
+                <mat-option [value]="manager.id">
+                  {{ manager.firstName }} {{ manager.lastName }}
+                </mat-option>
+              }
+            </mat-select>
+            <mat-icon matSuffix>supervisor_account</mat-icon>
+          </mat-form-field>
+        </div>
+      </div>
+    </div>
+    }
+
+    <!-- Step 4: Skills and Territories -->
+    @if (currentStep() === 4) {
+      <div class="form-section">
+      <div class="section-header">
+        <div class="section-icon">
+          <mat-icon>stars</mat-icon>
+        </div>
+        <div class="section-title">
+          <h2>Навыки и территории</h2>
+          <p>Определите экспертизу и зоны ответственности</p>
+        </div>
+      </div>
+
+      <!-- Skills Section -->
+      <div class="skills-territories-grid">
+        <div class="skills-card">
+          <h3 class="card-title">
+            <mat-icon>verified</mat-icon>
+            Навыки и экспертиза
+            @if (selectedSkills().length > 0) {
+              <span class="count-badge">{{ selectedSkills().length }}</span>
+            }
+          </h3>
+
+          <div class="input-section">
+            <div class="input-with-button">
+              <mat-form-field appearance="outline" class="skill-input">
+                <mat-label>Добавить навык</mat-label>
+                <input
+                  matInput
+                  #skillInput
+                  placeholder="Начните вводить или выберите из списка..."
+                  [matAutocomplete]="skillsAuto"
+                  (keyup.enter)="addSkill(skillInput.value); skillInput.value = ''"
+                >
+                <mat-icon matSuffix>search</mat-icon>
+                <mat-autocomplete #skillsAuto="matAutocomplete" (optionSelected)="addSkill($event.option.value); skillInput.value = ''">
+                  @for (skill of availableSkills(); track skill) {
+                    <mat-option [value]="skill">{{ skill }}</mat-option>
+                  }
+                </mat-autocomplete>
+              </mat-form-field>
+              <button
+                mat-fab
+                color="primary"
+                type="button"
+                (click)="addSkill(skillInput.value); skillInput.value = ''"
+                [disabled]="!skillInput.value?.trim()"
+                class="add-button"
+              >
+                <mat-icon>add</mat-icon>
+              </button>
+            </div>
+          </div>
+
+          <!-- Selected skills -->
+          @if (selectedSkills().length > 0) {
+            <div class="selected-items">
+              <div class="items-header">
+                <span>Выбранные навыки</span>
+                <button
+                  mat-button
+                  color="warn"
+                  type="button"
+                  (click)="clearAllSkills()"
+                  class="clear-button"
+                >
+                  <mat-icon>clear_all</mat-icon>
+                  Очистить
+                </button>
+              </div>
+              <div class="chips-container">
+                @for (skill of selectedSkills(); track skill) {
+                  <mat-chip-row
+                    (removed)="removeSkill(skill)"
+                    [removable]="true"
+                    color="primary"
+                    class="skill-chip"
+                  >
+                    <mat-icon matChipAvatar>star</mat-icon>
+                    {{ skill }}
+                    <button matChipRemove>
+                      <mat-icon>cancel</mat-icon>
+                    </button>
+                  </mat-chip-row>
+                }
+              </div>
+            </div>
+          } @else {
+            <div class="empty-state">
+              <mat-icon>school</mat-icon>
+              <p>Добавьте навыки для лучшего распределения задач</p>
+            </div>
+          }
+        </div>
+
+        <!-- Territories Section -->
+        <div class="territories-card">
+          <h3 class="card-title">
+            <mat-icon>location_on</mat-icon>
+            Территории
+            @if (selectedTerritories().length > 0) {
+              <span class="count-badge">{{ selectedTerritories().length }}</span>
+            }
+          </h3>
+
+          <div class="input-section">
+            <div class="input-with-button">
+              <mat-form-field appearance="outline" class="territory-input">
+                <mat-label>Добавить территорию</mat-label>
+                <input
+                  matInput
+                  #territoryInput
+                  placeholder="Начните вводить или выберите из списка..."
+                  [matAutocomplete]="territoriesAuto"
+                  (keyup.enter)="addTerritory(territoryInput.value); territoryInput.value = ''"
+                >
+                <mat-icon matSuffix>search</mat-icon>
+                <mat-autocomplete #territoriesAuto="matAutocomplete" (optionSelected)="addTerritory($event.option.value); territoryInput.value = ''">
+                  @for (territory of availableTerritories(); track territory) {
+                    <mat-option [value]="territory">{{ territory }}</mat-option>
+                  }
+                </mat-autocomplete>
+              </mat-form-field>
+              <button
+                mat-fab
+                color="accent"
+                type="button"
+                (click)="addTerritory(territoryInput.value); territoryInput.value = ''"
+                [disabled]="!territoryInput.value?.trim()"
+                class="add-button"
+              >
+                <mat-icon>add</mat-icon>
+              </button>
+            </div>
+          </div>
+
+          <!-- Selected territories -->
+          @if (selectedTerritories().length > 0) {
+            <div class="selected-items">
+              <div class="items-header">
+                <span>Выбранные территории</span>
+                <button
+                  mat-button
+                  color="warn"
+                  type="button"
+                  (click)="clearAllTerritories()"
+                  class="clear-button"
+                >
+                  <mat-icon>clear_all</mat-icon>
+                  Очистить
+                </button>
+              </div>
+              <div class="chips-container">
+                @for (territory of selectedTerritories(); track territory) {
+                  <mat-chip-row
+                    (removed)="removeTerritory(territory)"
+                    [removable]="true"
+                    color="accent"
+                    class="territory-chip"
+                  >
+                    <mat-icon matChipAvatar>place</mat-icon>
+                    {{ territory }}
+                    <button matChipRemove>
+                      <mat-icon>cancel</mat-icon>
+                    </button>
+                  </mat-chip-row>
+                }
+              </div>
+            </div>
+          } @else {
+            <div class="empty-state">
+              <mat-icon>map</mat-icon>
+              <p>Добавьте территории для определения зон ответственности</p>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+    }
+
+    <!-- Step Navigation -->
+    <div class="step-navigation">
+      <button mat-stroked-button
+              (click)="previousStep()"
+              [disabled]="currentStep() === 1"
+              class="nav-button">
+        <mat-icon>chevron_left</mat-icon>
+        Назад
+      </button>
+
+      <div class="step-info">
+        Шаг {{currentStep()}} из {{totalSteps}}
+        <div style="font-size: 0.8rem; color: #6b7280; margin-top: 0.25rem;">
+          Можно продолжить: {{canProceedToNextStep() ? 'Да' : 'Нет'}}
+        </div>
+      </div>
+
+      @if (currentStep() < totalSteps) {
+        <button mat-raised-button
+                color="primary"
+                (click)="nextStep()"
+                [disabled]="!canProceedToNextStep()"
+                class="nav-button">
+          Далее
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      } @else {
+        <button mat-raised-button
+                color="primary"
+                (click)="save()"
+                [disabled]="!userForm.valid || isSubmitting()"
+                class="nav-button">
+          @if (isSubmitting()) {
+            <mat-spinner diameter="20" style="margin-right: 8px;"></mat-spinner>
+          }
+          {{isEditMode() ? 'Сохранить изменения' : 'Создать пользователя'}}
+        </button>
+      }
+    </div>
+  </form>
+</div>

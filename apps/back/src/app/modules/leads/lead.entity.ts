@@ -1,10 +1,11 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToOne } from 'typeorm';
 import { Deal } from '../deals/deal.entity';
 import { Company } from '../companies/entities/company.entity';
+import { Assignment } from '../shared/entities/assignment.entity';
 
 export enum LeadStatus {
   NEW = 'new',
-  CONTACTED = 'contacted', 
+  CONTACTED = 'contacted',
   QUALIFIED = 'qualified',
   PROPOSAL_SENT = 'proposal_sent',
   NEGOTIATING = 'negotiating',
@@ -31,7 +32,7 @@ export enum LeadSource {
 
 export enum LeadPriority {
   LOW = 'low',
-  MEDIUM = 'medium', 
+  MEDIUM = 'medium',
   HIGH = 'high',
   URGENT = 'urgent'
 }
@@ -116,9 +117,6 @@ export class Lead {
   @Column({ nullable: true })
   utmTerm: string;
 
-  @Column({ nullable: true })
-  assignedTo: string; // ID менеджера
-
   @Column({
     type: 'enum',
     enum: LeadPriority,
@@ -175,6 +173,11 @@ export class Lead {
   updatedAt: Date;
 
   // Связи
+  @OneToMany(() => Assignment, assignment => assignment.entityId, {
+    cascade: true
+  })
+  assignments?: Assignment[];
+
   @OneToMany(() => Deal, deal => deal.lead)
   deals?: Deal[];
 }

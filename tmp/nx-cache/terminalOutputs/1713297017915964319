@@ -1,0 +1,45 @@
+[2m> [22mjest --passWithNoTests=true --testNamePattern=assignment
+
+[33m[1m[1m●[22m[1m Validation Warning[22m:[39m
+[33m[39m
+[33m  Unknown option [1m"coverageThresholds"[22m with value [1m{"global": {"branches": 60, "functions": 60, "lines": 60, "statements": 60}}[22m was found. Did you mean [1m"coverageThreshold"[22m?[39m
+[33m  This is probably a typing mistake. Fixing it will remove this message.[39m
+[33m[39m
+[33m  [1mConfiguration Documentation:[22m[39m
+[33m  https://jestjs.io/docs/configuration[39m
+[33m[39m
+[33m[1m[1m●[22m[1m Validation Warning[22m:[39m
+[33m[39m
+[33m  Unknown option [1m"moduleNameMapping"[22m with value [1m{"^@crm/back/(.*)$": "<rootDir>/src/$1", "^@crm/shared/(.*)$": "<rootDir>/../../libs/shared/src/$1"}[22m was found.[39m
+[33m  This is probably a typing mistake. Fixing it will remove this message.[39m
+[33m[39m
+[33m  [1mConfiguration Documentation:[22m[39m
+[33m  https://jestjs.io/docs/configuration[39m
+[33m[39m
+[33m[1m[1m●[22m[1m Validation Warning[22m:[39m
+[33m[39m
+[33m  Unknown option [1m"coverageThresholds"[22m with value [1m{"global": {"branches": 60, "functions": 60, "lines": 60, "statements": 60}}[22m was found. Did you mean [1m"coverageThreshold"[22m?[39m
+[33m  This is probably a typing mistake. Fixing it will remove this message.[39m
+[33m[39m
+[33m  [1mConfiguration Documentation:[22m[39m
+[33m  https://jestjs.io/docs/configuration[39m
+[33m[39m
+[33m[1m[1m●[22m[1m Validation Warning[22m:[39m
+[33m[39m
+[33m  Unknown option [1m"moduleNameMapping"[22m with value [1m{"^@crm/back/(.*)$": "<rootDir>/src/$1", "^@crm/shared/(.*)$": "<rootDir>/../../libs/shared/src/$1"}[22m was found.[39m
+[33m  This is probably a typing mistake. Fixing it will remove this message.[39m
+[33m[39m
+[33m  [1mConfiguration Documentation:[22m[39m
+[33m  https://jestjs.io/docs/configuration[39m
+[33m[39m
+ts-jest[config] (WARN) 
+    The "ts-jest" config option "isolatedModules" is deprecated and will be removed in v30.0.0. Please use "isolatedModules: true" in C:/Users/Jamshed/Documents/work/crm_mono/apps/back/tsconfig.spec.json instead, see https://www.typescriptlang.org/tsconfig/#isolatedModules
+  
+ts-jest[config] (WARN) 
+    The "ts-jest" config option "isolatedModules" is deprecated and will be removed in v30.0.0. Please use "isolatedModules: true" in C:/Users/Jamshed/Documents/work/crm_mono/apps/back/tsconfig.spec.json instead, see https://www.typescriptlang.org/tsconfig/#isolatedModules
+  
+[1mTest Suites: [22m[1m[33m2 skipped[39m[22m, 0 of 2 total
+[1mTests:       [22m[1m[33m2 skipped[39m[22m, 2 total
+[1mSnapshots:   [22m0 total
+[1mTime:[22m        1.401 s
+[2mRan all test suites[22m[2m with tests matching [22m"assignment"[2m.[22m

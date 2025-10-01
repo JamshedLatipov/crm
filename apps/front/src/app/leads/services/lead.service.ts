@@ -15,6 +15,7 @@ import {
   AddNoteRequest,
   AddTagsRequest,
   ScheduleFollowUpRequest,
+  Assignment,
 } from '../models/lead.model';
 
 import { CreateLeadActivityDto, UpdateLeadActivityDto } from '../models';
@@ -130,6 +131,10 @@ export class LeadService {
 
   getLeadActivities(leadId: string): Observable<LeadActivity[]> {
     return this.http.get<LeadActivity[]>(`${this.apiUrl}/${leadId}/activities`);
+  }
+
+  getCurrentAssignments(leadId: string): Observable<Assignment[]> {
+    return this.http.get<Assignment[]>(`${this.apiUrl}/${leadId}/assignments`);
   }
 
   createLeadActivity(leadId: string, dto: CreateLeadActivityDto): Observable<LeadActivity> {

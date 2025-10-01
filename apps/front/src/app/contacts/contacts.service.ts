@@ -9,12 +9,17 @@ import {
   ContactsStats, 
   ContactFilters,
   ContactType,
-  ContactSource 
+  ContactSource,
+  ContactActivity,
+  ActivityType,
+  Deal,
+  CreateDealDto
 } from './contact.interfaces';
 
 @Injectable({ providedIn: 'root' })
 export class ContactsService {
   private readonly apiUrl = environment.apiBase + '/contacts';
+  private readonly dealsApiUrl = environment.apiBase + '/deals';
   private readonly http = inject(HttpClient);
 
   // === Основные CRUD операции ===
@@ -92,6 +97,19 @@ export class ContactsService {
     return this.http.patch<Contact>(`${this.apiUrl}/${id}/touch`, {});
   }
 
+  // === Активность ===
+  getContactActivity(id: string): Observable<ContactActivity[]> {
+    return this.http.get<ContactActivity[]>(`${this.apiUrl}/${id}/activity`);
+  }
+
+  addContactActivity(contactId: string, activity: {
+    type: ActivityType;
+    title: string;
+    description?: string;
+  }): Observable<ContactActivity> {
+    return this.http.post<ContactActivity>(`${this.apiUrl}/${contactId}/activity`, activity);
+  }
+
   // === Утилиты ===
   getContactTypeLabel(type: ContactType): string {
     const labels = {
@@ -115,7 +133,11 @@ export class ContactsService {
     return labels[source] || source;
   }
 
-  formatContactName(contact: Contact): string {
+  formatContactName(contact: Contact | null): string {
+    if (!contact) {
+      return '';
+    }
+    
     if (contact.type === ContactType.COMPANY) {
       return contact.name;
     }
@@ -141,5 +163,47 @@ export class ContactsService {
     }
     
     return parts.join(' в ');
+  }
+
+  getActivityIcon(type: ActivityType): string {
+    const icons: Record<ActivityType, string> = {
+      [ActivityType.CALL]: 'phone',
+      [ActivityType.EMAIL]: 'email',
+      [ActivityType.MEETING]: 'event',
+      [ActivityType.NOTE]: 'note',
+      [ActivityType.TASK]: 'task',
+      [ActivityType.DEAL]: 'handshake',
+      [ActivityType.SYSTEM]: 'settings'
+    };
+    
+    return icons[type] || 'history';
+  }
+
+  getActivityTypeLabel(type: ActivityType): string {
+    const labels: Record<ActivityType, string> = {
+      [ActivityType.CALL]: 'Звонок',
+      [ActivityType.EMAIL]: 'Email',
+      [ActivityType.MEETING]: 'Встреча',
+      [ActivityType.NOTE]: 'Заметка',
+      [ActivityType.TASK]: 'Задача',
+      [ActivityType.DEAL]: 'Сделка',
+      [ActivityType.SYSTEM]: 'Системное'
+    };
+    
+    return labels[type] || type;
+  }
+
+  // Deals methods
+  getContactDeals(contactId: string): Observable<Deal[]> {
+    const url = `${this.dealsApiUrl}/by-contact/${contactId}`;
+    console.log('Requesting deals from:', url);
+    return this.http.get<Deal[]>(url);
+  }
+
+  createDealForContact(contactId: string, dealData: CreateDealDto): Observable<Deal> {
+    return this.http.post<Deal>(`${this.dealsApiUrl}`, {
+      ...dealData,
+      contactId
+    });
   }
 }

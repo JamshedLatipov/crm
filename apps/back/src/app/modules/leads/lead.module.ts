@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Lead } from './lead.entity';
 import { LeadActivity } from './entities/lead-activity.entity';
 import { LeadHistory } from './entities/lead-history.entity';
+import { LeadScore } from './entities/lead-score.entity';
 import { LeadScoringRule } from './entities/lead-scoring-rule.entity';
 import { LeadDistributionRule } from './entities/lead-distribution-rule.entity';
 import { Deal } from '../deals/deal.entity';
@@ -18,6 +19,8 @@ import { LeadCaptureController } from './controllers/lead-capture.controller';
 import { LeadHistoryController } from './controllers/lead-history.controller';
 import { UserModule } from '../user/user.module';
 import { DealsModule } from '../deals/deals.module';
+import { NotificationModule } from '../notifications/notification.module';
+import { SharedModule } from '../shared/shared.module';
 
 @Module({
   imports: [
@@ -25,12 +28,15 @@ import { DealsModule } from '../deals/deals.module';
       Lead,
       LeadActivity,
       LeadHistory,
+      LeadScore,
       LeadScoringRule,
       LeadDistributionRule,
       Deal
     ]),
     UserModule,
-    DealsModule
+    DealsModule,
+    NotificationModule,
+    SharedModule
   ],
   providers: [
     LeadService,

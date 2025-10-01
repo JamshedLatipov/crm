@@ -1,0 +1,174 @@
+.lead-score-details {
+  max-width: 600px;
+
+  .mat-mdc-card-header {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+
+    .mat-mdc-card-avatar {
+      margin-right: 16px;
+    }
+
+    .mat-mdc-card-header-text {
+      flex: 1;
+    }
+  }
+}
+
+.score-breakdown {
+  margin-top: 16px;
+}
+
+.score-group {
+  margin-bottom: 24px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    background: #f5f5f5;
+    border-bottom: 1px solid #e0e0e0;
+    gap: 12px;
+
+    mat-icon {
+      color: #666;
+    }
+
+    h4 {
+      margin: 0;
+      flex: 1;
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    &__total {
+      font-weight: 700;
+      color: #2196f3;
+      font-size: 14px;
+      padding: 4px 8px;
+      background: #e3f2fd;
+      border-radius: 12px;
+    }
+  }
+
+  &__items {
+    padding: 16px;
+  }
+}
+
+.score-item {
+  margin-bottom: 16px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  &__info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  &__label {
+    font-size: 14px;
+    color: #666;
+  }
+
+  &__score {
+    font-weight: 600;
+    font-size: 14px;
+    color: #333;
+  }
+
+  .mat-mdc-progress-bar {
+    height: 6px;
+    border-radius: 3px;
+
+    .mdc-linear-progress__bar-inner {
+      border-radius: 3px;
+    }
+  }
+}
+
+.score-actions {
+  display: flex;
+  gap: 12px;
+  padding: 16px 0;
+  border-top: 1px solid #e0e0e0;
+  margin-top: 16px;
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+// Анимации
+.score-group {
+  animation: fadeInUp 0.3s ease;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Адаптивность
+@media (max-width: 768px) {
+  .lead-score-details {
+    max-width: 100%;
+  }
+
+  .score-group__header {
+    flex-wrap: wrap;
+    gap: 8px;
+
+    h4 {
+      width: 100%;
+      margin-bottom: 4px;
+    }
+  }
+
+  .score-item__info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .score-actions {
+    flex-direction: column;
+
+    button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}
+
+// Цветовая схема для прогресс-баров
+.mat-mdc-progress-bar {
+  &.mat-primary .mdc-linear-progress__bar-inner {
+    background-color: #4caf50 !important;
+  }
+
+  &.mat-accent .mdc-linear-progress__bar-inner {
+    background-color: #ff9800 !important;
+  }
+
+  &.mat-warn .mdc-linear-progress__bar-inner {
+    background-color: #f44336 !important;
+  }
+}

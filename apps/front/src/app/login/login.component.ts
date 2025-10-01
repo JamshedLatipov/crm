@@ -43,11 +43,16 @@ import { AuthService } from '../auth/auth.service';
               <a class="font-medium text-[var(--brand-primary)] hover:text-blue-700" href="#">Forgot your password?</a>
             </div>
           </div>
-          <div *ngIf="error()" class="text-sm text-red-600" role="alert">{{ error() }}</div>
+          @if (error()) {
+            <div class="text-sm text-red-600" role="alert">{{ error() }}</div>
+          }
           <div>
             <button class="flex w-full justify-center rounded-full bg-[var(--brand-primary)] px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-primary)] disabled:opacity-60" type="submit" [disabled]="disabled()">
-              <span *ngIf="!loggingIn(); else loading">Sign In</span>
-              <ng-template #loading>Signing In...</ng-template>
+              @if (!loggingIn()) {
+                <span>Sign In</span>
+              } @else {
+                <span>Signing In...</span>
+              }
             </button>
           </div>
         </form>

@@ -18,21 +18,9 @@
       }
     },
     "serve": {
-      "continuous": true,
-      "executor": "@nx/js:node",
-      "defaultConfiguration": "development",
-      "dependsOn": ["build"],
+      "executor": "nx:run-commands",
       "options": {
-        "buildTarget": "back:build",
-        "runBuildTargetDependencies": false
-      },
-      "configurations": {
-        "development": {
-          "buildTarget": "back:build:development"
-        },
-        "production": {
-          "buildTarget": "back:build:production"
-        }
+        "command": "npx nodemon --exec \"ts-node --project apps/back/tsconfig.app.json apps/back/src/main.ts\" --watch apps/back/src --ext ts,js,json"
       }
     },
     "test": {

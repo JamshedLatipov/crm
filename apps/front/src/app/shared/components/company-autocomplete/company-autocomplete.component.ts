@@ -53,15 +53,17 @@ import {
         </mat-option>
       </mat-autocomplete>
 
-      <div class="create-inline" *ngIf="showCreateInline">
-        <button
-          mat-mini-button
-          color="primary"
-          (click)="createCompanyFromInput()"
-        >
-          Создать компанию «{{ inlineCompanyText }}»
-        </button>
-      </div>
+      @if (showCreateInline) {
+        <div class="create-inline">
+          <button
+            mat-mini-button
+            color="primary"
+            (click)="createCompanyFromInput()"
+          >
+            Создать компанию «{{ inlineCompanyText }}»
+          </button>
+        </div>
+      }
     </mat-form-field>
   `,
   styles: [
@@ -76,7 +78,7 @@ import {
   ],
 })
 export class CompanyAutocompleteComponent implements OnInit {
-  displayWith(value: any): string {
+  displayWith(value: Company | string | null): string {
     if (!value) return '';
     if (typeof value === 'string') return value;
     return value.name || value.legalName || '';

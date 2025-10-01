@@ -16,7 +16,8 @@ type TabKey = 'all' | 'recent' | 'favorites';
   selector: 'app-softphone-scripts-panel',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection
+  changeDetection: ChangeDetectionStrategy.Default,
   template: `
     <div *ngIf="callActive" class="bg-[var(--surface-color)] rounded-lg p-6 flex flex-col shadow-sm">
       <!-- Header -->

@@ -300,7 +300,7 @@ export class LeadsListComponent implements OnInit {
 
   quickAssign(lead: Lead): void {
     const dialogRef = this.dialog.open(QuickAssignDialogComponent, {
-      width: '400px',
+      width: '600px',
       maxWidth: '90vw',
       data: { lead },
     });

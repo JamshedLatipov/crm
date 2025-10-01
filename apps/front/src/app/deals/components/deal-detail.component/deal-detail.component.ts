@@ -18,6 +18,7 @@ import { DealHistoryComponent } from '../deal-history.component';
 import { DealHistoryStatsComponent } from '../deal-history-stats.component';
 import { CommentsComponent } from '../../../shared/components/comments/comments.component';
 import { CommentEntityType } from '../../../shared/interfaces/comment.interface';
+import { AssignUserDialogComponent } from '../assign-user-dialog.component';
 
 @Component({
   selector: 'app-deal-detail',
@@ -39,13 +40,7 @@ import { CommentEntityType } from '../../../shared/interfaces/comment.interface'
   styleUrls: [`./deal-detail.component.scss`]
 })
 export class DealDetailComponent implements OnInit {
-  private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
-  private readonly dealsService = inject(DealsService);
-  private readonly usersService = inject(UsersService);
-  private readonly dialog = inject(MatDialog);
-  private readonly snackBar = inject(MatSnackBar);
-
+  // Public properties
   deal: Deal | null = null;
   users: User[] = [];
   assignedUserName = '';
@@ -54,6 +49,14 @@ export class DealDetailComponent implements OnInit {
   
   // Для компонента комментариев
   readonly CommentEntityType = CommentEntityType;
+
+  // Private services
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly dealsService = inject(DealsService);
+  private readonly usersService = inject(UsersService);
+  private readonly dialog = inject(MatDialog);
+  private readonly snackBar = inject(MatSnackBar);
 
   ngOnInit() {
     this.loadUsers();
@@ -220,5 +223,47 @@ export class DealDetailComponent implements OnInit {
     if (leadId) {
       this.router.navigate(['/leads/view', leadId]);
     }
+  }
+
+  changeAssignee(): void {
+    if (!this.deal) return;
+
+    const dialogRef = this.dialog.open(AssignUserDialogComponent, {
+      width: '500px',
+      data: {
+        deal: this.deal,
+        currentUsers: this.users
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result && result.userId) {
+        this.assignDeal(result.userId, result.user);
+      }
+    });
+  }
+
+  private assignDeal(userId: string, user?: User): void {
+    if (!this.deal) return;
+
+    this.dealsService.assignDeal(this.deal.id, userId).subscribe({
+      next: (updatedDeal) => {
+        this.deal = updatedDeal;
+        this.updateAssignedUserName();
+        this.snackBar.open(
+          `Ответственный успешно изменен на ${user?.name || userId}`, 
+          'Закрыть', 
+          { duration: 3000 }
+        );
+      },
+      error: (error) => {
+        console.error('Ошибка при назначении ответственного:', error);
+        this.snackBar.open(
+          'Ошибка при назначении ответственного', 
+          'Закрыть', 
+          { duration: 3000 }
+        );
+      }
+    });
   }
 }

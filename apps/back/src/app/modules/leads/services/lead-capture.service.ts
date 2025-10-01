@@ -5,6 +5,7 @@ import { Lead, LeadSource } from '../lead.entity';
 import { LeadActivity, ActivityType } from '../entities/lead-activity.entity';
 import { LeadScoringService } from './lead-scoring.service';
 import { Company } from '../../companies/entities/company.entity';
+import { AssignmentService } from '../../shared/services/assignment.service';
 
 export interface WebhookData {
   name: string;
@@ -47,7 +48,8 @@ export class LeadCaptureService {
     private readonly leadRepo: Repository<Lead>,
     @InjectRepository(LeadActivity)
     private readonly activityRepo: Repository<LeadActivity>,
-    private readonly scoringService: LeadScoringService
+    private readonly scoringService: LeadScoringService,
+    private readonly assignmentService: AssignmentService
   ) {}
 
   async captureFromWebsite(data: WebhookData, ipAddress?: string, userAgent?: string): Promise<Lead> {
@@ -340,18 +342,50 @@ export class LeadCaptureService {
         name: callData.name || 'Unknown',
         phone: callData.phone,
         source: LeadSource.COLD_OUTREACH, // Updated from COLD_CALL
-        assignedTo: callData.manager_id,
         notes: callData.notes
+      });
+
+      // Создаем назначение через AssignmentService
+      await this.assignmentService.createAssignment({
+        entityType: 'lead',
+        entityId: lead.id.toString(),
+        assignedTo: [Number(callData.manager_id)],
+        assignedBy: Number(callData.manager_id), // менеджер сам себе назначает
+        reason: 'Assigned during cold call capture',
+        notifyAssignees: false
       });
     } else {
       // Обновляем существующий лид
       await this.leadRepo.update(lead.id, {
         name: callData.name || lead.name,
-        assignedTo: callData.manager_id,
         notes: callData.notes ? `${lead.notes || ''}\n${callData.notes}` : lead.notes,
         lastContactDate: new Date(),
         contactAttempts: lead.contactAttempts + 1
       });
+
+      // Создаем или обновляем назначение
+      const currentAssignments = await this.assignmentService.getCurrentAssignments('lead', lead.id.toString());
+      if (currentAssignments.length === 0 || currentAssignments[0].userId !== Number(callData.manager_id)) {
+        // Снимаем старые назначения
+        if (currentAssignments.length > 0) {
+          await this.assignmentService.removeAssignment({
+            entityType: 'lead',
+            entityId: lead.id.toString(),
+            userIds: currentAssignments.map(a => a.userId),
+            reason: 'Reassigned during cold call'
+          });
+        }
+
+        // Создаем новое назначение
+        await this.assignmentService.createAssignment({
+          entityType: 'lead',
+          entityId: lead.id.toString(),
+          assignedTo: [Number(callData.manager_id)],
+          assignedBy: Number(callData.manager_id),
+          reason: 'Assigned during cold call update',
+          notifyAssignees: false
+        });
+      }
     }
 
     const activityType = callData.outcome === 'answered' 
