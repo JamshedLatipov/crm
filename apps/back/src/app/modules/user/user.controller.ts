@@ -196,6 +196,77 @@ export class UserController {
     await this.userService.deleteUser(numericId);
   }
 
+  @Get('statistics')
+  @ApiOperation({ summary: 'Get user statistics' })
+  @ApiResponse({ status: 200, description: 'User statistics' })
+  async getUserStatistics(): Promise<any> {
+    return await this.userService.getUserStatistics();
+  }
+
+  @Post('bulk-update')
+  @ApiOperation({ summary: 'Bulk update users' })
+  @ApiResponse({ status: 200, description: 'Users updated successfully' })
+  async bulkUpdateUsers(
+    @Body() bulkUpdateDto: { userIds: number[], updates: UpdateUserDto }
+  ): Promise<User[]> {
+    return await this.userService.bulkUpdateUsers(bulkUpdateDto.userIds, bulkUpdateDto.updates);
+  }
+
+  @Post('bulk-delete')
+  @ApiOperation({ summary: 'Bulk delete users' })
+  @ApiResponse({ status: 204, description: 'Users deleted successfully' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async bulkDeleteUsers(
+    @Body() bulkDeleteDto: { userIds: number[] }
+  ): Promise<void> {
+    await this.userService.bulkDeleteUsers(bulkDeleteDto.userIds);
+  }
+
+  @Post(':id/change-password')
+  @ApiOperation({ summary: 'Change user password' })
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @ApiResponse({ status: 200, description: 'Password changed successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async changePassword(
+    @Param('id') id: string,
+    @Body() changePasswordDto: { password: string }
+  ): Promise<{ success: boolean }> {
+    const numericId = parseInt(id, 10);
+    if (isNaN(numericId)) {
+      throw new NotFoundException(`Invalid user ID: ${id}`);
+    }
+    
+    await this.userService.changePassword(numericId, changePasswordDto.password);
+    return { success: true };
+  }
+
+  @Post(':id/reset-password')
+  @ApiOperation({ summary: 'Reset user password' })
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @ApiResponse({ status: 200, description: 'Password reset successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async resetPassword(
+    @Param('id') id: string
+  ): Promise<{ temporaryPassword: string }> {
+    const numericId = parseInt(id, 10);
+    if (isNaN(numericId)) {
+      throw new NotFoundException(`Invalid user ID: ${id}`);
+    }
+    
+    const temporaryPassword = await this.userService.resetPassword(numericId);
+    return { temporaryPassword };
+  }
+
+  @Get('export')
+  @ApiOperation({ summary: 'Export users' })
+  @ApiQuery({ name: 'format', required: false, enum: ['csv', 'excel'], description: 'Export format' })
+  @ApiResponse({ status: 200, description: 'Users exported successfully' })
+  async exportUsers(
+    @Query('format') format: 'csv' | 'excel' = 'csv'
+  ): Promise<any> {
+    return await this.userService.exportUsers(format);
+  }
+
   private mapUserToManagerDto(user: User): ManagerDto {
     return {
       id: user.id.toString(),

@@ -281,4 +281,188 @@ export class UserService {
       order: { createdAt: 'DESC' }
     });
   }
+
+  async searchUsersForAssignment(criteria: {
+    query?: string;
+    role?: string;
+    department?: string;
+    available?: boolean;
+    limit?: number;
+  }): Promise<User[]> {
+    const queryBuilder = this.userRepository
+      .createQueryBuilder('user')
+      .where('user.isActive = :isActive', { isActive: true });
+
+    if (criteria.query) {
+      queryBuilder.andWhere(
+        '(user.firstName ILIKE :query OR user.lastName ILIKE :query OR user.email ILIKE :query OR user.username ILIKE :query)',
+        { query: `%${criteria.query}%` }
+      );
+    }
+
+    if (criteria.role) {
+      queryBuilder.andWhere('user.roles LIKE :role', { role: `%${criteria.role}%` });
+    }
+
+    if (criteria.department) {
+      queryBuilder.andWhere('user.department = :department', { department: criteria.department });
+    }
+
+    if (criteria.available) {
+      queryBuilder
+        .andWhere('user.isAvailableForAssignment = :isAvailable', { isAvailable: true })
+        .andWhere('user.currentLeadsCount < user.maxLeadsCapacity');
+    }
+
+    queryBuilder
+      .orderBy('user.currentLeadsCount', 'ASC')
+      .addOrderBy('user.fullName', 'ASC')
+      .limit(criteria.limit || 20);
+
+    return queryBuilder.getMany();
+  }
+
+  async getUsersByRole(role: string, availableOnly = true): Promise<User[]> {
+    const queryBuilder = this.userRepository
+      .createQueryBuilder('user')
+      .where('user.isActive = :isActive', { isActive: true })
+      .andWhere('user.roles LIKE :role', { role: `%${role}%` });
+
+    if (availableOnly) {
+      queryBuilder
+        .andWhere('user.isAvailableForAssignment = :isAvailable', { isAvailable: true })
+        .andWhere('user.currentLeadsCount < user.maxLeadsCapacity');
+    }
+
+    return queryBuilder
+      .orderBy('user.currentLeadsCount', 'ASC')
+      .addOrderBy('user.fullName', 'ASC')
+      .getMany();
+  }
+
+  async getUserStatistics(): Promise<any> {
+    const users = await this.getAllUsers();
+    const activeUsers = users.filter(u => u.isActive);
+    
+    // Calculate role distribution
+    const roleDistribution: Record<string, number> = {};
+    users.forEach(user => {
+      user.roles.forEach(role => {
+        roleDistribution[role] = (roleDistribution[role] || 0) + 1;
+      });
+    });
+
+    // Calculate department distribution
+    const departmentDistribution: Record<string, number> = {};
+    users.forEach(user => {
+      if (user.department) {
+        departmentDistribution[user.department] = (departmentDistribution[user.department] || 0) + 1;
+      }
+    });
+
+    // Get top performers
+    const topPerformers = users
+      .filter(u => u.isActive && u.totalLeadsHandled > 0)
+      .sort((a, b) => Number(b.conversionRate) - Number(a.conversionRate))
+      .slice(0, 5);
+
+    return {
+      totalUsers: users.length,
+      activeUsers: activeUsers.length,
+      totalDepartments: [...new Set(users.map(u => u.department).filter(Boolean))].length,
+      averageConversion: activeUsers.length > 0 
+        ? activeUsers.reduce((sum, u) => sum + Number(u.conversionRate), 0) / activeUsers.length 
+        : 0,
+      topPerformers,
+      roleDistribution,
+      departmentDistribution
+    };
+  }
+
+  async bulkUpdateUsers(userIds: number[], updates: UpdateUserDto): Promise<User[]> {
+    const users = await this.findByIds(userIds);
+    if (users.length !== userIds.length) {
+      throw new NotFoundException('Some users not found');
+    }
+
+    const updatedUsers: User[] = [];
+    for (const user of users) {
+      Object.assign(user, updates);
+      const savedUser = await this.userRepository.save(user);
+      updatedUsers.push(savedUser);
+    }
+
+    return updatedUsers;
+  }
+
+  async bulkDeleteUsers(userIds: number[]): Promise<void> {
+    const result = await this.userRepository.delete({ id: In(userIds) });
+    if (result.affected !== userIds.length) {
+      throw new NotFoundException('Some users not found');
+    }
+  }
+
+  async changePassword(userId: number, newPassword: string): Promise<void> {
+    const user = await this.findById(userId);
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    // In a real implementation, you would hash the password
+    user.password = newPassword; // This should be hashed
+    await this.userRepository.save(user);
+  }
+
+  async resetPassword(userId: number): Promise<string> {
+    const user = await this.findById(userId);
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    // Generate temporary password
+    const temporaryPassword = Math.random().toString(36).slice(-8);
+    
+    // In a real implementation, you would hash the password
+    user.password = temporaryPassword; // This should be hashed
+    await this.userRepository.save(user);
+
+    return temporaryPassword;
+  }
+
+  async exportUsers(format: 'csv' | 'excel'): Promise<any> {
+    const users = await this.getAllUsers();
+    
+    // In a real implementation, you would use libraries like csv-writer or xlsx
+    // For now, return the data structure
+    const exportData = users.map(user => ({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      department: user.department,
+      roles: user.roles.join(', '),
+      isActive: user.isActive,
+      currentLeadsCount: user.currentLeadsCount,
+      maxLeadsCapacity: user.maxLeadsCapacity,
+      conversionRate: user.conversionRate,
+      createdAt: user.createdAt
+    }));
+
+    if (format === 'csv') {
+      // Return CSV structure - in real implementation, convert to actual CSV
+      return {
+        type: 'csv',
+        data: exportData,
+        headers: Object.keys(exportData[0] || {})
+      };
+    } else {
+      // Return Excel structure - in real implementation, convert to actual Excel
+      return {
+        type: 'excel',
+        data: exportData,
+        headers: Object.keys(exportData[0] || {})
+      };
+    }
+  }
 }

@@ -534,15 +534,12 @@ export class DealsService {
   }
 
   async getDealsByContact(contactId: string): Promise<Deal[]> {
-    console.log(`Getting deals for contact: ${contactId}`);
-    
     const deals = await this.dealRepository.find({
       where: { contact: { id: contactId } },
       relations: ['stage', 'company', 'contact', 'lead'],
       order: { createdAt: 'DESC' },
     });
     
-    console.log(`Found ${deals.length} deals for contact ${contactId}:`, deals.map(d => ({ id: d.id, title: d.title })));
     return deals;
   }
 

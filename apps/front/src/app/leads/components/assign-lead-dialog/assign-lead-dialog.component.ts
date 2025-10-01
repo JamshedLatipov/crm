@@ -38,7 +38,8 @@ interface AssignLeadData {
 @Component({
   selector: 'app-assign-lead-dialog',
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection
+  changeDetection: ChangeDetectionStrategy.Default,
   imports: [
     CommonModule,
     FormsModule,

@@ -15,6 +15,7 @@ import { DealsComponent } from './deals/deals.component';
 import { DealDetailComponent } from './deals/components/deal-detail.component/deal-detail.component';
 import { PipelineComponent } from './pipeline/pipeline.component';
 import { CreateStageComponent } from './pipeline/create-stage.component';
+import { usersRoutes } from './pages/users/users.routes';
 
 export const appRoutes: Route[] = [
     { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
@@ -46,5 +47,10 @@ export const appRoutes: Route[] = [
             { path: 'list', component: LeadsListComponent },
             { path: 'view/:id', component: LeadDetailComponent }
         ]
+    },
+    {
+        path: 'users',
+        canActivate: [authGuard],
+        children: usersRoutes
     }
 ];

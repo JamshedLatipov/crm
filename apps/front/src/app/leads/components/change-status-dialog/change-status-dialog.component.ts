@@ -26,7 +26,8 @@ interface ChangeStatusData {
 @Component({
   selector: 'app-change-status-dialog',
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection
+  changeDetection: ChangeDetectionStrategy.Default,
   imports: [
     CommonModule,
     FormsModule,

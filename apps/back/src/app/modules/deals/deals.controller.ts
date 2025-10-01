@@ -166,9 +166,7 @@ export class DealsController {
 
   @Get('by-contact/:contactId')
   async getDealsByContact(@Param('contactId') contactId: string) {
-    console.log(`API: Getting deals for contact ${contactId}`);
     const result = await this.dealsService.getDealsByContact(contactId);
-    console.log(`API: Returning ${result.length} deals`);
     return result;
   }
 

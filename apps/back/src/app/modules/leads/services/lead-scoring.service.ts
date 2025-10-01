@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import { Lead, LeadStatus } from '../lead.entity';
 import { LeadScoringRule, ScoringRuleType } from '../entities/lead-scoring-rule.entity';
 import { LeadActivity, ActivityType } from '../entities/lead-activity.entity';
+import { NotificationRuleService } from '../../shared/services/notification-rule.service';
+import { NotificationType } from '../../shared/entities/notification.entity';
 
 export interface ScoringContext {
   lead: Lead;
@@ -26,7 +28,8 @@ export class LeadScoringService {
     @InjectRepository(LeadScoringRule)
     private readonly scoringRuleRepo: Repository<LeadScoringRule>,
     @InjectRepository(LeadActivity)
-    private readonly activityRepo: Repository<LeadActivity>
+    private readonly activityRepo: Repository<LeadActivity>,
+    private readonly notificationRuleService: NotificationRuleService
   ) {}
 
   async calculateScore(leadId: number, context: ScoringContext): Promise<number> {
@@ -40,6 +43,8 @@ export class LeadScoringService {
       order: { priority: 'DESC' }
     });
 
+    const previousScore = lead.score;
+    const previousTemperature = this.getTemperature(previousScore);
     let totalScore = lead.score;
 
     for (const rule of rules) {
@@ -66,7 +71,95 @@ export class LeadScoringService {
     // Обновляем общий скор лида
     await this.leadRepo.update(leadId, { score: totalScore });
 
+    // Определяем новую температуру
+    const currentTemperature = this.getTemperature(totalScore);
+    const scoreChange = totalScore - previousScore;
+
+    // Запускаем оценку правил уведомлений
+    await this.triggerNotifications(lead, {
+      previousScore,
+      currentScore: totalScore,
+      scoreChange,
+      previousTemperature,
+      currentTemperature
+    });
+
     return totalScore;
+  }
+
+  private getTemperature(score: number): string {
+    if (score >= 71) return 'hot';
+    if (score >= 31) return 'warm';
+    return 'cold';
+  }
+
+  private async triggerNotifications(
+    lead: Lead, 
+    scoreData: {
+      previousScore: number;
+      currentScore: number;
+      scoreChange: number;
+      previousTemperature: string;
+      currentTemperature: string;
+    }
+  ): Promise<void> {
+    const { previousScore, currentScore, scoreChange, previousTemperature, currentTemperature } = scoreData;
+
+    // Подготавливаем контекст для правил уведомлений
+    const notificationContext = {
+      leadId: lead.id,
+      leadScore: {
+        totalScore: currentScore,
+        temperature: currentTemperature,
+        scoreChange,
+        previousScore
+      },
+      leadData: {
+        name: lead.name,
+        email: lead.email,
+        status: lead.status,
+        source: lead.source,
+        assignedTo: lead.assignedTo
+      },
+      userId: lead.assignedTo,
+      timestamp: new Date()
+    };
+
+    // Проверяем различные сценарии для уведомлений
+    if (currentTemperature !== previousTemperature) {
+      // Температура изменилась
+      switch (currentTemperature) {
+        case 'hot':
+          // Лид стал горячим
+          await this.notificationRuleService.evaluateRules({
+            ...notificationContext,
+            // Дополнительный контекст для горячих лидов
+          });
+          break;
+        case 'warm':
+          if (previousTemperature === 'cold') {
+            // Лид стал теплым из холодного
+            await this.notificationRuleService.evaluateRules(notificationContext);
+          }
+          break;
+      }
+    }
+
+    // Проверяем значительные изменения скора
+    if (Math.abs(scoreChange) >= 10) {
+      await this.notificationRuleService.evaluateRules(notificationContext);
+    }
+
+    // Проверяем пороговые значения
+    if (currentScore >= 80 && previousScore < 80) {
+      // Достигнут высокий порог
+      await this.notificationRuleService.evaluateRules(notificationContext);
+    }
+
+    if (currentScore >= 50 && previousScore < 50) {
+      // Достигнут средний порог
+      await this.notificationRuleService.evaluateRules(notificationContext);
+    }
   }
 
   private async applyRule(rule: LeadScoringRule, context: ScoringContext): Promise<number> {
