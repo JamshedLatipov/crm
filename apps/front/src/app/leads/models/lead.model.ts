@@ -237,3 +237,15 @@ export interface ScheduleFollowUpRequest {
   followUpAt: Date;
   notes?: string;
 }
+
+export interface Assignment {
+  id: string;
+  entityType: string;
+  entityId: string;
+  userId: number;
+  assignedBy: number;
+  reason?: string;
+  status: 'active' | 'inactive';
+  createdAt: Date;
+  updatedAt: Date;
+}

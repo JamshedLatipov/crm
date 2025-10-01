@@ -1,8 +1,8 @@
 import { Routes } from '@angular/router';
-import { UsersComponent } from './users.component';
+import { UsersComponent } from './users/users.component';
 import { UserListComponent } from './user-list/user-list.component';
-import { UserDetailComponent } from './user-detail.component';
-import { UserFormComponent } from './user-form.component';
+import { UserDetailComponent } from './user-detail/user-detail.component';
+import { UserFormComponent } from './user-form/user-form.component';
 
 export const usersRoutes: Routes = [
   {

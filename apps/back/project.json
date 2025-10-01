@@ -19,17 +19,8 @@
     },
     "serve": {
       "executor": "nx:run-commands",
-      "dependsOn": ["build"],
       "options": {
-        "command": "node dist/apps/back/main.js"
-      },
-      "configurations": {
-        "development": {
-          "command": "node dist/apps/back/main.js"
-        },
-        "production": {
-          "command": "node dist/apps/back/main.js"
-        }
+        "command": "npx nodemon --exec \"ts-node --project apps/back/tsconfig.app.json apps/back/src/main.ts\" --watch apps/back/src --ext ts,js,json"
       }
     },
     "test": {

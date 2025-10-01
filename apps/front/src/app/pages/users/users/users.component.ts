@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 
@@ -9,9 +9,9 @@ import { RouterOutlet } from '@angular/router';
     CommonModule,
     RouterOutlet
   ],
-  template: `
-    <router-outlet></router-outlet>
-  `
+  templateUrl: './users.component.html',
+  styleUrls: ['./users.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class UsersComponent {
 }

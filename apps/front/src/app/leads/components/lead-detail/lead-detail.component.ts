@@ -19,6 +19,8 @@ import {
   LeadActivity,
   LeadSource,
   ActivityType,
+  Assignment,
+  LeadStatus,
 } from '../../models/lead.model';
 import { ChangeStatusDialogComponent } from '../change-status-dialog/change-status-dialog.component';
 import { AssignLeadDialogComponent } from '../assign-lead-dialog/assign-lead-dialog.component';
@@ -78,9 +80,15 @@ export class LeadDetailComponent implements OnInit {
   loadingLead = false;
   error = '';
   managers: Manager[] = [];
+  currentAssignments: Assignment[] = [];
 
   // Для компонента комментариев
   readonly CommentEntityType = CommentEntityType;
+
+  // Геттер для проверки, конвертирован ли лид
+  get isConverted(): boolean {
+    return this.lead?.status === LeadStatus.CONVERTED;
+  }
 
   // Status and source mappings
   private sourceLabels = {
@@ -127,10 +135,24 @@ export class LeadDetailComponent implements OnInit {
       next: (lead) => {
         this.lead = lead;
         this.loadActivities();
+        this.loadCurrentAssignments();
       },
       error: (err) => {
         console.error('Error loading lead:', err);
         this.router.navigate(['/leads/list']);
+      },
+    });
+  }
+
+  private loadCurrentAssignments(): void {
+    if (!this.lead?.id) return;
+    this.leadService.getCurrentAssignments(this.lead.id).subscribe({
+      next: (assignments) => {
+        this.currentAssignments = assignments;
+      },
+      error: (err) => {
+        console.error('Error loading assignments:', err);
+        this.currentAssignments = [];
       },
     });
   }
@@ -213,6 +235,10 @@ export class LeadDetailComponent implements OnInit {
   }
 
   editLead(): void {
+    if (this.isConverted) {
+      return; // Конвертированные лиды нельзя редактировать
+    }
+    
     const dialogRef = this.dialog.open(EditLeadDialogComponent, {
       width: '800px',
       maxWidth: '90vw',
@@ -273,6 +299,10 @@ export class LeadDetailComponent implements OnInit {
   }
 
   quickChangeStatus(): void {
+    if (this.isConverted) {
+      return; // Конвертированные лиды нельзя редактировать
+    }
+    
     const dialogRef = this.dialog.open(ChangeStatusDialogComponent, {
       width: '600px',
       maxWidth: '90vw',
@@ -290,24 +320,34 @@ export class LeadDetailComponent implements OnInit {
   }
 
   assignLead(): void {
+    if (this.isConverted) {
+      return; // Конвертированные лиды нельзя редактировать
+    }
+    
     const dialogRef = this.dialog.open(AssignLeadDialogComponent, {
       width: '700px',
       maxWidth: '90vw',
       data: {
         lead: this.lead,
-        currentAssignee: this.lead?.assignedTo,
+        currentAssignee: this.getCurrentAssignee(),
       },
     });
 
     dialogRef.afterClosed().subscribe((result: Lead | undefined) => {
       if (result) {
         this.lead = result; // Update current lead data
+        this.loadCurrentAssignments(); // Reload assignments
       }
     });
   }
 
   deleteLead(): void {
     if (!this.lead) return;
+    if (this.isConverted) {
+      alert('Конвертированные лиды нельзя удалить');
+      return;
+    }
+    
     if (confirm(`Вы уверены, что хотите удалить лид "${this.lead.name}"?`)) {
       this.leadService.deleteLead(this.lead.id).subscribe({
         next: () => {
@@ -322,6 +362,22 @@ export class LeadDetailComponent implements OnInit {
 
   close(): void {
     this.router.navigate(['/leads/list']);
+  }
+
+  getCurrentAssignee(): string | undefined {
+    const activeAssignment = this.currentAssignments.find(a => a.status === 'active');
+    return activeAssignment ? activeAssignment.userId.toString() : undefined;
+  }
+
+  get getAssigneeName(): string {
+    const activeAssignment = this.currentAssignments.length ? this.currentAssignments[0] : undefined;
+    if (!activeAssignment) {
+      return 'Не назначен';
+    }
+    
+    const manager = this.managers.find(m => m.id?.toString() === activeAssignment.userId.toString());
+    console.log('Active assignment userId:', activeAssignment.userId, 'Resolved manager:', manager);
+    return manager?.fullName || manager?.username || `ID: ${activeAssignment.userId}`;
   }
 
   getActivityLabel(type: ActivityType): string {
@@ -359,6 +415,10 @@ export class LeadDetailComponent implements OnInit {
 
   convertToDeal(): void {
     if (!this.lead?.id) return;
+    if (this.isConverted) {
+      alert('Этот лид уже конвертирован в сделку');
+      return;
+    }
     
     const dialogRef = this.dialog.open(ConvertToDealDialogComponent, {
       width: '800px',

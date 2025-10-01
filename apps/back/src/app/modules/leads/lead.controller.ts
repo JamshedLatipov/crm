@@ -1,8 +1,8 @@
-import { Controller, Get, Post, Body, Param, Patch, Delete, Query, BadRequestException, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Delete, Query, BadRequestException, Req, UseGuards } from '@nestjs/common';
 import { LeadService } from './lead.service';
 import { Lead, LeadStatus, LeadSource, LeadPriority } from './lead.entity';
 import { ChangeType } from './entities/lead-history.entity';
-import { ApiTags, ApiBody, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiBody, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { 
   CreateLeadDto, 
   UpdateLeadDto, 
@@ -17,6 +17,8 @@ import {
   LeadFiltersDto
 } from './lead.dto';
 import { LeadActivity } from './entities/lead-activity.entity';
+import { JwtAuthGuard } from '../user/jwt-auth.guard';
+import { CurrentUser, CurrentUserPayload } from '../user/current-user.decorator';
 
 // Helper function to parse array parameters
 function parseArrayParam(param: string | string[] | undefined): string[] | undefined {
@@ -47,6 +49,8 @@ function parseChangeTypeArray(param: string | string[] | undefined): ChangeType[
 }
 
 @ApiTags('leads')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('leads')
 export class LeadController {
   constructor(private readonly leadService: LeadService) {}
@@ -148,6 +152,11 @@ export class LeadController {
     return this.leadService.getActivities(id);
   }
 
+  @Get(':id/assignments')
+  async getCurrentAssignments(@Param('id') id: number): Promise<any[]> {
+    return this.leadService.getCurrentAssignments(id);
+  }
+
   @Patch(':id')
   @ApiBody({ type: UpdateLeadDto })
   async update(@Param('id') id: number, @Body() data: UpdateLeadDto): Promise<Lead> {
@@ -156,12 +165,12 @@ export class LeadController {
 
   @Patch(':id/assign')
   @ApiBody({ type: AssignLeadDto })
-  async assignLead(@Param('id') id: number, @Body() body: AssignLeadDto): Promise<Lead> {
+  async assignLead(@Param('id') id: number, @Body() body: AssignLeadDto, @CurrentUser() user: CurrentUserPayload): Promise<Lead> {
     const userOrManager = body.managerId ?? body.user;
     if (!userOrManager) {
       throw new BadRequestException('Missing user or managerId in request body');
     }
-    return this.leadService.assignLead(id, userOrManager);
+    return this.leadService.assignLead(id, userOrManager, parseInt(user.sub), user.username);
   }
 
   @Post(':id/auto-assign')

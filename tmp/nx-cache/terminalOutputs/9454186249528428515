@@ -1,0 +1,35 @@
+[33m❯[39m Building...
+[32m✔[39m Building...
+[37m[1mInitial chunk files[22m  [2m | [22m[1mNames[22m                          [2m | [22m [1mRaw size[22m[2m | [22m[1mEstimated transfer size[22m[39m
+[37m[32mmain-6P64RB47.js[39m[37m     [2m | [22m[2mmain[22m                           [2m | [22m  [36m1.63 MB[39m[37m[2m | [22m              [36m254.29 kB[39m[37m[39m
+[37m[32mchunk-JXTLHKBC.js[39m[37m    [2m | [22m[2m-[22m                              [2m | [22m[36m620.27 kB[39m[37m[2m | [22m              [36m135.00 kB[39m[37m[39m
+[37m[32mchunk-7M2B3SNL.js[39m[37m    [2m | [22m[2m-[22m                              [2m | [22m [36m83.95 kB[39m[37m[2m | [22m               [36m10.87 kB[39m[37m[39m
+[37m[32mstyles-JIY3CNFT.css[39m[37m  [2m | [22m[2mstyles[22m                         [2m | [22m [36m58.02 kB[39m[37m[2m | [22m                [36m8.76 kB[39m[37m[39m
+[37m[32mpolyfills-B6TNHZQ6.js[39m[37m[2m | [22m[2mpolyfills[22m                      [2m | [22m [36m34.58 kB[39m[37m[2m | [22m               [36m11.32 kB[39m[37m[39m
+[37m[32mchunk-WX5IEMCZ.js[39m[37m    [2m | [22m[2m-[22m                              [2m | [22m [36m29.70 kB[39m[37m[2m | [22m                [36m7.09 kB[39m[37m[39m
+[37m[39m
+[37m[1m [22m                    [2m | [22m[1mInitial total[22m                  [2m | [22m  [1m[93m2.46 MB[39m[37m[22m[2m | [22m              [1m427.33 kB[22m[39m
+[37m[39m
+[37m[1mLazy chunk files[22m     [2m | [22m[1mNames[22m                          [2m | [22m [1mRaw size[22m[2m | [22m[1mEstimated transfer size[22m[39m
+[37m[32mchunk-7DR4732N.js[39m[37m    [2m | [22m[2medit-contact-dialog-component[22m  [2m | [22m [36m11.36 kB[39m[37m[2m | [22m                [36m3.09 kB[39m[37m[39m
+[37m[32mchunk-SLJF5E6I.js[39m[37m    [2m | [22m[2mcreate-contact-dialog-component[22m[2m | [22m[36m111 bytes[39m[37m[2m | [22m              [36m111 bytes[39m[37m[39m
+[37m[39m
+[37mApplication bundle generation complete. [6.967 seconds][39m
+[37m[39m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mbundle initial exceeded maximum budget. Budget 2.00 MB was not met by 458.14 kB with a total of 2.46 MB.[0m[39m[22m
+[1m[33m[39m[22m
+[1m[33m[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mModule 'jssip' used by 'apps/front/src/app/softphone/softphone.service.ts' is not ESM[0m[39m[22m
+[1m[33m[39m[22m
+[1m[33m  CommonJS or AMD dependencies can cause optimization bailouts.[39m[22m
+[1m[33m  For more information see: [4mhttps://angular.dev/tools/cli/build#configuring-commonjs-dependencies[0m[39m[22m
+[1m[33m[39m[22m
+[1m[33m[39m[22m
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mModule 'dayjs' used by 'apps/front/src/app/shared/utils/date.util.ts' is not ESM[0m[39m[22m
+[1m[33m[39m[22m
+[1m[33m  CommonJS or AMD dependencies can cause optimization bailouts.[39m[22m
+[1m[33m  For more information see: [4mhttps://angular.dev/tools/cli/build#configuring-commonjs-dependencies[0m[39m[22m
+[1m[33m[39m[22m
+[1m[33m[39m[22m
+[37mOutput location: C:\Users\Jamshed\Documents\work\crm_mono\dist\apps\front[39m
+[37m[39m

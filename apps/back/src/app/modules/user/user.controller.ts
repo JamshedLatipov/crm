@@ -146,22 +146,21 @@ export class UserController {
     return { message: 'Test managers seeded successfully' };
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Get user by ID' })
+  @Post(':id/reset-password')
+  @ApiOperation({ summary: 'Reset user password' })
   @ApiParam({ name: 'id', description: 'User ID' })
-  @ApiResponse({ status: 200, description: 'User found' })
+  @ApiResponse({ status: 200, description: 'Password reset successfully' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  async getUserById(@Param('id') id: string): Promise<User> {
+  async resetPassword(
+    @Param('id') id: string
+  ): Promise<{ temporaryPassword: string }> {
     const numericId = parseInt(id, 10);
     if (isNaN(numericId)) {
       throw new NotFoundException(`Invalid user ID: ${id}`);
     }
     
-    const user = await this.userService.findById(numericId);
-    if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
-    }
-    return user;
+    const temporaryPassword = await this.userService.resetPassword(numericId);
+    return { temporaryPassword };
   }
 
   @Put(':id')
@@ -181,80 +180,22 @@ export class UserController {
     return await this.userService.updateUser(numericId, updateUserDto);
   }
 
-  @Delete(':id')
-  @ApiOperation({ summary: 'Delete user' })
+  @Get(':id')
+  @ApiOperation({ summary: 'Get user by ID' })
   @ApiParam({ name: 'id', description: 'User ID' })
-  @ApiResponse({ status: 204, description: 'User deleted successfully' })
+  @ApiResponse({ status: 200, description: 'User found' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteUser(@Param('id') id: string): Promise<void> {
+  async getUserById(@Param('id') id: string): Promise<User> {
     const numericId = parseInt(id, 10);
     if (isNaN(numericId)) {
       throw new NotFoundException(`Invalid user ID: ${id}`);
     }
     
-    await this.userService.deleteUser(numericId);
-  }
-
-  @Get('statistics')
-  @ApiOperation({ summary: 'Get user statistics' })
-  @ApiResponse({ status: 200, description: 'User statistics' })
-  async getUserStatistics(): Promise<any> {
-    return await this.userService.getUserStatistics();
-  }
-
-  @Post('bulk-update')
-  @ApiOperation({ summary: 'Bulk update users' })
-  @ApiResponse({ status: 200, description: 'Users updated successfully' })
-  async bulkUpdateUsers(
-    @Body() bulkUpdateDto: { userIds: number[], updates: UpdateUserDto }
-  ): Promise<User[]> {
-    return await this.userService.bulkUpdateUsers(bulkUpdateDto.userIds, bulkUpdateDto.updates);
-  }
-
-  @Post('bulk-delete')
-  @ApiOperation({ summary: 'Bulk delete users' })
-  @ApiResponse({ status: 204, description: 'Users deleted successfully' })
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async bulkDeleteUsers(
-    @Body() bulkDeleteDto: { userIds: number[] }
-  ): Promise<void> {
-    await this.userService.bulkDeleteUsers(bulkDeleteDto.userIds);
-  }
-
-  @Post(':id/change-password')
-  @ApiOperation({ summary: 'Change user password' })
-  @ApiParam({ name: 'id', description: 'User ID' })
-  @ApiResponse({ status: 200, description: 'Password changed successfully' })
-  @ApiResponse({ status: 404, description: 'User not found' })
-  async changePassword(
-    @Param('id') id: string,
-    @Body() changePasswordDto: { password: string }
-  ): Promise<{ success: boolean }> {
-    const numericId = parseInt(id, 10);
-    if (isNaN(numericId)) {
-      throw new NotFoundException(`Invalid user ID: ${id}`);
+    const user = await this.userService.findById(numericId);
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
     }
-    
-    await this.userService.changePassword(numericId, changePasswordDto.password);
-    return { success: true };
-  }
-
-  @Post(':id/reset-password')
-  @ApiOperation({ summary: 'Reset user password' })
-  @ApiParam({ name: 'id', description: 'User ID' })
-  @ApiResponse({ status: 200, description: 'Password reset successfully' })
-  @ApiResponse({ status: 404, description: 'User not found' })
-  async resetPassword(
-    @Param('id') id: string
-  ): Promise<{ temporaryPassword: string }> {
-    const numericId = parseInt(id, 10);
-    if (isNaN(numericId)) {
-      throw new NotFoundException(`Invalid user ID: ${id}`);
-    }
-    
-    const temporaryPassword = await this.userService.resetPassword(numericId);
-    return { temporaryPassword };
+    return user;
   }
 
   @Get('export')

@@ -1,0 +1,56 @@
+[33m❯[39m Building...
+[32m✔[39m Building...
+[37mApplication bundle generation failed. [4.839 seconds][39m
+[37m[39m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2488: Type 'Signal<{ value: string; label: string; }[]>' must have a '[Symbol.iterator]()' method that returns an iterator.[0m [1m[35m[plugin angular-compiler][0m[39m[22m
+[1m[31m[39m[22m
+[1m[31m    apps/front/src/app/pages/users/user-form/user-form.component.html:167:28:[39m[22m
+[1m[31m[37m      167 │               @for (dept of [32mavailableDepartments[37m; track dept) {[39m[22m
+[1m[31m          ╵                             [32m~~~~~~~~~~~~~~~~~~~~[0m[39m[22m
+[1m[31m[39m[22m
+[1m[31m  Error occurs in the template of component UserFormComponent.[39m[22m
+[1m[31m[39m[22m
+[1m[31m    apps/front/src/app/pages/users/user-form/user-form.component.ts:39:15:[39m[22m
+[1m[31m[37m      39 │   templateUrl: [32m'./user-form.component.html'[37m,[39m[22m
+[1m[31m         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m[39m[22m
+[1m[31m[39m[22m
+[1m[31m[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2488: Type 'Signal<{ value: string; label: string; }[]>' must have a '[Symbol.iterator]()' method that returns an iterator.[0m [1m[35m[plugin angular-compiler][0m[39m[22m
+[1m[31m[39m[22m
+[1m[31m    apps/front/src/app/pages/users/user-form/user-form.component.html:230:24:[39m[22m
+[1m[31m[37m      230 │           @for (role of [32mavailableRoles[37m; track role.value) {[39m[22m
+[1m[31m          ╵                         [32m~~~~~~~~~~~~~~[0m[39m[22m
+[1m[31m[39m[22m
+[1m[31m  Error occurs in the template of component UserFormComponent.[39m[22m
+[1m[31m[39m[22m
+[1m[31m    apps/front/src/app/pages/users/user-form/user-form.component.ts:39:15:[39m[22m
+[1m[31m[37m      39 │   templateUrl: [32m'./user-form.component.html'[37m,[39m[22m
+[1m[31m         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m[39m[22m
+[1m[31m[39m[22m
+[1m[31m[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2488: Type 'Signal<string[]>' must have a '[Symbol.iterator]()' method that returns an iterator.[0m [1m[35m[plugin angular-compiler][0m[39m[22m
+[1m[31m[39m[22m
+[1m[31m    apps/front/src/app/pages/users/user-form/user-form.component.html:377:33:[39m[22m
+[1m[31m[37m      377 │                   @for (skill of [32mavailableSkills[37m; track skill) {[39m[22m
+[1m[31m          ╵                                  [32m~~~~~~~~~~~~~~~[0m[39m[22m
+[1m[31m[39m[22m
+[1m[31m  Error occurs in the template of component UserFormComponent.[39m[22m
+[1m[31m[39m[22m
+[1m[31m    apps/front/src/app/pages/users/user-form/user-for[39m[22m[1m[31mm.component.ts:39:15:[39m[22m
+[1m[31m[37m      39 │   templateUrl: [32m'./user-form.component.html'[37m,[39m[22m
+[1m[31m         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m[39m[22m
+[1m[31m[39m[22m
+[1m[31m[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2488: Type 'Signal<string[]>' must have a '[Symbol.iterator]()' method that returns an iterator.[0m [1m[35m[plugin angular-compiler][0m[39m[22m
+[1m[31m[39m[22m
+[1m[31m    apps/front/src/app/pages/users/user-form/user-form.component.html:459:37:[39m[22m
+[1m[31m[37m      459 │ ...      @for (territory of [32mavailableTerritories[37m; track territory) {[39m[22m
+[1m[31m          ╵                             [32m~~~~~~~~~~~~~~~~~~~~[0m[39m[22m
+[1m[31m[39m[22m
+[1m[31m  Error occurs in the template of component UserFormComponent.[39m[22m
+[1m[31m[39m[22m
+[1m[31m    apps/front/src/app/pages/users/user-form/user-form.component.ts:39:15:[39m[22m
+[1m[31m[37m      39 │   templateUrl: [32m'./user-form.component.html'[37m,[39m[22m
+[1m[31m         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m[39m[22m
+[1m[31m[39m[22m
+[1m[31m[39m[22m

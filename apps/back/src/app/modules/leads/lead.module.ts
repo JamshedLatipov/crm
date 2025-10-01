@@ -20,6 +20,7 @@ import { LeadHistoryController } from './controllers/lead-history.controller';
 import { UserModule } from '../user/user.module';
 import { DealsModule } from '../deals/deals.module';
 import { NotificationModule } from '../notifications/notification.module';
+import { SharedModule } from '../shared/shared.module';
 
 @Module({
   imports: [
@@ -34,7 +35,8 @@ import { NotificationModule } from '../notifications/notification.module';
     ]),
     UserModule,
     DealsModule,
-    NotificationModule
+    NotificationModule,
+    SharedModule
   ],
   providers: [
     LeadService,

@@ -49,6 +49,10 @@ export class CreateUserDto {
   @IsOptional()
   @IsBoolean()
   isAvailableForAssignment?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  managerID?: number;
 }
 
 export class UpdateUserDto {
@@ -95,6 +99,10 @@ export class UpdateUserDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  managerID?: number;
 }
 
 export class AutoAssignCriteriaDto {

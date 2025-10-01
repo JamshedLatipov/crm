@@ -38,9 +38,8 @@
         <mat-label>Поиск</mat-label>
         <input
           matInput
+          [formControl]="searchControl"
           placeholder="Имя, email, департамент..."
-          [(ngModel)]="searchQuery"
-          (ngModelChange)="onSearchChange()"
         />
         <mat-icon matSuffix>search</mat-icon>
       </mat-form-field>
@@ -48,10 +47,7 @@
       <!-- Status filter -->
       <mat-form-field appearance="outline">
         <mat-label>Статус</mat-label>
-        <mat-select
-          [(ngModel)]="statusFilter"
-          (selectionChange)="onStatusFilterChange()"
-        >
+        <mat-select [formControl]="statusControl">
           <mat-option value="">Все</mat-option>
           <mat-option value="active">Активные</mat-option>
           <mat-option value="inactive">Неактивные</mat-option>

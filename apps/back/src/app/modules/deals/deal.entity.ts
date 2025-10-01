@@ -78,7 +78,7 @@ export class Deal {
   })
   status: DealStatus;
 
-  @Column()
+  @Column({ type: 'varchar' })
   assignedTo: string; // ID менеджера
 
   @Column('text', { nullable: true })

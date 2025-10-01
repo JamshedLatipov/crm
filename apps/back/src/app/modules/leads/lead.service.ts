@@ -6,6 +6,7 @@ import {
   MoreThan,
   LessThan,
   SelectQueryBuilder,
+  In,
 } from 'typeorm';
 import { Lead, LeadStatus, LeadSource, LeadPriority } from './lead.entity';
 import { LeadActivity, ActivityType } from './entities/lead-activity.entity';
@@ -18,6 +19,7 @@ import { Company } from '../companies/entities/company.entity';
 import { Deal } from '../deals/deal.entity';
 import { CreateDealDto } from '../deals/dto/create-deal.dto';
 import { DealsService } from '../deals/deals.service';
+import { AssignmentService } from '../shared/services/assignment.service';
 
 // Интерфейс для создания лида с дополнительными полями
 interface CreateLeadData extends Partial<Lead> {
@@ -67,7 +69,8 @@ export class LeadService {
     private readonly distributionService: LeadDistributionService,
     private readonly historyService: LeadHistoryService,
     private readonly userService: UserService,
-    private readonly dealsService: DealsService
+    private readonly dealsService: DealsService,
+    private readonly assignmentService: AssignmentService
   ) {}
 
   async create(data: CreateLeadData, userId?: string, userName?: string): Promise<Lead> {
@@ -126,11 +129,19 @@ export class LeadService {
     });
 
     // Автоматическое назначение лида
-    if (!lead.assignedTo) {
+    const currentAssignments = await this.assignmentService.getCurrentAssignments('lead', lead.id.toString());
+    if (currentAssignments.length === 0) {
       const assignedManager =
         await this.distributionService.distributeLeadAutomatically(lead.id);
       if (assignedManager) {
-        lead.assignedTo = assignedManager;
+        await this.assignmentService.createAssignment({
+          entityType: 'lead',
+          entityId: lead.id.toString(),
+          assignedTo: [Number(assignedManager)],
+          assignedBy: 1, // system user
+          reason: 'Auto-assigned during lead creation',
+          notifyAssignees: false
+        });
       }
     }
 
@@ -201,9 +212,15 @@ export class LeadService {
     }
 
     if (filters.assignedTo && filters.assignedTo.length > 0) {
-      queryBuilder.andWhere('lead.assignedTo IN (:...managers)', {
-        managers: filters.assignedTo,
-      });
+      // Фильтрация по назначениям через join с assignment таблицей
+      queryBuilder
+        .innerJoin('assignments', 'assignment', 'assignment.entity_id = CAST(lead.id AS TEXT) AND assignment.entity_type = :entityType AND assignment.status = :status', {
+          entityType: 'lead',
+          status: 'active'
+        })
+        .andWhere('assignment.user_id IN (:...managers)', {
+          managers: filters.assignedTo.map(id => Number(id)),
+        });
     }
 
     if (filters.scoreMin !== undefined) {
@@ -388,11 +405,59 @@ export class LeadService {
     return changed;
   }
 
-  async assignLead(id: number, user: string, assignedByUserId?: string, assignedByUserName?: string): Promise<Lead> {
+  async assignLead(id: number, user: string, assignedByUserId?: number, assignedByUserName?: string): Promise<Lead> {
     const existingLead = await this.findById(id);
-    const oldAssignedTo = existingLead?.assignedTo;
-    
-    const updated = await this.update(id, { assignedTo: user }, assignedByUserId, assignedByUserName);
+    if (!existingLead) {
+      throw new Error('Lead not found');
+    }
+
+    // Получаем текущие назначения
+    const currentAssignments = await this.assignmentService.getCurrentAssignments('lead', id.toString());
+    const oldAssignedTo = currentAssignments.length > 0 ? currentAssignments[0].userId.toString() : null;
+
+    // Если пользователь уже назначен, ничего не делаем
+    if (oldAssignedTo === user) {
+      return existingLead;
+    }
+
+    // Получаем ID пользователя для назначения
+    let userId: number;
+    const parsedUserId = Number(user);
+    if (!Number.isNaN(parsedUserId)) {
+      userId = parsedUserId;
+    } else {
+      // Если user - это username, ищем пользователя
+      const userEntity = await this.userService.findByUsername(user);
+      if (!userEntity) {
+        throw new Error(`User not found: ${user}`);
+      }
+      userId = userEntity.id;
+    }
+
+    // Снимаем предыдущее назначение через AssignmentService
+    if (currentAssignments.length > 0) {
+      try {
+        await this.assignmentService.removeAssignment({
+          entityType: 'lead',
+          entityId: id.toString(),
+          userIds: currentAssignments.map(a => a.userId),
+          reason: 'Reassigned to another user'
+        });
+      } catch (error) {
+        // Игнорируем ошибки снятия назначения, если записи нет
+        console.warn('Failed to remove old assignment:', error.message);
+      }
+    }
+
+    // Создаем новое назначение через AssignmentService
+    const assignmentResult = await this.assignmentService.createAssignment({
+      entityType: 'lead',
+      entityId: id.toString(),
+      assignedTo: [userId],
+      assignedBy: assignedByUserId,
+      reason: 'Lead assigned to manager',
+      notifyAssignees: false // Отключаем уведомления, так как это внутреннее действие
+    });
 
     // Записываем назначение в историю
     await this.historyService.createHistoryEntry({
@@ -401,7 +466,7 @@ export class LeadService {
       oldValue: oldAssignedTo || null,
       newValue: user,
       changeType: ChangeType.ASSIGNED,
-      userId: assignedByUserId,
+      userId: assignedByUserId?.toString(),
       userName: assignedByUserName,
       description: `Лид назначен менеджеру: ${user}`,
       metadata: { 
@@ -412,30 +477,12 @@ export class LeadService {
     });
 
     // Обновляем счетчик лидов у пользователя
-    const parsedUserId = Number(user);
-    if (Number.isNaN(parsedUserId)) {
-      // If user is not a numeric id (e.g., username), skip numeric update and just record activity.
-      // Optionally, you could look up by username here if that's desired.
-      // We avoid passing NaN to DB which causes QueryFailedError.
-      await this.activityRepo.save({
-        leadId: id,
-        type: ActivityType.ASSIGNED,
-        title: 'Лид назначен менеджеру',
-        description: `Лид назначен менеджеру: ${user} (non-numeric id)`,
-        metadata: { 
-          'Назначен менеджеру': String(user),
-          'Дата назначения': new Date().toLocaleDateString('ru-RU')
-        },
-      });
-      return updated;
-    }
-
-    const userEntity = await this.userService.findById(parsedUserId);
+    const userEntity = await this.userService.findById(userId);
     if (userEntity) {
       await this.userService.updateLeadCount(userEntity.id, 1);
     }
 
-    // If we reached here, either userEntity was found and count updated, or user was numeric but not found.
+    // Записываем активность
     await this.activityRepo.save({
       leadId: id,
       type: ActivityType.ASSIGNED,
@@ -447,7 +494,7 @@ export class LeadService {
       },
     });
 
-    return updated;
+    return existingLead;
   }
 
   async autoAssignLead(
@@ -655,8 +702,20 @@ export class LeadService {
   }
 
   async getLeadsByManager(managerId: string): Promise<Lead[]> {
+    // Получаем назначения для данного менеджера
+    const assignments = await this.assignmentService.getUserAssignments(Number(managerId), {
+      entityType: 'lead',
+      status: 'active'
+    });
+
+    if (assignments.length === 0) {
+      return [];
+    }
+
+    // Получаем лиды по ID из назначений
+    const leadIds = assignments.map(a => Number(a.entityId));
     return this.leadRepo.find({
-      where: { assignedTo: managerId },
+      where: { id: In(leadIds) },
       order: { createdAt: 'DESC' },
     });
   }
@@ -815,6 +874,13 @@ export class LeadService {
   }
 
   /**
+   * Получить текущие назначения лида
+   */
+  async getCurrentAssignments(leadId: number) {
+    return this.assignmentService.getCurrentAssignments('lead', leadId.toString());
+  }
+
+  /**
    * Конвертация лида в сделку
    * @param leadId ID лида
    * @param dealData Дополнительные данные для сделки
@@ -843,6 +909,10 @@ export class LeadService {
 
     const oldStatus = lead.status;
 
+    // Получаем текущие назначения лида
+    const currentAssignments = await this.assignmentService.getCurrentAssignments('lead', leadId.toString());
+    const assignedTo = currentAssignments.length > 0 ? currentAssignments[0].userId.toString() : 'unknown';
+
     // Создаем сделку на основе данных лида
     const dealDto: CreateDealDto = {
       title: dealData.title || `Deal from ${lead.name}`,
@@ -852,7 +922,7 @@ export class LeadService {
       probability: dealData.probability || lead.conversionProbability || 50,
       expectedCloseDate: dealData.expectedCloseDate.toISOString(),
       stageId: dealData.stageId,
-      assignedTo: lead.assignedTo || 'unknown',
+      assignedTo: assignedTo,
       notes: dealData.notes || `Converted from lead #${lead.id}: ${lead.name}`,
       meta: {
         convertedFromLead: true,

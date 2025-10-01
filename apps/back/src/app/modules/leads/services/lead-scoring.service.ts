@@ -6,6 +6,7 @@ import { LeadScoringRule, ScoringRuleType } from '../entities/lead-scoring-rule.
 import { LeadActivity, ActivityType } from '../entities/lead-activity.entity';
 import { NotificationRuleService } from '../../shared/services/notification-rule.service';
 import { NotificationType } from '../../shared/entities/notification.entity';
+import { AssignmentService } from '../../shared/services/assignment.service';
 
 export interface ScoringContext {
   lead: Lead;
@@ -29,7 +30,8 @@ export class LeadScoringService {
     private readonly scoringRuleRepo: Repository<LeadScoringRule>,
     @InjectRepository(LeadActivity)
     private readonly activityRepo: Repository<LeadActivity>,
-    private readonly notificationRuleService: NotificationRuleService
+    private readonly notificationRuleService: NotificationRuleService,
+    private readonly assignmentService: AssignmentService
   ) {}
 
   async calculateScore(leadId: number, context: ScoringContext): Promise<number> {
@@ -119,11 +121,18 @@ export class LeadScoringService {
         email: lead.email,
         status: lead.status,
         source: lead.source,
-        assignedTo: lead.assignedTo
+        assignedTo: null // Will be populated from assignments
       },
-      userId: lead.assignedTo,
+      userId: null, // Will be populated from assignments
       timestamp: new Date()
     };
+
+    // Получаем текущие назначения для получения userId
+    const currentAssignments = await this.assignmentService.getCurrentAssignments('lead', lead.id.toString());
+    if (currentAssignments.length > 0) {
+      notificationContext.leadData.assignedTo = currentAssignments[0].userId.toString();
+      notificationContext.userId = currentAssignments[0].userId.toString();
+    }
 
     // Проверяем различные сценарии для уведомлений
     if (currentTemperature !== previousTemperature) {

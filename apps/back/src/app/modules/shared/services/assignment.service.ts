@@ -160,7 +160,7 @@ export class AssignmentService {
         entityId,
         status: 'active'
       },
-      relations: ['user'],
+      relations: ['user', 'assignedByUser'],
       order: { assignedAt: 'DESC' }
     });
 

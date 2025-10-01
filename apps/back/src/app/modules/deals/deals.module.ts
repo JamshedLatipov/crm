@@ -9,12 +9,14 @@ import { DealHistoryService } from './services/deal-history.service';
 import { DealHistoryController } from './controllers/deal-history.controller';
 import { PipelineStage } from '../pipeline/pipeline.entity';
 import { UserModule } from '../user/user.module';
+import { SharedModule } from '../shared/shared.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Deal, DealHistory, PipelineStage]),
     PassportModule,
-    UserModule
+    UserModule,
+    SharedModule
   ],
   providers: [DealsService, DealHistoryService],
   controllers: [DealsController, DealHistoryController],

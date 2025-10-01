@@ -15,6 +15,16 @@ import {
 } from './dtos';
 import { environment } from '../../environments/environment';
 
+export interface DealAssignment {
+  id: string;
+  userId: number;
+  userName: string;
+  userEmail: string;
+  assignedBy: number;
+  assignedAt: Date;
+  reason?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class DealsService {
   private readonly apiUrl = environment.apiBase + '/deals';
@@ -74,6 +84,11 @@ export class DealsService {
   // Назначение сделки менеджеру
   assignDeal(id: string, managerId: string): Observable<Deal> {
     return this.http.patch<Deal>(`${this.apiUrl}/${id}/assign`, { assignedTo: managerId });
+  }
+
+  // Получение текущих назначений сделки
+  getCurrentAssignments(dealId: string): Observable<DealAssignment[]> {
+    return this.http.get<DealAssignment[]>(`${this.apiUrl}/${dealId}/assignments`);
   }
 
   // Фильтрация сделок

@@ -1,6 +1,6 @@
 import { Component, signal, inject, OnInit, ChangeDetectionStrategy, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormControl } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
@@ -20,13 +20,14 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
 import { UserManagementService, User, UserFilters } from '../../../services/user-management.service';
+import { PasswordResetSnackbarComponent } from '../../../shared/components/password-reset-snackbar/password-reset-snackbar.component';
 
 @Component({
   selector: 'app-user-list',
   standalone: true,
   imports: [
     CommonModule,
-    FormsModule,
+    ReactiveFormsModule,
     RouterModule,
     MatTableModule,
     MatButtonModule,
@@ -51,19 +52,19 @@ import { UserManagementService, User, UserFilters } from '../../../services/user
   styleUrls: ['./user-list.component.scss'],
 })
 export class UserListComponent implements OnInit {
-  protected readonly userService = inject(UserManagementService);
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
-
+  
   // Component state
   public readonly selectedUsers = signal<User[]>([]);
   public readonly filters = signal<UserFilters>({});
-  public searchQuery = ''; // обычное свойство для двухстороннего связывания
-  public statusFilter = ''; // обычное свойство для двухстороннего связывания
+  public readonly searchControl = new FormControl('');
+  public readonly statusControl = new FormControl('');
   public readonly currentPage = signal<number>(0);
   public readonly pageSize = signal<number>(25);
   
+  protected readonly userService = inject(UserManagementService);
   // Computed properties
   public readonly filteredUsers = signal<User[]>([]);
   public readonly paginatedUsers = signal<User[]>([]);
@@ -74,10 +75,7 @@ export class UserListComponent implements OnInit {
     'roles', 'skills', 'workload', 'status', 'actions'
   ];
 
-  ngOnInit(): void {
-    // Сначала загружаем пользователей
-    this.loadUsersAndSetupFilters();
-    
+  constructor() {
     // Создаем эффект для отслеживания изменений пользователей
     effect(() => {
       // Реагируем на изменения в сервисе
@@ -87,6 +85,21 @@ export class UserListComponent implements OnInit {
       this.filteredUsers.set(filteredUsers);
       this.updatePagination();
     });
+
+    // Подписываемся на изменения поискового запроса
+    this.searchControl.valueChanges.subscribe(value => {
+      this.onSearchChange(value || '');
+    });
+
+    // Подписываемся на изменения фильтра статуса
+    this.statusControl.valueChanges.subscribe(value => {
+      this.onStatusFilterChange(value || '');
+    });
+  }
+
+  ngOnInit(): void {
+    // Сначала загружаем пользователей
+    this.loadUsersAndSetupFilters();
   }
 
   private loadUsersAndSetupFilters(): void {
@@ -105,9 +118,9 @@ export class UserListComponent implements OnInit {
   }
 
   // Search and filtering
-  onSearchChange(): void {
+  onSearchChange(searchValue: string): void {
     const currentFilters = this.filters();
-    this.filters.set({ ...currentFilters, search: this.searchQuery });
+    this.filters.set({ ...currentFilters, search: searchValue });
     this.userService.setFilters(this.filters());
     this.updateFilteredUsers();
   }
@@ -117,9 +130,9 @@ export class UserListComponent implements OnInit {
     this.updateFilteredUsers();
   }
 
-  onStatusFilterChange(): void {
+  onStatusFilterChange(statusValue: string): void {
     const currentFilters = this.filters();
-    const status = this.statusFilter;
+    const status = statusValue;
     
     if (status === 'active') {
       this.filters.set({ ...currentFilters, isActive: true });
@@ -138,15 +151,15 @@ export class UserListComponent implements OnInit {
 
   clearFilters(): void {
     this.filters.set({});
-    this.searchQuery = '';
-    this.statusFilter = '';
+    this.searchControl.setValue('');
+    this.statusControl.setValue('');
     this.userService.clearFilters();
     this.updateFilteredUsers();
   }
 
   hasActiveFilters(): boolean {
     const filters = this.filters();
-    return Object.keys(filters).length > 0 || this.searchQuery.length > 0;
+    return Object.keys(filters).length > 0 || (this.searchControl.value || '').length > 0;
   }
 
   private updateFilteredUsers(): void {
@@ -244,11 +257,12 @@ export class UserListComponent implements OnInit {
   resetPassword(user: User): void {
     this.userService.resetPassword(user.id).subscribe({
       next: (result) => {
-        this.snackBar.open(
-          `Временный пароль: ${result.temporaryPassword}`,
-          'Закрыть',
-          { duration: 10000 }
-        );
+        this.snackBar.openFromComponent(PasswordResetSnackbarComponent, {
+          data: { password: result.temporaryPassword },
+          duration: 10000,
+          horizontalPosition: 'center',
+          verticalPosition: 'bottom'
+        });
       },
       error: () => {
         this.snackBar.open('Ошибка при сбросе пароля', 'Закрыть', {
