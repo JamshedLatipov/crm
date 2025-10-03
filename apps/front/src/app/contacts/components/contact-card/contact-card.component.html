@@ -1,0 +1,91 @@
+<mat-card class="contact-card" [class.blacklisted]="contact.isBlacklisted">
+	<div class="card-header">
+		<div class="contact-avatar">
+			<mat-icon>{{ contact.type === 'company' ? 'business' : 'person' }}</mat-icon>
+		</div>
+    
+		<div class="contact-info">
+			<h3 class="contact-name">{{ getContactName() }}</h3>
+			<p class="contact-details" *ngIf="getContactDetails()">{{ getContactDetails() }}</p>
+			<div class="contact-meta">
+				<span class="source-badge">{{ getSourceLabel() }}</span>
+				<span class="created-date">{{ formatDate(contact.createdAt) }}</span>
+			</div>
+		</div>
+
+		<div class="card-actions">
+			<button mat-icon-button [matMenuTriggerFor]="contactMenu" aria-label="Меню контакта">
+				<mat-icon>more_vert</mat-icon>
+			</button>
+		</div>
+	</div>
+
+	<div class="contact-contact-info" *ngIf="hasContactInfo()">
+		<div class="contact-item" *ngIf="contact.email">
+			<mat-icon class="contact-icon">email</mat-icon>
+			<a [href]="'mailto:' + contact.email">{{ contact.email }}</a>
+		</div>
+		<div class="contact-item" *ngIf="contact.phone">
+			<mat-icon class="contact-icon">phone</mat-icon>
+			<a [href]="'tel:' + contact.phone">{{ contact.phone }}</a>
+		</div>
+		<div class="contact-item" *ngIf="contact.website">
+			<mat-icon class="contact-icon">language</mat-icon>
+			<a [href]="contact.website" target="_blank">{{ contact.website }}</a>
+		</div>
+	</div>
+
+	<div class="contact-tags" *ngIf="contact.tags && contact.tags.length > 0">
+		<mat-chip-set>
+			<mat-chip *ngFor="let tag of contact.tags">{{ tag }}</mat-chip>
+		</mat-chip-set>
+	</div>
+
+	<div class="contact-stats" *ngIf="contact.deals && contact.deals.length > 0">
+		<div class="stat-item">
+			<mat-icon>monetization_on</mat-icon>
+			<span>{{ contact.deals.length }} сделок</span>
+		</div>
+	</div>
+
+	<div class="blacklist-warning" *ngIf="contact.isBlacklisted">
+		<mat-icon>block</mat-icon>
+		<span>В черном списке</span>
+		<small *ngIf="contact.blacklistReason">{{ contact.blacklistReason }}</small>
+	</div>
+</mat-card>
+
+<!-- Меню действий -->
+<mat-menu #contactMenu="matMenu">
+	<button mat-menu-item (click)="onEdit()">
+		<mat-icon>edit</mat-icon>
+		<span>Редактировать</span>
+	</button>
+  
+	<button mat-menu-item (click)="onView()">
+		<mat-icon>visibility</mat-icon>
+		<span>Просмотр</span>
+	</button>
+  
+	<button mat-menu-item (click)="onTouch()" *ngIf="!contact.isBlacklisted">
+		<mat-icon>touch_app</mat-icon>
+		<span>Отметить контакт</span>
+	</button>
+  
+	<mat-divider></mat-divider>
+  
+	<button mat-menu-item (click)="onBlacklist()" *ngIf="!contact.isBlacklisted" class="warn-action">
+		<mat-icon>block</mat-icon>
+		<span>В черный список</span>
+	</button>
+  
+	<button mat-menu-item (click)="onUnblacklist()" *ngIf="contact.isBlacklisted">
+		<mat-icon>check_circle</mat-icon>
+		<span>Убрать из черного списка</span>
+	</button>
+  
+	<button mat-menu-item (click)="onDelete()" class="danger-action">
+		<mat-icon>delete</mat-icon>
+		<span>Удалить</span>
+	</button>
+</mat-menu>

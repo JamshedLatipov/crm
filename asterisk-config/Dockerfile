@@ -1,7 +1,7 @@
 ## Dockerfile for Asterisk (custom build with WebRTC + ARI)
 FROM debian:bullseye-slim
 
-ENV ASTERISK_VERSION=22.5.1
+ENV ASTERISK_VERSION=22-current
 
 # Install dependencies (including WebRTC codecs and libs)
 RUN apt-get update && \
@@ -51,36 +51,33 @@ RUN groupadd --system asterisk && useradd --system --create-home --home-dir /hom
     && touch /home/asterisk/.asterisk_history \
     && chown -R asterisk:asterisk /home/asterisk /var/run/asterisk /var/lib/asterisk /var/spool/asterisk /var/log/asterisk
 
-# Download and extract Asterisk
-WORKDIR /usr/src
-RUN wget https://downloads.asterisk.org/pub/telephony/asterisk/asterisk-${ASTERISK_VERSION}.tar.gz && \
+RUN cd /usr/src && \
+    wget https://downloads.asterisk.org/pub/telephony/asterisk/asterisk-${ASTERISK_VERSION}.tar.gz && \
     tar xzf asterisk-${ASTERISK_VERSION}.tar.gz && \
-    rm asterisk-${ASTERISK_VERSION}.tar.gz
-
-WORKDIR /usr/src/asterisk-${ASTERISK_VERSION}
-
-# Build and install Asterisk with WebRTC + ARI support
-RUN ./configure --with-jansson-bundled && \
-        make menuselect.makeopts && \
-        menuselect/menuselect \
-            --enable codec_opus \
-            --enable codec_speex \
-            --enable res_http_websocket \
-            --enable chan_pjsip \
-            --enable res_rtp_asterisk \
-            --enable cdr_pgsql \
-            --enable res_odbc \
-            --enable res_srtp \
-            --enable res_ari \
-            --enable res_ari_applications \
-            --enable res_ari_events \
-            --enable res_ari_model \
-            menuselect.makeopts && \
-        make -j$(nproc) && \
-        make install && \
-        make samples && \
-        make config && \
-        ldconfig
+    rm asterisk-${ASTERISK_VERSION}.tar.gz && \
+    ls -l /usr/src && \
+    cd /usr/src/$(ls /usr/src | grep -E '^asterisk-22') && \
+    ./configure --with-jansson-bundled && \
+    make menuselect.makeopts && \
+    menuselect/menuselect \
+        --enable codec_opus \
+        --enable codec_speex \
+        --enable res_http_websocket \
+        --enable chan_pjsip \
+        --enable res_rtp_asterisk \
+        --enable cdr_pgsql \
+        --enable res_odbc \
+        --enable res_srtp \
+        --enable res_ari \
+        --enable res_ari_applications \
+        --enable res_ari_events \
+        --enable res_ari_model \
+        menuselect.makeopts && \
+    make -j$(nproc) && \
+    make install && \
+    make samples && \
+    make config && \
+    ldconfig
 
 # Clean up build dependencies and sources
 WORKDIR /

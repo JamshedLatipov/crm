@@ -1,0 +1,129 @@
+<div class="tab-content">
+  <div class="details-grid">
+    <!-- Contact Information -->
+    <div class="details-section">
+      <h3 class="section-title">Контактная информация</h3>
+      <div class="details-list">
+        <div class="detail-item" *ngIf="contact.email">
+          <mat-icon class="detail-icon">email</mat-icon>
+          <div class="detail-content">
+            <span class="detail-label">Email</span>
+            <a [href]="'mailto:' + contact.email" class="detail-value link">{{ contact.email }}</a>
+          </div>
+        </div>
+        <div class="detail-item" *ngIf="contact.phone">
+          <mat-icon class="detail-icon">phone</mat-icon>
+          <div class="detail-content">
+            <span class="detail-label">Телефон</span>
+            <a [href]="'tel:' + contact.phone" class="detail-value link">{{ contact.phone }}</a>
+          </div>
+        </div>
+        <div class="detail-item" *ngIf="contact.mobilePhone">
+          <mat-icon class="detail-icon">smartphone</mat-icon>
+          <div class="detail-content">
+            <span class="detail-label">Мобильный</span>
+            <a [href]="'tel:' + contact.mobilePhone" class="detail-value link">{{ contact.mobilePhone }}</a>
+          </div>
+        </div>
+        <div class="detail-item" *ngIf="contact.workPhone">
+          <mat-icon class="detail-icon">business</mat-icon>
+          <div class="detail-content">
+            <span class="detail-label">Рабочий телефон</span>
+            <a [href]="'tel:' + contact.workPhone" class="detail-value link">{{ contact.workPhone }}</a>
+          </div>
+        </div>
+        <div class="detail-item" *ngIf="contact.website">
+          <mat-icon class="detail-icon">language</mat-icon>
+          <div class="detail-content">
+            <span class="detail-label">Веб-сайт</span>
+            <a [href]="contact.website" target="_blank" class="detail-value link">{{ contact.website }}</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Professional Information -->
+    <div class="details-section">
+      <h3 class="section-title">Профессиональная информация</h3>
+      <div class="details-list">
+        <div class="detail-item" *ngIf="contact.position">
+          <mat-icon class="detail-icon">work</mat-icon>
+          <div class="detail-content">
+            <span class="detail-label">Должность</span>
+            <span class="detail-value">{{ contact.position }}</span>
+          </div>
+        </div>
+        <div class="detail-item" *ngIf="contact.companyName">
+          <mat-icon class="detail-icon">business</mat-icon>
+          <div class="detail-content">
+            <span class="detail-label">Компания</span>
+            <span class="detail-value">{{ contact.companyName }}</span>
+          </div>
+        </div>
+        <div class="detail-item" *ngIf="contact.source">
+          <mat-icon class="detail-icon">source</mat-icon>
+          <div class="detail-content">
+            <span class="detail-label">Источник</span>
+            <span class="detail-value">{{ contactsService.getContactSourceLabel(contact.source) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Address Information -->
+    <div class="details-section" *ngIf="hasAddressInfo()">
+      <h3 class="section-title">Адрес</h3>
+      <div class="details-list">
+        <div class="detail-item" *ngIf="contact.address?.country">
+          <mat-icon class="detail-icon">flag</mat-icon>
+          <div class="detail-content">
+            <span class="detail-label">Страна</span>
+            <span class="detail-value">{{ contact.address?.country }}</span>
+          </div>
+        </div>
+        <div class="detail-item" *ngIf="contact.address?.city">
+          <mat-icon class="detail-icon">location_city</mat-icon>
+          <div class="detail-content">
+            <span class="detail-label">Город</span>
+            <span class="detail-value">{{ contact.address?.city }}</span>
+          </div>
+        </div>
+        <div class="detail-item" *ngIf="getFullAddress()">
+          <mat-icon class="detail-icon">place</mat-icon>
+          <div class="detail-content">
+            <span class="detail-label">Полный адрес</span>
+            <span class="detail-value">{{ getFullAddress() }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- System Information -->
+    <div class="details-section">
+      <h3 class="section-title">Системная информация</h3>
+      <div class="details-list">
+        <div class="detail-item">
+          <mat-icon class="detail-icon">schedule</mat-icon>
+          <div class="detail-content">
+            <span class="detail-label">Создан</span>
+            <span class="detail-value">{{ formatDate(contact.createdAt) }}</span>
+          </div>
+        </div>
+        <div class="detail-item">
+          <mat-icon class="detail-icon">update</mat-icon>
+          <div class="detail-content">
+            <span class="detail-label">Обновлен</span>
+            <span class="detail-value">{{ formatDate(contact.updatedAt) }}</span>
+          </div>
+        </div>
+        <div class="detail-item" *ngIf="contact.lastContactDate">
+          <mat-icon class="detail-icon">record_voice_over</mat-icon>
+          <div class="detail-content">
+            <span class="detail-label">Последний контакт</span>
+            <span class="detail-value">{{ formatDate(contact.lastContactDate) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

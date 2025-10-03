@@ -1,0 +1,18 @@
+<div class="contact-profile-card">
+  <div class="profile-header">
+    <div class="profile-avatar">
+      <div class="avatar-image" [ngStyle]="{'background-image': 'url(' + placeholderAvatar + ')'}">
+        <mat-icon class="avatar-icon">{{ contact.type === 'company' ? 'business' : 'person' }}</mat-icon>
+      </div>
+    </div>
+    <div class="profile-info">
+      <h1 class="contact-name">{{ contact ? contact.name : 'Загрузка...' }}</h1>
+      <p class="contact-title" *ngIf="contact && (contact.position || contact.companyName)">
+        {{ contact.position }}{{ contact.position && contact.companyName ? ' в ' : '' }}{{ contact.companyName }}
+      </p>
+      <div class="contact-status-badges">
+        <ng-content></ng-content>
+      </div>
+    </div>
+  </div>
+</div>

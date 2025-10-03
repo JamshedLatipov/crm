@@ -1,0 +1,46 @@
+<!-- Список сделок -->
+<div class="deals-table" *ngIf="!dealsLoading && deals && deals.length > 0; else noDeals">
+  <div class="deal-item" *ngFor="let deal of deals">
+    <div class="deal-info">
+      <div class="deal-title">{{ deal.title }}</div>
+      <div class="deal-details">
+        <span class="deal-amount">{{ deal.amount | currency:(deal.currency || 'RUB'):'symbol':'1.0-0' }}</span>
+        <span class="deal-status" [class]="'status-' + deal.status?.toLowerCase()">{{ getDealStatusLabel(deal.status) }}</span>
+        <span class="deal-probability" *ngIf="deal.probability">{{ deal.probability }}% вероятность</span>
+      </div>
+      <div class="deal-meta">
+        <span class="deal-date">Создана: {{ deal.createdAt | date:'dd.MM.yyyy' }}</span>
+        <span class="deal-stage" *ngIf="deal.stage">{{ deal.stage }}</span>
+      </div>
+    </div>
+    <div class="deal-actions">
+      <button mat-icon-button matTooltip="Открыть сделку" (click)="openDeal(deal.id)">
+        <mat-icon>open_in_new</mat-icon>
+      </button>
+      <button mat-icon-button [matMenuTriggerFor]="dealMenu" matTooltip="Действия">
+        <mat-icon>more_vert</mat-icon>
+      </button>
+      <mat-menu #dealMenu="matMenu">
+        <button mat-menu-item (click)="editDeal(deal)">
+          <mat-icon>edit</mat-icon>
+          <span>Редактировать</span>
+        </button>
+        <button mat-menu-item (click)="deleteDeal(deal.id)">
+          <mat-icon>delete</mat-icon>
+          <span>Удалить</span>
+        </button>
+      </mat-menu>
+    </div>
+  </div>
+</div>
+<ng-template #noDeals>
+  <div class="empty-state" *ngIf="!dealsLoading">
+    <mat-icon class="empty-icon">handshake</mat-icon>
+    <h4>Нет связанных сделок</h4>
+    <p>Сделки с этим контактом будут отображаться здесь</p>
+    <button mat-raised-button color="primary" (click)="createDeal()">
+      <mat-icon>add</mat-icon>
+      <span>Создать сделку</span>
+    </button>
+  </div>
+</ng-template>

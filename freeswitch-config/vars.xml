@@ -1,0 +1,30 @@
+<include>
+  <!-- 
+    FreeSWITCH Global Variables 
+    Adjust these for your network setup
+  -->
+  
+  <!-- External IP for WebRTC (replace with your actual external IP or domain) -->
+  <X-PRE-PROCESS cmd="set" data="external_rtp_ip=auto-nat"/>
+  <X-PRE-PROCESS cmd="set" data="external_sip_ip=auto-nat"/>
+  
+  <!-- Local IP -->
+  <X-PRE-PROCESS cmd="set" data="local_ip_v4=auto"/>
+  
+  <!-- Domain -->
+  <X-PRE-PROCESS cmd="set" data="domain=$${local_ip_v4}"/>
+  <X-PRE-PROCESS cmd="set" data="domain_name=$${domain}"/>
+  
+  <!-- WebSocket ports -->
+  <X-PRE-PROCESS cmd="set" data="ws_binding=:8081"/>
+  <X-PRE-PROCESS cmd="set" data="wss_binding=:8082"/>
+  
+  <!-- RTP port range -->
+  <X-PRE-PROCESS cmd="set" data="rtp_start_port=16384"/>
+  <X-PRE-PROCESS cmd="set" data="rtp_end_port=32768"/>
+  
+  <!-- STUN/TURN server (using your existing turn server) -->
+  <X-PRE-PROCESS cmd="set" data="external_stun_ip=turn"/>
+  <X-PRE-PROCESS cmd="set" data="external_turn_ip=turn"/>
+  
+</include>

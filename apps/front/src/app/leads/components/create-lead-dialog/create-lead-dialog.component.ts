@@ -15,7 +15,7 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { LeadService } from '../../services/lead.service';
 import { LeadPriority, CreateLeadRequest } from '../../models/lead.model';
 import { CompanySelectorComponent } from '../../../shared/components/company-selector/company-selector.component';
-import { ContactSelectorComponent } from '../../../contacts/components/contact-selector.component';
+import { ContactSelectorComponent } from '../../../contacts/components/contact-selector/contact-selector.component';
 import { Contact } from '../../../contacts/contact.interfaces';
 
 @Component({

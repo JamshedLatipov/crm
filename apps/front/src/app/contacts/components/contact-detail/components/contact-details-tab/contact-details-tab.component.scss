@@ -1,0 +1,58 @@
+/* Стили для таба деталей контакта */
+.tab-content {
+  padding: 2rem;
+}
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+.details-section {
+  background: #f9fafb;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+}
+.section-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 1rem 0;
+}
+.details-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.detail-item {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+.detail-icon {
+  font-size: 1.25rem;
+  color: #6b7280;
+  margin-top: 0.125rem;
+  flex-shrink: 0;
+}
+.detail-content {
+  flex: 1;
+  min-width: 0;
+}
+.detail-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+.detail-value {
+  font-size: 0.875rem;
+  color: #111827;
+}
+.detail-value.link {
+  color: #3b82f6;
+  text-decoration: none;
+}
+.detail-value.link:hover {
+  text-decoration: underline;
+}

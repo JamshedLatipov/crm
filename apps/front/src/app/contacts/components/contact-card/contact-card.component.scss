@@ -1,0 +1,167 @@
+.contact-card {
+	margin-bottom: 16px;
+	transition: all 0.3s ease;
+	cursor: pointer;
+}
+
+.contact-card:hover {
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	transform: translateY(-2px);
+}
+
+.contact-card.blacklisted {
+	border-left: 4px solid #f44336;
+	opacity: 0.8;
+}
+
+.card-header {
+	display: flex;
+	align-items: flex-start;
+	gap: 16px;
+	margin-bottom: 16px;
+}
+
+.contact-avatar {
+	width: 48px;
+	height: 48px;
+	border-radius: 50%;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: white;
+	flex-shrink: 0;
+}
+
+.contact-avatar mat-icon {
+	font-size: 24px;
+	width: 24px;
+	height: 24px;
+}
+
+.contact-info {
+	flex: 1;
+	min-width: 0;
+}
+
+.contact-name {
+	font-size: 18px;
+	font-weight: 600;
+	margin: 0 0 4px 0;
+	color: #1f2937;
+}
+
+.contact-details {
+	font-size: 14px;
+	color: #6b7280;
+	margin: 0 0 8px 0;
+}
+
+.contact-meta {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	font-size: 12px;
+}
+
+.source-badge {
+	background: #f3f4f6;
+	color: #374151;
+	padding: 2px 8px;
+	border-radius: 12px;
+	font-weight: 500;
+}
+
+.created-date {
+	color: #9ca3af;
+}
+
+.card-actions {
+	flex-shrink: 0;
+}
+
+.contact-contact-info {
+	margin-bottom: 16px;
+}
+
+.contact-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 8px;
+	font-size: 14px;
+}
+
+.contact-icon {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+	color: #6b7280;
+}
+
+.contact-item a {
+	color: #2563eb;
+	text-decoration: none;
+}
+
+.contact-item a:hover {
+	text-decoration: underline;
+}
+
+.contact-tags {
+	margin-bottom: 16px;
+}
+
+.contact-stats {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	margin-bottom: 16px;
+}
+
+.stat-item {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	font-size: 12px;
+	color: #6b7280;
+}
+
+.stat-item mat-icon {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+}
+
+.blacklist-warning {
+	background: #fef2f2;
+	border: 1px solid #fecaca;
+	border-radius: 8px;
+	padding: 8px 12px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	color: #dc2626;
+	font-size: 12px;
+	margin-top: 12px;
+}
+
+.blacklist-warning mat-icon {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+}
+
+.blacklist-warning small {
+	display: block;
+	margin-top: 4px;
+	color: #7f1d1d;
+}
+
+.warn-action {
+	color: #f59e0b !important;
+}
+
+.danger-action {
+	color: #ef4444 !important;
+}

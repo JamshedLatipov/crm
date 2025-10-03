@@ -1,0 +1,188 @@
+<h2 mat-dialog-title>
+	<mat-icon>edit</mat-icon>
+	Редактирование контакта
+</h2>
+
+<mat-dialog-content class="dialog-content">
+	<form [formGroup]="contactForm" class="contact-form">
+		<!-- Basic Information -->
+		<div class="form-section">
+			<h3 class="section-title">Основная информация</h3>
+      
+			<div class="form-row">
+				<mat-form-field appearance="outline">
+					<mat-label>Тип контакта</mat-label>
+					<mat-select formControlName="type">
+						<mat-option value="person">Физическое лицо</mat-option>
+						<mat-option value="company">Компания</mat-option>
+					</mat-select>
+				</mat-form-field>
+
+				<mat-form-field appearance="outline">
+					<mat-label>Источник</mat-label>
+					<mat-select formControlName="source">
+						<mat-option *ngFor="let source of contactSources" [value]="source.value">
+							{{ source.label }}
+						</mat-option>
+					</mat-select>
+				</mat-form-field>
+			</div>
+
+			<div class="form-row" *ngIf="contactForm.get('type')?.value === 'person'">
+				<mat-form-field appearance="outline">
+					<mat-label>Имя</mat-label>
+					<input matInput formControlName="firstName">
+				</mat-form-field>
+
+				<mat-form-field appearance="outline">
+					<mat-label>Отчество</mat-label>
+					<input matInput formControlName="middleName">
+				</mat-form-field>
+
+				<mat-form-field appearance="outline">
+					<mat-label>Фамилия</mat-label>
+					<input matInput formControlName="lastName">
+				</mat-form-field>
+			</div>
+
+			<mat-form-field appearance="outline" *ngIf="contactForm.get('type')?.value === 'company'">
+				<mat-label>Название компании</mat-label>
+				<input matInput formControlName="name" [required]="contactForm.get('type')?.value === 'company'">
+			</mat-form-field>
+		</div>
+
+		<!-- Contact Information -->
+		<div class="form-section">
+			<h3 class="section-title">Контактная информация</h3>
+      
+			<div class="form-row">
+				<mat-form-field appearance="outline">
+					<mat-label>Email</mat-label>
+					<input matInput type="email" formControlName="email">
+					<mat-error *ngIf="contactForm.get('email')?.hasError('email')">
+						Введите корректный email
+					</mat-error>
+				</mat-form-field>
+
+				<mat-form-field appearance="outline">
+					<mat-label>Телефон</mat-label>
+					<input matInput formControlName="phone">
+				</mat-form-field>
+			</div>
+
+			<div class="form-row">
+				<mat-form-field appearance="outline">
+					<mat-label>Мобильный телефон</mat-label>
+					<input matInput formControlName="mobilePhone">
+				</mat-form-field>
+
+				<mat-form-field appearance="outline">
+					<mat-label>Рабочий телефон</mat-label>
+					<input matInput formControlName="workPhone">
+				</mat-form-field>
+			</div>
+
+			<mat-form-field appearance="outline">
+				<mat-label>Веб-сайт</mat-label>
+				<input matInput type="url" formControlName="website">
+			</mat-form-field>
+		</div>
+
+		<!-- Professional Information -->
+		<div class="form-section">
+			<h3 class="section-title">Профессиональная информация</h3>
+      
+			<div class="form-row">
+				<mat-form-field appearance="outline">
+					<mat-label>Должность</mat-label>
+					<input matInput formControlName="position">
+				</mat-form-field>
+
+				<mat-form-field appearance="outline">
+					<mat-label>Компания</mat-label>
+					<input matInput formControlName="companyName">
+				</mat-form-field>
+			</div>
+		</div>
+
+		<!-- Address Information -->
+		<div class="form-section" formGroupName="address">
+			<h3 class="section-title">Адрес</h3>
+      
+			<div class="form-row">
+				<mat-form-field appearance="outline">
+					<mat-label>Страна</mat-label>
+					<input matInput formControlName="country">
+				</mat-form-field>
+
+				<mat-form-field appearance="outline">
+					<mat-label>Регион</mat-label>
+					<input matInput formControlName="region">
+				</mat-form-field>
+
+				<mat-form-field appearance="outline">
+					<mat-label>Город</mat-label>
+					<input matInput formControlName="city">
+				</mat-form-field>
+			</div>
+
+			<div class="form-row">
+				<mat-form-field appearance="outline">
+					<mat-label>Улица</mat-label>
+					<input matInput formControlName="street">
+				</mat-form-field>
+
+				<mat-form-field appearance="outline">
+					<mat-label>Дом</mat-label>
+					<input matInput formControlName="building">
+				</mat-form-field>
+
+				<mat-form-field appearance="outline">
+					<mat-label>Квартира</mat-label>
+					<input matInput formControlName="apartment">
+				</mat-form-field>
+			</div>
+
+			<mat-form-field appearance="outline">
+				<mat-label>Почтовый индекс</mat-label>
+				<input matInput formControlName="postalCode">
+			</mat-form-field>
+		</div>
+
+		<!-- Notes -->
+		<div class="form-section">
+			<h3 class="section-title">Заметки</h3>
+      
+			<mat-form-field appearance="outline">
+				<mat-label>Заметки</mat-label>
+				<textarea matInput rows="4" formControlName="notes"></textarea>
+			</mat-form-field>
+		</div>
+
+		<!-- Status Flags -->
+		<div class="form-section">
+			<h3 class="section-title">Статус</h3>
+      
+			<div class="checkbox-group">
+				<mat-checkbox formControlName="isActive">Активный контакт</mat-checkbox>
+			</div>
+		</div>
+	</form>
+</mat-dialog-content>
+
+<mat-dialog-actions class="dialog-actions">
+	<button mat-button type="button" (click)="onCancel()" [disabled]="saving">
+		Отмена
+	</button>
+	<button 
+		mat-raised-button 
+		color="primary" 
+		type="button"
+		(click)="onSave()" 
+		[disabled]="contactForm.invalid || saving"
+	>
+		<mat-spinner diameter="20" *ngIf="saving"></mat-spinner>
+		<span *ngIf="!saving">Сохранить</span>
+		<span *ngIf="saving">Сохранение...</span>
+	</button>
+</mat-dialog-actions>

@@ -1,0 +1,31 @@
+<mat-form-field appearance="outline" class="full-width">
+    <mat-label>{{ placeholder }}</mat-label>
+    <input matInput [formControl]="searchControl" [matAutocomplete]="auto" [placeholder]="placeholder" />
+    <mat-icon matSuffix>person_search</mat-icon>
+
+    <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayContact"
+        (optionSelected)="onContactSelected($event.option.value)">
+        <mat-option *ngFor="let contact of filteredContacts | async" [value]="contact">
+            <div class="contact-option">
+                <div class="contact-info">
+                    <span class="contact-name">{{ contact.name }}</span>
+                    <span class="contact-details" *ngIf="contact.email || contact.phone">
+                        {{ contact.email }}{{ contact.email && contact.phone ? ' • ' : '' }}{{ contact.phone }}
+                    </span>
+                    <span class="contact-company" *ngIf="contact.companyName">
+                        {{ contact.companyName }}
+                    </span>
+                </div>
+            </div>
+        </mat-option>
+
+        <!-- Опция создания нового контакта -->
+        <mat-option *ngIf="searchControl.value && (filteredContacts | async)?.length === 0"
+            (click)="createNewContact()">
+            <div class="create-contact-option">
+                <mat-icon>add_circle</mat-icon>
+                <span>Создать контакт "{{ searchControl.value }}"</span>
+            </div>
+        </mat-option>
+    </mat-autocomplete>
+</mat-form-field>

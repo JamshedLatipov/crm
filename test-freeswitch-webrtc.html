@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FreeSWITCH WebRTC Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .status {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+    .status.disconnected { background: #ffebee; color: #c62828; }
+    .status.connecting { background: #fff3e0; color: #ef6c00; }
+    .status.connected { background: #e8f5e9; color: #2e7d32; }
+    .controls {
+      margin: 20px 0;
+    }
+    input, button {
+      padding: 10px;
+      margin: 5px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    button {
+      background: #2196f3;
+      color: white;
+      border: none;
+      cursor: pointer;
+      min-width: 120px;
+    }
+    button:hover { background: #1976d2; }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .dial-pad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      max-width: 300px;
+      margin: 20px 0;
+    }
+    .dial-pad button {
+      padding: 20px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    #logs {
+      background: #263238;
+      color: #aed581;
+      padding: 15px;
+      border-radius: 4px;
+      max-height: 300px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      margin-top: 20px;
+    }
+    .log-entry {
+      margin: 2px 0;
+      padding: 2px 0;
+      border-bottom: 1px solid #37474f;
+    }
+    audio {
+      width: 100%;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>FreeSWITCH WebRTC Client</h1>
+    
+    <div class="status disconnected" id="status">Disconnected</div>
+    
+    <div class="controls">
+      <h3>Connection</h3>
+      <input type="text" id="server" value="ws://localhost:8081" placeholder="WebSocket URL" style="width: 300px;">
+      <input type="text" id="extension" value="1000" placeholder="Extension">
+      <input type="password" id="password" value="1234" placeholder="Password">
+      <button id="connectBtn" onclick="connect()">Connect</button>
+      <button id="disconnectBtn" onclick="disconnect()" disabled>Disconnect</button>
+    </div>
+    
+    <div class="controls">
+      <h3>Call Control</h3>
+      <input type="text" id="destination" value="9999" placeholder="Destination (9999 for echo test)">
+      <button id="callBtn" onclick="makeCall()" disabled>Call</button>
+      <button id="hangupBtn" onclick="hangup()" disabled>Hangup</button>
+      <button id="muteBtn" onclick="toggleMute()" disabled>Mute</button>
+    </div>
+
+    <div class="dial-pad">
+      <button onclick="sendDTMF('1')">1</button>
+      <button onclick="sendDTMF('2')">2</button>
+      <button onclick="sendDTMF('3')">3</button>
+      <button onclick="sendDTMF('4')">4</button>
+      <button onclick="sendDTMF('5')">5</button>
+      <button onclick="sendDTMF('6')">6</button>
+      <button onclick="sendDTMF('7')">7</button>
+      <button onclick="sendDTMF('8')">8</button>
+      <button onclick="sendDTMF('9')">9</button>
+      <button onclick="sendDTMF('*')">*</button>
+      <button onclick="sendDTMF('0')">0</button>
+      <button onclick="sendDTMF('#')">#</button>
+    </div>
+
+    <audio id="remoteAudio" autoplay playsinline></audio>
+    <audio id="localAudio" muted playsinline></audio>
+
+    <h3>Logs</h3>
+    <div id="logs"></div>
+  </div>
+
+  <!-- Include Verto library from CDN or local -->
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery.jsonrpcclient@0.1.1/jquery.jsonrpcclient.min.js"></script>
+  
+  <script>
+    let vertoHandle = null;
+    let currentCall = null;
+    let isMuted = false;
+
+    // Simple Verto implementation (simplified for demo)
+    class VertoClient {
+      constructor(config) {
+        this.config = config;
+        this.ws = null;
+        this.sessid = null;
+        this.pc = null;
+      }
+
+      connect() {
+        return new Promise((resolve, reject) => {
+          log('Connecting to ' + this.config.socketUrl);
+          this.ws = new WebSocket(this.config.socketUrl);
+          
+          this.ws.onopen = () => {
+            log('WebSocket connected');
+            this.login().then(resolve).catch(reject);
+          };
+
+          this.ws.onerror = (error) => {
+            log('WebSocket error: ' + error);
+            reject(error);
+          };
+
+          this.ws.onmessage = (event) => {
+            this.handleMessage(JSON.parse(event.data));
+          };
+
+          this.ws.onclose = () => {
+            log('WebSocket closed');
+            updateStatus('disconnected');
+          };
+        });
+      }
+
+      login() {
+        return this.sendRequest('login', {
+          login: this.config.login + '@' + this.config.domain,
+          passwd: this.config.password,
+          sessid: this.generateSessid()
+        });
+      }
+
+      call(destination) {
+        log('Calling ' + destination);
+        
+        const pc = new RTCPeerConnection({
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'turn:turn:3478', username: 'webrtc', credential: 'webrtcpass' }
+          ]
+        });
+
+        this.pc = pc;
+
+        pc.onicecandidate = (event) => {
+          if (event.candidate) {
+            log('ICE candidate: ' + event.candidate.candidate);
+          }
+        };
+
+        pc.ontrack = (event) => {
+          log('Remote stream received');
+          document.getElementById('remoteAudio').srcObject = event.streams[0];
+        };
+
+        return navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+          .then(stream => {
+            log('Local stream obtained');
+            document.getElementById('localAudio').srcObject = stream;
+            stream.getTracks().forEach(track => pc.addTrack(track, stream));
+            return pc.createOffer();
+          })
+          .then(offer => {
+            log('Offer created');
+            return pc.setLocalDescription(offer);
+          })
+          .then(() => {
+            return this.sendRequest('verto.invite', {
+              sessid: this.sessid,
+              sdp: this.pc.localDescription.sdp,
+              destination_number: destination,
+              caller_id_name: this.config.login,
+              caller_id_number: this.config.login
+            });
+          });
+      }
+
+      hangup() {
+        if (this.pc) {
+          this.pc.close();
+          this.pc = null;
+        }
+        return this.sendRequest('verto.bye', {
+          sessid: this.sessid
+        });
+      }
+
+      sendDTMF(digit) {
+        if (this.pc) {
+          const sender = this.pc.getSenders().find(s => s.track && s.track.kind === 'audio');
+          if (sender && sender.dtmf) {
+            sender.dtmf.insertDTMF(digit);
+            log('Sent DTMF: ' + digit);
+          }
+        }
+      }
+
+      sendRequest(method, params) {
+        const msg = {
+          jsonrpc: '2.0',
+          method: method,
+          params: params || {},
+          id: Date.now()
+        };
+        
+        log('Sending: ' + method);
+        this.ws.send(JSON.stringify(msg));
+        
+        return new Promise((resolve, reject) => {
+          // Simple timeout-based resolution (proper implementation would track request IDs)
+          setTimeout(() => resolve(), 1000);
+        });
+      }
+
+      handleMessage(msg) {
+        log('Received: ' + (msg.method || msg.result || 'response'));
+        
+        if (msg.method === 'verto.answer' && msg.params && msg.params.sdp) {
+          this.pc.setRemoteDescription({
+            type: 'answer',
+            sdp: msg.params.sdp
+          });
+          log('Call answered');
+        } else if (msg.method === 'verto.bye') {
+          log('Call ended by remote');
+          if (this.pc) {
+            this.pc.close();
+            this.pc = null;
+          }
+          updateCallButtons(false);
+        } else if (msg.result && msg.result.message === 'logged in') {
+          this.sessid = msg.result.sessid;
+          log('Logged in with sessid: ' + this.sessid);
+          updateStatus('connected');
+        }
+      }
+
+      generateSessid() {
+        return Math.random().toString(36).substring(2, 15);
+      }
+
+      disconnect() {
+        if (this.ws) {
+          this.ws.close();
+          this.ws = null;
+        }
+        if (this.pc) {
+          this.pc.close();
+          this.pc = null;
+        }
+      }
+    }
+
+    function log(message) {
+      const logs = document.getElementById('logs');
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      entry.textContent = new Date().toLocaleTimeString() + ' - ' + message;
+      logs.appendChild(entry);
+      logs.scrollTop = logs.scrollHeight;
+    }
+
+    function updateStatus(status) {
+      const statusEl = document.getElementById('status');
+      statusEl.className = 'status ' + status;
+      statusEl.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+      
+      document.getElementById('connectBtn').disabled = (status === 'connected');
+      document.getElementById('disconnectBtn').disabled = (status === 'disconnected');
+      document.getElementById('callBtn').disabled = (status !== 'connected');
+    }
+
+    function updateCallButtons(inCall) {
+      document.getElementById('callBtn').disabled = inCall;
+      document.getElementById('hangupBtn').disabled = !inCall;
+      document.getElementById('muteBtn').disabled = !inCall;
+    }
+
+    function connect() {
+      const server = document.getElementById('server').value;
+      const extension = document.getElementById('extension').value;
+      const password = document.getElementById('password').value;
+      
+      updateStatus('connecting');
+      
+      vertoHandle = new VertoClient({
+        socketUrl: server,
+        login: extension,
+        password: password,
+        domain: 'localhost'
+      });
+      
+      vertoHandle.connect()
+        .then(() => {
+          log('Successfully connected and logged in');
+        })
+        .catch(error => {
+          log('Connection failed: ' + error);
+          updateStatus('disconnected');
+        });
+    }
+
+    function disconnect() {
+      if (vertoHandle) {
+        vertoHandle.disconnect();
+        vertoHandle = null;
+      }
+      updateStatus('disconnected');
+      updateCallButtons(false);
+    }
+
+    function makeCall() {
+      const destination = document.getElementById('destination').value;
+      if (vertoHandle && destination) {
+        vertoHandle.call(destination)
+          .then(() => {
+            log('Call initiated to ' + destination);
+            updateCallButtons(true);
+          })
+          .catch(error => {
+            log('Call failed: ' + error);
+          });
+      }
+    }
+
+    function hangup() {
+      if (vertoHandle) {
+        vertoHandle.hangup()
+          .then(() => {
+            log('Call ended');
+            updateCallButtons(false);
+          });
+      }
+    }
+
+    function toggleMute() {
+      if (vertoHandle && vertoHandle.pc) {
+        const audioTrack = document.getElementById('localAudio').srcObject.getAudioTracks()[0];
+        if (audioTrack) {
+          audioTrack.enabled = !audioTrack.enabled;
+          isMuted = !audioTrack.enabled;
+          document.getElementById('muteBtn').textContent = isMuted ? 'Unmute' : 'Mute';
+          log(isMuted ? 'Muted' : 'Unmuted');
+        }
+      }
+    }
+
+    function sendDTMF(digit) {
+      if (vertoHandle) {
+        vertoHandle.sendDTMF(digit);
+      }
+    }
+
+    // Initialize
+    log('WebRTC client ready');
+    updateStatus('disconnected');
+  </script>
+</body>
+</html>
