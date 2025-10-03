@@ -1,22 +1,26 @@
-<extension name="webrtc_demo">
-  <condition field="destination_number" expression="^(1[0-9]{3})$">
-    <action application="answer"/>
-    <action application="sleep" data="1000"/>
-    <action application="playback" data="ivr/ivr-welcome.wav"/>
-    <action application="bridge" data="user/$1@$${domain}"/>
-  </condition>
-</extension>
+<include>
+  <context name="public">
+    <extension name="webrtc_demo">
+      <condition field="destination_number" expression="^(1[0-9]{3})$">
+        <action application="answer"/>
+        <action application="sleep" data="1000"/>
+        <action application="playback" data="tone_stream://%(10000,0,941.0,1477.0)"/>
+        <action application="bridge" data="user/$1@$${domain}"/>
+      </condition>
+    </extension>
 
-<extension name="echo_test">
-  <condition field="destination_number" expression="^9999$">
-    <action application="answer"/>
-    <action application="echo"/>
-  </condition>
-</extension>
+    <extension name="echo_test">
+      <condition field="destination_number" expression="^9999$">
+        <action application="answer"/>
+        <action application="echo"/>
+      </condition>
+    </extension>
 
-<extension name="conference">
-  <condition field="destination_number" expression="^3000$">
-    <action application="answer"/>
-    <action application="conference" data="webrtc-conference@default"/>
-  </condition>
-</extension>
+    <extension name="conference">
+      <condition field="destination_number" expression="^3000$">
+        <action application="answer"/>
+        <action application="playback" data="tone_stream://%(10000,0,941.0,1477.0)"/>
+      </condition>
+    </extension>
+  </context>
+</include>

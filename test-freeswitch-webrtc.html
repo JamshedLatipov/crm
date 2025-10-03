@@ -81,11 +81,41 @@
       width: 100%;
       margin: 10px 0;
     }
+    .device-info {
+      background: #e3f2fd;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 15px 0;
+      border-left: 4px solid #2196f3;
+    }
+    .error-box {
+      background: #ffebee;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 15px 0;
+      border-left: 4px solid #f44336;
+      color: #c62828;
+    }
+    .success-box {
+      background: #e8f5e9;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 15px 0;
+      border-left: 4px solid #4caf50;
+      color: #2e7d32;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>FreeSWITCH WebRTC Client</h1>
+    
+    <div id="deviceCheck" class="device-info">
+      <h4>Проверка устройств...</h4>
+      <div id="deviceList"></div>
+      <button onclick="checkDevices()" style="margin-top: 10px;">Проверить устройства</button>
+      <button onclick="testMicrophone()" style="margin-top: 10px;">Тест микрофона</button>
+    </div>
     
     <div class="status disconnected" id="status">Disconnected</div>
     
@@ -137,6 +167,144 @@
     let currentCall = null;
     let isMuted = false;
 
+    // Проверка доступных устройств при загрузке
+    window.addEventListener('load', () => {
+      checkDevices();
+    });
+
+    async function checkDevices() {
+      const deviceList = document.getElementById('deviceList');
+      deviceList.innerHTML = '<p>Проверка устройств...</p>';
+      
+      try {
+        // Сначала запрашиваем разрешение
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        log('✓ Разрешение на доступ к микрофону получено');
+        
+        // Останавливаем поток
+        stream.getTracks().forEach(track => track.stop());
+        
+        // Получаем список устройств
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const audioInputs = devices.filter(device => device.kind === 'audioinput');
+        
+        if (audioInputs.length === 0) {
+          deviceList.innerHTML = `
+            <div class="error-box">
+              <strong>⚠️ Микрофоны не найдены!</strong>
+              <p>Убедитесь что:</p>
+              <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>Микрофон подключен к компьютеру</li>
+                <li>Микрофон включен в настройках системы</li>
+                <li>Другие приложения не блокируют доступ к микрофону</li>
+              </ul>
+            </div>
+          `;
+          log('❌ Аудио устройства не найдены');
+        } else {
+          let html = `<div class="success-box"><strong>✓ Найдено микрофонов: ${audioInputs.length}</strong><ul style="margin: 10px 0; padding-left: 20px;">`;
+          audioInputs.forEach((device, index) => {
+            html += `<li>${device.label || `Микрофон ${index + 1}`} (ID: ${device.deviceId.substring(0, 20)}...)</li>`;
+            log(`✓ Найден микрофон: ${device.label || `Устройство ${index + 1}`}`);
+          });
+          html += '</ul></div>';
+          deviceList.innerHTML = html;
+        }
+      } catch (error) {
+        let errorMessage = '';
+        let suggestions = '';
+        
+        switch(error.name) {
+          case 'NotFoundError':
+            errorMessage = 'Микрофон не найден';
+            suggestions = `
+              <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>Подключите микрофон к компьютеру</li>
+                <li>Проверьте, что микрофон включен в настройках Windows (Параметры → Система → Звук)</li>
+                <li>Перезагрузите браузер после подключения микрофона</li>
+              </ul>
+            `;
+            break;
+          case 'NotAllowedError':
+          case 'PermissionDeniedError':
+            errorMessage = 'Доступ к микрофону запрещён';
+            suggestions = `
+              <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>Нажмите на иконку замка/камеры в адресной строке браузера</li>
+                <li>Разрешите доступ к микрофону для этого сайта</li>
+                <li>Перезагрузите страницу после изменения разрешений</li>
+              </ul>
+            `;
+            break;
+          case 'NotReadableError':
+            errorMessage = 'Микрофон используется другим приложением';
+            suggestions = `
+              <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>Закройте другие приложения, использующие микрофон (Skype, Zoom, Discord и т.д.)</li>
+                <li>Закройте другие вкладки браузера с доступом к микрофону</li>
+                <li>Перезагрузите компьютер, если проблема сохраняется</li>
+              </ul>
+            `;
+            break;
+          default:
+            errorMessage = error.message || 'Неизвестная ошибка';
+            suggestions = `
+              <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>Попробуйте использовать другой браузер (Chrome, Firefox, Edge)</li>
+                <li>Обновите браузер до последней версии</li>
+                <li>Проверьте настройки антивируса</li>
+              </ul>
+            `;
+        }
+        
+        deviceList.innerHTML = `
+          <div class="error-box">
+            <strong>❌ Ошибка: ${errorMessage}</strong>
+            <p><code>Тип ошибки: ${error.name}</code></p>
+            <p><strong>Возможные решения:</strong></p>
+            ${suggestions}
+          </div>
+        `;
+        log(`❌ Ошибка доступа к микрофону: ${error.name} - ${error.message}`);
+        console.error('Microphone error details:', error);
+      }
+    }
+
+    async function testMicrophone() {
+      log('Тестирование микрофона...');
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        log('✓ Микрофон работает! Тестовый поток получен');
+        
+        // Показываем уровень звука
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const analyser = audioContext.createAnalyser();
+        const microphone = audioContext.createMediaStreamSource(stream);
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        
+        microphone.connect(analyser);
+        
+        let checkCount = 0;
+        const checkInterval = setInterval(() => {
+          analyser.getByteFrequencyData(dataArray);
+          const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+          log(`Уровень звука: ${Math.round(average)}/255 ${average > 10 ? '🔊' : '🔇'}`);
+          
+          checkCount++;
+          if (checkCount >= 5) {
+            clearInterval(checkInterval);
+            stream.getTracks().forEach(track => track.stop());
+            audioContext.close();
+            log('✓ Тест микрофона завершён');
+          }
+        }, 500);
+        
+      } catch (error) {
+        log(`❌ Тест не пройден: ${error.name} - ${error.message}`);
+        console.error('Microphone test failed:', error);
+      }
+    }
+
     // Simple Verto implementation (simplified for demo)
     class VertoClient {
       constructor(config) {
@@ -144,6 +312,7 @@
         this.ws = null;
         this.sessid = null;
         this.pc = null;
+        this.currentCallID = null;
       }
 
       connect() {
@@ -173,28 +342,41 @@
       }
 
       login() {
+        const sessid = this.generateSessid();
+        this.sessid = sessid;
+        
+        log(`Attempting login as ${this.config.login}@${this.config.domain}`);
+        
         return this.sendRequest('login', {
-          login: this.config.login + '@' + this.config.domain,
+          login: `${this.config.login}@${this.config.domain}`,
           passwd: this.config.password,
-          sessid: this.generateSessid()
+          sessid: sessid
+        }).then((response) => {
+          log(`Login request sent with sessid: ${sessid}`);
+          return response;
         });
       }
 
       call(destination) {
         log('Calling ' + destination);
         
+        const callID = this.generateSessid();
+        
         const pc = new RTCPeerConnection({
           iceServers: [
             { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'turn:turn:3478', username: 'webrtc', credential: 'webrtcpass' }
+            { urls: 'turn:localhost:3478', username: 'webrtc', credential: 'webrtcpass' }
           ]
         });
 
         this.pc = pc;
+        this.currentCallID = callID;
 
         pc.onicecandidate = (event) => {
           if (event.candidate) {
             log('ICE candidate: ' + event.candidate.candidate);
+          } else {
+            log('ICE gathering complete');
           }
         };
 
@@ -203,12 +385,20 @@
           document.getElementById('remoteAudio').srcObject = event.streams[0];
         };
 
+        log('Requesting microphone access...');
         return navigator.mediaDevices.getUserMedia({ audio: true, video: false })
           .then(stream => {
-            log('Local stream obtained');
+            log('✓ Local stream obtained');
             document.getElementById('localAudio').srcObject = stream;
-            stream.getTracks().forEach(track => pc.addTrack(track, stream));
+            stream.getTracks().forEach(track => {
+              pc.addTrack(track, stream);
+              log(`Added track: ${track.kind} (${track.label})`);
+            });
             return pc.createOffer();
+          })
+          .catch(error => {
+            log(`❌ Failed to get microphone: ${error.name} - ${error.message}`);
+            throw error;
           })
           .then(offer => {
             log('Offer created');
@@ -218,9 +408,19 @@
             return this.sendRequest('verto.invite', {
               sessid: this.sessid,
               sdp: this.pc.localDescription.sdp,
-              destination_number: destination,
-              caller_id_name: this.config.login,
-              caller_id_number: this.config.login
+              callID: callID,
+              dialogParams: {
+                destination_number: destination,
+                caller_id_name: this.config.login,
+                caller_id_number: this.config.login,
+                useVideo: false,
+                useStereo: false,
+                screenShare: false,
+                useCamera: false,
+                useMic: true,
+                dedEnc: false,
+                mirrorInput: false
+              }
             });
           });
       }
@@ -230,9 +430,12 @@
           this.pc.close();
           this.pc = null;
         }
-        return this.sendRequest('verto.bye', {
-          sessid: this.sessid
-        });
+        if (this.currentCallID) {
+          return this.sendRequest('verto.bye', {
+            sessid: this.sessid,
+            callID: this.currentCallID
+          });
+        }
       }
 
       sendDTMF(digit) {
@@ -263,14 +466,25 @@
       }
 
       handleMessage(msg) {
-        log('Received: ' + (msg.method || msg.result || 'response'));
+        log('Received: ' + JSON.stringify(msg));
+        console.log('Full Verto message:', msg);
+        
+        if (msg.error) {
+          log(`❌ Error: ${msg.error.message} (code: ${msg.error.code})`);
+          console.error('Verto error details:', msg.error);
+          return;
+        }
         
         if (msg.method === 'verto.answer' && msg.params && msg.params.sdp) {
+          log('Setting remote description from answer');
           this.pc.setRemoteDescription({
             type: 'answer',
             sdp: msg.params.sdp
+          }).then(() => {
+            log('✓ Call answered and connected');
+          }).catch(err => {
+            log(`❌ Failed to set remote description: ${err}`);
           });
-          log('Call answered');
         } else if (msg.method === 'verto.bye') {
           log('Call ended by remote');
           if (this.pc) {
@@ -278,10 +492,14 @@
             this.pc = null;
           }
           updateCallButtons(false);
-        } else if (msg.result && msg.result.message === 'logged in') {
-          this.sessid = msg.result.sessid;
-          log('Logged in with sessid: ' + this.sessid);
-          updateStatus('connected');
+        } else if (msg.result) {
+          if (msg.result.message === 'logged in' || msg.result.message) {
+            this.sessid = msg.result.sessid || this.sessid;
+            log(`✓ ${msg.result.message} - sessid: ${this.sessid}`);
+            updateStatus('connected');
+          } else {
+            log(`Result: ${JSON.stringify(msg.result)}`);
+          }
         }
       }
 
@@ -337,7 +555,7 @@
         socketUrl: server,
         login: extension,
         password: password,
-        domain: 'localhost'
+        domain: server.includes('localhost') ? 'auto' : 'localhost'  // Используем 'auto' для localhost
       });
       
       vertoHandle.connect()
@@ -362,13 +580,16 @@
     function makeCall() {
       const destination = document.getElementById('destination').value;
       if (vertoHandle && destination) {
+        log(`Initiating call to ${destination}...`);
         vertoHandle.call(destination)
           .then(() => {
-            log('Call initiated to ' + destination);
+            log('✓ Call initiated to ' + destination);
             updateCallButtons(true);
           })
           .catch(error => {
-            log('Call failed: ' + error);
+            log(`❌ Call failed: ${error.name} - ${error.message}`);
+            console.error('Call error:', error);
+            alert(`Не удалось совершить звонок:\n${error.name}: ${error.message}\n\nПроверьте доступ к микрофону и попробуйте снова.`);
           });
       }
     }

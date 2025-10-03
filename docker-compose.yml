@@ -38,13 +38,13 @@ services:
     image: safarov/freeswitch:latest
     restart: always
     ports:
-      - "5060:5060/udp"   # SIP UDP
-      - "5060:5060/tcp"   # SIP TCP
+      - "5070:5060/udp"   # SIP UDP (изменён порт чтобы не конфликтовать)
+      - "5070:5060/tcp"   # SIP TCP
       - "5080:5080/tcp"   # Web interface
       - "8021:8021/tcp"   # Event Socket
       - "8081:8081/tcp"   # WebSocket (ws)
       - "8082:8082/tcp"   # WebSocket Secure (wss)
-      - "16384-32768:16384-32768/udp" # RTP ports for WebRTC
+      # - "16384-32768:16384-32768/udp" # RTP ports for WebRTC
     volumes:
       - ./freeswitch-config/vars.xml:/etc/freeswitch/vars.xml:ro
       - ./freeswitch-config/autoload_configs:/etc/freeswitch/autoload_configs:ro
@@ -70,7 +70,7 @@ services:
       - "50000-50020:50000-50020/udp"
     # spreed/turnserver expects env-style config at /srv/config
     volumes:
-      - "./turnserver/data:/srv"
+      - ./turnserver/data:/srv
     mem_limit: "128m"
     mem_reservation: "64m"
 

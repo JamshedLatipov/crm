@@ -11,45 +11,24 @@
     
     <!-- WebRTC specific settings -->
     <param name="ws-binding" value="$${ws_binding}"/>
-    <param name="wss-binding" value="$${wss_binding}"/>
     <param name="enable-100rel" value="true"/>
     <param name="inbound-codec-prefs" value="OPUS,PCMU,PCMA"/>
     <param name="outbound-codec-prefs" value="OPUS,PCMU,PCMA"/>
     
-    <!-- DTLS/SRTP for WebRTC -->
-    <param name="tls" value="true"/>
-    <param name="tls-only" value="false"/>
-    <param name="tls-bind-params" value="transport=tls"/>
-    <param name="tls-cert-dir" value="/usr/local/freeswitch/certs"/>
-    <param name="tls-passphrase" value=""/>
-    <param name="tls-verify-date" value="true"/>
-    <param name="tls-verify-policy" value="none"/>
-    <param name="tls-version" value="tlsv1.2"/>
-    
-    <!-- ICE/STUN/TURN settings -->
-    <param name="apply-candidate-acl" value="localnet.auto"/>
-    <param name="apply-proxy-acl" value="localnet.auto"/>
-    <param name="rtcp-audio-interval-msec" value="5000"/>
-    <param name="rtcp-video-interval-msec" value="5000"/>
-    
-    <!-- Allow WebSocket connections -->
+    <!-- NAT settings -->
     <param name="liberal-dtmf" value="true"/>
     <param name="nat-options-ping" value="true"/>
     <param name="aggressive-nat-detection" value="true"/>
     <param name="NDLB-received-in-nat-reg-contact" value="true"/>
     <param name="NDLB-force-rport" value="true"/>
-    <param name="NDLB-broken-auth-hash" value="true"/>
     
     <!-- Media settings -->
     <param name="rtp-timeout-sec" value="300"/>
     <param name="rtp-hold-timeout-sec" value="1800"/>
     
-    <!-- Database integration (for dynamic users) -->
-    <param name="odbc-dsn" value="freeswitch"/>
-    <param name="manage-presence" value="true"/>
-    
     <!-- Debug -->
-    <param name="debug" value="0"/>
-    <param name="sip-trace" value="no"/>
+    <param name="debug" value="1"/>
+    <param name="sip-trace" value="yes"/>
+    <param name="log-level" value="debug"/>
   </settings>
 </profile>

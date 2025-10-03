@@ -6,29 +6,22 @@
   <profiles>
     <profile name="default">
       <param name="bind-local" value="0.0.0.0:8081"/>
-      <param name="bind-local" value="[::]:8081"/>
-      <param name="secure-bind-local" value="0.0.0.0:8082"/>
-      <param name="secure-bind-local" value="[::]:8082"/>
       
-      <!-- TLS certificate paths -->
-      <param name="tls-cert-dir" value="/usr/local/freeswitch/certs"/>
+      <!-- Disable TLS for now -->
+      <param name="secure-combined" value="0.0.0.0:8082"/>
       <param name="tls-only" value="false"/>
       
       <!-- Enable ICE -->
       <param name="enable-ice" value="true"/>
       
-      <!-- STUN/TURN settings -->
-      <param name="ext-rtp-ip" value="$${external_rtp_ip}"/>
-      <param name="local-network" value="localnet.auto"/>
-      <param name="apply-candidate-acl" value="localnet.auto"/>
-      
-      <!-- RTP port range -->
+      <!-- RTP settings -->
       <param name="rtp-ip" value="$${local_ip_v4}"/>
-      <param name="ext-rtp-ip" value="$${external_rtp_ip}"/>
+      <param name="ext-rtp-ip" value="auto-nat"/>
+      <param name="local-network" value="localnet.auto"/>
       
       <!-- Codecs -->
-      <param name="inbound-codec-string" value="OPUS,VP8"/>
-      <param name="outbound-codec-string" value="OPUS,VP8"/>
+      <param name="inbound-codec-string" value="OPUS,PCMU,PCMA"/>
+      <param name="outbound-codec-string" value="OPUS,PCMU,PCMA"/>
       
       <!-- Context for incoming calls -->
       <param name="context" value="public"/>
