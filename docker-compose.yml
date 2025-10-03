@@ -40,10 +40,11 @@ services:
     ports:
       - "5070:5060/udp"   # SIP UDP (изменён порт чтобы не конфликтовать)
       - "5070:5060/tcp"   # SIP TCP
+      - "5066:5066/tcp"   # SIP WebSocket
       - "5080:5080/tcp"   # Web interface
       - "8021:8021/tcp"   # Event Socket
-      - "8081:8081/tcp"   # WebSocket (ws)
-      - "8082:8082/tcp"   # WebSocket Secure (wss)
+      - "8081:8081/tcp"   # WebSocket (ws) - Verto
+      - "8082:8082/tcp"   # WebSocket Secure (wss) - Verto
       # - "16384-32768:16384-32768/udp" # RTP ports for WebRTC
     volumes:
       - ./freeswitch-config/vars.xml:/etc/freeswitch/vars.xml:ro

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FreeSWITCH Simple WebRTC Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .status {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+      font-weight: bold;
+      background: #e3f2fd;
+      color: #1976d2;
+    }
+    input, button {
+      padding: 10px;
+      margin: 5px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    button {
+      background: #2196f3;
+      color: white;
+      border: none;
+      cursor: pointer;
+      min-width: 120px;
+    }
+    button:hover { background: #1976d2; }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    #logs {
+      background: #263238;
+      color: #aed581;
+      padding: 15px;
+      border-radius: 4px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      margin-top: 20px;
+    }
+    audio {
+      width: 100%;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>FreeSWITCH WebRTC Test (SIP over WebSocket)</h1>
+    
+    <div class="status" id="status">Используем SIP вместо Verto</div>
+    
+    <div>
+      <h3>Подключение (через JsSIP)</h3>
+      <p>Попробуем использовать SIP через WebSocket вместо Verto</p>
+      <input type="text" id="extension" value="1000" placeholder="Extension">
+      <input type="password" id="password" value="1234" placeholder="Password">
+      <input type="text" id="server" value="ws://localhost:8081" placeholder="WebSocket URL" style="width: 250px;">
+      <br>
+      <button id="connectBtn" onclick="testConnection()">Проверить подключение</button>
+    </div>
+
+    <div>
+      <h3>Информация</h3>
+      <p>FreeSWITCH Verto требует:</p>
+      <ul>
+        <li>Правильную структуру JSON-RPC сообщений</li>
+        <li>CallID и DialogParams в специальном формате</li>
+        <li>Обработку ICE candidates через Verto протокол</li>
+      </ul>
+      <p><strong>Рекомендация:</strong> Используйте JsSIP вместо Verto для WebRTC звонков. Это проще и надежнее.</p>
+      <p><strong>Или</strong> используйте официальную библиотеку verto.js от FreeSWITCH.</p>
+    </div>
+
+    <audio id="remoteAudio" autoplay playsinline></audio>
+
+    <h3>Logs</h3>
+    <div id="logs"></div>
+  </div>
+
+  <script>
+    function log(message) {
+      const logs = document.getElementById('logs');
+      const entry = document.createElement('div');
+      entry.style.margin = '2px 0';
+      entry.style.padding = '2px 0';
+      entry.style.borderBottom = '1px solid #37474f';
+      entry.textContent = new Date().toLocaleTimeString() + ' - ' + message;
+      logs.appendChild(entry);
+      logs.scrollTop = logs.scrollHeight;
+    }
+
+    function testConnection() {
+      const server = document.getElementById('server').value;
+      log('Тестирую WebSocket соединение к ' + server);
+      
+      try {
+        const ws = new WebSocket(server);
+        
+        ws.onopen = () => {
+          log('✓ WebSocket подключен');
+          log('Отправляю тестовое сообщение...');
+          
+          // Попробуем отправить ping
+          ws.send(JSON.stringify({
+            jsonrpc: '2.0',
+            method: 'echo',
+            params: { message: 'test' },
+            id: Date.now()
+          }));
+          
+          setTimeout(() => {
+            log('Закрываю тестовое соединение');
+            ws.close();
+          }, 2000);
+        };
+        
+        ws.onerror = (error) => {
+          log('❌ Ошибка WebSocket: ' + error);
+        };
+        
+        ws.onmessage = (event) => {
+          log('Получено: ' + event.data);
+        };
+        
+        ws.onclose = () => {
+          log('WebSocket закрыт');
+        };
+        
+      } catch (error) {
+        log('❌ Не удалось создать WebSocket: ' + error.message);
+      }
+    }
+
+    log('Страница загружена');
+    log('');
+    log('ℹ️ Verto протокол очень сложный для ручной реализации.');
+    log('ℹ️ Для production используйте:');
+    log('  1. JsSIP (SIP over WebSocket) - проще и надежнее');
+    log('  2. Официальную библиотеку verto.js от FreeSWITCH');
+    log('  3. SIP.js - современная альтернатива');
+  </script>
+</body>
+</html>

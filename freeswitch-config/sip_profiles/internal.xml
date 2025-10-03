@@ -10,10 +10,16 @@
     <param name="ext-sip-ip" value="$${external_sip_ip}"/>
     
     <!-- WebRTC specific settings -->
-    <param name="ws-binding" value="$${ws_binding}"/>
+    <param name="ws-binding" value=":5066"/>
+    <param name="wss-binding" value=":7443"/>
+    <param name="tls" value="false"/>
+    <param name="tls-only" value="false"/>
+    
+    <!-- Enable WebRTC features -->
     <param name="enable-100rel" value="true"/>
     <param name="inbound-codec-prefs" value="OPUS,PCMU,PCMA"/>
     <param name="outbound-codec-prefs" value="OPUS,PCMU,PCMA"/>
+    <param name="liberal-dtmf" value="true"/>
     
     <!-- NAT settings -->
     <param name="liberal-dtmf" value="true"/>
