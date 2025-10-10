@@ -586,11 +586,11 @@
           <mat-icon>chevron_right</mat-icon>
         </button>
       } @else {
-        <button mat-raised-button
-                color="primary"
-                (click)="save()"
-                [disabled]="!userForm.valid || isSubmitting()"
-                class="nav-button">
+  <button mat-raised-button
+    color="primary"
+    (click)="save()"
+    [disabled]="!(userForm.valid || selectionChanged()) || isSubmitting()"
+    class="nav-button">
           @if (isSubmitting()) {
             <mat-spinner diameter="20" style="margin-right: 8px;"></mat-spinner>
           }

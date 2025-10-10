@@ -1,11 +1,11 @@
 ## Dockerfile for Asterisk (custom build with WebRTC + ARI)
 FROM debian:bullseye-slim
 
-ENV ASTERISK_VERSION=22.5.1
+ENV ASTERISK_VERSION=22.5.2
 
 # Install dependencies (including WebRTC codecs and libs)
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
+RUN apt-get update || apt-get update --fix-missing && \
+    apt-get install -y --fix-missing --no-install-recommends \
     build-essential \
     wget \
     subversion \

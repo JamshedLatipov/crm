@@ -46,6 +46,19 @@ export class UserFormComponent implements OnInit {
   public readonly currentUser = signal<User | null>(null);
   public readonly selectedSkills = signal<string[]>([]);
   public readonly selectedTerritories = signal<string[]>([]);
+  // Keep initial values to detect selection-only changes
+  private initialSkills: string[] = [];
+  private initialTerritories: string[] = [];
+
+  public readonly selectionChanged = computed(() => {
+    try {
+      const skillsChanged = JSON.stringify(this.selectedSkills()) !== JSON.stringify(this.initialSkills);
+      const territoriesChanged = JSON.stringify(this.selectedTerritories()) !== JSON.stringify(this.initialTerritories);
+      return skillsChanged || territoriesChanged;
+    } catch {
+      return false;
+    }
+  });
   public readonly availableManagers = signal<User[]>([]);
   public readonly currentStep = signal<number>(1);
   public readonly isSubmitting = signal<boolean>(false);
@@ -235,7 +248,10 @@ export class UserFormComponent implements OnInit {
   }
 
   save(): void {
-    if (this.userForm.valid && !this.isSubmitting()) {
+    // For edit mode allow submission when either the form is valid or only selections changed
+    const canSubmit = (!this.isEditMode() && this.userForm.valid) || (this.isEditMode() && (this.userForm.valid || this.selectionChanged()));
+
+    if (canSubmit && !this.isSubmitting()) {
       const formData = this.userForm.value;
 
       // Add skills and territories
@@ -412,6 +428,10 @@ export class UserFormComponent implements OnInit {
 
     this.selectedSkills.set(user.skills || []);
     this.selectedTerritories.set(user.territories || []);
+
+    // store initial selections so we can detect selection-only changes
+    this.initialSkills = [...(user.skills || [])];
+    this.initialTerritories = [...(user.territories || [])];
   }
 
   private loadManagers(): void {

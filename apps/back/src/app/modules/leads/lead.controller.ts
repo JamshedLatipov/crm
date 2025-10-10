@@ -58,7 +58,6 @@ export class LeadController {
   @Post()
   @ApiBody({ type: CreateLeadDto })
   async create(@Body() data: CreateLeadDto, @Req() req: unknown): Promise<Lead> {
-    console.log('Creating lead — parsed DTO:', req);
     if (req && typeof req === 'object' && req !== null) {
       const r = req as { rawBody?: unknown; headers?: Record<string, unknown> };
       if (typeof r.rawBody === 'string') {

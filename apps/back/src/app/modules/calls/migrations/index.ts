@@ -4,7 +4,6 @@ import { DropUnusedTables1691337600002 } from '../migrations/1691337600002-DropU
 import { AddMicroSipAccount1691337600004 } from './1691337600004-AddMicroSipAccount';
 import { AddWebRtcOperator11691337601001 } from './1691337601001-AddWebRtcOperator1';
 import { AddWebRtcOperator21691337601002 } from './1691337601002-AddWebRtcOperator2';
-import { CreateQueuesTables1691337603000 } from './1691337603000-CreateQueuesTables';
 
 export const CALLS_MIGRATIONS = [
   CreateCdrTable1691337600000,
@@ -14,6 +13,4 @@ export const CALLS_MIGRATIONS = [
   // WebRTC operators migrations
   AddWebRtcOperator11691337601001,
   AddWebRtcOperator21691337601002,
-  // Queues
-  CreateQueuesTables1691337603000,
 ];

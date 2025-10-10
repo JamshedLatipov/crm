@@ -1,9 +1,21 @@
 {
   "run": {
-    "command": "nxw serve front --host 0.0.0.0",
-    "startTime": "2025-10-01T16:21:52.397Z",
-    "endTime": "2025-10-01T16:22:05.476Z",
+    "command": "nx serve back --host 0.0.0.0 --watch",
+    "startTime": "2025-10-10T06:29:52.073Z",
+    "endTime": "2025-10-10T16:38:04.621Z",
     "inner": false
   },
-  "tasks": []
+  "tasks": [
+    {
+      "taskId": "back:serve",
+      "target": "serve",
+      "projectName": "back",
+      "hash": "16149348312803503315",
+      "startTime": "2025-10-10T06:29:52.100Z",
+      "endTime": "2025-10-10T16:38:04.481Z",
+      "params": "",
+      "cacheStatus": "cache-miss",
+      "status": 1
+    }
+  ]
 }

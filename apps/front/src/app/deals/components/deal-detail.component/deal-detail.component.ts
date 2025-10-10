@@ -10,6 +10,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { DealsService } from '../../../pipeline/deals.service';
+import { PipelineService } from '../../../pipeline/pipeline.service';
 import { UsersService, User } from '../../../users/users.service';
 import { Deal } from '../../../pipeline/dtos';
 import { DealFormComponent } from '../deal-form.component/deal-form.component';
@@ -55,6 +56,7 @@ export class DealDetailComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly dealsService = inject(DealsService);
   private readonly usersService = inject(UsersService);
+  private readonly pipelineService = inject(PipelineService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
 
@@ -94,6 +96,22 @@ export class DealDetailComponent implements OnInit {
     this.dealsService.getDealById(id).subscribe({
       next: (deal: Deal) => {
         this.deal = deal;
+        // If backend returned only stageId (string) but not populated stage object,
+        // try to fetch the stage by id so the template can render stage.name.
+        if (this.deal && !this.deal.stage && (this.deal as any).stageId) {
+          const sid = (this.deal as any).stageId;
+          this.pipelineService.getStageById(sid).subscribe({
+            next: (s) => {
+              if (s) {
+                // assign as Stage-like object to deal.stage
+                (this.deal as any).stage = s;
+              }
+            },
+            error: (err) => {
+              console.warn('Failed to load stage for deal', sid, err);
+            }
+          });
+        }
         this.updateAssignedUserName();
         this.isLoading = false;
       },

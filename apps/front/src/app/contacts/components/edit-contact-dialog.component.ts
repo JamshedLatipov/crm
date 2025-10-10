@@ -211,7 +211,7 @@ import { Contact, ContactType, ContactSource } from '../contact.interfaces';
         color="primary" 
         type="button"
         (click)="onSave()" 
-        [disabled]="contactForm.invalid || saving"
+        [disabled]="!contactForm.dirty || contactForm.invalid || saving"
       >
         <mat-spinner diameter="20" *ngIf="saving"></mat-spinner>
         <span *ngIf="!saving">Сохранить</span>
@@ -389,11 +389,14 @@ export class EditContactDialogComponent {
       this.saving = true;
       
       const formValue = this.contactForm.value;
-      const updateData = {
-        ...formValue,
-        // Очищаем пустые поля адреса
-        address: this.cleanAddressObject(formValue.address)
-      };
+      const updateData = this.buildUpdatePayload(formValue);
+
+      // If nothing changed, close dialog
+      if (!updateData || Object.keys(updateData).length === 0) {
+        this.saving = false;
+        this.dialogRef.close();
+        return;
+      }
 
       this.contactsService.updateContact(this.data.contact.id, updateData).subscribe({
         next: (updatedContact) => {
@@ -423,5 +426,46 @@ export class EditContactDialogComponent {
     }, {} as any);
 
     return Object.keys(cleanedAddress).length > 0 ? cleanedAddress : null;
+  }
+
+  /** Build a PATCH payload containing only changed (dirty) controls */
+  private buildUpdatePayload(formValue: any): Record<string, unknown> {
+    const payload: Record<string, unknown> = {};
+
+    // Root-level controls
+    Object.keys(this.contactForm.controls).forEach((key) => {
+      if (key === 'address') return; // handle separately
+
+      const control = this.contactForm.get(key);
+      if (!control) return;
+
+      if (control.dirty) {
+        const val = formValue[key];
+        // Trim strings to avoid accidental whitespace updates
+        payload[key] = typeof val === 'string' ? val.trim() : val;
+      }
+    });
+
+    // Address group: include only changed nested fields
+    const addressGroup = this.contactForm.get('address');
+    if (addressGroup && addressGroup instanceof FormGroup) {
+      const addrValue = formValue.address || {};
+      const addrPayload: Record<string, unknown> = {};
+      Object.keys((addressGroup as FormGroup).controls).forEach((k) => {
+        const c = addressGroup.get(k);
+        if (c && c.dirty) {
+          const v = addrValue[k];
+          addrPayload[k] = typeof v === 'string' ? v.trim() : v;
+        }
+      });
+
+      if (Object.keys(addrPayload).length > 0) {
+        // Remove empty address fields, keep only meaningful values
+        const cleaned = this.cleanAddressObject(addrPayload);
+        payload['address'] = cleaned;
+      }
+    }
+
+    return payload;
   }
 }
