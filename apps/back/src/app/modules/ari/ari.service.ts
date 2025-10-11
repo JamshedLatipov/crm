@@ -35,6 +35,10 @@ export class AriService {
   };
 
   async connect() {
+    if (process.env.DISABLE_ARI === 'true') {
+      this.logger.log('ARI integration is disabled via DISABLE_ARI=true');
+      return;
+    }
     if (this.connected) return;
     try {
       const baseUrl = `${this.config.protocol}://${this.config.host}:${this.config.port}`;
@@ -139,6 +143,11 @@ export class AriService {
   }
 
   async disconnect() {
+    if (process.env.DISABLE_ARI === 'true') {
+      this.logger.log('ARI integration disabled - skipping disconnect');
+      this.connected = false;
+      return;
+    }
     try {
       this.client?._client?.ws?.close();
     } catch {

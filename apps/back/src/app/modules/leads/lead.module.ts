@@ -21,6 +21,7 @@ import { UserModule } from '../user/user.module';
 import { DealsModule } from '../deals/deals.module';
 import { NotificationModule } from '../notifications/notification.module';
 import { SharedModule } from '../shared/shared.module';
+import { CompaniesModule } from '../companies/companies.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { SharedModule } from '../shared/shared.module';
       LeadDistributionRule,
       Deal
     ]),
+    CompaniesModule,
     UserModule,
     DealsModule,
     NotificationModule,

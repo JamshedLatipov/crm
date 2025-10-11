@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Lead, LeadStatus } from '../lead.entity';
+import { LeadScore, LeadTemperature } from '../entities/lead-score.entity';
 import { LeadScoringRule, ScoringRuleType } from '../entities/lead-scoring-rule.entity';
 import { LeadActivity, ActivityType } from '../entities/lead-activity.entity';
 import { NotificationRuleService } from '../../shared/services/notification-rule.service';
@@ -30,6 +31,8 @@ export class LeadScoringService {
     private readonly scoringRuleRepo: Repository<LeadScoringRule>,
     @InjectRepository(LeadActivity)
     private readonly activityRepo: Repository<LeadActivity>,
+    @InjectRepository(LeadScore)
+    private readonly leadScoreRepo: Repository<LeadScore>,
     private readonly notificationRuleService: NotificationRuleService,
     private readonly assignmentService: AssignmentService
   ) {}
@@ -45,15 +48,41 @@ export class LeadScoringService {
       order: { priority: 'DESC' }
     });
 
-    const previousScore = lead.score;
-    const previousTemperature = this.getTemperature(previousScore);
-    let totalScore = lead.score;
+  const previousScore = lead.score;
+  const previousTemperature = this.getTemperature(previousScore);
+
+    // initialize criteria with zeros
+    const criteria: Partial<LeadScore['criteria']> = {
+      profileCompletion: 0,
+      jobTitleMatch: 0,
+      companySize: 0,
+      industryMatch: 0,
+      websiteActivity: 0,
+      emailEngagement: 0,
+      formSubmissions: 0,
+      contentDownloads: 0,
+      responseTime: 0,
+      communicationFrequency: 0,
+      meetingAttendance: 0,
+      budgetConfirmed: 0,
+      decisionMaker: 0,
+      timeframeDefined: 0
+    };
+
+    const appliedRules: { ruleId: number; name: string; points: number }[] = [];
 
     for (const rule of rules) {
       const points = await this.applyRule(rule, { ...context, lead });
       if (points > 0) {
-        totalScore += points;
-        
+        // Map rule type to criteria key and accumulate points
+        const key = this.mapRuleTypeToCriteriaKey(rule.type);
+        if (key && Object.prototype.hasOwnProperty.call(criteria, key)) {
+          // @ts-ignore
+          criteria[key] = (criteria[key] || 0) + points;
+        }
+
+        appliedRules.push({ ruleId: rule.id, name: rule.name, points });
+
         // Записываем активность скоринга
         await this.activityRepo.save({
           leadId: lead.id,
@@ -70,23 +99,84 @@ export class LeadScoringService {
       }
     }
 
-    // Обновляем общий скор лида
-    await this.leadRepo.update(leadId, { score: totalScore });
+    // cap criteria values according to sensible maxima
+    const maxima: Record<string, number> = {
+      profileCompletion: 15,
+      jobTitleMatch: 10,
+      companySize: 10,
+      industryMatch: 10,
+      websiteActivity: 15,
+      emailEngagement: 10,
+      formSubmissions: 10,
+      contentDownloads: 10,
+      responseTime: 10,
+      communicationFrequency: 5,
+      meetingAttendance: 5,
+      budgetConfirmed: 10,
+      decisionMaker: 10,
+      timeframeDefined: 5
+    };
+
+    for (const k of Object.keys(criteria)) {
+      // @ts-ignore
+      criteria[k] = Math.min(maxima[k] || 100, Math.max(0, Number(criteria[k] || 0)));
+    }
+
+  // calculate total from criteria and cap
+  const criteriaTotal = Object.values(criteria).reduce((s, v) => s + (Number(v) || 0), 0);
+  let finalTotalScore = Math.min(100, Math.max(0, criteriaTotal));
+
+  // Обновляем общий скор лида
+  await this.leadRepo.update(leadId, { score: finalTotalScore });
+
+    // Persist LeadScore entity (create or update)
+    let leadScore = await this.leadScoreRepo.findOne({ where: { leadId } });
+    const now = new Date();
+    if (!leadScore) {
+      leadScore = new LeadScore();
+      leadScore.leadId = lead.id;
+      leadScore.lead = lead;
+      leadScore.scoreHistory = [];
+      leadScore.previousScore = previousScore || 0;
+    } else {
+      // push previous snapshot to history
+      leadScore.previousScore = leadScore.totalScore || previousScore || 0;
+      leadScore.scoreHistory = leadScore.scoreHistory || [];
+    }
+
+    // assign capped criteria
+    leadScore.criteria = criteria as any;
+    leadScore.metadata = leadScore.metadata || {};
+    leadScore.lastCalculatedAt = now;
+
+  // calculate total and temperature (ensure consistent with lead.score)
+  leadScore.totalScore = finalTotalScore;
+  leadScore.temperature = leadScore.getTemperatureFromScore(leadScore.totalScore);
+
+    // append history entry
+    leadScore.scoreHistory.push({
+      date: now,
+      score: leadScore.totalScore,
+      changes: { ...(leadScore.criteria as any) },
+      reason: appliedRules.length ? `Applied ${appliedRules.length} rules` : 'Recalculation'
+    });
+
+    await this.leadScoreRepo.save(leadScore);
 
     // Определяем новую температуру
-    const currentTemperature = this.getTemperature(totalScore);
-    const scoreChange = totalScore - previousScore;
+  const currentTemperature = this.getTemperature(finalTotalScore);
+  const scoreChange = finalTotalScore - previousScore;
 
     // Запускаем оценку правил уведомлений
     await this.triggerNotifications(lead, {
       previousScore,
-      currentScore: totalScore,
+      currentScore: finalTotalScore,
       scoreChange,
       previousTemperature,
       currentTemperature
     });
 
-    return totalScore;
+    return finalTotalScore;
   }
 
   private getTemperature(score: number): string {
@@ -418,4 +508,42 @@ export class LeadScoringService {
       }
     ];
   }
+
+  private mapRuleTypeToCriteriaKey(type: ScoringRuleType): keyof LeadScore['criteria'] | null {
+    switch (type) {
+      case ScoringRuleType.EMAIL_OPENED:
+      case ScoringRuleType.EMAIL_CLICKED:
+        return 'emailEngagement';
+      case ScoringRuleType.WEBSITE_VISIT:
+      case ScoringRuleType.PRICE_PAGE_VIEWED:
+        return 'websiteActivity';
+      case ScoringRuleType.FORM_SUBMITTED:
+        return 'formSubmissions';
+      case ScoringRuleType.DOWNLOAD:
+        return 'contentDownloads';
+      case ScoringRuleType.WEBINAR_ATTENDED:
+        return 'meetingAttendance';
+      case ScoringRuleType.DEMO_REQUESTED:
+        return 'meetingAttendance';
+      case ScoringRuleType.PHONE_CALL:
+        return 'communicationFrequency';
+      case ScoringRuleType.MEETING_SCHEDULED:
+        return 'meetingAttendance';
+      case ScoringRuleType.PROPOSAL_VIEWED:
+        return 'websiteActivity';
+      case ScoringRuleType.CONTACT_INFO_PROVIDED:
+        return 'profileCompletion';
+      case ScoringRuleType.COMPANY_SIZE:
+        return 'companySize';
+      case ScoringRuleType.INDUSTRY_MATCH:
+        return 'industryMatch';
+      case ScoringRuleType.BUDGET_INDICATED:
+        return 'budgetConfirmed';
+      case ScoringRuleType.DECISION_MAKER:
+        return 'decisionMaker';
+      default:
+        return null;
+    }
+  }
+
 }

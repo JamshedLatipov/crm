@@ -181,12 +181,37 @@ export class LeadService {
       .take(limit)
       .getMany();
 
-    return {
-      leads,
-      total,
-      page,
-      totalPages: Math.ceil(total / limit),
-    };
+    // Attach current assignment (assignedTo) for each lead to make frontend rendering simple
+    try {
+      const ids = leads.map(l => String(l.id));
+      const assignmentsMap = await this.assignmentService.getCurrentAssignmentsForEntities('lead', ids);
+
+      const leadsWithAssignment = leads.map(lead => {
+        const assign = assignmentsMap.get(String(lead.id));
+        // attach assignedTo as string user id if exists
+        if (assign && assign.userId) {
+          // keep existing object shape and add assignedTo
+          return Object.assign(lead, { assignedTo: String(assign.userId) });
+        }
+        return lead;
+      });
+
+      return {
+        leads: leadsWithAssignment,
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+      };
+    } catch (err) {
+      // If assignment lookup fails for any reason, return leads without assignedTo but don't break the endpoint
+      console.warn('Failed to attach assignments to leads:', err?.message || err);
+      return {
+        leads,
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+      };
+    }
   }
 
   private applyFilters(

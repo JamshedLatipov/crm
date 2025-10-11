@@ -7,6 +7,7 @@ import { LeadScoringService } from './lead-scoring.service';
 import { Company } from '../../companies/entities/company.entity';
 import { AssignmentService } from '../../shared/services/assignment.service';
 
+
 export interface WebhookData {
   name: string;
   email?: string;
@@ -48,9 +49,104 @@ export class LeadCaptureService {
     private readonly leadRepo: Repository<Lead>,
     @InjectRepository(LeadActivity)
     private readonly activityRepo: Repository<LeadActivity>,
+    @InjectRepository(Company)
+    private readonly companyRepo: Repository<Company>,
     private readonly scoringService: LeadScoringService,
     private readonly assignmentService: AssignmentService
   ) {}
+
+  // Helper: resolve company input (accepts UUID or name). If name provided and not found, create it.
+  private async resolveCompany(companyInput?: string | null): Promise<Company | null> {
+    if (!companyInput) return null;
+
+    // Simple UUID v4-ish check: contains hyphens and hex chars
+    const uuidLike = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(companyInput);
+    if (uuidLike) {
+      // Try to find company by id
+      try {
+        const found = await this.companyRepo.findOneBy({ id: companyInput });
+        return found || null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    // Treat input as company name: try to find by name
+    const name = companyInput.trim();
+  const existing = await this.companyRepo.findOne({ where: { name } });
+    if (existing) return existing;
+
+    // Create new company record with minimal data
+    try {
+  const created = await this.companyRepo.save({ name });
+      return created;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Compare existing lead with incoming webhook data across non-date fields.
+  private async isExactMatch(existingLead: Lead | null, data: WebhookData): Promise<boolean> {
+    if (!existingLead) return false;
+
+    // Resolve incoming company to compare by id
+    const incomingCompany = await this.resolveCompany(data.company);
+
+    const eq = (a: any, b: any) => {
+      if (a === b) return true;
+      if (a == null && b == null) return true;
+      if (typeof a === 'object' && typeof b === 'object') {
+        try {
+          const aStr = JSON.stringify(a, Object.keys(a).sort());
+          const bStr = JSON.stringify(b, Object.keys(b).sort());
+          return aStr === bStr;
+        } catch (e) {
+          return false;
+        }
+      }
+      return String(a) === String(b);
+    };
+
+    // Fields to compare (exclude dates and created/updated timestamps)
+    const incoming = {
+      name: data.name || null,
+      email: data.email || null,
+      phone: data.phone || null,
+      companyId: incomingCompany ? incomingCompany.id : null,
+      position: data.position || null,
+      source: this.mapSource(data.source) || null,
+      sourceDetails: data.form_name || null,
+      utmSource: data.utm_source || null,
+      utmMedium: data.utm_medium || null,
+      utmCampaign: data.utm_campaign || null,
+      utmContent: data.utm_content || null,
+      utmTerm: data.utm_term || null,
+      customFields: data.custom_fields || null
+    };
+
+    const existing = {
+      name: existingLead.name || null,
+      email: existingLead.email || null,
+      phone: existingLead.phone || null,
+      companyId: existingLead.company ? (existingLead.company.id as unknown as string) : null,
+      position: existingLead.position || null,
+      source: existingLead.source || null,
+      sourceDetails: existingLead.sourceDetails || null,
+      utmSource: existingLead.utmSource || null,
+      utmMedium: existingLead.utmMedium || null,
+      utmCampaign: existingLead.utmCampaign || null,
+      utmContent: existingLead.utmContent || null,
+      utmTerm: existingLead.utmTerm || null,
+      customFields: existingLead.customFields || null
+    };
+
+    // Compare each property
+    for (const key of Object.keys(incoming)) {
+      if (!eq((existing as any)[key], (incoming as any)[key])) return false;
+    }
+
+    return true;
+  }
 
   async captureFromWebsite(data: WebhookData, ipAddress?: string, userAgent?: string): Promise<Lead> {
     // Проверяем, есть ли уже лид с таким email или телефоном
@@ -68,10 +164,16 @@ export class LeadCaptureService {
       });
     }
 
-    if (existingLead) {
+    // If we found an existing lead, but the incoming payload refers to a different product,
+    // create a new lead instead of updating the existing one. This allows the same contact
+    // to be tracked separately per product.
+    const isSame = await this.isExactMatch(existingLead, data);
+
+    if (existingLead && isSame) {
       // Обновляем существующий лид
+      const resolvedCompany = await this.resolveCompany(data.company || existingLead?.company?.id as unknown as string);
       const updatedData: Partial<Lead> = {
-        company: { id: data.company || existingLead.company.id } as Company,
+        company: resolvedCompany ? ({ id: resolvedCompany.id } as Company) : undefined,
         position: data.position || existingLead.position,
         utmSource: data.utm_source || existingLead.utmSource,
         utmMedium: data.utm_medium || existingLead.utmMedium,
@@ -117,15 +219,16 @@ export class LeadCaptureService {
         }
       });
 
-      return this.leadRepo.findOneBy({ id: existingLead.id }) || existingLead;
-    }
+    return this.leadRepo.findOneBy({ id: existingLead.id }) || existingLead;
+  }
 
     // Создаем новый лид
+    const resolvedCompanyForNew = await this.resolveCompany(data.company);
     const newLead = await this.leadRepo.save({
       name: data.name,
       email: data.email,
       phone: data.phone,
-      company: { id: data.company },
+      company: resolvedCompanyForNew ? ({ id: resolvedCompanyForNew.id } as Company) : undefined,
       position: data.position,
       source: this.mapSource(data.source),
       sourceDetails: data.form_name,

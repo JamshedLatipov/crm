@@ -9,6 +9,15 @@ import { AriController } from './ari.controller';
 })
 export class AriModule implements OnModuleInit, OnModuleDestroy {
   constructor(private readonly ari: AriService) {}
-  async onModuleInit() { await this.ari.connect(); }
-  async onModuleDestroy() { await this.ari.disconnect(); }
+  async onModuleInit() {
+    if (process.env.DISABLE_ARI === 'true') {
+      // ARI integration disabled by env flag
+      return;
+    }
+    await this.ari.connect();
+  }
+  async onModuleDestroy() {
+    if (process.env.DISABLE_ARI === 'true') return;
+    await this.ari.disconnect();
+  }
 }

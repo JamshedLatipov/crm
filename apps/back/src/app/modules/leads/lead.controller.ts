@@ -49,8 +49,8 @@ function parseChangeTypeArray(param: string | string[] | undefined): ChangeType[
 }
 
 @ApiTags('leads')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+// @ApiBearerAuth()
+// @UseGuards(JwtAuthGuard)
 @Controller('leads')
 export class LeadController {
   constructor(private readonly leadService: LeadService) {}

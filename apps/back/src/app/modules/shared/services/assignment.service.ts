@@ -259,6 +259,45 @@ export class AssignmentService {
     return queryBuilder.getRawMany();
   }
 
+  /**
+   * Получить текущие назначения для нескольких сущностей за один запрос
+   * Возвращает Map где ключ - entityId, значение - последний активный assignment
+   */
+  async getCurrentAssignmentsForEntities(entityType: string, entityIds: (string | number)[]) {
+    if (!entityIds || entityIds.length === 0) {
+      return new Map<string, any>();
+    }
+
+    const idsAsString = entityIds.map(String);
+
+    const assignments = await this.assignmentRepository.find({
+      where: {
+        entityType,
+        entityId: In(idsAsString),
+        status: 'active'
+      },
+      relations: ['user', 'assignedByUser'],
+      order: { assignedAt: 'DESC' }
+    });
+
+    const map = new Map<string, any>();
+    for (const assignment of assignments) {
+      // Если для entityId ещё нет записи в map, записываем первый (самый свежий) assignment
+      if (!map.has(assignment.entityId)) {
+        map.set(assignment.entityId, {
+          id: assignment.id,
+          userId: assignment.userId,
+          userName: assignment.user?.fullName || assignment.user?.email,
+          userEmail: assignment.user?.email,
+          assignedAt: assignment.assignedAt,
+          reason: assignment.reason
+        });
+      }
+    }
+
+    return map;
+  }
+
   async transferAssignment(
     entityType: string,
     entityId: string | number,
