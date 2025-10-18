@@ -231,6 +231,7 @@
   border-radius: 12px;
   border: 1px solid var(--border-color);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  margin-bottom: 16px; /* add vertical spacing between stacked cards */
 }
 .profile-card mat-card-header {
   padding: 20px;

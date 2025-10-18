@@ -75,7 +75,7 @@ export class ContactsComponent implements OnInit {
 
   // Действия с контактами
   openCreateDialog(): void {
-    import('./components/create-contact-dialog.component').then((m) => {
+    import('./components/create-contact-dialog/create-contact-dialog.component').then((m) => {
       const dialogRef = this.dialog.open(m.CreateContactDialogComponent, { width: '520px' });
       interface CreatedContact { id: string }
       dialogRef.afterClosed().subscribe((created: CreatedContact | null) => {

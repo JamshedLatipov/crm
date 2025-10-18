@@ -226,15 +226,17 @@
   color: #6c757d;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  padding: 16px 12px;
+  padding: 12px 16px;
   border-bottom: none;
+  vertical-align: middle;
 }
 
 .mat-mdc-cell {
-  padding: 16px 12px;
+  padding: 12px 16px;
   border-bottom: 1px solid #f1f3f4;
   font-size: 14px;
   color: #1a1a1a;
+  vertical-align: middle;
 }
 
 .table-row {
@@ -255,7 +257,12 @@
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border-radius: 50%;
-  padding: 6px;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
   font-size: 18px;
 }
 
@@ -265,7 +272,40 @@
 
 .actions-cell {
   text-align: right;
-  width: 48px;
+  width: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Make the name button look like a link and not break layout */
+.name-link {
+  padding: 0;
+  min-width: 0;
+  height: auto;
+  line-height: 1;
+  color: inherit;
+  font-weight: 600;
+  text-transform: none;
+  text-decoration: none;
+}
+
+/* Table icons and action buttons styling */
+.contacts-table mat-icon {
+  vertical-align: middle;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mat-icon-button {
+  color: #6b7280;
+}
+
+.mat-icon-button:hover {
+  color: #374151;
+  background-color: rgba(37,99,235,0.06);
 }
 
 @media (max-width: 768px) {

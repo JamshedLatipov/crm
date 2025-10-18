@@ -12,7 +12,7 @@ import { Observable, of, debounceTime, distinctUntilChanged, switchMap, startWit
 
 import { Contact } from '../contact.interfaces';
 import { ContactsService } from '../contacts.service';
-import { CreateContactDialogComponent } from './create-contact-dialog.component';
+import { CreateContactDialogComponent } from './create-contact-dialog/create-contact-dialog.component';
 
 @Component({
   selector: 'app-contact-selector',

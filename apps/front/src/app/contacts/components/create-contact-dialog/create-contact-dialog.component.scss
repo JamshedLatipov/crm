@@ -1,0 +1,224 @@
+/* Reuse styles from create-lead-dialog for consistent modal look */
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 24px 0 24px;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 0;
+}
+
+.dialog-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.close-button {
+  color: #666;
+}
+
+.dialog-content {
+  padding: 24px !important;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.dialog-actions {
+  padding: 16px 24px 24px 24px !important;
+  border-top: 1px solid #e0e0e0;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.create-lead-form {
+  width: 100%;
+  max-width: 600px;
+}
+
+.form-section {
+  margin-bottom: 32px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.section-icon {
+  color: #4285f4;
+  margin-right: 12px;
+  font-size: 20px;
+}
+
+.section-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.form-field-container {
+  padding-left: 24px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+  align-items: center;
+}
+
+.form-field { width: 100%; }
+.full-width { width: 100%; margin-bottom: 16px; }
+
+.mat-mdc-form-field { .mat-mdc-text-field-wrapper { background-color: #fafafa; border-radius: 8px; transition: background-color 0.2s ease; } }
+.required-field .mat-mdc-form-field-label::after { content: ' *'; color: #f44336; }
+
+.cancel-button { border-color: #e0e0e0; color: #666; font-weight: 500; padding: 0 24px; height: 40px; }
+.save-button { background-color: #4285f4; color: white; font-weight: 500; padding: 0 24px; height: 40px; box-shadow: 0 2px 4px rgba(66, 133, 244, 0.2); display: flex; align-items: center; gap: 8px; }
+
+@media (max-width: 768px) {
+  .dialog-header { padding: 16px 16px 0 16px; }
+  .dialog-content { padding: 16px !important; }
+  .dialog-actions { padding: 12px 16px 16px 16px !important; flex-direction: column-reverse; }
+  .form-row { grid-template-columns: 1fr; gap: 12px; }
+  .form-field-container { padding-left: 0; }
+  .cancel-button, .save-button { width: 100%; height: 44px; }
+}
+
+/* === Optional fields / expansion panel styling === */
+.optional-group {
+  padding: 12px 20px 8px 20px;
+}
+
+.optional-group h4 {
+  margin: 8px 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+/* allow more columns for optional fields on wide screens */
+.optional-group .form-row {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+mat-expansion-panel {
+  /* flat look: no background, no border, no shadow */
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin-bottom: 10px !important; /* increased gap between cards */
+}
+
+mat-expansion-panel-header {
+  padding: 6px 8px;
+  min-height: 40px;
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  background: transparent !important;
+}
+
+/* bottom border to separate groups - more visible */
+mat-expansion-panel-header,
+.mat-mdc-expansion-panel-header,
+mat-expansion-panel-header.mat-expansion-panel-header {
+  border-bottom: 1px solid #cbd5e0 !important;
+}
+
+/* remove bottom border for last panel to avoid double line near form actions */
+mat-accordion > mat-expansion-panel:last-child mat-expansion-panel-header,
+mat-accordion > mat-expansion-panel:last-child .mat-mdc-expansion-panel-header {
+  border-bottom: none !important;
+}
+
+mat-expansion-panel-header:hover,
+.mat-mdc-expansion-panel-header:hover {
+  border-bottom-color: #bfcad9 !important;
+}
+
+mat-expansion-panel-header.mat-expanded,
+.mat-mdc-expansion-panel-header.mat-expanded {
+  border-bottom-color: #b3c0d0 !important;
+}
+
+mat-panel-description.panel-desc {
+  color: #777;
+  font-size: 13px;
+}
+
+.panel-header-icon {
+  font-size: 18px;
+  margin-right: 8px;
+  vertical-align: middle;
+  color: #4285f4;
+}
+
+.filled-badge {
+  margin-left: 12px;
+  background: rgba(66,133,244,0.08);
+  color: #2b6fd6;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  margin-right: 6px;
+}
+
+/* make panel title stand out and description subtle and aligned right */
+mat-panel-title {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+mat-panel-description.panel-desc {
+  margin-left: auto;
+  color: #8a93a8;
+  font-size: 13px;
+}
+
+/* compact form-field look inside optional group */
+.optional-group .mat-mdc-form-field .mat-mdc-text-field-wrapper {
+  padding: 6px 10px;
+  min-height: 40px;
+  background: #fff; /* keep inputs readable against flat panels */
+  border-radius: 6px;
+}
+
+/* compact input styles */
+.mat-mdc-text-field-wrapper .mat-mdc-input-element {
+  padding: 6px 8px;
+}
+
+/* ensure consistent spacing between panels */
+.mat-mdc-expansion-panel:not(:last-child) { margin-bottom: 16px !important; }
+
+mat-divider { margin: 12px 0; }
+
+/* soften form-field look inside optional group */
+.optional-group .mat-mdc-form-field .mat-mdc-text-field-wrapper {
+  background-color: #fff; /* keep it white inside panel */
+}
+
+@media (max-width: 1024px) {
+  .optional-group .form-row { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 768px) {
+  .optional-group .form-row { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+  .dialog-header h2 { font-size: 20px; }
+  .section-header { margin-bottom: 16px; }
+  .form-section { margin-bottom: 24px; }
+}
