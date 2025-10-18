@@ -25,11 +25,38 @@
     </div>
 
     <div *ngIf="contacts.length > 0" class="table-container">
+        <div class="bulk-actions" *ngIf="selectedCount() > 0">
+          <div class="bulk-left">
+            <strong>{{ selectedCount() }}</strong> выбран(о)
+          </div>
+          <div class="bulk-right">
+            <button mat-stroked-button color="primary" (click)="deleteSelected()">
+              <mat-icon>delete</mat-icon>
+              Удалить
+            </button>
+            <button mat-button (click)="clearSelection()">Очистить</button>
+          </div>
+        </div>
       <table
         mat-table
         [dataSource]="contacts"
         class="mat-elevation-z1 contacts-table"
       >
+          <!-- Select Column -->
+          <ng-container matColumnDef="select">
+            <th mat-header-cell *matHeaderCellDef>
+              <mat-checkbox
+                [checked]="isAllSelected()"
+                (change)="$event ? toggleSelectAll($event.checked) : null"
+              ></mat-checkbox>
+            </th>
+            <td mat-cell *matCellDef="let contact">
+              <mat-checkbox
+                [checked]="selected.has(contact.id)"
+                (change)="$event ? toggleSelect(contact.id, $event.checked) : null"
+              ></mat-checkbox>
+            </td>
+          </ng-container>
         <!-- Name Column -->
         <ng-container matColumnDef="name">
           <th mat-header-cell *matHeaderCellDef>Имя</th>
@@ -96,17 +123,8 @@
               </td>
         </ng-container>
 
-        <tr
-          mat-header-row
-          *matHeaderRowDef="['name', 'email', 'phone', 'company', 'actions']"
-        ></tr>
-        <tr
-          mat-row
-          *matRowDef="
-            let row;
-            columns: ['name', 'email', 'phone', 'company', 'actions']
-          "
-        ></tr>
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
       </table>
     </div>
   </div>

@@ -75,10 +75,21 @@
       <!-- Checkbox Column -->
       <ng-container matColumnDef="select">
         <th mat-header-cell *matHeaderCellDef>
-          <mat-checkbox (click)="$event.stopPropagation()"></mat-checkbox>
+          <mat-checkbox
+            (click)="$event.stopPropagation()"
+            (change)="toggleAllSelection()"
+            [checked]="isAllSelected()"
+            [indeterminate]="isPartiallySelected()"
+            aria-label="Select all leads"
+          ></mat-checkbox>
         </th>
         <td mat-cell *matCellDef="let lead">
-          <mat-checkbox (click)="$event.stopPropagation()"></mat-checkbox>
+          <mat-checkbox
+            (click)="$event.stopPropagation()"
+            (change)="toggleLeadSelection(lead)"
+            [checked]="isLeadSelected(lead)"
+            aria-label="Select lead"
+          ></mat-checkbox>
         </td>
       </ng-container>
 

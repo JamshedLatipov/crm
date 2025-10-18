@@ -6,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { ContactsService } from './contacts.service';
@@ -23,6 +24,7 @@ import { Contact, ContactsStats } from './contact.interfaces';
     MatProgressSpinnerModule,
     MatTableModule,
     MatTooltipModule,
+    MatCheckboxModule,
     MatDialogModule,
   ],
   templateUrl: './contacts.component.html',
@@ -32,7 +34,10 @@ export class ContactsComponent implements OnInit {
   contacts: Contact[] = [];
   stats: ContactsStats | null = null;
   loading = true;
-  displayedColumns = ['name', 'email', 'phone', 'company', 'actions'];
+  displayedColumns = ['select', 'name', 'email', 'phone', 'company', 'actions'];
+
+  // selection set of contact ids for bulk actions
+  selected: Set<string> = new Set();
 
   private readonly contactsService = inject(ContactsService);
   private readonly snackBar = inject(MatSnackBar);
@@ -62,6 +67,51 @@ export class ContactsComponent implements OnInit {
           duration: 3000,
         });
         this.loading = false;
+      });
+  }
+
+  isAllSelected(): boolean {
+    return this.contacts.length > 0 && this.selected.size === this.contacts.length;
+  }
+
+  toggleSelectAll(checked: boolean): void {
+    if (checked) {
+      this.contacts.forEach((c) => this.selected.add(c.id));
+    } else {
+      this.selected.clear();
+    }
+  }
+
+  toggleSelect(id: string, checked: boolean): void {
+    if (checked) this.selected.add(id);
+    else this.selected.delete(id);
+  }
+
+  selectedCount(): number {
+    return this.selected.size;
+  }
+
+  clearSelection(): void {
+    this.selected.clear();
+  }
+
+  deleteSelected(): void {
+    const count = this.selected.size;
+    if (count === 0) return;
+    if (!confirm(`Вы уверены, что хотите удалить ${count} выбранных контактов?`)) return;
+
+    const ids = Array.from(this.selected);
+    // delete in parallel and reload when done
+    Promise.all(ids.map((id) => this.contactsService.deleteContact(id).toPromise()))
+      .then(() => {
+        this.snackBar.open('Выбранные контакты удалены', 'Закрыть', { duration: 3000 });
+        this.selected.clear();
+        this.loadData();
+      })
+      .catch((error) => {
+        console.error('Error deleting selected contacts:', error);
+        this.snackBar.open('Ошибка при удалении выбранных контактов', 'Закрыть', { duration: 3000 });
+        this.loadData();
       });
   }
 

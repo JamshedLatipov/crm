@@ -210,6 +210,70 @@
   overflow: hidden;
 }
 
+/* Bulk actions toolbar above the table */
+.bulk-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  margin: 8px 12px 12px 12px;
+  background: linear-gradient(180deg, #ffffff, #fbfdff);
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(15, 23, 42, 0.04);
+}
+
+.bulk-actions .bulk-left {
+  font-size: 15px;
+  color: #0f172a;
+}
+
+.bulk-actions .bulk-right {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Make header checkbox and row checkboxes centered and compact */
+.contacts-table th.mat-mdc-header-cell:first-child,
+.contacts-table td.mat-mdc-cell:first-child {
+  width: 56px;
+  text-align: center;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.contacts-table th.mat-mdc-header-cell:first-child mat-checkbox,
+.contacts-table td.mat-mdc-cell:first-child mat-checkbox {
+  margin: 0 auto;
+  display: inline-flex;
+}
+
+/* Slightly bigger clickable area for row checkboxes */
+.contacts-table td.mat-mdc-cell:first-child .mat-mdc-checkbox .mdc-checkbox__native-control {
+  width: 20px;
+  height: 20px;
+}
+
+/* Tighten header paddings to match bulk toolbar rhythm */
+.mat-mdc-header-cell {
+  padding: 12px 16px;
+}
+
+/* Responsive: stack bulk actions on small screens */
+@media (max-width: 640px) {
+  .bulk-actions {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: left;
+  }
+
+  .bulk-actions .bulk-right {
+    justify-content: flex-start;
+  }
+}
+
 .contacts-table {
   width: 100%;
   background-color: white;

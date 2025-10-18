@@ -74,6 +74,8 @@ export class LeadsListComponent implements OnInit {
 
   // Signals
   leads = signal<Lead[]>([]);
+  // Selection for bulk actions
+  selectedLeads = signal<Lead[]>([]);
   loading = signal(true);
 
   // Table configuration
@@ -111,6 +113,48 @@ export class LeadsListComponent implements OnInit {
   ngOnInit(): void {
     this.loadLeads();
     this.loadManagers();
+  }
+
+  // Selection helpers
+  toggleLeadSelection(lead: Lead): void {
+    const selected = this.selectedLeads();
+    const index = selected.findIndex((l) => l.id === lead.id);
+
+    if (index > -1) {
+      selected.splice(index, 1);
+    } else {
+      selected.push(lead);
+    }
+
+    this.selectedLeads.set([...selected]);
+  }
+
+  toggleAllSelection(): void {
+    if (this.isAllSelected()) {
+      this.selectedLeads.set([]);
+    } else {
+      // Select all currently loaded leads (page)
+      this.selectedLeads.set([...this.leads()]);
+    }
+  }
+
+  isLeadSelected(lead: Lead): boolean {
+    return this.selectedLeads().some((l) => l.id === lead.id);
+  }
+
+  isAllSelected(): boolean {
+    const total = this.leads().length;
+    const selectedCount = this.selectedLeads().filter((l) =>
+      this.leads().some((p) => p.id === l.id)
+    ).length;
+    return total > 0 && selectedCount === total;
+  }
+
+  isPartiallySelected(): boolean {
+    const selectedCount = this.selectedLeads().filter((l) =>
+      this.leads().some((p) => p.id === l.id)
+    ).length;
+    return selectedCount > 0 && !this.isAllSelected();
   }
 
   private loadManagers(): void {
