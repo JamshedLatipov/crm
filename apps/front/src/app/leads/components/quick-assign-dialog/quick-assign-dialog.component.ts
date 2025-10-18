@@ -14,7 +14,9 @@ import { Manager, UserService } from '../../../shared/services/user.service';
 import { UserAvatarComponent } from '../../../shared/components/user-avatar/user-avatar.component';
 
 interface QuickAssignData {
-  lead: Lead;
+  // single lead or multiple leads for bulk assign
+  lead?: Lead;
+  leads?: Lead[];
 }
 
 @Component({
@@ -40,7 +42,8 @@ export class QuickAssignDialogComponent {
   private readonly dialogRef = inject(MatDialogRef<QuickAssignDialogComponent>);
   readonly data = inject<QuickAssignData>(MAT_DIALOG_DATA);
 
-  selectedManagerId: string = this.data.lead.assignedTo || '';
+  // Initialize with first lead's assignee if single, otherwise blank
+  selectedManagerId: string = (this.data.lead?.assignedTo) || '';
   loading = false;
 
   // Real managers data from API
@@ -68,16 +71,31 @@ export class QuickAssignDialogComponent {
     this.loading = true;
 
     if (this.selectedManagerId) {
-      // Назначить менеджера
-      this.leadService.assignLead(this.data.lead.id, this.selectedManagerId).subscribe({
-        next: (updatedLead) => {
-          this.dialogRef.close(updatedLead);
-        },
-        error: (error: unknown) => {
-          console.error('Error assigning lead:', error);
-          this.loading = false;
-        }
-      });
+      // If multiple leads provided, call bulkAssign
+      if (this.data.leads && this.data.leads.length > 0) {
+        const ids = this.data.leads.map(l => l.id);
+        this.leadService.bulkAssign(ids, this.selectedManagerId).subscribe({
+          next: (updatedLeads) => this.dialogRef.close(updatedLeads),
+          error: (error: unknown) => {
+            console.error('Error bulk assigning leads:', error);
+            this.loading = false;
+          }
+        });
+      } else if (this.data.lead) {
+        // Назначить менеджера for single lead
+        this.leadService.assignLead(this.data.lead.id, this.selectedManagerId).subscribe({
+          next: (updatedLead) => {
+            this.dialogRef.close(updatedLead);
+          },
+          error: (error: unknown) => {
+            console.error('Error assigning lead:', error);
+            this.loading = false;
+          }
+        });
+      } else {
+        // No lead(s) provided
+        this.dialogRef.close();
+      }
     } else {
       // Снять назначение (если такая функция есть в API)
       // Пока просто закрываем диалог

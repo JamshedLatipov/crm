@@ -278,6 +278,27 @@ export class LeadsListComponent implements OnInit {
     });
   }
 
+  // Bulk quick assign for selected leads
+  bulkQuickAssign(): void {
+    const selected = this.selectedLeads();
+    if (!selected.length) return;
+
+    const dialogRef = this.dialog.open(QuickAssignDialogComponent, {
+      width: '700px',
+      maxWidth: '90vw',
+      data: { leads: selected }
+    });
+
+    dialogRef.afterClosed().subscribe((result: any) => {
+      if (result) {
+        // refresh list after bulk assign
+        this.loadLeads();
+        // clear selection
+        this.selectedLeads.set([]);
+      }
+    });
+  }
+
   viewLead(lead: Lead): void {
     // navigate to routed lead detail view
     this.router.navigate(['/leads/view', lead.id]);

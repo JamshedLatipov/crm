@@ -130,6 +130,33 @@ export class LeadController {
     return this.leadService.getHighValueLeads(Number(minValue));
   }
 
+  // Bulk assign endpoint should be declared before routes with :id to avoid route collision
+  @Patch('bulk-assign')
+  @ApiBody({ schema: {
+    type: 'object',
+    properties: {
+      leadIds: { type: 'array', items: { type: 'string' } },
+      managerId: { type: 'string' }
+    },
+    required: ['leadIds', 'managerId']
+  }})
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  async bulkAssign(
+    @Body() body: { leadIds: string[]; managerId: string },
+    @CurrentUser() user?: CurrentUserPayload
+  ): Promise<Lead[]> {
+    const { leadIds, managerId } = body || {} as any;
+    if (!Array.isArray(leadIds) || !leadIds.length || !managerId) {
+      throw new BadRequestException('leadIds (array) and managerId are required');
+    }
+
+    const operatorId = typeof user?.sub === 'string' || typeof user?.sub === 'number' ? parseInt(String(user.sub)) : undefined;
+    const operatorName = user?.username;
+
+    return this.leadService.bulkAssign(leadIds, managerId, operatorId, operatorName);
+  }
+
   @Get('stale')
   @ApiQuery({ name: 'days', type: 'number', required: false })
   async getStaleLeads(@Query('days') days = 30): Promise<Lead[]> {

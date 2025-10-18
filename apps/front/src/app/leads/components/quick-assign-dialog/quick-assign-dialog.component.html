@@ -10,40 +10,58 @@
   </div>
 
   <mat-dialog-content class="dialog-content">
-    <!-- Информация о лиде -->
-    <div class="lead-info-card">
-      <div class="lead-icon">
-        <mat-icon>business</mat-icon>
-      </div>
-      <div class="lead-details">
-        <h3 class="lead-name">{{ data.lead.name }}</h3>
-        <div class="lead-meta">
-          @if (data.lead.company || data.lead.email) {
-            @if (data.lead.company) {
-              <span class="company">
-                <mat-icon>domain</mat-icon>
-                {{ data.lead.company }}
-              </span>
+    <!-- Информация о лиде или о группе лидов -->
+    @if (data.lead) {
+      <div class="lead-info-card">
+        <div class="lead-icon">
+          <mat-icon>business</mat-icon>
+        </div>
+        <div class="lead-details">
+          <h3 class="lead-name">{{ data.lead.name }}</h3>
+          <div class="lead-meta">
+            @if (data.lead.company || data.lead.email) {
+              @if (data.lead.company) {
+                <span class="company">
+                  <mat-icon>domain</mat-icon>
+                  {{ data.lead.company }}
+                </span>
+              }
+              @if (data.lead.email) {
+                <span class="email">
+                  <mat-icon>email</mat-icon>
+                  {{ data.lead.email }}
+                </span>
+              }
             }
-            @if (data.lead.email) {
-              <span class="email">
-                <mat-icon>email</mat-icon>
-                {{ data.lead.email }}
-              </span>
-            }
-          }
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Текущий ответственный -->
-    @if (data.lead.assignedTo) {
-      <div class="current-assignee-section">
-        <div class="section-label">Текущий ответственный:</div>
-        <div class="current-assignee-card">
-          <app-user-avatar [fullName]="data.lead.assignedTo" size="small"></app-user-avatar>
-          <span class="assignee-name">{{ data.lead.assignedTo }}</span>
-          <mat-icon class="change-icon">swap_horiz</mat-icon>
+      <!-- Текущий ответственный -->
+      @if (data.lead.assignedTo) {
+        <div class="current-assignee-section">
+          <div class="section-label">Текущий ответственный:</div>
+          <div class="current-assignee-card">
+            <app-user-avatar [fullName]="data.lead.assignedTo" size="small"></app-user-avatar>
+            <span class="assignee-name">{{ data.lead.assignedTo }}</span>
+            <mat-icon class="change-icon">swap_horiz</mat-icon>
+          </div>
+        </div>
+      }
+    } @else if (data.leads) {
+      <div class="lead-info-card">
+        <div class="lead-icon">
+          <mat-icon>groups</mat-icon>
+        </div>
+        <div class="lead-details">
+          <h3 class="lead-name">Быстрое назначение для {{ data.leads.length }} лидов</h3>
+          <div class="lead-meta">
+            <div *ngIf="data.leads && data.leads.length">
+              <span>
+                {{ data.leads[0].name }}<span *ngIf="data.leads.length > 1"> и ещё {{ data.leads.length - 1 }}</span>
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     }

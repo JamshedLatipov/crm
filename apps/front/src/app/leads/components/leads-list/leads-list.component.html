@@ -9,6 +9,10 @@
         <mat-icon>add</mat-icon>
         New Lead
       </button>
+      <button mat-stroked-button color="primary" (click)="bulkQuickAssign()" [disabled]="selectedLeads().length === 0" class="ml-2">
+        <mat-icon>flash_on</mat-icon>
+        Быстрое назначение ({{ selectedLeads().length }})
+      </button>
     </div>
   </div>
 

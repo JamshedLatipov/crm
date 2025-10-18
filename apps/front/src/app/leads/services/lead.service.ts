@@ -232,6 +232,15 @@ export class LeadService {
     return this.http.patch<Lead>(`${this.apiUrl}/${leadId}/assign`, request);
   }
 
+  /**
+   * Bulk assign leads to a manager. Returns updated leads.
+   * Backend endpoint expected to accept { leadIds: string[], managerId: string }
+   */
+  bulkAssign(leadIds: string[], assigneeId: string): Observable<Lead[]> {
+    const body = { leadIds, managerId: assigneeId };
+    return this.http.patch<Lead[]>(`${this.apiUrl}/bulk-assign`, body);
+  }
+
   updateLeadScore(leadId: string, score: number): Observable<Lead> {
     return this.http.patch<Lead>(`${this.apiUrl}/${leadId}/score`, { score });
   }

@@ -5,10 +5,17 @@
         <h1>Контакты</h1>
         <p class="subtitle">Управление контактами клиентов</p>
       </div>
-      <button mat-raised-button  color="primary" (click)="openCreateDialog()">
-        <mat-icon>add</mat-icon>
-        <span>Создать контакт</span>
-      </button>
+      <div class="header-actions">
+        <button mat-raised-button  color="primary" (click)="openCreateDialog()">
+          <mat-icon>add</mat-icon>
+          <span>Создать контакт</span>
+        </button>
+
+        <button *ngIf="selectedCount() > 0" mat-stroked-button color="primary" (click)="deleteSelected()" class="ml-2">
+          <mat-icon>delete</mat-icon>
+          Удалить
+        </button>
+      </div>
     </div>
   </div>
 
@@ -25,18 +32,7 @@
     </div>
 
     <div *ngIf="contacts.length > 0" class="table-container">
-        <div class="bulk-actions" *ngIf="selectedCount() > 0">
-          <div class="bulk-left">
-            <strong>{{ selectedCount() }}</strong> выбран(о)
-          </div>
-          <div class="bulk-right">
-            <button mat-stroked-button color="primary" (click)="deleteSelected()">
-              <mat-icon>delete</mat-icon>
-              Удалить
-            </button>
-            <button mat-button (click)="clearSelection()">Очистить</button>
-          </div>
-        </div>
+      
       <table
         mat-table
         [dataSource]="contacts"

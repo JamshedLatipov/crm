@@ -528,6 +528,28 @@ export class LeadService {
     return existingLead;
   }
 
+  /**
+   * Bulk assign multiple leads to a manager. Returns array of leads (unchanged/updated).
+   */
+  async bulkAssign(leadIds: string[], managerId: string, operatorId?: number, operatorName?: string): Promise<Lead[]> {
+    const results: Lead[] = [];
+    for (const lid of leadIds) {
+      const idNum = Number(lid);
+      if (Number.isNaN(idNum)) {
+        // skip invalid ids
+        continue;
+      }
+      try {
+        const updated = await this.assignLead(idNum, managerId, operatorId, operatorName);
+        results.push(updated);
+      } catch (err) {
+        // Log and continue on error for individual leads
+        console.warn(`Failed to assign lead ${lid}:`, err?.message || err);
+      }
+    }
+    return results;
+  }
+
   async autoAssignLead(
     id: number,
     criteria: {
