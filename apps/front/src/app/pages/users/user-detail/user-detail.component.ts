@@ -20,7 +20,10 @@ import { MatDividerModule } from '@angular/material/divider';
 import { UserManagementService, User } from '../../../services/user-management.service';
 import { ReferenceDataService } from '../../../services/reference-data.service';
 import { PasswordResetSnackbarComponent } from '../../../shared/components/password-reset-snackbar/password-reset-snackbar.component';
-import { ChipAutocompleteComponent } from '../../../shared/components/chip-autocomplete/chip-autocomplete.component';
+import { UserHeaderComponent } from '../components/user-header/user-header.component';
+import { UserRolesComponent } from '../components/user-roles/user-roles.component';
+import { UserTerritoriesComponent } from '../components/user-territories/user-territories.component';
+import { UserSkillsComponent } from '../components/user-skills/user-skills.component';
 
 @Component({
   selector: 'app-user-detail',
@@ -31,15 +34,14 @@ import { ChipAutocompleteComponent } from '../../../shared/components/chip-autoc
     MatButtonModule,
     MatIconModule,
     MatChipsModule,
-    ChipAutocompleteComponent,
+    UserHeaderComponent,
+    UserRolesComponent,
+    UserTerritoriesComponent,
+    UserSkillsComponent,
     MatFormFieldModule,
     MatInputModule,
-  MatAutocompleteModule,
-  MatOptionModule,
-    // FormsModule for simple two-way binding of the role input
-    // (we avoid adding heavy reactive forms for this small feature)
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    // Note: FormsModule is imported below via string to keep standalone imports clear
+    MatAutocompleteModule,
+    MatOptionModule,
     MatSnackBarModule,
     MatCardModule,
     MatProgressSpinnerModule,
@@ -290,7 +292,10 @@ export class UserDetailComponent implements OnInit {
       return;
     }
     const newRoles = [...user.roles, roleId];
+    // Optimistic update
     this.currentUser.set({ ...user, roles: newRoles });
+    // hide selector immediately
+    this.showRoleSelector.set(false);
     this.userService.updateUserRoles(user.id, newRoles).subscribe({
       next: (updated) => this.currentUser.set(updated),
       error: () => this.currentUser.set(user)
@@ -363,6 +368,8 @@ export class UserDetailComponent implements OnInit {
     // Optimistic update
     const newRoles = [...user.roles, role];
     this.currentUser.set({ ...user, roles: newRoles });
+    // hide selector immediately
+    this.showRoleSelector.set(false);
 
     this.userService.updateUserRoles(user.id, newRoles).subscribe({
       next: (updated) => {
@@ -374,7 +381,9 @@ export class UserDetailComponent implements OnInit {
         this.currentUser.set(user);
         this.showError('Не удалось добавить роль');
       },
-      complete: () => this.roleInput.set('')
+      complete: () => {
+        this.roleInput.set('');
+      }
     });
   }
 

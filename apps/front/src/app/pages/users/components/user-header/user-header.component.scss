@@ -1,0 +1,40 @@
+.page-header {
+  margin-bottom: 24px;
+
+  .header-background {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 18px 20px;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    color: white;
+  }
+
+  .header-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .header-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+  }
+
+  .avatar-large {
+    width: 80px;
+    height: 80px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    font-size: 36px;
+  }
+
+  .header-main h1 { margin: 0; font-size: 26px; font-weight: 700; }
+
+  .status-chip { display:flex; gap:8px; align-items:center; padding:8px 12px; border-radius:999px; background: rgba(255,255,255,0.12); color: white; font-weight:600; }
+}

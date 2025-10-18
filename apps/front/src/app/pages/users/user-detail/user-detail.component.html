@@ -5,61 +5,17 @@
   </div>
 
   <div *ngIf="!userService.isLoading() && currentUser()" class="contact-content">
-    <div class="page-header">
-      <div class="header-background">
-        <div class="header-content">
-          <div class="breadcrumb">
-            <button mat-button (click)="goBack()" class="breadcrumb-link">
-              <mat-icon>arrow_back</mat-icon>
-              Пользователи
-            </button>
-            <mat-icon class="separator">chevron_right</mat-icon>
-            <span class="current">{{ currentUser()?.firstName }} {{ currentUser()?.lastName }}</span>
-          </div>
-
-          <div class="header-row">
-            <div class="header-avatar">
-              <div class="avatar-large">
-                <img *ngIf="currentUser()?.avatar" class="avatar-img" [src]="currentUser()?.avatar" alt="Avatar" />
-                <span *ngIf="!currentUser()?.avatar">{{ getInitials(currentUser()!) }}</span>
-              </div>
-            </div>
-
-            <div class="header-main">
-              <h1>{{ currentUser()?.firstName }} {{ currentUser()?.lastName }}</h1>
-              <div class="contact-meta">
-                <div class="contact-type">
-                  <mat-icon>email</mat-icon>
-                  <span>{{ currentUser()?.email }}</span>
-                </div>
-                <div class="contact-source" *ngIf="currentUser()?.department">
-                  <mat-icon>apartment</mat-icon>
-                  <span>{{ currentUser()?.department }}</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="header-actions-right">
-              <div class="status-chip" [class]="getStatusBadgeClass(currentUser()!)">
-                <mat-icon>{{ currentUser()?.isActive ? 'check_circle' : 'pause_circle' }}</mat-icon>
-                <span>{{ currentUser()?.isActive ? 'Активен' : 'Неактивен' }}</span>
-              </div>
-
-              <div class="actions-group">
-                <button mat-stroked-button color="primary" (click)="editUser()" class="action-btn small">
-                  <mat-icon>edit</mat-icon>
-                  Ред.
-                </button>
-                <button mat-raised-button color="accent" (click)="resetPassword()" class="action-btn small">
-                  <mat-icon>lock_reset</mat-icon>
-                  Сброс пароля
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+    <!-- Header component -->
+    <app-user-header [user]="currentUser()" (edit)="editUser()" (reset)="resetPassword()">
+      <div class="breadcrumb" slot="breadcrumb">
+        <button mat-button (click)="goBack()" class="breadcrumb-link">
+          <mat-icon>arrow_back</mat-icon>
+          Пользователи
+        </button>
+        <mat-icon class="separator">chevron_right</mat-icon>
+        <span class="current">{{ currentUser()?.firstName }} {{ currentUser()?.lastName }}</span>
       </div>
-    </div>
+    </app-user-header>
 
     <div class="main-content">
       <div class="content-grid">
@@ -85,26 +41,10 @@
                           <span class="contact-value">{{ currentUser()?.phone }}</span>
                         </div>
                       </div>
-
-                      <div class="contact-item">
-                        <div class="contact-icon"><mat-icon>schedule</mat-icon></div>
-                        <div class="contact-details">
-                          <span class="contact-label">Создан</span>
-                          <span class="contact-value">{{ formatDate(currentUser()?.createdAt) }}</span>
-                        </div>
-                      </div>
-
-                      <div class="contact-item">
-                        <div class="contact-icon"><mat-icon>update</mat-icon></div>
-                        <div class="contact-details">
-                          <span class="contact-label">Обновлен</span>
-                          <span class="contact-value">{{ formatDate(currentUser()?.updatedAt) }}</span>
-                        </div>
-                      </div>
                     </div>
                   </mat-card-content>
                 </mat-card>
-                
+
                 <!-- Additional Info Card: show all missing user fields -->
                 <mat-card class="info-card mt-4">
                   <mat-card-header>
@@ -200,102 +140,13 @@
                     </div>
                   </mat-card-content>
                 </mat-card>
-                
-                <!-- Territories Card -->
-                <mat-card class="info-card mt-4">
-                  <mat-card-header>
-                    <div mat-card-avatar class="card-avatar map"><mat-icon>place</mat-icon></div>
-                    <mat-card-title>Территории</mat-card-title>
-                  </mat-card-header>
-                  <mat-card-content>
-                    <div class="roles-section">
-                      <div style="display:flex;align-items:center;gap:12px;margin-top:8px;">
-                        <app-chip-autocomplete
-                          [selected]="currentUser()?.territories"
-                          [options]="territoriesOptions()"
-                          placeholder="Добавить территорию"
-                          noOptionsText="Нет доступных территорий"
-                          color="accent"
-                          (add)="addTerritoryById($event)"
-                          (remove)="removeTerritory($event)">
-                        </app-chip-autocomplete>
-                      </div>
 
-                      <div *ngIf="!currentUser()?.territories || currentUser()?.territories.length === 0" class="text-gray-500 text-sm mt-2">Территории не назначены</div>
-                    </div>
-                  </mat-card-content>
-                </mat-card>
+                <!-- Use modular components for territories, skills and roles -->
+                <app-user-territories [territories]="currentUser()?.territories || []" [options]="territoriesOptions()" (add)="addTerritoryById($event)" (remove)="removeTerritory($event)"></app-user-territories>
 
-                <!-- Skills Card -->
-                <mat-card class="info-card mt-4">
-                  <mat-card-header>
-                    <div mat-card-avatar class="card-avatar skills"><mat-icon>school</mat-icon></div>
-                    <mat-card-title>Навыки</mat-card-title>
-                  </mat-card-header>
-                  <mat-card-content>
-                    <div class="roles-section">
-                      <div style="display:flex;align-items:center;gap:12px;margin-top:8px;">
-                        <app-chip-autocomplete
-                          [selected]="currentUser()?.skills"
-                          [options]="skillsOptions()"
-                          placeholder="Добавить навык"
-                          noOptionsText="Нет доступных навыков"
-                          color="primary"
-                          (add)="addSkillById($event)"
-                          (remove)="removeSkill($event)">
-                        </app-chip-autocomplete>
-                      </div>
+                <app-user-skills [skills]="currentUser()?.skills || []" [options]="skillsOptions()" (add)="addSkillById($event)" (remove)="removeSkill($event)"></app-user-skills>
 
-                      <div *ngIf="!currentUser()?.skills || currentUser()?.skills.length === 0" class="text-gray-500 text-sm mt-2">Навыки не назначены</div>
-                    </div>
-                  </mat-card-content>
-                </mat-card>
-
-                <mat-card class="info-card mt-4">
-                  <mat-card-header>
-                    <div mat-card-avatar class="card-avatar profile"><mat-icon>verified</mat-icon></div>
-                    <mat-card-title>Роли</mat-card-title>
-                  </mat-card-header>
-                  <mat-card-content>
-                    <div class="roles-section">
-                      <div style="display:flex;align-items:center;gap:12px;margin-top:8px;">
-                        <div class="chip-container" aria-label="Список ролей" style="flex:1;min-width:0;">
-                          <mat-chip *ngFor="let role of currentUser()?.roles" [removable]="true" (removed)="removeRole(role)" [color]="getRoleColor(role)">
-                            {{ getRoleLabel(role) }}
-                            <mat-icon matChipRemove>cancel</mat-icon>
-                          </mat-chip>
-                        </div>
-
-                        <!-- Right-aligned control: show only when there are available roles to add -->
-                        <div class="role-control" *ngIf="filteredRoles().length > 0">
-                          <!-- Compact plus button to open selector when closed -->
-                          <button *ngIf="!showRoleSelector()" mat-mini-fab color="primary" (click)="openRoleSelector()" aria-label="Открыть селектор ролей">
-                            <mat-icon>add</mat-icon>
-                          </button>
-
-                          <!-- Inline small autocomplete input when opened -->
-                          <div *ngIf="showRoleSelector()" style="display:flex;align-items:center;gap:6px;">
-                            <mat-form-field appearance="outline" class="role-input" style="width:220px;">
-                              <input id="role-input-el" matInput placeholder="Добавить роль" [ngModel]="roleInput()" (ngModelChange)="roleInput.set($event)" (keydown.enter)="addRole(); showRoleSelector.set(false)" [matAutocomplete]="roleAuto" />
-                              <mat-autocomplete #roleAuto="matAutocomplete" (optionSelected)="onRoleSelected($event.option.value)">
-                                <mat-option *ngIf="filteredRoles().length === 0" disabled>Нет доступных ролей</mat-option>
-                                <mat-option *ngFor="let r of filteredRoles()" [value]="r.name">{{ r.name }}</mat-option>
-                              </mat-autocomplete>
-                            </mat-form-field>
-                            <button mat-icon-button color="primary" [disabled]="!roleInput() || !roleInput().trim()" (click)="addRole(); showRoleSelector.set(false)" aria-label="Добавить роль">
-                              <mat-icon>check</mat-icon>
-                            </button>
-                            <button mat-icon-button color="warn" (click)="showRoleSelector.set(false); roleInput.set('')" aria-label="Отменить">
-                              <mat-icon>close</mat-icon>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div *ngIf="!currentUser()?.roles || currentUser()?.roles.length === 0" class="text-gray-500 text-sm mt-2">Роли не назначены</div>
-                    </div>
-                  </mat-card-content>
-                </mat-card>
+                <app-user-roles [roles]="currentUser()?.roles || []" [options]="rolesOptions()" (remove)="removeRole($event)" (add)="addRoleById($event)"></app-user-roles>
               </div>
             </mat-tab>
 

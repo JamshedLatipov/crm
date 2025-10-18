@@ -1,0 +1,23 @@
+<mat-card class="info-card mt-4">
+  <mat-card-header>
+    <div mat-card-avatar class="card-avatar map"><mat-icon>place</mat-icon></div>
+    <mat-card-title>Территории</mat-card-title>
+  </mat-card-header>
+  <mat-card-content>
+    <div class="roles-section">
+      <div style="display:flex;align-items:center;gap:12px;margin-top:8px;">
+        <app-chip-autocomplete
+          [selected]="territories"
+          [options]="options"
+          placeholder="Добавить территорию"
+          noOptionsText="Нет доступных территорий"
+          color="accent"
+          (add)="add.emit($event)"
+          (remove)="remove.emit($event)">
+        </app-chip-autocomplete>
+      </div>
+
+  <div *ngIf="!territories || territories.length === 0" class="text-gray-500 text-sm mt-2">Территории не назначены</div>
+    </div>
+  </mat-card-content>
+</mat-card>
