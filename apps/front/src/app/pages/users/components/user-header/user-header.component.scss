@@ -2,6 +2,7 @@
   margin-bottom: 24px;
 
   .header-background {
+    /* Same gradient as contacts header */
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     padding: 18px 20px;
     border-radius: 16px;
@@ -12,7 +13,46 @@
   .header-content {
     display: flex;
     flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
     gap: 12px;
+    margin: 0 auto;
+  }
+
+  .breadcrumb {
+    position: relative;
+    margin: 0;
+    align-self: flex-start;
+    padding-left: 4px;
+
+    /* Projected breadcrumb content lives outside component view encapsulation.
+       Use ::ng-deep to style projected .breadcrumb-link elements. */
+    ::ng-deep .breadcrumb-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      color: rgba(255,255,255,0.95);
+      background: rgba(255,255,255,0.04);
+    }
+
+    ::ng-deep .breadcrumb-link mat-icon {
+      font-size: 20px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    ::ng-deep .separator,
+    ::ng-deep .current {
+      vertical-align: middle;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: rgba(255,255,255,0.9);
+    }
   }
 
   .header-row {
@@ -20,8 +60,10 @@
     align-items: center;
     gap: 20px;
     width: 100%;
+    padding-top: 4px;
   }
 
+  .header-avatar { flex: 0 0 auto; }
   .avatar-large {
     width: 80px;
     height: 80px;
@@ -34,7 +76,84 @@
     font-size: 36px;
   }
 
+  .header-main { flex: 1; min-width: 0; }
   .header-main h1 { margin: 0; font-size: 26px; font-weight: 700; }
 
-  .status-chip { display:flex; gap:8px; align-items:center; padding:8px 12px; border-radius:999px; background: rgba(255,255,255,0.12); color: white; font-weight:600; }
+  .contact-meta {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-top: 6px;
+    color: rgba(255, 255, 255, 0.95);
+
+    & > div {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 22px;
+    }
+
+    mat-icon {
+      font-size: 18px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      vertical-align: middle;
+    }
+
+    span { display: inline-flex; align-items: center; vertical-align: middle; }
+  }
+
+  .header-actions-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 0 0 auto;
+  }
+
+  .status-chip {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    color: white;
+    font-weight: 600;
+  }
+
+  .actions-group { display: flex; gap: 8px; align-items: center; }
+  .action-btn.small { min-width: 96px; height: 40px; font-size: 13px; }
+
+  /* Stroked buttons on gradient header should be semi-transparent white */
+  .header-background .action-btn.small.mat-stroked-button {
+    background: rgba(255, 255, 255, 0.06) !important;
+    color: white !important;
+    border-color: rgba(255, 255, 255, 0.18) !important;
+  }
+  .header-background .action-btn.small.mat-stroked-button:hover {
+    background: rgba(255, 255, 255, 0.14) !important;
+    transform: translateY(-2px);
+  }
+
+  .header-background .action-btn.small.mat-raised-button {
+    color: white !important;
+    border-color: transparent !important;
+  }
+  .header-background .action-btn.small.mat-raised-button .mat-button-wrapper,
+  .header-background .action-btn.small.mat-raised-button * {
+    color: white !important;
+    fill: white !important;
+  }
+  .header-background .action-btn.small.mat-raised-button:hover {
+    filter: brightness(0.95);
+    transform: translateY(-2px);
+  }
+
+  /* Force white text for primary small action buttons in header */
+  .header-background button.action-btn.small[color="primary"],
+  .header-background button.action-btn.small[color="primary"] * {
+    color: white !important;
+  }
 }

@@ -28,7 +28,7 @@
         </div>
 
         <div class="header-actions-right">
-          <div class="status-chip" [class]="user ? getStatusBadgeClass(user) : ''">
+          <div class="status-chip" [ngClass]="user ? getStatusBadgeClass(user) : ''">
             <mat-icon>{{ user?.isActive ? 'check_circle' : 'pause_circle' }}</mat-icon>
             <span>{{ user?.isActive ? 'Активен' : 'Неактивен' }}</span>
           </div>
