@@ -333,15 +333,18 @@ export class ContactDetailComponent implements OnInit {
   }
 
   openDeal(dealId: string): void {
-    this.router.navigate(['/deals', dealId]);
+    // navigate to the deal detail route
+    this.router.navigate(['/deals/view', dealId]);
   }
 
   createDeal(): void {
     if (!this.contact) return;
     
     // Открываем диалог создания сделки или перенаправляем на страницу создания
-    this.router.navigate(['/deals/new'], { 
-      queryParams: { contactId: this.contact.id } 
+    // Navigate to the deals list and pass contactId so the Deals page
+    // can open the create dialog prefilled for this contact.
+    this.router.navigate(['/deals'], { 
+      queryParams: { contactId: this.contact.id, new: '1' } 
     });
   }
 

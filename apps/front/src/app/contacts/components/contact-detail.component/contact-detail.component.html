@@ -131,6 +131,89 @@
                           >
                         </div>
                       </div>
+
+                      <div class="contact-item" *ngIf="contact.company?.name || contact.companyName">
+                        <div class="contact-icon">
+                          <mat-icon>business</mat-icon>
+                        </div>
+                        <div class="contact-details">
+                          <span class="contact-label">Компания</span>
+                          <span class="contact-value">{{ contact.company?.name || contact.companyName }}</span>
+                        </div>
+                      </div>
+
+                      <div class="contact-item" *ngIf="contact.assignedTo">
+                        <div class="contact-icon">
+                          <mat-icon>person_outline</mat-icon>
+                        </div>
+                        <div class="contact-details">
+                          <span class="contact-label">Ответственный</span>
+                          <span class="contact-value">{{ contact.assignedTo }}</span>
+                        </div>
+                      </div>
+
+                      <div class="contact-item" *ngIf="contact.mobilePhone">
+                        <div class="contact-icon">
+                          <mat-icon>smartphone</mat-icon>
+                        </div>
+                        <div class="contact-details">
+                          <span class="contact-label">Мобильный</span>
+                          <a [href]="'tel:' + contact.mobilePhone" class="contact-value">{{ contact.mobilePhone }}</a>
+                        </div>
+                      </div>
+
+                      <div class="contact-item" *ngIf="contact.workPhone">
+                        <div class="contact-icon">
+                          <mat-icon>work</mat-icon>
+                        </div>
+                        <div class="contact-details">
+                          <span class="contact-label">Рабочий телефон</span>
+                          <a [href]="'tel:' + contact.workPhone" class="contact-value">{{ contact.workPhone }}</a>
+                        </div>
+                      </div>
+
+                      <div class="contact-item" *ngIf="contact.tags?.length">
+                        <div class="contact-icon">
+                          <mat-icon>label</mat-icon>
+                        </div>
+                        <div class="contact-details">
+                          <span class="contact-label">Теги</span>
+                          <div class="contact-value">
+                            <ng-container *ngFor="let t of contact.tags">
+                              <span class="tag">{{ t }}</span>
+                            </ng-container>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="contact-item" *ngIf="contact.socialMedia">
+                        <div class="contact-icon">
+                          <mat-icon>share</mat-icon>
+                        </div>
+                        <div class="contact-details">
+                          <span class="contact-label">Соцсети</span>
+                          <div class="contact-value social-links">
+                            <a *ngIf="contact.socialMedia.telegram" [href]="'https://t.me/' + contact.socialMedia.telegram" target="_blank">Telegram</a>
+                            <a *ngIf="contact.socialMedia.whatsapp" [href]="'https://wa.me/' + contact.socialMedia.whatsapp" target="_blank">WhatsApp</a>
+                            <a *ngIf="contact.socialMedia.linkedin" [href]="contact.socialMedia.linkedin" target="_blank">LinkedIn</a>
+                            <a *ngIf="contact.socialMedia.facebook" [href]="contact.socialMedia.facebook" target="_blank">Facebook</a>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="contact-item" *ngIf="contact.customFields">
+                        <div class="contact-icon">
+                          <mat-icon>tune</mat-icon>
+                        </div>
+                        <div class="contact-details">
+                          <span class="contact-label">Дополнительно</span>
+                          <div class="contact-value">
+                            <div *ngFor="let k of (contact.customFields | keyvalue)">
+                              <strong>{{ k.key }}:</strong> {{ k.value }}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </mat-card-content>
                 </mat-card>

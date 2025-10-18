@@ -23,6 +23,7 @@ import { Contact } from '../../../contacts/contact.interfaces';
 export interface DealFormData {
   deal?: Deal;
   mode: 'create' | 'edit';
+  contactId?: string;
 }
 
 @Component({
@@ -88,6 +89,20 @@ export class DealFormComponent implements OnInit {
     
     if (this.currentDeal) {
       this.populateForm();
+    }
+
+    // If contactId was provided via dialog data (prefill contact for creation)
+    const contactId = (this.data as any)?.contactId as string | undefined;
+    if (!this.currentDeal && contactId) {
+      this.contactsService.getContactById(contactId).subscribe({
+        next: (c) => {
+          this.selectedContact = c as Contact;
+          this.dealForm.patchValue({ contactSearch: this.selectedContact?.name || '' });
+        },
+        error: (err) => {
+          console.error('Unable to prefill contact for deal form:', err);
+        }
+      });
     }
   }
 

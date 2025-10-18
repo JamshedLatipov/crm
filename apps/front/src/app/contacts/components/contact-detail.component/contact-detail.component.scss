@@ -28,16 +28,45 @@
 
   .header-content {
     display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 16px;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+    gap: 12px;
     margin: 0 auto;
   }
 
   .breadcrumb {
-    position: absolute;
-    left: 28px;
-    top: 18px;
+    /* Keep breadcrumb inside header flow to avoid overflow */
+    position: relative;
+    margin: 0; /* reset any absolute offsets */
+    align-self: flex-start; /* left align within header */
+    padding-left: 4px;
+  }
+  .breadcrumb .breadcrumb-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    color: rgba(255,255,255,0.95);
+    background: rgba(255,255,255,0.04);
+  }
+
+  .breadcrumb .breadcrumb-link mat-icon {
+    font-size: 20px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .breadcrumb .separator,
+  .breadcrumb .current {
+    vertical-align: middle;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: rgba(255,255,255,0.9);
   }
   .breadcrumb-link {
     color: rgba(255, 255, 255, 0.95);
@@ -54,6 +83,7 @@
     align-items: center;
     gap: 20px;
     width: 100%;
+    padding-top: 4px; /* small gap from breadcrumb */
   }
 
   .header-avatar {
@@ -86,6 +116,29 @@
     align-items: center;
     margin-top: 6px;
     color: rgba(255, 255, 255, 0.95);
+
+    /* Ensure icon+text pairs are vertically centered */
+    & > div {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 22px;
+    }
+
+    mat-icon {
+      font-size: 18px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      vertical-align: middle;
+    }
+
+    span {
+      display: inline-flex;
+      align-items: center;
+      vertical-align: middle;
+    }
   }
 
   .header-actions-right {
@@ -213,17 +266,48 @@
 }
 
 .contact-grid {
-  display: flex;
-  flex-direction: column;
+  /* Responsive grid: 1 column on small, 2 on medium, 3 on large screens */
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 12px;
 }
+
 .contact-item {
   display: flex;
   gap: 12px;
-  align-items: center;
+  align-items: flex-start;
   padding: 12px;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.02);
+  min-height: 64px; /* ensure consistent row height */
+}
+
+/* Icon column inside each contact item */
+.contact-icon {
+  flex: 0 0 44px;
+  height: 44px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.02);
+}
+
+.contact-details {
+  flex: 1 1 auto;
+  min-width: 0; /* allow truncation inside grid columns */
+}
+
+@media (min-width: 700px) {
+  .contact-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1100px) {
+  .contact-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 .contact-icon mat-icon {
   font-size: 20px;
@@ -239,22 +323,146 @@
   color: var(--text-primary);
 }
 
+  .tag {
+    display: inline-block;
+    padding: 4px 8px;
+    margin-right: 6px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.02);
+    border-radius: 999px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
 .notes-content {
   white-space: pre-wrap;
   color: var(--text-primary);
 }
 
-.deals-list .deal-item {
-  padding: 12px 0;
-  border-bottom: 1px dashed var(--border-color);
-}
-.deal-title {
-  font-weight: 600;
-}
-.deal-meta {
-  display: flex;
-  gap: 8px;
-  color: var(--text-secondary);
+.deals-section {
+  .section-title {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .deals-table {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .deal-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    border-radius: 10px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent);
+    border: 1px solid var(--border-color);
+    transition: transform 160ms ease, box-shadow 160ms ease;
+    gap: 12px;
+  }
+
+  /* vertical separation handled by gap */
+
+  .deal-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 30px rgba(10, 10, 10, 0.06);
+  }
+
+  .deal-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0; /* allow truncation */
+  }
+
+  .deal-title {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .deal-details {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    color: var(--text-secondary);
+    font-size: 13px;
+  }
+
+  .deal-amount {
+    font-weight: 700;
+    color: var(--primary-color);
+  }
+
+  .deal-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: capitalize;
+  }
+
+  /* Status color variants */
+  .deal-status.status-open {
+    background: rgba(102, 126, 234, 0.08);
+    color: var(--primary-color);
+  }
+  .deal-status.status-won {
+    background: rgba(67, 233, 123, 0.12);
+    color: #0f9d58; /* green */
+  }
+  .deal-status.status-lost {
+    background: rgba(245, 54, 92, 0.08);
+    color: #d32f2f; /* red */
+  }
+
+  .deal-meta {
+    display: flex;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+
+  .deal-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex: 0 0 auto;
+    margin-left: 12px;
+  }
+
+  .deal-actions button.mat-icon-button {
+    color: var(--text-secondary);
+    background: transparent;
+  }
+
+  /* Empty state button styling */
+  .empty-state button[mat-raised-button] {
+    margin-top: 12px;
+    box-shadow: none;
+  }
+
+  @media (max-width: 700px) {
+    .deal-item {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .deal-actions {
+      justify-content: flex-end;
+      margin-top: 8px;
+    }
+  }
 }
 
 .metadata-list {
@@ -294,6 +502,104 @@
 .tab-content {
   padding: 16px;
   background: transparent;
+}
+
+/* Activity tab styles */
+.activity-section {
+  .activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .activity-item {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 12px;
+    border-radius: 10px;
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    transition: box-shadow 150ms ease, transform 150ms ease;
+  }
+
+  .activity-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(10,10,10,0.05);
+  }
+
+  .activity-icon {
+    flex: 0 0 44px;
+    height: 44px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(102,126,234,0.08), rgba(118,75,162,0.06));
+    color: var(--primary-color);
+    font-size: 18px;
+  }
+
+  .activity-content {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .activity-title {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .activity-description {
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.3;
+    max-height: 3.6em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .activity-meta {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+
+  .activity-type-badge {
+    background: rgba(0,0,0,0.04);
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 20px;
+  }
+
+  @media (max-width: 700px) {
+    .activity-item {
+      flex-direction: row;
+      align-items: center;
+    }
+
+    .activity-icon {
+      flex: 0 0 40px;
+      height: 40px;
+    }
+  }
 }
 
 .error-container {

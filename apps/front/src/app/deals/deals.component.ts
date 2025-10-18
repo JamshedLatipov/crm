@@ -15,7 +15,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { DealsService } from '../pipeline/deals.service';
 import { Deal, DealStatus } from '../pipeline/dtos';
 import { User } from '../users/users.service';
@@ -773,6 +773,7 @@ export class DealsComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   deals: Deal[] = [];
   filteredDeals: Deal[] = [];
@@ -809,6 +810,29 @@ export class DealsComponent implements OnInit {
 
   ngOnInit() {
     this.loadDeals();
+    // If navigated with a contactId (for quick create), open the create dialog
+    // and prefill contact when provided via query params.
+    this.route.queryParamMap.subscribe((params) => {
+      const contactId = params.get('contactId');
+      const newFlag = params.get('new');
+      if (contactId && newFlag) {
+        // Open the create dialog and pass contactId through data
+        const dialogRef = this.dialog.open(DealFormComponent, {
+          width: '700px',
+          maxWidth: '95vw',
+          maxHeight: '90vh',
+          data: { mode: 'create', contactId },
+          disableClose: false
+        });
+
+        dialogRef.afterClosed().subscribe(result => {
+          if (result) {
+            this.loadDeals();
+            this.snackBar.open('Сделка успешно создана', 'Закрыть', { duration: 3000 });
+          }
+        });
+      }
+    });
   }
 
   loadDeals() {
