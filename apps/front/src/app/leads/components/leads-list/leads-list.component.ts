@@ -91,7 +91,8 @@ export class LeadsListComponent implements OnInit {
   ];
 
   // Tabs
-  activeTab = 'all';
+  // Show open leads by default
+  activeTab = 'open';
 
   // Pagination
   currentPage = 1;
