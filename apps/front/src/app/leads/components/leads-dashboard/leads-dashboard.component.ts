@@ -71,6 +71,18 @@ export class LeadsDashboardComponent implements OnInit {
     this.loadDashboardData();
   }
 
+  trackByStatus(_index: number, item: {status: LeadStatus, label: string, count: number}) {
+    return item.status;
+  }
+
+  trackBySource(_index: number, item: {source: LeadSource, label: string, count: number}) {
+    return item.source;
+  }
+
+  trackByPriority(_index: number, item: {priority: LeadPriority, label: string, count: number}) {
+    return item.priority;
+  }
+
   loadDashboardData(): void {
     this.loading.set(true);
     this.leadService.getLeadStatistics().subscribe({

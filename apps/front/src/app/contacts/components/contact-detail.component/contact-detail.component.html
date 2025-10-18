@@ -1,0 +1,380 @@
+<div class="contact-detail-page">
+  <div *ngIf="loading" class="loading-container">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Загрузка контакта...</p>
+  </div>
+
+  <div *ngIf="!loading && contact" class="contact-content">
+    <div class="page-header">
+      <div class="header-background">
+        <div class="header-content">
+          <div class="breadcrumb">
+            <button mat-button (click)="goBack()" class="breadcrumb-link">
+              <mat-icon>arrow_back</mat-icon>
+              Контакты
+            </button>
+            <mat-icon class="separator">chevron_right</mat-icon>
+            <span class="current">{{
+              contactsService.formatContactName(contact)
+            }}</span>
+          </div>
+
+          <div class="header-row">
+            <div class="header-avatar">
+              <div class="avatar-large">
+                <mat-icon>{{
+                  contact.type === 'company' ? 'business' : 'person'
+                }}</mat-icon>
+              </div>
+            </div>
+
+            <div class="header-main">
+              <h1>{{ contactsService.formatContactName(contact) }}</h1>
+              <div class="contact-meta">
+                <div class="contact-type" *ngIf="contact.type">
+                  <mat-icon>person</mat-icon>
+                  <span>{{ contact.type | titlecase }}</span>
+                </div>
+                <div class="contact-source" *ngIf="contact.source">
+                  <mat-icon>source</mat-icon>
+                  <span>{{
+                    contactsService.getContactSourceLabel(contact.source)
+                  }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="header-actions-right">
+              <div class="status-chip" [ngClass]="getStatusChipClass()">
+                <mat-icon>{{ getStatusIcon() }}</mat-icon>
+                <span>{{ getStatusText() }}</span>
+              </div>
+
+              <div class="actions-group">
+                <button
+                  mat-stroked-button
+                  color="primary"
+                  (click)="onEdit()"
+                  class="action-btn small"
+                >
+                  <mat-icon>edit</mat-icon>
+                  Ред.
+                </button>
+                <button
+                  mat-raised-button
+                  color="accent"
+                  (click)="updateLastContact()"
+                  class="action-btn small"
+                >
+                  <mat-icon>touch_app</mat-icon>
+                  Контакт
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="content-grid">
+        <div class="left-column">
+          <mat-tab-group
+            class="contact-tabs"
+            [(selectedIndex)]="selectedTabIndex"
+          >
+            <mat-tab label="Детали">
+              <div class="tab-content">
+                <mat-card class="info-card profile-card">
+                  
+                  <mat-card-content>
+                    <div class="contact-grid">
+                      <div class="contact-item" *ngIf="contact.email">
+                        <div class="contact-icon">
+                          <mat-icon>email</mat-icon>
+                        </div>
+                        <div class="contact-details">
+                          <span class="contact-label">Email</span>
+                          <a
+                            [href]="'mailto:' + contact.email"
+                            class="contact-value email-link"
+                            >{{ contact.email }}</a
+                          >
+                        </div>
+                      </div>
+
+                      <div class="contact-item" *ngIf="contact.phone">
+                        <div class="contact-icon">
+                          <mat-icon>phone</mat-icon>
+                        </div>
+                        <div class="contact-details">
+                          <span class="contact-label">Телефон</span>
+                          <a
+                            [href]="'tel:' + contact.phone"
+                            class="contact-value phone-link"
+                            >{{ contact.phone }}</a
+                          >
+                        </div>
+                      </div>
+
+                      <div class="contact-item" *ngIf="contact.website">
+                        <div class="contact-icon">
+                          <mat-icon>language</mat-icon>
+                        </div>
+                        <div class="contact-details">
+                          <span class="contact-label">Веб-сайт</span>
+                          <a
+                            [href]="contact.website"
+                            target="_blank"
+                            class="contact-value link"
+                            >{{ contact.website }}</a
+                          >
+                        </div>
+                      </div>
+                    </div>
+                  </mat-card-content>
+                </mat-card>
+
+                <mat-card class="info-card notes-card" *ngIf="contact.notes">
+                  <mat-card-header>
+                    <div mat-card-avatar class="card-avatar notes">
+                      <mat-icon>sticky_note_2</mat-icon>
+                    </div>
+                    <mat-card-title>Заметки</mat-card-title>
+                    <mat-card-subtitle
+                      >Дополнительная информация</mat-card-subtitle
+                    >
+                  </mat-card-header>
+                  <mat-card-content>
+                    <div class="notes-content">{{ contact.notes }}</div>
+                  </mat-card-content>
+                </mat-card>
+              </div>
+            </mat-tab>
+
+            <mat-tab label="Активность">
+              <div class="tab-content">
+                <div class="activity-section">
+                  <div *ngIf="activitiesLoading" class="loading-container">
+                    <mat-spinner diameter="30"></mat-spinner>
+                    <p>Загрузка активности...</p>
+                  </div>
+
+                  <div
+                    *ngIf="!activitiesLoading && activities.length > 0"
+                    class="activity-list"
+                  >
+                    <div
+                      class="activity-item"
+                      *ngFor="
+                        let activity of activities;
+                        trackBy: trackActivityById
+                      "
+                    >
+                      <div class="activity-icon">
+                        <mat-icon [class]="'activity-icon-' + activity.type">{{
+                          getActivityIcon(activity.type)
+                        }}</mat-icon>
+                      </div>
+                      <div class="activity-content">
+                        <div class="activity-title">{{ activity.title }}</div>
+                        <div
+                          class="activity-description"
+                          *ngIf="activity.description"
+                        >
+                          {{ activity.description }}
+                        </div>
+                        <div class="activity-meta">
+                          <span class="activity-type-badge">{{
+                            contactsService.getActivityTypeLabel(activity.type)
+                          }}</span>
+                          <span class="activity-date">{{
+                            formatDate(activity.date)
+                          }}</span>
+                          <span
+                            class="activity-user"
+                            *ngIf="activity.userName"
+                            >{{ activity.userName }}</span
+                          >
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    *ngIf="!activitiesLoading && activities.length === 0"
+                    class="empty-state"
+                  >
+                    <mat-icon class="empty-icon">history</mat-icon>
+                    <h4>Нет записей об активности</h4>
+                    <p>Добавьте первую запись о взаимодействии с контактом</p>
+                  </div>
+                </div>
+              </div>
+            </mat-tab>
+
+            <mat-tab label="Сделки">
+              <div class="tab-content">
+                <div class="deals-section">
+                  <h3 class="section-title">Связанные сделки</h3>
+
+                  <div *ngIf="dealsLoading" class="loading-section">
+                    <mat-progress-spinner
+                      mode="indeterminate"
+                      diameter="40"
+                      color="primary"
+                    ></mat-progress-spinner>
+                    <p>Загрузка сделок...</p>
+                  </div>
+
+                  <div
+                    class="deals-table"
+                    *ngIf="
+                      !dealsLoading && deals && deals.length > 0;
+                      else noDeals
+                    "
+                  >
+                    <div class="deal-item" *ngFor="let deal of deals">
+                      <div class="deal-info">
+                        <div class="deal-title">{{ deal.title }}</div>
+                        <div class="deal-details">
+                          <span class="deal-amount">{{
+                            deal.amount
+                              | currency
+                                : deal.currency || 'RUB'
+                                : 'symbol'
+                                : '1.0-0'
+                          }}</span>
+                          <span
+                            class="deal-status"
+                            [class]="'status-' + deal.status?.toLowerCase()"
+                            >{{ getDealStatusLabel(deal.status) }}</span
+                          >
+                        </div>
+                        <div class="deal-meta">
+                          <span class="deal-date"
+                            >Создана:
+                            {{ deal.createdAt | date : 'dd.MM.yyyy' }}</span
+                          >
+                        </div>
+                      </div>
+                      <div class="deal-actions">
+                        <button
+                          mat-icon-button
+                          matTooltip="Открыть сделку"
+                          (click)="openDeal(deal.id)"
+                        >
+                          <mat-icon>open_in_new</mat-icon>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <ng-template #noDeals>
+                    <div class="empty-state" *ngIf="!dealsLoading">
+                      <mat-icon class="empty-icon">handshake</mat-icon>
+                      <h4>Нет связанных сделок</h4>
+                      <p>Сделки с этим контактом будут отображаться здесь</p>
+                      <button
+                        mat-raised-button
+                        color="primary"
+                        (click)="createDeal()"
+                      >
+                        <mat-icon>add</mat-icon>Создать сделку
+                      </button>
+                    </div>
+                  </ng-template>
+                </div>
+              </div>
+            </mat-tab>
+          </mat-tab-group>
+        </div>
+
+        <div class="right-column">
+          <mat-card class="info-card process-card">
+            <mat-card-header>
+              <div mat-card-avatar class="card-avatar process">
+                <mat-icon>timeline</mat-icon>
+              </div>
+              <mat-card-title>Информация</mat-card-title>
+              <mat-card-subtitle>Дата и статус</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="metadata-list">
+                <div class="metadata-item">
+                  <div class="metadata-key">
+                    <mat-icon>schedule</mat-icon><span>Создан</span>
+                  </div>
+                  <div class="metadata-value">
+                    {{ formatDate(contact.createdAt) }}
+                  </div>
+                </div>
+                <div class="metadata-item">
+                  <div class="metadata-key">
+                    <mat-icon>update</mat-icon><span>Обновлен</span>
+                  </div>
+                  <div class="metadata-value">
+                    {{ formatDate(contact.updatedAt) }}
+                  </div>
+                </div>
+                <div class="metadata-item" *ngIf="contact.lastContactDate">
+                  <div class="metadata-key">
+                    <mat-icon>record_voice_over</mat-icon
+                    ><span>Последний контакт</span>
+                  </div>
+                  <div class="metadata-value">
+                    {{ formatDate(contact.lastContactDate) }}
+                  </div>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <mat-card class="info-card address-card" *ngIf="hasAddressInfo()">
+            <mat-card-header>
+              <div mat-card-avatar class="card-avatar metadata">
+                <mat-icon>public</mat-icon>
+              </div>
+              <mat-card-title>Адрес</mat-card-title>
+              <mat-card-subtitle>Контактные данные</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="metadata-list">
+                <div class="metadata-item" *ngIf="contact.address?.country">
+                  <div class="metadata-key">
+                    <mat-icon>flag</mat-icon><span>Страна</span>
+                  </div>
+                  <div class="metadata-value">
+                    {{ contact.address?.country }}
+                  </div>
+                </div>
+                <div class="metadata-item" *ngIf="contact.address?.city">
+                  <div class="metadata-key">
+                    <mat-icon>location_city</mat-icon><span>Город</span>
+                  </div>
+                  <div class="metadata-value">{{ contact.address?.city }}</div>
+                </div>
+                <div class="metadata-item" *ngIf="getFullAddress()">
+                  <div class="metadata-key">
+                    <mat-icon>place</mat-icon><span>Полный адрес</span>
+                  </div>
+                  <div class="metadata-value">{{ getFullAddress() }}</div>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="!loading && !contact" class="error-container">
+    <mat-icon class="error-icon">error_outline</mat-icon>
+    <h3>Контакт не найден</h3>
+    <p>Запрашиваемый контакт не существует или был удален</p>
+    <button mat-raised-button routerLink="/contacts">
+      <mat-icon>arrow_back</mat-icon>
+      Назад к контактам
+    </button>
+  </div>
+</div>

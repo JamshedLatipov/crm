@@ -1,0 +1,306 @@
+.contact-detail-page {
+  min-height: 100vh;
+  background: var(--page-background);
+  color: var(--text-primary);
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+  gap: 12px;
+  color: var(--text-secondary);
+}
+
+.page-header {
+  margin-bottom: 24px;
+
+  .header-background {
+    /* Explicit gradient (fallback if CSS variables are missing) */
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 18px 20px;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    color: white;
+  }
+
+  .header-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    margin: 0 auto;
+  }
+
+  .breadcrumb {
+    position: absolute;
+    left: 28px;
+    top: 18px;
+  }
+  .breadcrumb-link {
+    color: rgba(255, 255, 255, 0.95);
+  }
+  .separator {
+    opacity: 0.7;
+  }
+  .current {
+    font-weight: 600;
+  }
+
+  .header-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+  }
+
+  .header-avatar {
+    flex: 0 0 auto;
+  }
+  .avatar-large {
+    width: 80px;
+    height: 80px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    font-size: 36px;
+  }
+
+  .header-main {
+    flex: 1;
+    min-width: 0;
+  }
+  .header-main h1 {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 700;
+  }
+  .contact-meta {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-top: 6px;
+    color: rgba(255, 255, 255, 0.95);
+  }
+
+  .header-actions-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 0 0 auto;
+  }
+
+  .status-chip {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    color: white;
+    font-weight: 600;
+  }
+  .status-chip.mat-chip {
+    height: auto;
+  }
+
+  .actions-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .action-btn.small {
+    min-width: 96px;
+    height: 40px;
+    font-size: 13px;
+  }
+
+  /* Ensure small stroked action buttons are readable on gradient header */
+  .header-background .action-btn.small.mat-stroked-button {
+    background: rgba(255, 255, 255, 0.06) !important;
+    color: white !important;
+    border-color: rgba(255, 255, 255, 0.18) !important;
+  }
+
+  .header-background .action-btn.small.mat-stroked-button:hover {
+    background: rgba(255, 255, 255, 0.14) !important;
+    transform: translateY(-2px);
+  }
+
+  /* Keep raised buttons' accent background and ensure their text/icons are white */
+  .header-background .action-btn.small.mat-raised-button {
+    color: white !important;
+    border-color: transparent !important;
+    /* preserve Material accent background (don't unset it) */
+  }
+
+  .header-background .action-btn.small.mat-raised-button .mat-button-wrapper,
+  .header-background .action-btn.small.mat-raised-button * {
+    color: white !important;
+    fill: white !important;
+  }
+
+  .header-background .action-btn.small.mat-raised-button:hover {
+    filter: brightness(0.95);
+    transform: translateY(-2px);
+  }
+
+  /* Force white text for all descendants of small action buttons in header (safe fallback) */
+  .header-background button.action-btn.small[color="primary"],
+  .header-background button.action-btn.small[color="primary"] * {
+    color: white !important;
+  }
+}
+
+.main-content {
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 24px;
+}
+@media (max-width: 1100px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.info-card {
+  background: var(--surface-color);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+}
+.profile-card mat-card-header {
+  padding: 20px;
+}
+.profile-card mat-card-content {
+  padding: 16px;
+}
+
+.card-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+.card-avatar.profile {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+}
+.card-avatar.notes {
+  background: linear-gradient(135deg, #4facfe, #00f2fe);
+}
+.card-avatar.deals {
+  background: linear-gradient(135deg, #f093fb, #f5576c);
+}
+.card-avatar.process {
+  background: linear-gradient(135deg, #43e97b, #38f9d7);
+}
+.card-avatar.metadata {
+  background: linear-gradient(135deg, #ffecd2, #fcb69f);
+  color: #8b4513;
+}
+
+.contact-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.contact-item {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+}
+.contact-icon mat-icon {
+  font-size: 20px;
+  color: var(--primary-color);
+}
+.contact-label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.contact-value {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.notes-content {
+  white-space: pre-wrap;
+  color: var(--text-primary);
+}
+
+.deals-list .deal-item {
+  padding: 12px 0;
+  border-bottom: 1px dashed var(--border-color);
+}
+.deal-title {
+  font-weight: 600;
+}
+.deal-meta {
+  display: flex;
+  gap: 8px;
+  color: var(--text-secondary);
+}
+
+.metadata-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.metadata-item {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.metadata-key {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--text-secondary);
+}
+.metadata-value {
+  font-weight: 600;
+}
+
+/* Tabs styling similar to other detail pages */
+.contact-tabs {
+  background: var(--surface-color);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.contact-tabs .mat-tab-label {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.tab-content {
+  padding: 16px;
+  background: transparent;
+}
+
+.error-container {
+  text-align: center;
+  padding: 48px;
+}
+.error-icon {
+  font-size: 48px;
+  color: var(--warning-color);
+}

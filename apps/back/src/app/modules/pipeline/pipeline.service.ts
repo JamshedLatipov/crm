@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PipelineStage, PipelineLead, StageType } from './pipeline.entity';
@@ -28,8 +28,9 @@ export class PipelineService {
     @InjectRepository(Deal)
     private dealsRepo: Repository<Deal>,
     private dataSource: DataSource,
-    private contactsService: ContactsService,
-    private leadService: LeadService,
+  private contactsService: ContactsService,
+  @Inject(forwardRef(() => LeadService))
+  private leadService: LeadService,
     private companiesService: CompaniesService,
     private assignmentService: AssignmentService,
   ) {}

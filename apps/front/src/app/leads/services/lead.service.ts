@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import {
   Lead,
   LeadStatus,
@@ -125,8 +126,34 @@ export class LeadService {
   }
 
   // Analytics and statistics
+  // Backend returns LeadStats shape; map it to frontend LeadStatistics
   getStatistics(): Observable<LeadStatistics> {
-    return this.http.get<LeadStatistics>(`${this.apiUrl}/statistics`);
+    return this.http.get<any>(`${this.apiUrl}/statistics`).pipe(
+      map((r) => {
+        const byStatus = r.byStatus || {};
+        const bySource = r.bySource || {};
+        const byPriority = r.byPriority || {};
+
+        const convertedLeads = byStatus['converted'] || byStatus['CONVERTED'] || 0;
+        const qualifiedLeads = byStatus['qualified'] || byStatus['QUALIFIED'] || 0;
+        const newLeads = byStatus['new'] || byStatus['NEW'] || 0;
+
+        const mapped: LeadStatistics = {
+          totalLeads: r.total ?? 0,
+          newLeads: newLeads,
+          qualifiedLeads: qualifiedLeads,
+          convertedLeads: convertedLeads,
+          conversionRate: r.conversionRate ?? 0,
+          averageScore: r.averageScore ?? 0,
+          totalValue: r.totalEstimatedValue ?? r.totalValue ?? 0,
+          byStatus: byStatus,
+          bySource: bySource,
+          byPriority: byPriority,
+        };
+
+        return mapped;
+      })
+    );
   }
 
   getLeadActivities(leadId: string): Observable<LeadActivity[]> {

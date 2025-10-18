@@ -18,8 +18,13 @@ export interface TransferResponse {
 export class CallsApiService {
   private http = inject(HttpClient);
   private base = environment.apiBase + '/calls';
+  private ivrBase = environment.apiBase + '/ivr';
 
   transfer(body: TransferRequest): Observable<TransferResponse> {
     return this.http.post<TransferResponse>(`${this.base}/transfer`, body);
+  }
+
+  getRuntimeStats() {
+    return this.http.get<any>(`${this.ivrBase}/runtime/stats`);
   }
 }
