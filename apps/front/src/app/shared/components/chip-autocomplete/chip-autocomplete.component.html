@@ -1,0 +1,28 @@
+<div class="chip-autocomplete">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div class="chip-container" style="flex:1;min-width:0;">
+      <mat-chip *ngFor="let id of selected" [removable]="true" (removed)="onRemove(id)" [color]="color">
+        {{ getOptionName(id) }}
+        <mat-icon matChipRemove>cancel</mat-icon>
+      </mat-chip>
+    </div>
+
+    <div class="control" *ngIf="filtered().length > 0">
+      <button *ngIf="!showSelector()" mat-mini-fab color="primary" (click)="openSelector()" aria-label="Open selector">
+        <mat-icon>add</mat-icon>
+      </button>
+
+      <div *ngIf="showSelector()" style="display:flex;align-items:center;gap:6px;">
+        <mat-form-field appearance="outline" style="width:220px;">
+          <input [id]="inputId" matInput [placeholder]="placeholder" [ngModel]="inputValue()" (ngModelChange)="inputValue.set($event)" (keydown.enter)="onAddClick()" [matAutocomplete]="auto" />
+          <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onOptionSelected($event.option.value)">
+            <mat-option *ngIf="filteredByInput().length === 0" disabled>{{ noOptionsText }}</mat-option>
+            <mat-option *ngFor="let o of filteredByInput()" [value]="o.id">{{ o.name }}</mat-option>
+          </mat-autocomplete>
+        </mat-form-field>
+        <button mat-icon-button color="primary" (click)="onAddClick()"><mat-icon>check</mat-icon></button>
+        <button mat-icon-button color="warn" (click)="showSelector.set(false); inputValue.set('')"><mat-icon>close</mat-icon></button>
+      </div>
+    </div>
+  </div>
+</div>
