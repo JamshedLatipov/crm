@@ -215,6 +215,24 @@ export class DealFormComponent implements OnInit {
     return contact ? contact.name : '';
   }
 
+  /**
+   * Convert internal role code to a human-friendly description used in UI lists.
+   */
+  roleDisplay(role?: string | null): string {
+    if (!role) return '';
+    const map: Record<string, string> = {
+      admin: 'Администратор',
+      sales_manager: 'Менеджер продаж',
+      senior_manager: 'Старший менеджер',
+      team_lead: 'Руководитель команды',
+      account_manager: 'Менеджер аккаунтов',
+      client: 'Клиент',
+      intern: 'Стажёр',
+      support: 'Саппорт',
+    };
+    return map[role] || role;
+  }
+
   onSubmit() {
     if (this.dealForm.invalid) return;
 

@@ -190,6 +190,26 @@
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Статус</mat-label>
             <mat-select formControlName="status">
+              <mat-select-trigger>
+                <ng-container [ngSwitch]="dealForm.get('status')?.value">
+                  <ng-container *ngSwitchCase="'open'">
+                    <mat-icon class="status-trigger-icon">radio_button_unchecked</mat-icon>
+                    <span class="status-trigger-label">Открыта</span>
+                  </ng-container>
+                  <ng-container *ngSwitchCase="'won'">
+                    <mat-icon class="status-trigger-icon">check_circle</mat-icon>
+                    <span class="status-trigger-label">Выиграна</span>
+                  </ng-container>
+                  <ng-container *ngSwitchCase="'lost'">
+                    <mat-icon class="status-trigger-icon">cancel</mat-icon>
+                    <span class="status-trigger-label">Проиграна</span>
+                  </ng-container>
+                  <ng-container *ngSwitchDefault>
+                    <span class="status-trigger-label">Выберите статус</span>
+                  </ng-container>
+                </ng-container>
+              </mat-select-trigger>
+
               <mat-option value="open">
                 <div class="status-option status-open">
                   <mat-icon>radio_button_unchecked</mat-icon>
@@ -233,14 +253,19 @@
               </mat-option>
               <mat-option *ngFor="let user of availableUsers" [value]="user.id">
                 <div class="user-option">
-                  <div class="user-avatar">
-                    <mat-icon>account_circle</mat-icon>
-                  </div>
                   <div class="user-info">
                     <div class="user-name">{{ user.name }}</div>
-                    <div class="user-details">
-                      {{ user.role }} • {{ user.department }}
+
+                    <div class="user-meta">
+                      · <span class="user-role">{{ roleDisplay(user.role) }}</span>
+                      <span class="user-dept" *ngIf="user.department">· {{ user.department }}</span>
                     </div>
+
+                    <div class="user-extra" *ngIf="user.email">
+                      <mat-icon class="email-icon">email</mat-icon>
+                      <span class="user-email">{{ user.email }}</span>
+                    </div>
+
                     <div
                       class="user-status"
                       [class.user-available]="user.isAvailable"
