@@ -14,6 +14,126 @@
   align-items: flex-start;
 }
 
+/* Header actions: align buttons, search and filters similar to Leads UI */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Make search look like the leads search box: rounded, subtle shadow, icon on right */
+.search-field {
+  min-width: 320px;
+  max-width: 420px;
+}
+
+.search-field .mat-mdc-form-field-flex,
+.filter-field .mat-mdc-form-field-flex {
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #e6e9ee;
+  padding-left: 12px;
+  padding-right: 8px;
+  align-items: center;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
+}
+
+.search-field .mat-mdc-text-field-input {
+  padding: 12px 8px;
+}
+
+.search-field .mat-mdc-form-field-suffix {
+  margin-right: 8px;
+}
+
+/* Focus ring for inputs like in Leads */
+.search-field .mat-mdc-form-field-flex.mat-mdc-focused,
+.filter-field .mat-mdc-form-field-flex.mat-mdc-focused {
+  box-shadow: 0 6px 20px rgba(37,99,235,0.12);
+  border-color: rgba(37,99,235,0.35);
+}
+
+/* Compact filter select to match visual weight of the search box */
+.filter-field {
+  min-width: 160px;
+  max-width: 220px;
+}
+
+.filter-field .mat-mdc-select-value {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+/* Make header buttons visually grouped and keep primary CTA prominent */
+.header-actions > button[mat-raised-button][color="primary"] {
+  background: linear-gradient(90deg,#2f78ff,#2b6bff);
+  color: #fff;
+}
+
+/* Align bulk buttons area with header rhythm */
+.bulk-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Tabs section adapted from leads styles */
+.tabs-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid #e1e4e8;
+}
+
+.tab {
+  background: none;
+  border: none;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6c757d;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.tab.active {
+  color: #2f78ff;
+  border-bottom-color: #2f78ff;
+}
+
+.tab:hover {
+  color: #2f78ff;
+}
+
+.search-section {
+  display: flex;
+  align-items: center;
+}
+
+.search-field {
+  width: 320px;
+}
+
+@media (max-width: 768px) {
+  .tabs-section {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .search-field {
+    width: 100%;
+  }
+}
+
+
 .page-header h1 {
   font-size: 32px;
   font-weight: 700;

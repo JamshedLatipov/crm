@@ -21,6 +21,7 @@ import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { StatusTabsComponent } from '../../../shared/components/status-tabs/status-tabs.component';
 
 import { LeadService } from '../../services/lead.service';
 import { UserService, Manager } from '../../../shared/services/user.service';
@@ -62,6 +63,7 @@ import { ConvertToDealDialogComponent } from '../convert-to-deal-dialog/convert-
     MatDialogModule,
     MatDividerModule,
     MatCheckboxModule,
+    StatusTabsComponent,
   ],
   templateUrl: './leads-list.component.html',
   styleUrls: ['./leads-list.component.scss'],
@@ -92,7 +94,15 @@ export class LeadsListComponent implements OnInit {
 
   // Tabs
   // Show open leads by default
-  activeTab = 'open';
+  activeTab: string | null = 'open';
+
+  // Tabs config for the status tabs component
+  leadTabs = [
+    { label: 'All Leads', value: 'all' },
+    { label: 'Open', value: 'open' },
+    { label: 'Qualified', value: 'qualified' },
+    { label: 'Closed', value: 'closed' },
+  ];
 
   // Pagination
   currentPage = 1;

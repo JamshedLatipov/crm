@@ -25,7 +25,10 @@ export class ContactsController {
     @Query('assignedTo') assignedTo?: string,
     @Query('company') company?: string,
     @Query('tag') tag?: string,
+    @Query('search') search?: string,
+    @Query('isActive') isActive?: string,
   ) {
+    const parsedIsActive = isActive === undefined ? undefined : isActive === 'true';
     if (type) {
       return this.contactsService.getContactsByType(type);
     }
@@ -46,7 +49,11 @@ export class ContactsController {
       return this.contactsService.getContactsByTag(tag);
     }
 
-    return this.contactsService.listContacts();
+    if (search) {
+      return this.contactsService.searchContacts(search, parsedIsActive);
+    }
+
+    return this.contactsService.listContacts(parsedIsActive);
   }
 
   @Get('recent')

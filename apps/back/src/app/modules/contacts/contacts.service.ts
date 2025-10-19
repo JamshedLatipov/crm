@@ -24,9 +24,13 @@ export class ContactsService {
     return typeof obj === 'object' && obj !== null;
   }
 
-  async listContacts(): Promise<Contact[]> {
+  /**
+   * List contacts. If isActive is undefined, return all contacts. Otherwise filter by isActive flag.
+   */
+  async listContacts(isActive?: boolean): Promise<Contact[]> {
+    const whereClause = isActive === undefined ? {} : { isActive };
     return this.contactRepository.find({
-      where: { isActive: true },
+      where: whereClause,
       order: { createdAt: 'DESC' },
     });
   }
@@ -177,18 +181,25 @@ export class ContactsService {
       .getMany();
   }
 
-  async searchContacts(query: string): Promise<Contact[]> {
+  /**
+   * Search contacts by query. Optionally filter by isActive.
+   */
+  async searchContacts(query: string, isActive?: boolean): Promise<Contact[]> {
     const q = `%${query}%`;
-    return this.contactRepository
+    const qb = this.contactRepository
       .createQueryBuilder('contact')
       .leftJoinAndSelect('contact.company', 'company')
-      .where('contact.isActive = :isActive', { isActive: true })
       .andWhere(
         '(contact.name ILIKE :q OR contact.email ILIKE :q OR contact.phone ILIKE :q OR company.name ILIKE :q)',
         { q }
       )
-      .orderBy('contact.createdAt', 'DESC')
-      .getMany();
+      .orderBy('contact.createdAt', 'DESC');
+
+    if (isActive !== undefined) {
+      qb.andWhere('contact.isActive = :isActive', { isActive });
+    }
+
+    return qb.getMany();
   }
 
   async getRecentContacts(limit = 10): Promise<Contact[]> {

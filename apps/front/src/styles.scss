@@ -123,3 +123,41 @@ button[mat-raised-button][color="primary"].mat-button-disabled {
 .mat-mdc-dialog-surface {
     overflow: hidden !important;
 }
+
+/*
+  Remove inner input borders/outlines globally.
+  We keep the outer .mat-mdc-form-field-flex card-like wrapper (border/background)
+  but ensure the actual <input>/<textarea> don't show their own framed box or focus outline.
+*/
+/* Targets Material MDC input internals and falls back to generic inputs */
+.mat-mdc-form-field .mat-mdc-text-field-input,
+.mat-mdc-form-field .mat-mdc-form-field-infix,
+.mat-mdc-form-field input,
+.mat-mdc-form-field textarea,
+input.mat-input-element,
+textarea.mat-input-element {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+/* Hide the material outline element when using custom card-like field visuals */
+.mat-mdc-form-field-outline,
+.mat-mdc-form-field .mat-mdc-form-field-outline {
+  display: none !important;
+}
+
+/* Remove focus ring on inputs (prevent inner blue rectangle on focus) */
+.mat-mdc-text-field-input:focus,
+input.mat-input-element:focus,
+textarea.mat-input-element:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* For safety, ensure pseudo-elements don't draw borders */
+.mat-mdc-form-field .mat-mdc-form-field-infix::before,
+.mat-mdc-form-field .mat-mdc-form-field-infix::after {
+  display: none !important;
+}

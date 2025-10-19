@@ -10,11 +10,8 @@
 
 /* Page Header */
 .page-header {
-  background: white;
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e2e8f0;
 }
 
 .header-content {
@@ -52,19 +49,84 @@
 
 /* Filters Section */
 .filters-section {
-  background: white;
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e2e8f0;
 }
 
 .filters-grid {
   display: grid;
-  grid-template-columns: 1fr 200px auto;
+  grid-template-columns: 1fr 300px auto;
   gap: 16px;
   align-items: end;
   margin-bottom: 16px;
+}
+
+/* Make search and select fields visually match contacts styles */
+.filters-grid mat-form-field {
+  width: 100%;
+}
+
+.filters-grid mat-form-field .mat-mdc-form-field-flex {
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #e6e9ee;
+  padding-left: 12px;
+  padding-right: 8px;
+  align-items: center;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
+}
+
+.filters-grid mat-form-field .mat-mdc-text-field-input {
+  padding: 12px 8px;
+}
+
+.filters-grid mat-form-field .mat-mdc-form-field-suffix {
+  margin-right: 8px;
+}
+
+/* Focus state similar to contacts: subtle blue glow */
+.filters-grid mat-form-field .mat-mdc-form-field-flex.mat-mdc-focused {
+  box-shadow: 0 6px 20px rgba(37,99,235,0.12);
+  border-color: rgba(37,99,235,0.35);
+}
+
+/* Specific widths to mirror contacts: search larger, select compact */
+.filters-grid mat-form-field:nth-child(1) {
+  min-width: 320px;
+  max-width: 640px;
+}
+
+.filters-grid mat-form-field:nth-child(2) {
+  min-width: 160px;
+  max-width: 260px;
+}
+
+/* Status tabs (replace select) */
+.status-tabs .tabs {
+  display: flex;
+  gap: 1;
+  width: 600px;
+}
+
+.status-tabs .tab {
+  background: none;
+  border: none;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6c757d;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.status-tabs .tab.active {
+  color: #2f78ff;
+  border-bottom-color: #2f78ff;
+}
+
+.status-tabs .tab:hover {
+  color: #2f78ff;
 }
 
 .results-info {

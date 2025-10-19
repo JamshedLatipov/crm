@@ -285,15 +285,22 @@ export class UserManagementService {
     let filtered = this.users();
 
     if (currentFilters.search) {
-      const searchTerm = currentFilters.search.toLowerCase();
-      filtered = filtered.filter(
-        (user) =>
-          user.username.toLowerCase().includes(searchTerm) ||
-          user.email.toLowerCase().includes(searchTerm) ||
-          user.firstName?.toLowerCase().includes(searchTerm) ||
-          user.lastName?.toLowerCase().includes(searchTerm) ||
-          user.department?.toLowerCase().includes(searchTerm)
-      );
+      const searchTerm = (currentFilters.search || '').toLowerCase();
+      filtered = filtered.filter((user) => {
+        const username = (user.username || '').toLowerCase();
+        const email = (user.email || '').toLowerCase();
+        const firstName = (user.firstName || '').toLowerCase();
+        const lastName = (user.lastName || '').toLowerCase();
+        const department = (user.department || '').toLowerCase();
+
+        return (
+          username.includes(searchTerm) ||
+          email.includes(searchTerm) ||
+          firstName.includes(searchTerm) ||
+          lastName.includes(searchTerm) ||
+          department.includes(searchTerm)
+        );
+      });
     }
 
     if (currentFilters.role) {

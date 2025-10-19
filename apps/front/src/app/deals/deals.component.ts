@@ -17,11 +17,12 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { Router, ActivatedRoute } from '@angular/router';
 import { DealsService } from '../pipeline/deals.service';
-import { Deal, DealStatus } from '../pipeline/dtos';
-import { User } from '../users/users.service';
+import { Deal, DealStatus as DealStatusEnum } from '../pipeline/dtos';
+import { DealStatus as DealStatusType, DealStatusComponent } from '../shared/components/deal-status/deal-status.component';
+import { StatusTabsComponent } from '../shared/components/status-tabs/status-tabs.component';
 import { DealFormComponent } from './components/deal-form.component/deal-form.component';
-import { DealStatusComponent } from '../shared/components';
 import { StatusChangeDialogComponent, StatusChangeData, StatusChangeResult } from './components/status-change-dialog.component';
+import { User } from '../users/users.service';
 
 @Component({
   selector: 'app-deals',
@@ -40,16 +41,15 @@ import { StatusChangeDialogComponent, StatusChangeData, StatusChangeResult } fro
     MatTooltipModule,
     MatMenuModule,
     MatDividerModule,
-    MatPaginatorModule,
-    DealStatusComponent
+    DealStatusComponent,
+    StatusTabsComponent,
+    MatPaginatorModule
   ],
   template: `
-    <div class="deals-page">
-      <!-- Заголовок страницы -->
       <div class="page-header">
         <div class="header-content">
           <h1>Сделки</h1>
-          <p class="subtitle">Управление всеми сделками компании</p>
+          <p class="subtitle">Управление всеми сделками и их статусами</p>
         </div>
         <div class="header-actions">
           <button mat-raised-button color="primary" (click)="openCreateDialog()">
@@ -57,54 +57,6 @@ import { StatusChangeDialogComponent, StatusChangeData, StatusChangeResult } fro
             Создать сделку
           </button>
         </div>
-      </div>
-
-      <!-- Фильтры и поиск -->
-      <div class="filters-section">
-        <mat-card class="filters-card">
-          <mat-card-content>
-            <div class="filters-grid">
-              <!-- Поиск -->
-              <mat-form-field appearance="outline" class="search-field">
-                <mat-label>Поиск сделок</mat-label>
-                <input matInput 
-                       [(ngModel)]="searchQuery" 
-                       (ngModelChange)="onSearchChange()"
-                       placeholder="Название, контакт, компания...">
-                <mat-icon matSuffix>search</mat-icon>
-              </mat-form-field>
-
-              <!-- Фильтр по статусу -->
-              <mat-form-field appearance="outline">
-                <mat-label>Статус</mat-label>
-                <mat-select [(value)]="selectedStatus" (selectionChange)="onFilterChange()">
-                  <mat-option [value]="null">Все</mat-option>
-                  <mat-option value="open">Открыты</mat-option>
-                  <mat-option value="won">Выиграны</mat-option>
-                  <mat-option value="lost">Проиграны</mat-option>
-                </mat-select>
-              </mat-form-field>
-
-              <!-- Сортировка -->
-              <mat-form-field appearance="outline">
-                <mat-label>Сортировка</mat-label>
-                <mat-select [(value)]="sortBy" (selectionChange)="onSortChange()">
-                  <mat-option value="createdAt">По дате создания</mat-option>
-                  <mat-option value="expectedCloseDate">По дате закрытия</mat-option>
-                  <mat-option value="amount">По сумме</mat-option>
-                  <mat-option value="title">По названию</mat-option>
-                </mat-select>
-              </mat-form-field>
-
-              <!-- Направление сортировки -->
-              <button mat-icon-button 
-                      (click)="toggleSortDirection()"
-                      [title]="sortDirection === 'asc' ? 'Сортировка по возрастанию' : 'Сортировка по убыванию'">
-                <mat-icon>{{ sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
-              </button>
-            </div>
-          </mat-card-content>
-        </mat-card>
       </div>
 
       <!-- Статистика -->
@@ -119,7 +71,7 @@ import { StatusChangeDialogComponent, StatusChangeData, StatusChangeResult } fro
               <div class="stat-label">Всего сделок</div>
             </div>
           </div>
-          
+
           <div class="stat-card">
             <div class="stat-icon success">
               <mat-icon>check_circle</mat-icon>
@@ -129,7 +81,7 @@ import { StatusChangeDialogComponent, StatusChangeData, StatusChangeResult } fro
               <div class="stat-label">Выиграно</div>
             </div>
           </div>
-          
+
           <div class="stat-card">
             <div class="stat-icon warning">
               <mat-icon>hourglass_empty</mat-icon>
@@ -139,7 +91,7 @@ import { StatusChangeDialogComponent, StatusChangeData, StatusChangeResult } fro
               <div class="stat-label">В работе</div>
             </div>
           </div>
-          
+
           <div class="stat-card">
             <div class="stat-icon primary">
               <mat-icon>monetization_on</mat-icon>
@@ -155,202 +107,150 @@ import { StatusChangeDialogComponent, StatusChangeData, StatusChangeResult } fro
       <!-- Список сделок -->
       <div class="deals-section">
         <!-- Загрузка -->
-        @if (isLoading) {
-          <div class="loading-container">
-            <mat-spinner diameter="40"></mat-spinner>
-            <p>Загрузка сделок...</p>
-          </div>
-        }
+        <div *ngIf="isLoading" class="loading-container">
+          <mat-spinner diameter="40"></mat-spinner>
+          <p>Загрузка сделок...</p>
+        </div>
 
         <!-- Пустое состояние -->
-        @if (!isLoading && filteredDeals.length === 0) {
-          <div class="empty-state">
-            <mat-icon class="empty-icon">handshake</mat-icon>
-            <h3>{{ searchQuery ? 'Сделки не найдены' : 'Нет сделок' }}</h3>
-            <p>{{ searchQuery ? 'Попробуйте изменить параметры поиска' : 'Создайте первую сделку для начала работы' }}</p>
-            @if (!searchQuery) {
-              <button mat-raised-button color="primary" (click)="openCreateDialog()">
-                <mat-icon>add</mat-icon>
-                Создать сделку
-              </button>
-            }
+        <div *ngIf="!isLoading && filteredDeals.length === 0" class="empty-state">
+          <mat-icon class="empty-icon">handshake</mat-icon>
+          <h3>{{ searchQuery ? 'Сделки не найдены' : 'Нет сделок' }}</h3>
+          <p>{{ searchQuery ? 'Попробуйте изменить параметры поиска' : 'Создайте первую сделку для начала работы' }}</p>
+          <ng-container *ngIf="!searchQuery">
+            <button mat-raised-button color="primary" (click)="openCreateDialog()">
+              <mat-icon>add</mat-icon>
+              Создать сделку
+            </button>
+          </ng-container>
+        </div>
+
+        <!-- Фильтры: поиск + табы статусов -->
+        <div class="filters-section">
+          <div class="filters-card">
+            <div class="filters-grid">
+              <app-status-tabs [selected]="selectedStatus" (selectedChange)="onStatusTabChange($event)"></app-status-tabs>
+
+              <mat-form-field appearance="outline" class="search-field">
+                <mat-label>Поиск</mat-label>
+                <input matInput [(ngModel)]="searchQuery" (ngModelChange)="onSearchChange()" placeholder="По названию, контакту, компании" />
+                <mat-icon matSuffix>search</mat-icon>
+              </mat-form-field>
+            </div>
           </div>
-        }
+        </div>
 
         <!-- Таблица сделок -->
-        @if (!isLoading && filteredDeals.length > 0) {
-          <div class="table-container">
-            <table mat-table [dataSource]="paginatedDeals" class="mat-elevation-z1 deals-table">
-              
-              <!-- Title Column -->
-              <ng-container matColumnDef="title">
-                <th mat-header-cell *matHeaderCellDef>Название сделки</th>
-                <td mat-cell *matCellDef="let deal">
-                  <div class="title-cell">
-                    <mat-icon class="deal-icon">handshake</mat-icon>
-                    <div class="title-meta">
-                      <div class="deal-title">
-                        <button mat-button class="title-link" (click)="viewDeal(deal)">
-                          {{ deal.title }}
-                        </button>
-                      </div>
-                      @if (deal.stage) {
-                        <div class="deal-stage">
-                          {{ deal.stage.name }}
-                        </div>
-                      }
+        <div *ngIf="!isLoading && filteredDeals.length > 0" class="table-container">
+          <table mat-table [dataSource]="paginatedDeals" class="mat-elevation-z1 deals-table">
+
+            <!-- Title Column -->
+            <ng-container matColumnDef="title">
+              <th mat-header-cell *matHeaderCellDef>
+                <button class="th-sort" (click)="onHeaderSort('title')">
+                  Название сделки
+                  <mat-icon class="sort-icon">{{ sortBy === 'title' ? (sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward') : 'unfold_more' }}</mat-icon>
+                </button>
+              </th>
+              <td mat-cell *matCellDef="let deal">
+                <div class="title-cell">
+                  <div class="deal-icon">{{ deal.title ? (deal.title.charAt(0) | uppercase) : '?' }}</div>
+                  <div class="title-meta">
+                    <a class="title-link" (click)="viewDeal(deal)">{{ deal.title }}</a>
+                    <div *ngIf="deal.stage" class="deal-stage">{{ deal.stage.name }}</div>
+                  </div>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Contact Column -->
+            <ng-container matColumnDef="contact">
+              <th mat-header-cell *matHeaderCellDef>Контакт</th>
+              <td mat-cell *matCellDef="let deal">
+                <ng-container *ngIf="deal.contact; else noContact">
+                  <div>
+                    <div class="contact-name">{{ deal.contact.name }}</div>
+                    <div *ngIf="deal.company" class="contact-company">{{ deal.company.name }}</div>
+                  </div>
+                </ng-container>
+                <ng-template #noContact><span class="muted">—</span></ng-template>
+              </td>
+            </ng-container>
+
+            <!-- Amount Column -->
+            <ng-container matColumnDef="amount">
+              <th mat-header-cell *matHeaderCellDef>
+                <button class="th-sort" (click)="onHeaderSort('amount')">
+                  Сумма
+                  <mat-icon class="sort-icon">{{ sortBy === 'amount' ? (sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward') : 'unfold_more' }}</mat-icon>
+                </button>
+              </th>
+              <td mat-cell *matCellDef="let deal">
+                <div class="amount-cell">
+                  <div class="amount-value">{{ (deal.amount || 0) | currency:deal.currency:'symbol':'1.0-0' }}</div>
+                  <div class="amount-probability">{{ deal.probability }}% вероятность</div>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Status Column -->
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>Статус</th>
+              <td mat-cell *matCellDef="let deal">
+                <div class="status-actions">
+                  <app-deal-status [status]="deal.status" [showIndicators]="true" [isOverdue]="isOverdue(deal)" [isHighValue]="(deal.amount || 0) > 50000" size="small"></app-deal-status>
+                  <ng-container *ngIf="deal.status === 'open'">
+                    <div class="quick-actions">
+                      <button mat-icon-button matTooltip="Отметить выигранной" (click)="markAsWon(deal)" class="quick-action win"><mat-icon>check_circle</mat-icon></button>
+                      <button mat-icon-button matTooltip="Отметить проигранной" (click)="markAsLost(deal)" class="quick-action lose"><mat-icon>cancel</mat-icon></button>
                     </div>
-                  </div>
-                </td>
-              </ng-container>
+                  </ng-container>
+                </div>
+              </td>
+            </ng-container>
 
-              <!-- Contact Column -->
-              <ng-container matColumnDef="contact">
-                <th mat-header-cell *matHeaderCellDef>Контакт</th>
-                <td mat-cell *matCellDef="let deal">
-                  @if (deal.contact) {
-                    <div>
-                      <div class="contact-name">{{ deal.contact.name }}</div>
-                      @if (deal.company) {
-                        <div class="contact-company">{{ deal.company.name }}</div>
-                      }
-                    </div>
-                  } @else {
-                    <span class="muted">—</span>
-                  }
-                </td>
-              </ng-container>
+            <!-- Expected Close Date Column -->
+            <ng-container matColumnDef="expectedCloseDate">
+              <th mat-header-cell *matHeaderCellDef>
+                <button class="th-sort" (click)="onHeaderSort('expectedCloseDate')">Дата закрытия <mat-icon class="sort-icon">{{ sortBy === 'expectedCloseDate' ? (sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward') : 'unfold_more' }}</mat-icon></button>
+              </th>
+              <td mat-cell *matCellDef="let deal">
+                <div class="date-cell" [class.overdue]="isOverdue(deal) && deal.status === 'open'">{{ deal.expectedCloseDate | date:'dd.MM.yyyy' }} <ng-container *ngIf="isOverdue(deal) && deal.status === 'open'"><mat-icon class="overdue-icon">warning</mat-icon></ng-container></div>
+              </td>
+            </ng-container>
 
-              <!-- Amount Column -->
-              <ng-container matColumnDef="amount">
-                <th mat-header-cell *matHeaderCellDef>Сумма</th>
-                <td mat-cell *matCellDef="let deal">
-                  <div class="amount-cell">
-                    <div class="amount-value">
-                      {{ deal.amount || 0 | currency : deal.currency : 'symbol' : '1.0-0' }}
-                    </div>
-                    <div class="amount-probability">{{ deal.probability }}% вероятность</div>
-                  </div>
-                </td>
-              </ng-container>
+            <!-- Assigned To Column -->
+            <ng-container matColumnDef="assignedTo">
+              <th mat-header-cell *matHeaderCellDef>Ответственный</th>
+              <td mat-cell *matCellDef="let deal"> <ng-container *ngIf="deal.assignedTo; else noAssignee"><span>{{ deal.assignedTo }}</span></ng-container><ng-template #noAssignee><span class="muted">Не назначен</span></ng-template></td>
+            </ng-container>
 
-              <!-- Status Column -->
-              <ng-container matColumnDef="status">
-                <th mat-header-cell *matHeaderCellDef>Статус</th>
-                <td mat-cell *matCellDef="let deal">
-                  <div class="status-actions">
-                    <app-deal-status 
-                      [status]="deal.status"
-                      [showIndicators]="true"
-                      [isOverdue]="isOverdue(deal)"
-                      [isHighValue]="(deal.amount || 0) > 50000"
-                      size="small">
-                    </app-deal-status>
-                    
-                    <!-- Быстрые действия для открытых сделок -->
-                    @if (deal.status === 'open') {
-                      <div class="quick-actions">
-                        <button mat-icon-button 
-                                matTooltip="Отметить выигранной" 
-                                (click)="markAsWon(deal)"
-                                class="quick-action win">
-                          <mat-icon>check_circle</mat-icon>
-                        </button>
-                        <button mat-icon-button 
-                                matTooltip="Отметить проигранной" 
-                                (click)="markAsLost(deal)"
-                                class="quick-action lose">
-                          <mat-icon>cancel</mat-icon>
-                        </button>
-                      </div>
-                    }
-                  </div>
-                </td>
-              </ng-container>
+            <!-- Actions Column -->
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef></th>
+              <td mat-cell *matCellDef="let deal" class="actions-cell">
+                <button mat-icon-button matTooltip="Просмотр" (click)="viewDeal(deal)"><mat-icon>visibility</mat-icon></button>
+                <button mat-icon-button matTooltip="Редактировать" (click)="openEditDialog(deal)"><mat-icon>edit</mat-icon></button>
+                <button mat-icon-button [matMenuTriggerFor]="dealMenu" matTooltip="Действия"><mat-icon>more_vert</mat-icon></button>
+                <mat-menu #dealMenu="matMenu">
+                  <ng-container *ngIf="deal.status === 'open'"><button mat-menu-item (click)="markAsWon(deal)"><mat-icon>check_circle</mat-icon><span>Отметить выигранной</span></button><button mat-menu-item (click)="markAsLost(deal)"><mat-icon>cancel</mat-icon><span>Отметить проигранной</span></button><mat-divider></mat-divider></ng-container>
+                  <button mat-menu-item (click)="duplicateDeal(deal)"><mat-icon>content_copy</mat-icon><span>Дублировать</span></button>
+                  <button mat-menu-item (click)="deleteDeal(deal)" class="delete-action"><mat-icon>delete</mat-icon><span>Удалить</span></button>
+                </mat-menu>
+              </td>
+            </ng-container>
 
-              <!-- Expected Close Date Column -->
-              <ng-container matColumnDef="expectedCloseDate">
-                <th mat-header-cell *matHeaderCellDef>Дата закрытия</th>
-                <td mat-cell *matCellDef="let deal">
-                  <div class="date-cell" [class.overdue]="isOverdue(deal) && deal.status === 'open'">
-                    {{ deal.expectedCloseDate | date : 'dd.MM.yyyy' }}
-                    @if (isOverdue(deal) && deal.status === 'open') {
-                      <mat-icon class="overdue-icon">warning</mat-icon>
-                    }
-                  </div>
-                </td>
-              </ng-container>
-
-              <!-- Assigned To Column -->
-              <ng-container matColumnDef="assignedTo">
-                <th mat-header-cell *matHeaderCellDef>Ответственный</th>
-                <td mat-cell *matCellDef="let deal">
-                  @if (deal.assignedTo) {
-                    <span>{{ deal.assignedTo }}</span>
-                  } @else {
-                    <span class="muted">Не назначен</span>
-                  }
-                </td>
-              </ng-container>
-
-              <!-- Actions Column -->
-              <ng-container matColumnDef="actions">
-                <th mat-header-cell *matHeaderCellDef></th>
-                <td mat-cell *matCellDef="let deal" class="actions-cell">
-                  <button mat-icon-button matTooltip="Просмотр" (click)="viewDeal(deal)">
-                    <mat-icon>visibility</mat-icon>
-                  </button>
-                  <button mat-icon-button matTooltip="Редактировать" (click)="openEditDialog(deal)">
-                    <mat-icon>edit</mat-icon>
-                  </button>
-                  
-                  <!-- Меню действий для смены статуса -->
-                  <button mat-icon-button [matMenuTriggerFor]="dealMenu" matTooltip="Действия">
-                    <mat-icon>more_vert</mat-icon>
-                  </button>
-                  <mat-menu #dealMenu="matMenu">
-                    @if (deal.status === 'open') {
-                      <button mat-menu-item (click)="markAsWon(deal)">
-                        <mat-icon>check_circle</mat-icon>
-                        <span>Отметить выигранной</span>
-                      </button>
-                      <button mat-menu-item (click)="markAsLost(deal)">
-                        <mat-icon>cancel</mat-icon>
-                        <span>Отметить проигранной</span>
-                      </button>
-                      <mat-divider></mat-divider>
-                    }
-                    <button mat-menu-item (click)="duplicateDeal(deal)">
-                      <mat-icon>content_copy</mat-icon>
-                      <span>Дублировать</span>
-                    </button>
-                    <button mat-menu-item (click)="deleteDeal(deal)" class="delete-action">
-                      <mat-icon>delete</mat-icon>
-                      <span>Удалить</span>
-                    </button>
-                  </mat-menu>
-                </td>
-              </ng-container>
-
-              <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-              <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
-            </table>
-          </div>
-        }
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
+          </table>
+        </div>
 
         <!-- Пагинация -->
-        @if (!isLoading && filteredDeals.length > pageSize) {
-          <mat-paginator 
-            [length]="filteredDeals.length"
-            [pageSize]="pageSize"
-            [pageSizeOptions]="[10, 25, 50, 100]"
-            (page)="onPageChange($event)"
-            showFirstLastButtons>
-          </mat-paginator>
-        }
+        <ng-container *ngIf="!isLoading && filteredDeals.length > pageSize">
+          <mat-paginator [length]="filteredDeals.length" [pageSize]="pageSize" [pageSizeOptions]="[10,25,50,100]" (page)="onPageChange($event)" showFirstLastButtons></mat-paginator>
+        </ng-container>
       </div>
-    </div>
-  `,
+    `,
   styles: [`
     .deals-page {
       max-width: 1200px;
@@ -380,8 +280,20 @@ import { StatusChangeDialogComponent, StatusChangeData, StatusChangeResult } fro
       }
       
       .header-actions {
-        button {
-          min-width: 160px;
+        display: flex;
+        gap: 12px;
+
+        button[mat-raised-button][color="primary"] {
+          background: linear-gradient(90deg,#2f78ff,#2b6bff);
+          color: #fff;
+          border-radius: 10px;
+          padding: 10px 16px;
+          font-weight: 600;
+          box-shadow: 0 6px 20px rgba(47,120,255,0.12);
+        }
+
+        button[mat-icon-button] {
+          min-width: 40px;
         }
       }
     }
@@ -391,13 +303,64 @@ import { StatusChangeDialogComponent, StatusChangeData, StatusChangeResult } fro
       
       .filters-card {
         .filters-grid {
-          display: grid;
-          grid-template-columns: 2fr 1fr 1fr auto;
-          gap: 16px;
+          display: flex;
+          justify-content: space-between;
           align-items: center;
-          
+
+          /* Make form-fields look like cards (search/select) */
+          mat-form-field.search-field,
+          mat-form-field {
+            width: 300px;
+          }
+
+          mat-form-field .mat-mdc-form-field-flex {
+            border-radius: 10px;
+            background: #ffffff;
+            border: 1px solid #e6e9ee;
+            padding-left: 12px;
+            padding-right: 8px;
+            align-items: center;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
+          }
+
+          mat-form-field .mat-mdc-text-field-input {
+            padding: 12px 8px;
+          }
+
+          mat-form-field .mat-mdc-form-field-suffix {
+            margin-right: 8px;
+          }
+
           .search-field {
             min-width: 300px;
+          }
+
+          /* Tabs styled like Contacts.tabs */
+          .tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 1px solid #e1e4e8;
+          }
+
+          .tab {
+            background: none;
+            border: none;
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #6c757d;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.15s ease;
+          }
+
+          .tab.active {
+            color: #2f78ff;
+            border-bottom-color: #2f78ff;
+          }
+
+          .tab:hover {
+            color: #2f78ff;
           }
         }
       }
@@ -535,6 +498,23 @@ import { StatusChangeDialogComponent, StatusChangeData, StatusChangeResult } fro
       border-bottom: none;
     }
 
+    .th-sort {
+      background: none;
+      border: none;
+      padding: 0;
+      font: inherit;
+      color: inherit;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .sort-icon {
+      font-size: 16px;
+      opacity: 0.7;
+    }
+
     .mat-mdc-cell {
       padding: 16px 12px;
       border-bottom: 1px solid #f1f3f4;
@@ -557,12 +537,18 @@ import { StatusChangeDialogComponent, StatusChangeData, StatusChangeResult } fro
       gap: 12px;
     }
 
+    /* Large rounded icon at the start of the row */
     .deal-icon {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
       border-radius: 50%;
-      padding: 6px;
-      font-size: 18px;
+      width: 48px;
+      height: 48px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
     }
 
     .title-meta {
@@ -623,10 +609,13 @@ import { StatusChangeDialogComponent, StatusChangeData, StatusChangeResult } fro
       }
       
       .overdue-icon {
-        font-size: 16px;
-        width: 16px;
-        height: 16px;
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
         color: #dc2626;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
       }
     }
 
@@ -636,20 +625,24 @@ import { StatusChangeDialogComponent, StatusChangeData, StatusChangeResult } fro
       gap: 8px;
       
       .quick-actions {
-        display: flex;
-        gap: 4px;
-        opacity: 0;
-        transition: opacity 0.2s ease;
+          display: flex;
+          gap: 6px;
+          opacity: 0;
+          transition: opacity 0.2s ease;
         
-        .quick-action {
-          width: 28px;
-          height: 28px;
-          
-          .mat-icon {
-            font-size: 16px;
-            width: 16px;
-            height: 16px;
-          }
+          .quick-action {
+            width: 32px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+
+            .mat-icon {
+              font-size: 18px;
+              width: 18px;
+              height: 18px;
+              line-height: 18px;
+            }
           
           &.win {
             color: #16a34a;
@@ -674,6 +667,33 @@ import { StatusChangeDialogComponent, StatusChangeData, StatusChangeResult } fro
       opacity: 1;
     }
 
+    /* Ensure table icons are consistent and vertically centered */
+    .deals-table .mat-icon {
+      vertical-align: middle;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+
+    /* Actions column icons (view/edit/menu) slightly larger for touch targets */
+    .actions-cell button.mat-icon-button {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .actions-cell button.mat-icon-button .mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+
     .muted {
       color: #9ca3af;
     }
@@ -681,11 +701,15 @@ import { StatusChangeDialogComponent, StatusChangeData, StatusChangeResult } fro
     .actions-cell {
       text-align: right;
       width: 120px;
-      
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+
       .mat-mdc-menu-item {
         &.delete-action {
           color: #dc2626;
-          
+
           .mat-icon {
             color: #dc2626;
           }
@@ -693,6 +717,27 @@ import { StatusChangeDialogComponent, StatusChangeData, StatusChangeResult } fro
       }
     }
 
+    /* Match icon button look from contacts table */
+    .deals-table .mat-icon-button {
+      color: #6b7280;
+    }
+
+    .deals-table .mat-icon-button:hover {
+      color: #374151;
+      background-color: rgba(37,99,235,0.06);
+    }
+
+    /* Make the title link look like contact name */
+    .title-link {
+      padding: 0;
+      min-width: 0;
+      height: auto;
+      line-height: 1;
+      color: inherit;
+      font-weight: 600;
+      text-transform: none;
+      text-decoration: none;
+    }
     /* Переменные для темной темы */
     :host-context(.dark) {
       --primary-color: #3b82f6;
@@ -780,7 +825,7 @@ export class DealsComponent implements OnInit {
   paginatedDeals: Deal[] = [];
   
   searchQuery = '';
-  selectedStatus: DealStatus | null = null;
+  selectedStatus: string | null = null;
   sortBy = 'createdAt';
   sortDirection: 'asc' | 'desc' = 'desc';
   
@@ -1026,7 +1071,9 @@ export class DealsComponent implements OnInit {
   }
 
   changeStatus(event: { deal: Deal; status: string }) {
-    this.dealsService.updateDeal(event.deal.id, { status: event.status as DealStatus }).subscribe({
+    const statusStr = event.status as string;
+    const dtoStatus = statusStr === 'open' ? DealStatusEnum.OPEN : statusStr === 'won' ? DealStatusEnum.WON : DealStatusEnum.LOST;
+    this.dealsService.updateDeal(event.deal.id, { status: dtoStatus }).subscribe({
       next: (updatedDeal) => {
         // Обновляем локальную копию сделки
         const index = this.deals.findIndex(d => d.id === updatedDeal.id);
@@ -1112,5 +1159,21 @@ export class DealsComponent implements OnInit {
     const expectedDate = new Date(deal.expectedCloseDate);
     const today = new Date();
     return expectedDate < today && deal.status === 'open';
+  }
+
+  // Сортировка по клику на заголовки таблицы
+  onHeaderSort(column: 'title' | 'amount' | 'expectedCloseDate') {
+    if (this.sortBy === column) {
+      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortBy = column;
+      this.sortDirection = 'desc';
+    }
+    this.applyFilters();
+  }
+
+  onStatusTabChange(status: string | null) {
+    this.selectedStatus = status;
+    this.applyFilters();
   }
 }
