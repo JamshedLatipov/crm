@@ -415,7 +415,8 @@
                 >
                 <mat-icon matSuffix>search</mat-icon>
                 <mat-autocomplete #skillsAuto="matAutocomplete" (optionSelected)="addSkill($event.option.value); skillInput.value = ''">
-                  @for (skill of availableSkills(); track skill) {
+                  <mat-option *ngIf="filteredAvailableSkills().length === 0" disabled>Нет доступных навыков</mat-option>
+                  @for (skill of filteredAvailableSkills(); track skill) {
                     <mat-option [value]="skill">{{ skill }}</mat-option>
                   }
                 </mat-autocomplete>
@@ -497,7 +498,8 @@
                 >
                 <mat-icon matSuffix>search</mat-icon>
                 <mat-autocomplete #territoriesAuto="matAutocomplete" (optionSelected)="addTerritory($event.option.value); territoryInput.value = ''">
-                  @for (territory of availableTerritories(); track territory) {
+                  <mat-option *ngIf="filteredAvailableTerritories().length === 0" disabled>Нет доступных территорий</mat-option>
+                  @for (territory of filteredAvailableTerritories(); track territory) {
                     <mat-option [value]="territory">{{ territory }}</mat-option>
                   }
                 </mat-autocomplete>

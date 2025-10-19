@@ -1,0 +1,50 @@
+<div class="page-header">
+  <div class="header-background">
+    <div class="header-content">
+      <div class="breadcrumb">
+        <ng-content select=".breadcrumb"></ng-content>
+      </div>
+
+      <div class="header-row">
+        <div class="header-avatar">
+          <div class="avatar-large">
+            <img *ngIf="user?.avatar" class="avatar-img" [src]="user?.avatar" alt="Avatar" />
+            <span *ngIf="!user?.avatar">{{ user ? getInitials(user) : '?' }}</span>
+          </div>
+        </div>
+
+        <div class="header-main">
+          <h1>{{ user?.firstName }} {{ user?.lastName }}</h1>
+          <div class="contact-meta">
+            <div class="contact-type">
+              <mat-icon>email</mat-icon>
+              <span>{{ user?.email }}</span>
+            </div>
+            <div class="contact-source" *ngIf="user?.department">
+              <mat-icon>apartment</mat-icon>
+              <span>{{ user?.department }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="header-actions-right">
+          <div class="status-chip" [ngClass]="user ? getStatusBadgeClass(user) : ''">
+            <mat-icon>{{ user?.isActive ? 'check_circle' : 'pause_circle' }}</mat-icon>
+            <span>{{ user?.isActive ? 'Активен' : 'Неактивен' }}</span>
+          </div>
+
+          <div class="actions-group">
+            <button mat-stroked-button color="primary" (click)="edit.emit()" class="action-btn small">
+              <mat-icon>edit</mat-icon>
+              Ред.
+            </button>
+            <button mat-raised-button color="accent" (click)="reset.emit()" class="action-btn small">
+              <mat-icon>lock_reset</mat-icon>
+              Сброс пароля
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

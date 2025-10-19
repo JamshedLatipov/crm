@@ -638,4 +638,10 @@ export class IvrRuntimeService implements OnModuleInit {
     if (raw.includes('/')) return raw; // already protocol-qualified (PJSIP/, SIP/, Local/, etc.)
     return `Local/${raw}@${aricontext}`;
   }
+
+  // Return a lightweight snapshot of active calls for external consumers
+  getActiveCallsSnapshot() {
+    const channelIds = Array.from(this.calls.keys());
+    return { count: channelIds.length, channelIds };
+  }
 }

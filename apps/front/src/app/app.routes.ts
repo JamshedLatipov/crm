@@ -10,7 +10,7 @@ import { LeadsDashboardComponent } from './leads/components/leads-dashboard.comp
 import { LeadDetailComponent } from './leads/components/lead-detail.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { ContactsComponent } from './contacts/contacts.component';
-import { ContactDetailComponent } from './contacts/components/contact-detail.component';
+import { ContactDetailComponent } from './contacts/components/contact-detail.component/contact-detail.component';
 import { DealsComponent } from './deals/deals.component';
 import { DealDetailComponent } from './deals/components/deal-detail.component/deal-detail.component';
 import { PipelineComponent } from './pipeline/pipeline.component';

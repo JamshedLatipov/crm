@@ -56,7 +56,7 @@ export class DealsService {
       meta: dto.meta,
     });
 
-    const savedDeal = await this.dealRepository.save(deal);
+  const savedDeal = await this.dealRepository.save(deal);
 
     // Записываем создание сделки в историю
     await this.historyService.createHistoryEntry({
@@ -89,13 +89,25 @@ export class DealsService {
     }
 
     // Возвращаем сделку со всеми связями
+    // Применяем данные этапа (централизованная логика): например, вероятность этапа
+    try {
+      // Только если вероятность не была явно передана в DTO
+      if (dto.probability === undefined || dto.probability === null) {
+        // Получаем этап и применяем его дефолтную вероятность к сделке
+        const stage = dto.stageId ? await this.stageRepository.findOne({ where: { id: dto.stageId } }) : null;
+        if (stage && Number(stage.probability) !== undefined) {
+          await this.setProbabilityFromStageIfMissing(savedDeal.id, stage);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to apply stage defaults to new deal:', err?.message || err);
+    }
+
     return this.getDealById(savedDeal.id);
   }
 
   async updateDeal(id: string, dto: UpdateDealDto, userId?: string, userName?: string): Promise<Deal> {
-    // Получаем текущее состояние сделки для сравнения
     const existingDeal = await this.getDealById(id);
-    
     // Извлекаем ID связей из DTO
     const { contactId, companyId, leadId, expectedCloseDate, actualCloseDate, ...dealData } = dto;
     
@@ -135,9 +147,32 @@ export class DealsService {
     if (leadId !== undefined) {
       await this.linkDealToLead(id, leadId, userId, userName);
     }
+    // Получаем текущее состояние сделки для сравнения
+    const updatedDeal = await this.getDealById(id);
+    // If caller intends to change stageId, use moveToStage to preserve special stage behavior
+    if (dto.stageId && dto.stageId !== updatedDeal.stageId) {
+      console.log('updateDeal: delegating stage change to moveToStage', { dealId: id, from: existingDeal.stageId, to: dto.stageId });
+      return this.moveToStage(id, dto.stageId, userId, userName);
+    }
+
+    // Если изменение статуса пришло без явного stageId, автоматически перемещаем в соответствующий этап пайплайна
+    if (dto.status && !dto.stageId) {
+      try {
+        if (dto.status === DealStatus.WON || dto.status === DealStatus.LOST) {
+          const targetStageType = dto.status === DealStatus.WON ? StageType.WON_STAGE : StageType.LOST_STAGE;
+          const targetStage = await this.stageRepository.findOne({ where: { type: targetStageType } });
+          if (targetStage && targetStage.id !== updatedDeal.stageId) {
+            console.log('updateDeal: status change triggers moveToStage', { dealId: id, status: dto.status, targetStageId: targetStage.id });
+            return this.moveToStage(id, targetStage.id, userId, userName);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to auto-move deal after status change:', err?.message || err);
+      }
+    }
     
     // Возвращаем обновленную сделку со всеми связями
-    return this.getDealById(id);
+    return updatedDeal;
   }
 
   /**
@@ -218,6 +253,7 @@ export class DealsService {
   async moveToStage(id: string, stageId: string, userId?: string, userName?: string): Promise<Deal> {
     // Получаем информацию об этапе для проверки типа
     const stage = await this.stageRepository.findOne({ where: { id: stageId } });
+    console.log('moveToStage called', { dealId: id, targetStageId: stageId, foundStage: stage ? { id: stage.id, type: stage.type, name: stage.name } : null });
     const existingDeal = await this.getDealById(id);
     const oldStageId = existingDeal.stageId;
     
@@ -254,11 +290,40 @@ export class DealsService {
         'Дата перемещения': new Date().toLocaleDateString('ru-RU')
       }
     });
-    
+
+    // После перемещения применяем общую логику этапа — например, дефолтную вероятность
+    try {
+      if (stage) {
+        await this.setProbabilityFromStageIfMissing(result.id, stage, /*force=*/false);
+      }
+    } catch (err) {
+      console.warn('Failed to apply stage defaults after moveToStage:', err?.message || err);
+    }
+
+    console.log('moveToStage result', { dealId: id, updatedDealId: result.id, newStageId: result.stageId, newStatus: result.status });
     return result;
   }
 
   async winDeal(id: string, actualAmount?: number, userId?: string, userName?: string): Promise<Deal> {
+    // Try to find a pipeline stage of type WON_STAGE and move deal there
+    try {
+      console.log('winDeal invoked', { dealId: id, actualAmount });
+      const wonStage = await this.stageRepository.findOne({ where: { type: StageType.WON_STAGE } });
+      console.log('winDeal found wonStage', wonStage ? { id: wonStage.id, name: wonStage.name } : null);
+      if (wonStage) {
+        // If an actual amount provided, ensure it's applied during move
+        if (actualAmount !== undefined) {
+          // Update amount first
+          await this.updateDeal(id, { amount: actualAmount }, userId, userName);
+        }
+        return this.moveToStage(id, wonStage.id, userId, userName);
+      }
+    } catch (err) {
+      // ignore and fallback
+      console.warn('Failed to auto-move to WON stage:', err?.message || err);
+    }
+
+    // Fallback: update status directly
     const updateData: UpdateDealDto = {
       status: DealStatus.WON,
       actualCloseDate: new Date().toISOString(),
@@ -269,7 +334,7 @@ export class DealsService {
     }
 
     const result = await this.updateDeal(id, updateData, userId, userName);
-    
+
     // Записываем выигрыш сделки
     await this.historyService.createHistoryEntry({
       dealId: id,
@@ -292,12 +357,28 @@ export class DealsService {
   }
 
   async loseDeal(id: string, reason: string, userId?: string, userName?: string): Promise<Deal> {
+    // Try to find a pipeline stage of type LOST_STAGE and move deal there
+    try {
+      console.log('loseDeal invoked', { dealId: id, reason });
+      const lostStage = await this.stageRepository.findOne({ where: { type: StageType.LOST_STAGE } });
+      console.log('loseDeal found lostStage', lostStage ? { id: lostStage.id, name: lostStage.name } : null);
+      if (lostStage) {
+        // Move deal to lost stage, include reason as note
+        const moved = await this.moveToStage(id, lostStage.id, userId, userName);
+        // Append reason to notes
+        await this.updateDeal(id, { notes: `${moved.notes || ''}\nLoss reason: ${reason}` }, userId, userName);
+        return moved;
+      }
+    } catch (err) {
+      console.warn('Failed to auto-move to LOST stage:', err?.message || err);
+    }
+
     const result = await this.updateDeal(id, {
       status: DealStatus.LOST,
       actualCloseDate: new Date().toISOString(),
       notes: reason,
     }, userId, userName);
-    
+
     // Записываем проигрыш сделки
     await this.historyService.createHistoryEntry({
       dealId: id,
@@ -408,7 +489,6 @@ export class DealsService {
       order: { createdAt: 'DESC' },
     });
   }
-
   async getDealsByStatus(status: DealStatus): Promise<Deal[]> {
     return this.dealRepository.find({
       where: { status },
@@ -616,7 +696,19 @@ export class DealsService {
       relations: ['stage', 'company', 'contact', 'lead'],
       order: { createdAt: 'DESC' },
     });
-    
+    // Debug log to help diagnose frontend issues where related deals are not displayed.
+    try {
+      console.log(`getDealsByContact called`, { contactId, found: Array.isArray(deals) ? deals.length : 0 });
+      if (Array.isArray(deals) && deals.length > 0) {
+        // log brief summary of first deal to help with quick inspection
+        const d = deals[0];
+        console.log('getDealsByContact sample deal', { id: d.id, title: d.title, amount: d.amount, status: d.status });
+      }
+    } catch (err) {
+      // swallow logging errors to avoid breaking the endpoint
+      console.warn('Failed to log getDealsByContact debug info', err?.message || err);
+    }
+
     return deals;
   }
 
@@ -670,5 +762,33 @@ export class DealsService {
    */
   async getCurrentAssignments(dealId: string) {
     return this.assignmentService.getCurrentAssignments('deal', dealId);
+  }
+
+  /**
+   * Centralized: apply stage defaults (currently probability) to a deal if it doesn't have one
+   * - If force === true, it will overwrite existing probability
+   */
+  private async setProbabilityFromStageIfMissing(dealId: string, stage?: PipelineStage, force = false): Promise<void> {
+    if (!stage) {
+      // Try to find stage from deal
+      const deal = await this.getDealById(dealId).catch(() => null);
+      if (!deal || !deal.stageId) return;
+      stage = await this.stageRepository.findOne({ where: { id: deal.stageId } });
+      if (!stage) return;
+    }
+
+    const deal = await this.getDealById(dealId);
+    if (!deal) return;
+
+    const stageProb = typeof stage.probability === 'number' ? stage.probability : Number(stage.probability);
+    if (Number.isNaN(stageProb)) return;
+
+    // Если вероятность уже установлена и не принудительно, ничего не делаем
+    if (!force && deal.probability !== undefined && deal.probability !== null) {
+      return;
+    }
+
+    // Обновляем вероятность сделки на основе этапа
+    await this.updateDeal(dealId, { probability: stageProb }, /*userId=*/undefined, /*userName=*/undefined);
   }
 }

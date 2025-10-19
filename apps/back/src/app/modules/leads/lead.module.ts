@@ -18,6 +18,8 @@ import { LeadDistributionController } from './controllers/lead-distribution.cont
 import { LeadCaptureController } from './controllers/lead-capture.controller';
 import { LeadHistoryController } from './controllers/lead-history.controller';
 import { UserModule } from '../user/user.module';
+import { forwardRef } from '@nestjs/common';
+import { PipelineModule } from '../pipeline/pipeline.module';
 import { DealsModule } from '../deals/deals.module';
 import { NotificationModule } from '../notifications/notification.module';
 import { SharedModule } from '../shared/shared.module';
@@ -32,9 +34,14 @@ import { CompaniesModule } from '../companies/companies.module';
       LeadScore,
       LeadScoringRule,
       LeadDistributionRule,
-      Deal
+      Deal,
+      // ensure Contact repository is available to LeadService
+      (require('../contacts/contact.entity').Contact)
     ]),
-    CompaniesModule,
+  CompaniesModule,
+  // also import ContactsModule to reuse ContactsService if needed
+  require('../contacts/contacts.module').ContactsModule,
+  forwardRef(() => PipelineModule),
     UserModule,
     DealsModule,
     NotificationModule,

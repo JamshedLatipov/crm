@@ -29,4 +29,10 @@ export class IvrLogService {
     });
     return this.repo.save(row);
   }
+
+  async getLogsSince(since: Date) {
+    return this.repo.createQueryBuilder('log')
+      .where('log.createdAt >= :since', { since: since.toISOString() })
+      .getMany();
+  }
 }

@@ -21,6 +21,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
 import { UserManagementService, User, UserFilters } from '../../../services/user-management.service';
 import { PasswordResetSnackbarComponent } from '../../../shared/components/password-reset-snackbar/password-reset-snackbar.component';
+import { StatusTabsComponent } from '../../../shared/components/status-tabs/status-tabs.component';
 
 @Component({
   selector: 'app-user-list',
@@ -46,6 +47,8 @@ import { PasswordResetSnackbarComponent } from '../../../shared/components/passw
     MatProgressSpinnerModule,
     MatCardModule,
     MatDividerModule
+    ,
+    StatusTabsComponent
   ],
   templateUrl: './user-list.component.html',
   changeDetection: ChangeDetectionStrategy.Default,
@@ -61,6 +64,7 @@ export class UserListComponent implements OnInit {
   public readonly filters = signal<UserFilters>({});
   public readonly searchControl = new FormControl('');
   public readonly statusControl = new FormControl('');
+  public readonly selectedStatus = signal<string>('');
   public readonly currentPage = signal<number>(0);
   public readonly pageSize = signal<number>(25);
   
@@ -94,8 +98,18 @@ export class UserListComponent implements OnInit {
     // Подписываемся на изменения фильтра статуса
     this.statusControl.valueChanges.subscribe(value => {
       this.onStatusFilterChange(value || '');
+      // Keep the selectedStatus signal in sync when control changes
+      this.selectedStatus.set(value || '');
     });
   }
+
+  // Tabs for status filtering
+  userTabs = [
+    { label: 'Все', value: '' },
+    { label: 'Активные', value: 'active' },
+    { label: 'Доступные', value: 'available' },
+    { label: 'Неактивные', value: 'inactive' },
+  ];
 
   ngOnInit(): void {
     // Сначала загружаем пользователей
@@ -131,6 +145,10 @@ export class UserListComponent implements OnInit {
   }
 
   onStatusFilterChange(statusValue: string): void {
+    // Keep the FormControl value in sync with tab clicks but don't re-emit the valueChanges
+    // subscription (it already calls this method) to avoid recursion.
+    this.statusControl.setValue(statusValue, { emitEvent: false });
+
     const currentFilters = this.filters();
     const status = statusValue;
     
@@ -147,6 +165,8 @@ export class UserListComponent implements OnInit {
     
     this.userService.setFilters(this.filters());
     this.updateFilteredUsers();
+    // reflect in signal for template bindings
+    this.selectedStatus.set(statusValue || '');
   }
 
   clearFilters(): void {

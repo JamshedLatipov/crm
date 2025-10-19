@@ -20,12 +20,19 @@
           <mat-icon>add</mat-icon>
           Добавить пользователя
         </button>
-        @if (selectedUsers().length > 0) {
-        <button mat-stroked-button [matMenuTriggerFor]="actionsMenu">
+        <button
+          mat-stroked-button
+          [matMenuTriggerFor]="actionsMenu"
+          [disabled]="selectedUsers().length === 0"
+          [attr.aria-disabled]="selectedUsers().length === 0"
+          title="Выберите пользователей, чтобы открыть действия"
+        >
           <mat-icon>more_vert</mat-icon>
-          Действия ({{ selectedUsers().length }})
+          Действия
+          @if (selectedUsers().length > 0) {
+            ({{ selectedUsers().length }})
+          }
         </button>
-        }
       </div>
     </div>
   </div>
@@ -33,8 +40,20 @@
   <!-- Filters -->
   <div class="filters-section">
     <div class="filters-grid">
-      <!-- Search -->
-      <mat-form-field appearance="outline">
+      
+      <!-- Status filter -->
+      <!-- Status filter as tabs (replaces select) -->
+      <div class="status-tabs">
+        <div class="tabs">
+          <app-status-tabs
+            [tabs]="userTabs"
+            [selected]="selectedStatus() || ''"
+            (selectedChange)="onStatusFilterChange($event)">
+          </app-status-tabs>
+        </div>
+      </div>
+
+      <mat-form-field class="search-field" appearance="outline">
         <mat-label>Поиск</mat-label>
         <input
           matInput
@@ -43,28 +62,6 @@
         />
         <mat-icon matSuffix>search</mat-icon>
       </mat-form-field>
-
-      <!-- Status filter -->
-      <mat-form-field appearance="outline">
-        <mat-label>Статус</mat-label>
-        <mat-select [formControl]="statusControl">
-          <mat-option value="">Все</mat-option>
-          <mat-option value="active">Активные</mat-option>
-          <mat-option value="inactive">Неактивные</mat-option>
-          <mat-option value="available">Доступные</mat-option>
-        </mat-select>
-      </mat-form-field>
-
-      <!-- Clear filters -->
-      @if (hasActiveFilters()) {
-      <button mat-stroked-button (click)="clearFilters()">
-        <mat-icon>clear</mat-icon>
-        Сбросить фильтры
-      </button>
-      }
-    </div>
-    <div class="results-info">
-      Показано: {{ paginatedUsers().length }} из {{ filteredUsers().length }}
     </div>
   </div>
 
@@ -89,25 +86,6 @@
   <!-- Users table -->
   @if (!userService.isLoading() && paginatedUsers().length > 0) {
   <div class="modern-table-container">
-    <!-- Table Header -->
-    <div class="header-content">
-      <div class="header-actions">
-        @if (selectedUsers().length > 0) {
-        <div class="selected-info">
-          <span>Выбрано: {{ selectedUsers().length }}</span>
-          <button
-            mat-button
-            [matMenuTriggerFor]="bulkMenu"
-            class="bulk-actions-btn"
-          >
-            <mat-icon>more_vert</mat-icon>
-            Действия
-          </button>
-        </div>
-        }
-      </div>
-    </div>
-
     <!-- Modern Table -->
     <div class="table-wrapper">
       <table class="modern-table">

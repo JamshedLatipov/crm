@@ -14,6 +14,126 @@
   align-items: flex-start;
 }
 
+/* Header actions: align buttons, search and filters similar to Leads UI */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Make search look like the leads search box: rounded, subtle shadow, icon on right */
+.search-field {
+  min-width: 320px;
+  max-width: 420px;
+}
+
+.search-field .mat-mdc-form-field-flex,
+.filter-field .mat-mdc-form-field-flex {
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #e6e9ee;
+  padding-left: 12px;
+  padding-right: 8px;
+  align-items: center;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
+}
+
+.search-field .mat-mdc-text-field-input {
+  padding: 12px 8px;
+}
+
+.search-field .mat-mdc-form-field-suffix {
+  margin-right: 8px;
+}
+
+/* Focus ring for inputs like in Leads */
+.search-field .mat-mdc-form-field-flex.mat-mdc-focused,
+.filter-field .mat-mdc-form-field-flex.mat-mdc-focused {
+  box-shadow: 0 6px 20px rgba(37,99,235,0.12);
+  border-color: rgba(37,99,235,0.35);
+}
+
+/* Compact filter select to match visual weight of the search box */
+.filter-field {
+  min-width: 160px;
+  max-width: 220px;
+}
+
+.filter-field .mat-mdc-select-value {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+/* Make header buttons visually grouped and keep primary CTA prominent */
+.header-actions > button[mat-raised-button][color="primary"] {
+  background: linear-gradient(90deg,#2f78ff,#2b6bff);
+  color: #fff;
+}
+
+/* Align bulk buttons area with header rhythm */
+.bulk-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Tabs section adapted from leads styles */
+.tabs-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid #e1e4e8;
+}
+
+.tab {
+  background: none;
+  border: none;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6c757d;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.tab.active {
+  color: #2f78ff;
+  border-bottom-color: #2f78ff;
+}
+
+.tab:hover {
+  color: #2f78ff;
+}
+
+.search-section {
+  display: flex;
+  align-items: center;
+}
+
+.search-field {
+  width: 320px;
+}
+
+@media (max-width: 768px) {
+  .tabs-section {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .search-field {
+    width: 100%;
+  }
+}
+
+
 .page-header h1 {
   font-size: 32px;
   font-weight: 700;
@@ -210,6 +330,70 @@
   overflow: hidden;
 }
 
+/* Bulk actions toolbar above the table */
+.bulk-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  margin: 8px 12px 12px 12px;
+  background: linear-gradient(180deg, #ffffff, #fbfdff);
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(15, 23, 42, 0.04);
+}
+
+.bulk-actions .bulk-left {
+  font-size: 15px;
+  color: #0f172a;
+}
+
+.bulk-actions .bulk-right {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Make header checkbox and row checkboxes centered and compact */
+.contacts-table th.mat-mdc-header-cell:first-child,
+.contacts-table td.mat-mdc-cell:first-child {
+  width: 56px;
+  text-align: center;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.contacts-table th.mat-mdc-header-cell:first-child mat-checkbox,
+.contacts-table td.mat-mdc-cell:first-child mat-checkbox {
+  margin: 0 auto;
+  display: inline-flex;
+}
+
+/* Slightly bigger clickable area for row checkboxes */
+.contacts-table td.mat-mdc-cell:first-child .mat-mdc-checkbox .mdc-checkbox__native-control {
+  width: 20px;
+  height: 20px;
+}
+
+/* Tighten header paddings to match bulk toolbar rhythm */
+.mat-mdc-header-cell {
+  padding: 12px 16px;
+}
+
+/* Responsive: stack bulk actions on small screens */
+@media (max-width: 640px) {
+  .bulk-actions {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: left;
+  }
+
+  .bulk-actions .bulk-right {
+    justify-content: flex-start;
+  }
+}
+
 .contacts-table {
   width: 100%;
   background-color: white;
@@ -226,15 +410,17 @@
   color: #6c757d;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  padding: 16px 12px;
+  padding: 12px 16px;
   border-bottom: none;
+  vertical-align: middle;
 }
 
 .mat-mdc-cell {
-  padding: 16px 12px;
+  padding: 12px 16px;
   border-bottom: 1px solid #f1f3f4;
   font-size: 14px;
   color: #1a1a1a;
+  vertical-align: middle;
 }
 
 .table-row {
@@ -255,7 +441,12 @@
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border-radius: 50%;
-  padding: 6px;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
   font-size: 18px;
 }
 
@@ -265,7 +456,40 @@
 
 .actions-cell {
   text-align: right;
-  width: 48px;
+  width: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Make the name button look like a link and not break layout */
+.name-link {
+  padding: 0;
+  min-width: 0;
+  height: auto;
+  line-height: 1;
+  color: inherit;
+  font-weight: 600;
+  text-transform: none;
+  text-decoration: none;
+}
+
+/* Table icons and action buttons styling */
+.contacts-table mat-icon {
+  vertical-align: middle;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mat-icon-button {
+  color: #6b7280;
+}
+
+.mat-icon-button:hover {
+  color: #374151;
+  background-color: rgba(37,99,235,0.06);
 }
 
 @media (max-width: 768px) {

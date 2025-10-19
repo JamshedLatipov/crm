@@ -9,40 +9,21 @@
         <mat-icon>add</mat-icon>
         New Lead
       </button>
+      <button mat-stroked-button color="primary" (click)="bulkQuickAssign()" [disabled]="selectedLeads().length === 0" class="ml-2">
+        <mat-icon>flash_on</mat-icon>
+        Быстрое назначение ({{ selectedLeads().length }})
+      </button>
     </div>
   </div>
 
   <!-- Tabs -->
   <div class="tabs-section">
     <div class="tabs">
-      <button
-        class="tab"
-        [class.active]="activeTab === 'all'"
-        (click)="setActiveTab('all')"
-      >
-        All Leads
-      </button>
-      <button
-        class="tab"
-        [class.active]="activeTab === 'open'"
-        (click)="setActiveTab('open')"
-      >
-        Open
-      </button>
-      <button
-        class="tab"
-        [class.active]="activeTab === 'qualified'"
-        (click)="setActiveTab('qualified')"
-      >
-        Qualified
-      </button>
-      <button
-        class="tab"
-        [class.active]="activeTab === 'closed'"
-        (click)="setActiveTab('closed')"
-      >
-        Closed
-      </button>
+      <app-status-tabs
+        [tabs]="leadTabs"
+        [selected]="activeTab"
+        (selectedChange)="setActiveTab($event)">
+      </app-status-tabs>
     </div>
     <div class="search-section">
       <mat-form-field appearance="outline" class="search-field">
@@ -75,10 +56,21 @@
       <!-- Checkbox Column -->
       <ng-container matColumnDef="select">
         <th mat-header-cell *matHeaderCellDef>
-          <mat-checkbox (click)="$event.stopPropagation()"></mat-checkbox>
+          <mat-checkbox
+            (click)="$event.stopPropagation()"
+            (change)="toggleAllSelection()"
+            [checked]="isAllSelected()"
+            [indeterminate]="isPartiallySelected()"
+            aria-label="Select all leads"
+          ></mat-checkbox>
         </th>
         <td mat-cell *matCellDef="let lead">
-          <mat-checkbox (click)="$event.stopPropagation()"></mat-checkbox>
+          <mat-checkbox
+            (click)="$event.stopPropagation()"
+            (change)="toggleLeadSelection(lead)"
+            [checked]="isLeadSelected(lead)"
+            aria-label="Select lead"
+          ></mat-checkbox>
         </td>
       </ng-container>
 

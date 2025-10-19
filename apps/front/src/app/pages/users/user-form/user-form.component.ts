@@ -83,6 +83,17 @@ export class UserFormComponent implements OnInit {
     this.referenceDataService.activeTerritories().map(t => t.name)
   );
 
+  // Filtered lists exclude already selected items
+  public readonly filteredAvailableSkills = computed(() => {
+    const selected = this.selectedSkills() || [];
+    return this.availableSkills().filter(s => !selected.includes(s));
+  });
+
+  public readonly filteredAvailableTerritories = computed(() => {
+    const selected = this.selectedTerritories() || [];
+    return this.availableTerritories().filter(t => !selected.includes(t));
+  });
+
   // Password generation state
   public readonly passwordCopied = signal<boolean>(false);
 

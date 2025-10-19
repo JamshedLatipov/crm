@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Patch, Delete, Query, BadRequestException, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Delete, Query, BadRequestException, Req, UseGuards, UnauthorizedException } from '@nestjs/common';
 import { LeadService } from './lead.service';
 import { Lead, LeadStatus, LeadSource, LeadPriority } from './lead.entity';
 import { ChangeType } from './entities/lead-history.entity';
@@ -130,6 +130,33 @@ export class LeadController {
     return this.leadService.getHighValueLeads(Number(minValue));
   }
 
+  // Bulk assign endpoint should be declared before routes with :id to avoid route collision
+  @Patch('bulk-assign')
+  @ApiBody({ schema: {
+    type: 'object',
+    properties: {
+      leadIds: { type: 'array', items: { type: 'string' } },
+      managerId: { type: 'string' }
+    },
+    required: ['leadIds', 'managerId']
+  }})
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  async bulkAssign(
+    @Body() body: { leadIds: string[]; managerId: string },
+    @CurrentUser() user?: CurrentUserPayload
+  ): Promise<Lead[]> {
+    const { leadIds, managerId } = body || {} as any;
+    if (!Array.isArray(leadIds) || !leadIds.length || !managerId) {
+      throw new BadRequestException('leadIds (array) and managerId are required');
+    }
+
+    const operatorId = typeof user?.sub === 'string' || typeof user?.sub === 'number' ? parseInt(String(user.sub)) : undefined;
+    const operatorName = user?.username;
+
+    return this.leadService.bulkAssign(leadIds, managerId, operatorId, operatorName);
+  }
+
   @Get('stale')
   @ApiQuery({ name: 'days', type: 'number', required: false })
   async getStaleLeads(@Query('days') days = 30): Promise<Lead[]> {
@@ -164,12 +191,23 @@ export class LeadController {
 
   @Patch(':id/assign')
   @ApiBody({ type: AssignLeadDto })
-  async assignLead(@Param('id') id: number, @Body() body: AssignLeadDto, @CurrentUser() user: CurrentUserPayload): Promise<Lead> {
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  async assignLead(@Param('id') id: number, @Body() body: AssignLeadDto, @CurrentUser() user?: CurrentUserPayload): Promise<Lead> {
     const userOrManager = body.managerId ?? body.user;
     if (!userOrManager) {
       throw new BadRequestException('Missing user or managerId in request body');
     }
-    return this.leadService.assignLead(id, userOrManager, parseInt(user.sub), user.username);
+    if (!user) {
+      throw new UnauthorizedException('Authenticated user required to assign leads');
+    }
+    // Ensure user.sub is present and numeric
+    const operatorId = typeof user.sub === 'string' || typeof user.sub === 'number' ? parseInt(String(user.sub)) : NaN;
+    if (Number.isNaN(operatorId)) {
+      throw new UnauthorizedException('Invalid user id in token payload');
+    }
+    const operatorName = user.username ?? 'unknown';
+    return this.leadService.assignLead(id, userOrManager, operatorId, operatorName);
   }
 
   @Post(':id/auto-assign')
@@ -191,9 +229,45 @@ export class LeadController {
   }
 
   @Patch(':id/status')
-  @ApiBody({ type: StatusLeadDto })
-  async changeStatus(@Param('id') id: number, @Body() body: StatusLeadDto): Promise<Lead> {
-    return this.leadService.changeStatus(id, body.status);
+  @ApiBody({ schema: {
+    type: 'object',
+    properties: {
+      status: { type: 'string' },
+      autoConvert: { type: 'boolean', description: 'If true and status==converted, convert lead to deal automatically' },
+      convertPayload: { type: 'object', description: 'Optional payload for create deal when auto converting' }
+    },
+    required: ['status']
+  }})
+  async changeStatus(@Param('id') id: number, @Body() body: any, @CurrentUser() user?: CurrentUserPayload): Promise<Lead> {
+    const status = body.status as any;
+    const userId = user?.sub ? String(user.sub) : undefined;
+    const userName = user?.username;
+
+    const updated = await this.leadService.changeStatus(id, status, userId, userName);
+
+    // If status is converted and caller requested auto-convert, perform conversion
+    if (status === 'converted' || status === 'CONVERTED' || status === (LeadStatus.CONVERTED as any)) {
+      if (body.autoConvert) {
+        // body.convertPayload may contain deal creation fields
+        const payload = body.convertPayload || {};
+        try {
+          await this.leadService.convertToDeal(id, {
+            title: payload.title,
+            amount: payload.amount || (updated.estimatedValue || 0),
+            currency: payload.currency || 'RUB',
+            probability: payload.probability || updated.conversionProbability || 50,
+            expectedCloseDate: payload.expectedCloseDate ? new Date(payload.expectedCloseDate) : new Date(),
+            stageId: payload.stageId || undefined,
+            notes: payload.notes || undefined
+          }, userId, userName);
+        } catch (err) {
+          // log and continue — status already changed
+          console.error('Auto-convert failed:', err?.message || err);
+        }
+      }
+    }
+
+    return updated;
   }
 
   @Patch(':id/qualify')

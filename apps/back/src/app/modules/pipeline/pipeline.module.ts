@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PipelineService } from './pipeline.service';
 import { AutomationService } from './automation.service';
@@ -11,7 +11,13 @@ import { CompaniesModule } from '../companies/companies.module';
 import { SharedModule } from '../shared/shared.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([PipelineStage, PipelineLead, Deal]), ContactsModule, LeadModule, CompaniesModule, SharedModule],
+  imports: [
+    TypeOrmModule.forFeature([PipelineStage, PipelineLead, Deal]),
+    ContactsModule,
+    forwardRef(() => LeadModule),
+    CompaniesModule,
+    SharedModule,
+  ],
   providers: [PipelineService, AutomationService],
   controllers: [PipelineController],
   exports: [PipelineService],

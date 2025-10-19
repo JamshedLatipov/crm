@@ -1,0 +1,16 @@
+@import '../_user-detail.shared.scss';
+
+.roles-section {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  ::ng-deep .card-avatar.map {
+    background: linear-gradient(135deg, #4facfe, #00f2fe);
+  }
+
+  ::ng-deep app-chip-autocomplete {
+    width: 100%;
+  }
+}

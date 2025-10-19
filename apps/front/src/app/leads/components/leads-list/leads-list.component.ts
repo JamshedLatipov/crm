@@ -21,6 +21,7 @@ import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { StatusTabsComponent } from '../../../shared/components/status-tabs/status-tabs.component';
 
 import { LeadService } from '../../services/lead.service';
 import { UserService, Manager } from '../../../shared/services/user.service';
@@ -62,6 +63,7 @@ import { ConvertToDealDialogComponent } from '../convert-to-deal-dialog/convert-
     MatDialogModule,
     MatDividerModule,
     MatCheckboxModule,
+    StatusTabsComponent,
   ],
   templateUrl: './leads-list.component.html',
   styleUrls: ['./leads-list.component.scss'],
@@ -74,6 +76,8 @@ export class LeadsListComponent implements OnInit {
 
   // Signals
   leads = signal<Lead[]>([]);
+  // Selection for bulk actions
+  selectedLeads = signal<Lead[]>([]);
   loading = signal(true);
 
   // Table configuration
@@ -89,7 +93,16 @@ export class LeadsListComponent implements OnInit {
   ];
 
   // Tabs
-  activeTab = 'all';
+  // Show open leads by default
+  activeTab: string | null = 'open';
+
+  // Tabs config for the status tabs component
+  leadTabs = [
+    { label: 'All Leads', value: 'all' },
+    { label: 'Open', value: 'open' },
+    { label: 'Qualified', value: 'qualified' },
+    { label: 'Closed', value: 'closed' },
+  ];
 
   // Pagination
   currentPage = 1;
@@ -111,6 +124,48 @@ export class LeadsListComponent implements OnInit {
   ngOnInit(): void {
     this.loadLeads();
     this.loadManagers();
+  }
+
+  // Selection helpers
+  toggleLeadSelection(lead: Lead): void {
+    const selected = this.selectedLeads();
+    const index = selected.findIndex((l) => l.id === lead.id);
+
+    if (index > -1) {
+      selected.splice(index, 1);
+    } else {
+      selected.push(lead);
+    }
+
+    this.selectedLeads.set([...selected]);
+  }
+
+  toggleAllSelection(): void {
+    if (this.isAllSelected()) {
+      this.selectedLeads.set([]);
+    } else {
+      // Select all currently loaded leads (page)
+      this.selectedLeads.set([...this.leads()]);
+    }
+  }
+
+  isLeadSelected(lead: Lead): boolean {
+    return this.selectedLeads().some((l) => l.id === lead.id);
+  }
+
+  isAllSelected(): boolean {
+    const total = this.leads().length;
+    const selectedCount = this.selectedLeads().filter((l) =>
+      this.leads().some((p) => p.id === l.id)
+    ).length;
+    return total > 0 && selectedCount === total;
+  }
+
+  isPartiallySelected(): boolean {
+    const selectedCount = this.selectedLeads().filter((l) =>
+      this.leads().some((p) => p.id === l.id)
+    ).length;
+    return selectedCount > 0 && !this.isAllSelected();
   }
 
   private loadManagers(): void {
@@ -229,6 +284,27 @@ export class LeadsListComponent implements OnInit {
     dialogRef.afterClosed().subscribe((result: Lead | undefined) => {
       if (result) {
         this.loadLeads(); // Refresh the list
+      }
+    });
+  }
+
+  // Bulk quick assign for selected leads
+  bulkQuickAssign(): void {
+    const selected = this.selectedLeads();
+    if (!selected.length) return;
+
+    const dialogRef = this.dialog.open(QuickAssignDialogComponent, {
+      width: '700px',
+      maxWidth: '90vw',
+      data: { leads: selected }
+    });
+
+    dialogRef.afterClosed().subscribe((result: any) => {
+      if (result) {
+        // refresh list after bulk assign
+        this.loadLeads();
+        // clear selection
+        this.selectedLeads.set([]);
       }
     });
   }

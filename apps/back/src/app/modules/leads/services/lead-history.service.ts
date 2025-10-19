@@ -252,7 +252,9 @@ export class LeadHistoryService {
       .addSelect('MAX(history.createdAt)', 'lastActivity')
       .where('history.userId IS NOT NULL')
       .groupBy('history.userId, history.userName')
-      .orderBy('changesCount', 'DESC');
+      // ORDER BY aliases with mixed case may be treated differently by Postgres;
+      // order directly by the aggregate expression to avoid "column does not exist" errors
+      .orderBy('COUNT(*)', 'DESC');
 
     if (dateFrom) {
       queryBuilder.andWhere('history.createdAt >= :dateFrom', { dateFrom });

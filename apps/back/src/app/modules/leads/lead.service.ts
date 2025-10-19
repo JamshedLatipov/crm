@@ -9,12 +9,15 @@ import {
   In,
 } from 'typeorm';
 import { Lead, LeadStatus, LeadSource, LeadPriority } from './lead.entity';
+import { Contact } from '../contacts/contact.entity';
 import { LeadActivity, ActivityType } from './entities/lead-activity.entity';
 import { ChangeType } from './entities/lead-history.entity';
 import { LeadScoringService } from './services/lead-scoring.service';
 import { LeadDistributionService } from './services/lead-distribution.service';
 import { LeadHistoryService } from './services/lead-history.service';
 import { UserService } from '../user/user.service';
+import { PipelineService } from '../pipeline/pipeline.service';
+import { StageType } from '../pipeline/pipeline.entity';
 import { Company } from '../companies/entities/company.entity';
 import { Deal } from '../deals/deal.entity';
 import { CreateDealDto } from '../deals/dto/create-deal.dto';
@@ -65,12 +68,15 @@ export class LeadService {
     private readonly activityRepo: Repository<LeadActivity>,
     @InjectRepository(Deal)
     private readonly dealRepo: Repository<Deal>,
+    @InjectRepository(Contact)
+    private readonly contactRepo: Repository<Contact>,
     private readonly scoringService: LeadScoringService,
     private readonly distributionService: LeadDistributionService,
     private readonly historyService: LeadHistoryService,
     private readonly userService: UserService,
     private readonly dealsService: DealsService,
-    private readonly assignmentService: AssignmentService
+    private readonly assignmentService: AssignmentService,
+    private readonly pipelineService: PipelineService
   ) {}
 
   async create(data: CreateLeadData, userId?: string, userName?: string): Promise<Lead> {
@@ -522,6 +528,28 @@ export class LeadService {
     return existingLead;
   }
 
+  /**
+   * Bulk assign multiple leads to a manager. Returns array of leads (unchanged/updated).
+   */
+  async bulkAssign(leadIds: string[], managerId: string, operatorId?: number, operatorName?: string): Promise<Lead[]> {
+    const results: Lead[] = [];
+    for (const lid of leadIds) {
+      const idNum = Number(lid);
+      if (Number.isNaN(idNum)) {
+        // skip invalid ids
+        continue;
+      }
+      try {
+        const updated = await this.assignLead(idNum, managerId, operatorId, operatorName);
+        results.push(updated);
+      } catch (err) {
+        // Log and continue on error for individual leads
+        console.warn(`Failed to assign lead ${lid}:`, err?.message || err);
+      }
+    }
+    return results;
+  }
+
   async autoAssignLead(
     id: number,
     criteria: {
@@ -624,6 +652,31 @@ export class LeadService {
         'Время изменения': new Date().toLocaleTimeString('ru-RU')
       },
     });
+
+    // Если статус лида стал финальным выигран/проигран — переместим связанные карточки сделок в соответствующие этапы пайплайна
+    try {
+      const statusStr = String(status).toLowerCase();
+      const isWinStatus = statusStr === 'converted' || statusStr === 'won';
+      const isLostStatus = statusStr === 'lost';
+      if (isWinStatus || isLostStatus) {
+        const targetStageType = isWinStatus ? StageType.WON_STAGE : StageType.LOST_STAGE;
+        // Получаем этап(ы) для данного типа
+        const stages = await this.pipelineService.listStages(targetStageType);
+        const targetStage = Array.isArray(stages) && stages.length > 0 ? stages[0] : null;
+
+        if (targetStage && updated.deals && Array.isArray(updated.deals) && updated.deals.length > 0) {
+          for (const deal of updated.deals) {
+            try {
+              await this.dealsService.moveToStage(String(deal.id), targetStage.id, userId ? String(userId) : undefined, userName);
+            } catch (err) {
+              console.warn(`Failed to move deal ${deal.id} to stage ${targetStage.id}:`, err?.message || err);
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to auto-move deals after lead status change:', err?.message || err);
+    }
 
     return updated;
   }
@@ -938,14 +991,33 @@ export class LeadService {
     const currentAssignments = await this.assignmentService.getCurrentAssignments('lead', leadId.toString());
     const assignedTo = currentAssignments.length > 0 ? currentAssignments[0].userId.toString() : 'unknown';
 
+    // If stageId not provided, try to pick the first DEAL_PROGRESSION stage
+    if (!dealData.stageId) {
+      try {
+        const stages = await this.pipelineService.listStages(StageType.DEAL_PROGRESSION);
+        if (stages && stages.length > 0) {
+          dealData.stageId = stages[0].id;
+        }
+      } catch (err) {
+        // ignore and let downstream validate
+      }
+    }
+
+    // Ensure expectedCloseDate is set
+    if (!dealData.expectedCloseDate) {
+      const d = new Date();
+      d.setMonth(d.getMonth() + 1);
+      dealData.expectedCloseDate = d;
+    }
+
     // Создаем сделку на основе данных лида
     const dealDto: CreateDealDto = {
       title: dealData.title || `Deal from ${lead.name}`,
       leadId: lead.id,
-      amount: dealData.amount,
+      amount: typeof dealData.amount === 'string' ? Number(dealData.amount) : dealData.amount,
       currency: dealData.currency || 'RUB',
-      probability: dealData.probability || lead.conversionProbability || 50,
-      expectedCloseDate: dealData.expectedCloseDate.toISOString(),
+      probability: typeof dealData.probability === 'string' ? Number(dealData.probability) : (dealData.probability ?? lead.conversionProbability ?? 50),
+      expectedCloseDate: (dealData.expectedCloseDate instanceof Date ? dealData.expectedCloseDate : new Date(dealData.expectedCloseDate)).toISOString(),
       stageId: dealData.stageId,
       assignedTo: assignedTo,
       notes: dealData.notes || `Converted from lead #${lead.id}: ${lead.name}`,
@@ -964,7 +1036,47 @@ export class LeadService {
       }
     };
 
+      // Try to associate a Contact with the new deal. Prefer existing Contact by email, then by phone.
+      try {
+        let foundContact: Contact | null = null;
+        if (lead.email) {
+          foundContact = await this.contactRepo.findOne({ where: { email: lead.email } });
+        }
+
+        if (!foundContact && lead.phone) {
+          foundContact = await this.contactRepo.findOne({ where: { phone: lead.phone } });
+        }
+
+        if (!foundContact) {
+          // Create a minimal contact from lead data to preserve relation
+          const newContact = this.contactRepo.create({
+            name: lead.name,
+            email: lead.email || undefined,
+            phone: lead.phone || undefined,
+            company: lead.company ? { id: (lead.company as any).id } as any : undefined,
+            notes: `Auto-created from lead #${lead.id}`,
+            isActive: true
+          });
+          const savedContact = await this.contactRepo.save(newContact);
+          foundContact = savedContact;
+          console.log('convertToDeal - created contact from lead', { leadId: lead.id, contactId: savedContact.id });
+        }
+
+        if (foundContact) {
+          // @ts-ignore
+          dealDto.contactId = foundContact.id;
+        }
+      } catch (err) {
+        console.warn('convertToDeal: failed to find/create contact for lead', err?.message || err);
+      }
+
     // Создаем сделку через DealsService для правильного связывания
+    // Diagnostic logging: inspect DTO before creating deal to catch invalid types
+    try {
+      console.log('convertToDeal - creating deal with DTO:', Object.fromEntries(Object.entries(dealDto).map(([k,v]) => [k, typeof v === 'object' && v !== null ? JSON.stringify(v) : v])));
+    } catch (err) {
+      console.log('convertToDeal - failed to stringify dealDto', err?.message || err);
+    }
     const savedDeal = await this.dealsService.createDeal(dealDto, userId, userName);
 
     // Обновляем статус лида на "CONVERTED"

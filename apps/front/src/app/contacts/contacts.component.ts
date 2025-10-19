@@ -6,9 +6,16 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatMenuModule } from '@angular/material/menu';
+import { FormsModule } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { ContactsService } from './contacts.service';
+import { StatusTabsComponent } from '../shared/components/status-tabs/status-tabs.component';
 import { Router } from '@angular/router';
 import { Contact, ContactsStats } from './contact.interfaces';
 
@@ -23,7 +30,14 @@ import { Contact, ContactsStats } from './contact.interfaces';
     MatProgressSpinnerModule,
     MatTableModule,
     MatTooltipModule,
+    MatCheckboxModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+  MatMenuModule,
+    FormsModule,
     MatDialogModule,
+    StatusTabsComponent,
   ],
   templateUrl: './contacts.component.html',
   styleUrls: ['./contacts.component.scss'],
@@ -32,7 +46,22 @@ export class ContactsComponent implements OnInit {
   contacts: Contact[] = [];
   stats: ContactsStats | null = null;
   loading = true;
-  displayedColumns = ['name', 'email', 'phone', 'company', 'actions'];
+  displayedColumns = ['select', 'name', 'email', 'phone', 'company', 'actions'];
+
+  // Filters
+  searchQuery = '';
+  // selected value for status tabs: null means all, otherwise a string key
+  activeFilter: string | null = 'active';
+
+  // Tabs config for StatusTabsComponent
+  contactTabs = [
+    { label: 'Все контакты', value: null },
+    { label: 'Активные', value: 'active' },
+    { label: 'Деактивированные', value: 'inactive' },
+  ];
+
+  // selection set of contact ids for bulk actions
+  selected: Set<string> = new Set();
 
   private readonly contactsService = inject(ContactsService);
   private readonly snackBar = inject(MatSnackBar);
@@ -45,10 +74,14 @@ export class ContactsComponent implements OnInit {
 
   loadData(): void {
     this.loading = true;
-
     // Загружаем контакты и статистику параллельно
+    const listPromise = this.contactsService.listContacts({
+      search: this.searchQuery || undefined,
+      isActive: this.activeFilter === 'all' ? undefined : (this.activeFilter === 'active')
+    }).toPromise();
+
     Promise.all([
-      this.contactsService.listContacts().toPromise(),
+      listPromise,
       this.contactsService.getContactsStats().toPromise(),
     ])
       .then(([contacts, stats]) => {
@@ -65,6 +98,97 @@ export class ContactsComponent implements OnInit {
       });
   }
 
+  isAllSelected(): boolean {
+    return this.contacts.length > 0 && this.selected.size === this.contacts.length;
+  }
+
+  toggleSelectAll(checked: boolean): void {
+    if (checked) {
+      this.contacts.forEach((c) => this.selected.add(c.id));
+    } else {
+      this.selected.clear();
+    }
+  }
+
+  toggleSelect(id: string, checked: boolean): void {
+    if (checked) this.selected.add(id);
+    else this.selected.delete(id);
+  }
+
+  selectedCount(): number {
+    return this.selected.size;
+  }
+
+  clearSelection(): void {
+    this.selected.clear();
+  }
+
+  onSearchChange(value: string): void {
+    this.searchQuery = value || '';
+    this.loadData();
+  }
+
+  onActiveFilterChange(value: string | null): void {
+    this.activeFilter = value;
+    this.loadData();
+  }
+
+  deleteSelected(): void {
+    const count = this.selected.size;
+    if (count === 0) return;
+    if (!confirm(`Вы уверены, что хотите удалить ${count} выбранных контактов?`)) return;
+
+    const ids = Array.from(this.selected);
+    // delete in parallel and reload when done
+    Promise.all(ids.map((id) => this.contactsService.deleteContact(id).toPromise()))
+      .then(() => {
+        this.snackBar.open('Выбранные контакты удалены', 'Закрыть', { duration: 3000 });
+        this.selected.clear();
+        this.loadData();
+      })
+      .catch((error) => {
+        console.error('Error deleting selected contacts:', error);
+        this.snackBar.open('Ошибка при удалении выбранных контактов', 'Закрыть', { duration: 3000 });
+        this.loadData();
+      });
+  }
+
+  bulkActivateSelected(): void {
+    const ids = Array.from(this.selected);
+    if (ids.length === 0) return;
+
+  Promise.all(ids.map((id) => this.contactsService.updateContact(id, { isActive: true } as any).toPromise()))
+      .then(() => {
+        this.snackBar.open(`Активированы ${ids.length} контактов`, 'Закрыть', { duration: 3000 });
+        this.clearSelection();
+        this.loadData();
+      })
+      .catch((error) => {
+        console.error('Error activating selected contacts:', error);
+        this.snackBar.open('Ошибка при активации выбранных контактов', 'Закрыть', { duration: 3000 });
+        this.loadData();
+      });
+  }
+
+  bulkDeactivateSelected(): void {
+    const ids = Array.from(this.selected);
+    if (ids.length === 0) return;
+
+    if (!confirm(`Вы уверены, что хотите деактивировать ${ids.length} выбранных контактов?`)) return;
+
+  Promise.all(ids.map((id) => this.contactsService.updateContact(id, { isActive: false } as any).toPromise()))
+      .then(() => {
+        this.snackBar.open(`Деактивированы ${ids.length} контактов`, 'Закрыть', { duration: 3000 });
+        this.clearSelection();
+        this.loadData();
+      })
+      .catch((error) => {
+        console.error('Error deactivating selected contacts:', error);
+        this.snackBar.open('Ошибка при деактивации выбранных контактов', 'Закрыть', { duration: 3000 });
+        this.loadData();
+      });
+  }
+
   trackByContactId(index: number, contact: Contact): string {
     return contact.id;
   }
@@ -75,7 +199,7 @@ export class ContactsComponent implements OnInit {
 
   // Действия с контактами
   openCreateDialog(): void {
-    import('./components/create-contact-dialog.component').then((m) => {
+    import('./components/create-contact-dialog/create-contact-dialog.component').then((m) => {
       const dialogRef = this.dialog.open(m.CreateContactDialogComponent, { width: '520px' });
       interface CreatedContact { id: string }
       dialogRef.afterClosed().subscribe((created: CreatedContact | null) => {

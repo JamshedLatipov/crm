@@ -1,0 +1,23 @@
+<mat-card class="info-card mt-4">
+  <mat-card-header>
+    <div mat-card-avatar class="card-avatar skills"><mat-icon>star</mat-icon></div>
+    <mat-card-title>Роли</mat-card-title>
+  </mat-card-header>
+  <mat-card-content>
+    <div class="roles-section">
+      <div style="display:flex;align-items:center;gap:12px;margin-top:8px;">
+        <app-chip-autocomplete
+          [selected]="roles"
+          [options]="options"
+          placeholder="Добавить роль"
+          noOptionsText="Нет доступных ролей"
+          color="primary"
+          (add)="add.emit($event)"
+          (remove)="remove.emit($event)">
+        </app-chip-autocomplete>
+      </div>
+
+  <div *ngIf="!roles || roles.length === 0" class="text-gray-500 text-sm mt-2">Роли не назначены</div>
+    </div>
+  </mat-card-content>
+</mat-card>

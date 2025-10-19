@@ -1,0 +1,25 @@
+import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatOptionModule } from '@angular/material/core';
+import { MatCardModule } from '@angular/material/card';
+import { ChipAutocompleteComponent } from '../../../../shared/components/chip-autocomplete/chip-autocomplete.component';
+
+@Component({
+  selector: 'app-user-territories',
+  standalone: true,
+  imports: [CommonModule, MatIconModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatAutocompleteModule, MatOptionModule, MatCardModule, ChipAutocompleteComponent],
+  templateUrl: './user-territories.component.html',
+  styleUrls: ['./user-territories.component.scss']
+})
+export class UserTerritoriesComponent {
+  @Input() territories: string[] = [];
+  @Input() options: { id: string; name: string }[] = [];
+
+  @Output() add = new EventEmitter<string>();
+  @Output() remove = new EventEmitter<string>();
+}
