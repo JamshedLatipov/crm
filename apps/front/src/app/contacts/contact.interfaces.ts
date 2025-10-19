@@ -117,6 +117,9 @@ export interface ContactFilters {
   search?: string;
   isActive?: boolean;
   isBlacklisted?: boolean;
+  // Pagination
+  page?: number;
+  pageSize?: number;
 }
 
 export enum ActivityType {

@@ -3,6 +3,8 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, BehaviorSubject, interval, Subscription } from 'rxjs';
 import { map, switchMap, catchError, tap } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { environment } from '@crm/front/environments/environment';
+import { AuthService } from '../auth/auth.service';
 
 export interface Notification {
   id: number;
@@ -86,13 +88,14 @@ export class NotificationService implements OnDestroy {
   public readonly hasUnreadNotifications = computed(() => this.unreadCount() > 0);
 
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = '/api/notifications';
+  private readonly baseUrl = environment.apiBase + '/notifications';
   private readonly POLLING_INTERVAL = 30000;
   private readonly notificationsSubject = new BehaviorSubject<Notification[]>([]);
   private readonly unreadCountSubject = new BehaviorSubject<number>(0);
   private readonly isLoadingSubject = new BehaviorSubject<boolean>(false);
   private readonly errorSubject = new BehaviorSubject<string | null>(null);
   private currentUserId = 'current-user';
+  private readonly auth = inject(AuthService);
   private pollingSubscription?: Subscription;
 
   constructor() {
@@ -105,7 +108,7 @@ export class NotificationService implements OnDestroy {
 
     const params = this.buildHttpParams({
       ...filter,
-      recipientId: filter.recipientId || this.currentUserId
+      recipientId: filter.recipientId || this.auth.getUserId() || 'current-user'
     });
 
     return this.http.get<NotificationResponse>(`${this.baseUrl}`, { params }).pipe(
@@ -123,8 +126,9 @@ export class NotificationService implements OnDestroy {
   }
 
   markAsRead(notificationId: number): Observable<boolean> {
+    const recipientId = this.auth.getUserId() || 'current-user';
     return this.http.patch<void>(`${this.baseUrl}/${notificationId}/read`, {
-      recipientId: this.currentUserId
+      recipientId
     }).pipe(
       map(() => {
         this.updateNotificationStatus(notificationId, NotificationStatus.READ);
@@ -137,7 +141,7 @@ export class NotificationService implements OnDestroy {
 
   markAllAsRead(): Observable<{ markedCount: number }> {
     return this.http.patch<{ markedCount: number }>(`${this.baseUrl}/mark-all-read`, {
-      recipientId: this.currentUserId
+      recipientId: this.auth.getUserId() || 'current-user'
     }).pipe(
       tap(() => {
         const updated = this.notifications().map(n => 

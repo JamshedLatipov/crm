@@ -204,34 +204,49 @@
     .manager-option {
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 12px;
       width: 100%;
-      padding: 4px 0;
+      padding: 6px 4px;
+      box-sizing: border-box;
 
+      // ensure the middle column can shrink and text truncates
       .manager-option-details {
-        flex: 1;
+        flex: 1 1 auto;
+        min-width: 0; // allow ellipsis
 
         .manager-name {
-          font-weight: 500;
-          margin-bottom: 2px;
+          font-weight: 600;
+          margin: 0;
           color: var(--mat-sys-on-surface);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .manager-meta {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          color: var(--mat-sys-on-surface-variant);
+          font-size: 0.8125rem;
+          margin-top: 2px;
         }
 
         .manager-workload {
-          font-size: 0.8125rem;
-          color: var(--mat-sys-on-surface-variant);
-
           &.warning {
             color: var(--mat-sys-error);
-            font-weight: 500;
+            font-weight: 600;
           }
         }
       }
 
       .status-badge {
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
+        flex: 0 0 auto;
+        margin-left: 12px;
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -241,7 +256,7 @@
 
           mat-icon {
             color: var(--mat-sys-tertiary);
-            font-size: 16px;
+            font-size: 18px;
           }
         }
 
@@ -250,10 +265,128 @@
 
           mat-icon {
             color: var(--mat-sys-error);
-            font-size: 16px;
+            font-size: 18px;
           }
         }
       }
+    }
+
+    // Trigger (selected value) styling
+    .selected-trigger {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 120px;
+    }
+
+    .trigger-name {
+      font-weight: 600;
+      color: var(--mat-sys-on-surface);
+    }
+
+    .trigger-placeholder {
+      color: var(--mat-sys-on-surface-variant);
+    }
+
+    .manager-meta {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      color: var(--mat-sys-on-surface-variant);
+      font-size: 0.8125rem;
+    }
+
+    .manager-role {
+      padding-right: 6px;
+      border-right: 1px solid rgba(0,0,0,0.06);
+    }
+
+    // Option hover and focus to improve discoverability
+    ::ng-deep .mat-mdc-option:hover,
+    ::ng-deep .mat-mdc-option.mat-mdc-option-highlighted {
+      background: rgba(var(--mat-sys-primary), 0.06) !important;
+      transform: translateY(-1px);
+    }
+
+    // Ensure Material option content aligns with our flex layout
+    ::ng-deep .mat-mdc-select-panel .mat-mdc-option {
+      display: flex !important;
+      align-items: center !important;
+      padding: 6px 12px !important;
+      gap: 12px !important;
+      box-sizing: border-box;
+    }
+
+    // Force the inner .manager-option to fill the option area and keep layout stable
+    ::ng-deep .mat-mdc-select-panel .mat-mdc-option .manager-option {
+      width: 100%;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      gap: 12px !important;
+      box-sizing: border-box;
+    }
+
+    // More aggressive rule: sometimes the system wraps nodes; force row layout on direct children
+    ::ng-deep .mat-mdc-select-panel .mat-mdc-option > div.manager-option,
+    ::ng-deep .mat-mdc-select-panel .mat-mdc-option > .manager-option {
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      gap: 12px !important;
+      width: 100% !important;
+    }
+
+    // Ensure avatar, details and badge are inline blocks and won't stack
+    ::ng-deep .mat-mdc-select-panel .mat-mdc-option .manager-option > app-user-avatar,
+    ::ng-deep .mat-mdc-select-panel .mat-mdc-option .manager-option > .manager-option-details,
+    ::ng-deep .mat-mdc-select-panel .mat-mdc-option .manager-option > .status-badge {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      vertical-align: middle !important;
+    }
+
+    // Make manager-option-details a vertical stack but not full width
+    ::ng-deep .mat-mdc-select-panel .mat-mdc-option .manager-option-details {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 2px !important;
+      flex: 1 1 auto !important;
+      min-width: 0 !important;
+    }
+
+    // Make the avatar stable and not push text vertically
+    ::ng-deep .mat-mdc-select-panel .mat-mdc-option app-user-avatar {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      margin: 0 !important;
+    }
+
+    // Ensure the Material selected indicator (check) is vertically centered
+    ::ng-deep .mat-mdc-select-panel .mat-mdc-option .mat-mdc-option-indicator,
+    ::ng-deep .mat-mdc-select-panel .mat-mdc-option .mat-mdc-select-check {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      position: absolute !important;
+      right: 12px !important;
+      top: 50% !important;
+      transform: translateY(-50%) !important;
+    }
+
+    // Reduce vertical size of options for compactness
+    ::ng-deep .mat-mdc-select-panel .mat-mdc-option {
+      min-height: 48px !important;
+    }
+
+    // Make the status badge a bit larger in the panel for clarity
+    .manager-option .status-badge {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
     }
 
     // Информация о выбранном менеджере

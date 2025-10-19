@@ -383,8 +383,24 @@ export class AssignmentService {
 
   private async sendAssignmentNotifications(assignments: Assignment[], assignedByUser: User) {
     for (const assignment of assignments) {
+      // Choose a NotificationType appropriate for the entity type
+      let notificationType: any = null;
+      switch (assignment.entityType) {
+        case 'lead':
+          notificationType = 'LEAD_ASSIGNED';
+          break;
+        case 'deal':
+          notificationType = 'DEAL_ASSIGNED';
+          break;
+        case 'task':
+          notificationType = 'TASK_ASSIGNED';
+          break;
+        default:
+          notificationType = 'SYSTEM_REMINDER';
+      }
+
       await this.notificationService.create({
-        type: 'assignment' as any,
+        type: notificationType as any,
         title: 'New Assignment',
         message: `You have been assigned to ${assignment.entityType} #${assignment.entityId} by ${assignedByUser.fullName || assignedByUser.email}`,
         channel: 'in_app' as any,

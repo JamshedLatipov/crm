@@ -74,7 +74,7 @@ import { CreateCompanyDialogComponent } from '../create-company-dialog/create-co
         >
           <div class="create-company-option">
             <mat-icon>add_circle</mat-icon>
-            <span>Создать компанию "{{ searchControl.value }}"</span>
+            <span>Создать компанию "{{ getSearchText() }}"</span>
           </div>
         </mat-option>
       </mat-autocomplete>
@@ -86,7 +86,7 @@ export class CompanySelectorComponent implements ControlValueAccessor, OnInit {
   private readonly companiesService = inject(CompaniesService);
   private readonly dialog = inject(MatDialog);
 
-  searchControl = new FormControl('');
+  searchControl = new FormControl<Company | string>('');
   filteredCompanies: Observable<Company[]> = of([]);
   placeholder = 'Выберите компанию';
   
@@ -107,11 +107,17 @@ export class CompanySelectorComponent implements ControlValueAccessor, OnInit {
       debounceTime(300),
       distinctUntilChanged(),
       switchMap(value => {
+        // If the control holds a full Company object, show it as the single result
+        if (value && typeof value === 'object' && (value as Company).id) {
+          return of([value as Company]);
+        }
+
         if (typeof value === 'string' && value.trim()) {
           return this.companiesService.searchCompanies(value).pipe(
             catchError(() => of([]))
           );
         }
+
         return of([]);
       })
     );
@@ -128,7 +134,8 @@ export class CompanySelectorComponent implements ControlValueAccessor, OnInit {
   }
 
   createNewCompany(): void {
-    const name = this.searchControl.value || '';
+    const raw = this.searchControl.value;
+    const name = typeof raw === 'string' ? raw : this.displayCompany(raw as Company);
     
     const dialogRef = this.dialog.open(CreateCompanyDialogComponent, {
       width: '800px',
@@ -141,11 +148,18 @@ export class CompanySelectorComponent implements ControlValueAccessor, OnInit {
     dialogRef.afterClosed().subscribe((newCompany: Company | undefined) => {
       if (newCompany) {
         this.selectedCompany = newCompany;
-        this.searchControl.setValue(newCompany.name || newCompany.legalName || '', { emitEvent: false });
+        // set control to the company object so displayWith can render it
+        this.searchControl.setValue(newCompany, { emitEvent: false });
         this.onChange(newCompany.id); // Передаем только ID
         this.onTouched();
       }
     });
+  }
+
+  getSearchText(): string {
+    const raw = this.searchControl.value;
+    if (!raw) return '';
+    return typeof raw === 'string' ? raw : this.displayCompany(raw as Company);
   }
 
   // ControlValueAccessor methods
@@ -155,7 +169,8 @@ export class CompanySelectorComponent implements ControlValueAccessor, OnInit {
       this.companiesService.getCompany(value).subscribe({
         next: (company) => {
           this.selectedCompany = company;
-          this.searchControl.setValue(company.name || company.legalName || '', { emitEvent: false });
+          // set control to the company object so autocomplete displays correctly
+          this.searchControl.setValue(company, { emitEvent: false });
         },
         error: () => {
           this.selectedCompany = null;

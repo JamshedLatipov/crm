@@ -49,7 +49,18 @@ export class NotificationController {
 
   @Get()
   async getNotifications(@Query() filter: GetNotificationsDto) {
-    return this.notificationService.findByFilter(filter);
+    // Query params come as strings from HTTP requests. Cast to any and coerce
+    // common types here so the service receives booleans/numbers as expected.
+    const f: any = filter as any;
+
+    const parsed: any = {
+      ...f,
+      unreadOnly: f.unreadOnly === true || f.unreadOnly === 'true',
+      limit: f.limit != null ? Number(f.limit) : undefined,
+      offset: f.offset != null ? Number(f.offset) : undefined,
+    };
+
+    return this.notificationService.findByFilter(parsed);
   }
 
   @Get('unread-count')

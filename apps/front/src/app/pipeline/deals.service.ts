@@ -31,8 +31,17 @@ export class DealsService {
   private readonly http = inject(HttpClient);
 
   // === CRUD операции ===
-  listDeals(): Observable<Deal[]> {
-    return this.http.get<Deal[]>(this.apiUrl);
+  // Can return either full array or a paged response { items, total }
+  listDeals(page?: number, limit?: number): Observable<Deal[] | { items: Deal[]; total: number }> {
+    let params = new HttpParams();
+    if (page != null) params = params.set('page', page.toString());
+    if (limit != null) params = params.set('limit', limit.toString());
+
+    const hasParams = params.keys().length > 0;
+    if (hasParams) {
+      return this.http.get<Deal[] | { items: Deal[]; total: number }>(this.apiUrl, { params });
+    }
+    return this.http.get<Deal[] | { items: Deal[]; total: number }>(this.apiUrl);
   }
 
   getDealById(id: string): Observable<Deal> {

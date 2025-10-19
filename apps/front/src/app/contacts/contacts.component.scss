@@ -399,6 +399,123 @@
   background-color: white;
 }
 
+.actions-column { width: 80px; }
+.actions-cell {
+  /* make actions cell use same padding/height as other cells and center vertically */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px;
+  vertical-align: middle;
+  min-height: 56px; /* ensure same visual row height */
+}
+
+/* Compact table styles */
+.contacts-table td.mat-mdc-cell, .contacts-table th.mat-mdc-header-cell {
+  padding: 8px 12px;
+}
+
+/* Hide createdAt on small screens to save width */
+@media (max-width: 900px) {
+  th.mat-mdc-header-cell:nth-child(5), td.mat-mdc-cell:nth-child(5) {
+    display: none;
+  }
+}
+
+/* Tag chips (match users role/skill chips look) */
+.tag {
+  display: inline-block;
+  background: #f0f9ff;
+  color: #0369a1;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-right: 6px;
+  margin-bottom: 4px;
+  border: 1px solid #e0f2fe;
+}
+
+/* Assigned to chip */
+.assigned-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #f3f4f6;
+  color: #374151;
+  padding: 6px 10px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Actions menu styling similar to users list */
+.actions-menu {
+  display: flex;
+  align-items: center; /* center trigger vertically */
+  justify-content: center;
+  height: 100%;
+}
+
+/* Normalize cell padding and move bottom border to rows so all cells align */
+.contacts-table th.mat-mdc-header-cell,
+.contacts-table td.mat-mdc-cell {
+  padding: 12px 16px;
+  vertical-align: middle;
+  border-bottom: none; /* remove cell borders so row border is used */
+}
+
+.contacts-table tr.mat-mdc-row,
+.contacts-table tr {
+  border-bottom: 1px solid #eef2f6; /* consistent separator for all rows */
+}
+
+.actions-trigger {
+  color: #6b7280;
+  transition: color 0.2s ease;
+}
+
+.actions-trigger:hover {
+  color: #374151;
+}
+
+/* Ensure the icon inside the trigger is visible and has a consistent size */
+.actions-trigger.mat-icon-button {
+  min-width: 40px;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.actions-trigger mat-icon {
+  font-size: 20px;
+  line-height: 20px;
+  color: inherit; /* inherit color from the button */
+}
+
+.delete-action {
+  color: #dc2626 !important;
+}
+
+.muted {
+  color: #9ca3af;
+}
+
+/* Status indicator small badge */
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 13px;
+}
+.status-indicator mat-icon {
+  font-size: 16px;
+}
+.status-indicator.active { color: #059669; }
+.status-indicator.inactive { color: #9ca3af; }
+
 .mat-mdc-header-row {
   background-color: #f8f9fa;
   border-bottom: 1px solid #e1e4e8;

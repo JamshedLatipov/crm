@@ -94,43 +94,24 @@
               ></mat-checkbox>
             </td>
           </ng-container>
-        <!-- Name Column -->
+        <!-- Name Column (includes email + phone in compact layout) -->
         <ng-container matColumnDef="name">
           <th mat-header-cell *matHeaderCellDef>Имя</th>
           <td mat-cell *matCellDef="let contact">
             <div class="name-cell">
-              <mat-icon class="avatar-icon">{{
-                contact.type === 'company' ? 'business' : 'person'
-              }}</mat-icon>
+              <mat-icon class="avatar-icon">{{ contact.type === 'company' ? 'business' : 'person' }}</mat-icon>
               <div class="name-meta">
                 <div class="contact-name"><button mat-button class="name-link" (click)="goToDetail(contact)">{{ contact.name }}</button></div>
-                <div class="contact-details" *ngIf="contact.position">
-                  {{ contact.position }}
+                <div class="contact-details">
+                  <div *ngIf="contact.position" class="position">{{ contact.position }}</div>
+                  <div class="contact-subinfo">
+                    <span *ngIf="contact.email" class="email"><a [href]="'mailto:' + contact.email">{{ contact.email }}</a></span>
+                    <span *ngIf="contact.email && contact.phone" class="sep"> • </span>
+                    <span *ngIf="contact.phone" class="phone"><a [href]="'tel:' + contact.phone">{{ contact.phone }}</a></span>
+                  </div>
                 </div>
               </div>
             </div>
-          </td>
-        </ng-container>
-
-        <!-- Email Column -->
-        <ng-container matColumnDef="email">
-          <th mat-header-cell *matHeaderCellDef>E-mail</th>
-          <td mat-cell *matCellDef="let contact">
-            <a *ngIf="contact.email" [href]="'mailto:' + contact.email">{{
-              contact.email
-            }}</a>
-            <span *ngIf="!contact.email" class="muted">—</span>
-          </td>
-        </ng-container>
-
-        <!-- Phone Column -->
-        <ng-container matColumnDef="phone">
-          <th mat-header-cell *matHeaderCellDef>Телефон</th>
-          <td mat-cell *matCellDef="let contact">
-            <a *ngIf="contact.phone" [href]="'tel:' + contact.phone">{{
-              contact.phone
-            }}</a>
-            <span *ngIf="!contact.phone" class="muted">—</span>
           </td>
         </ng-container>
 
@@ -138,31 +119,96 @@
         <ng-container matColumnDef="company">
           <th mat-header-cell *matHeaderCellDef>Компания</th>
           <td mat-cell *matCellDef="let contact">
-            {{ contact.company || '—' }}
+            {{ contact.company?.name || contact.companyName || '—' }}
+          </td>
+        </ng-container>
+
+        <!-- AssignedTo Column -->
+        <ng-container matColumnDef="assignedTo">
+          <th mat-header-cell *matHeaderCellDef>Ответственный</th>
+          <td mat-cell *matCellDef="let contact">
+            <ng-container *ngIf="contact.assignedTo; else noAssignee">
+              <span class="assigned-chip">{{ contact.assignedTo }}</span>
+            </ng-container>
+            <ng-template #noAssignee><span class="muted">—</span></ng-template>
+          </td>
+        </ng-container>
+
+        <!-- Status Column -->
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Статус</th>
+          <td mat-cell *matCellDef="let contact">
+            <div class="status-indicator" [class.active]="contact.isActive" [class.inactive]="!contact.isActive">
+              <mat-icon>{{ contact.isActive ? 'check_circle' : 'cancel' }}</mat-icon>
+              <span>{{ contact.isActive ? 'Активен' : 'Неактивен' }}</span>
+            </div>
+          </td>
+        </ng-container>
+
+        <!-- CreatedAt Column -->
+        <ng-container matColumnDef="createdAt">
+          <th mat-header-cell *matHeaderCellDef>Создан</th>
+          <td mat-cell *matCellDef="let contact">
+            <span *ngIf="contact.createdAt">{{ formatDate(contact.createdAt) }}</span>
+            <span *ngIf="!contact.createdAt" class="muted">—</span>
+          </td>
+        </ng-container>
+
+        <!-- Tags Column -->
+        <ng-container matColumnDef="tags">
+          <th mat-header-cell *matHeaderCellDef>Теги</th>
+          <td mat-cell *matCellDef="let contact">
+            <ng-container *ngIf="contact.tags && contact.tags.length > 0; else noTags">
+              <span class="tag" *ngFor="let t of contact.tags">{{ t }}</span>
+            </ng-container>
+            <ng-template #noTags><span class="muted">—</span></ng-template>
           </td>
         </ng-container>
 
         <!-- Actions Column -->
         <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef></th>
-              <td mat-cell *matCellDef="let contact" class="actions-cell">
-                <button mat-icon-button matTooltip="Просмотр" (click)="goToDetail(contact)">
+          <th mat-header-cell *matHeaderCellDef class="actions-column">Действия</th>
+          <td mat-cell *matCellDef="let contact" class="actions-cell">
+            <div class="actions-menu">
+              <button mat-icon-button [matMenuTriggerFor]="contactMenu" class="actions-trigger">
+                <mat-icon>more_vert</mat-icon>
+              </button>
+              <mat-menu #contactMenu="matMenu">
+                <button mat-menu-item (click)="goToDetail(contact)">
                   <mat-icon>visibility</mat-icon>
+                  <span>Просмотр</span>
                 </button>
-                <button
-                  mat-icon-button
-                  matTooltip="Удалить"
-                  (click)="deleteContact(contact)"
-                  [disabled]="loading"
-                >
+                <button mat-menu-item (click)="openCreateDialog()">
+                  <mat-icon>edit</mat-icon>
+                  <span>Редактировать</span>
+                </button>
+                <button mat-menu-item (click)="contact.isActive ? bulkDeactivateSelected() : bulkActivateSelected()">
+                  <mat-icon>{{ contact.isActive ? 'block' : 'check_circle' }}</mat-icon>
+                  <span>{{ contact.isActive ? 'Деактивировать' : 'Активировать' }}</span>
+                </button>
+                <mat-divider></mat-divider>
+                <button mat-menu-item (click)="deleteContact(contact)" class="delete-action">
                   <mat-icon>delete</mat-icon>
+                  <span>Удалить</span>
                 </button>
-              </td>
+              </mat-menu>
+            </div>
+          </td>
         </ng-container>
 
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
         <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
       </table>
+      <div class="table-footer">
+        <mat-paginator
+          [length]="totalResults"
+          [pageSize]="pageSize"
+          [pageIndex]="currentPage - 1"
+          [pageSizeOptions]="[10,20,50]"
+          (page)="onPageChange($event)"
+          showFirstLastButtons
+        ></mat-paginator>
+      </div>
     </div>
   </div>
 

@@ -22,7 +22,7 @@ export interface DealStatusConfig {
   template: `
     <div class="deal-status-container">
       <mat-chip 
-        [class]="'status-chip status-' + status"
+        [class]="'status-chip status-' + status + ' size-' + size"
         [style.background-color]="config.backgroundColor"
         [style.border-color]="config.borderColor"
         [style.color]="config.textColor">
@@ -234,19 +234,52 @@ export interface DealStatusConfig {
 
     /* Размеры */
     .status-chip.size-small {
-      min-height: 28px;
-      padding: 4px 12px;
-      font-size: 12px;
-      
-      .status-icon {
-        font-size: 16px;
-        width: 16px;
-        height: 16px;
+      /* Even more compact small variant for tight table rows */
+      min-height: 16px;
+  padding: 0 4px;
+      font-size: 10px;
+      border-radius: 12px;
+      box-shadow: none;
+      cursor: default;
+
+      /* Remove hover effects for compact chips */
+      &:hover {
+        transform: none;
+        box-shadow: none;
       }
-      
+
+      .status-content {
+        gap: 4px;
+      }
+
+      .status-label {
+        /* keep label but more compact */
+        font-size: 10px;
+        line-height: 12px;
+      }
+
+      .status-icon {
+        font-size: 12px;
+        width: 12px;
+        height: 12px;
+      }
+
       .status-pulse {
-        width: 20px;
-        height: 20px;
+        width: 12px;
+        height: 12px;
+      }
+
+      /* Indicators smaller and tighter */
+      .status-indicators .indicator {
+        width: 12px;
+        height: 12px;
+        margin-left: 1px;
+
+        mat-icon {
+          font-size: 10px;
+          width: 10px;
+          height: 10px;
+        }
       }
     }
 

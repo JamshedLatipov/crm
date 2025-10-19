@@ -523,7 +523,13 @@ export class DashboardComponent {
     });
 
     this.dealsService.listDeals().subscribe({
-      next: (list) => this.dealsCount.set(list?.length ?? 0),
+      next: (res) => {
+        if (Array.isArray(res)) {
+          this.dealsCount.set(res.length ?? 0);
+        } else {
+          this.dealsCount.set((res as any).total ?? ((res as any).items?.length ?? 0));
+        }
+      },
       error: (e) => console.error('Deals list error', e),
       complete: done
     });

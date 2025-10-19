@@ -11,9 +11,11 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatDividerModule } from '@angular/material/divider';
 import { FormsModule } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { ContactsService } from './contacts.service';
 import { StatusTabsComponent } from '../shared/components/status-tabs/status-tabs.component';
 import { Router } from '@angular/router';
@@ -34,7 +36,9 @@ import { Contact, ContactsStats } from './contact.interfaces';
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
+    MatPaginatorModule,
   MatMenuModule,
+  MatDividerModule,
     FormsModule,
     MatDialogModule,
     StatusTabsComponent,
@@ -46,7 +50,8 @@ export class ContactsComponent implements OnInit {
   contacts: Contact[] = [];
   stats: ContactsStats | null = null;
   loading = true;
-  displayedColumns = ['select', 'name', 'email', 'phone', 'company', 'actions'];
+  // Compact columns: email and phone merged into name cell to save width
+  displayedColumns = ['select', 'name', 'company', 'assignedTo', 'status', 'createdAt', 'tags', 'actions'];
 
   // Filters
   searchQuery = '';
@@ -63,6 +68,11 @@ export class ContactsComponent implements OnInit {
   // selection set of contact ids for bulk actions
   selected: Set<string> = new Set();
 
+  // Pagination
+  currentPage = 1;
+  pageSize = 20;
+  totalResults = 0;
+
   private readonly contactsService = inject(ContactsService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly router = inject(Router);
@@ -77,7 +87,9 @@ export class ContactsComponent implements OnInit {
     // Загружаем контакты и статистику параллельно
     const listPromise = this.contactsService.listContacts({
       search: this.searchQuery || undefined,
-      isActive: this.activeFilter === 'all' ? undefined : (this.activeFilter === 'active')
+      isActive: this.activeFilter === 'all' ? undefined : (this.activeFilter === 'active'),
+      page: this.currentPage,
+      pageSize: this.pageSize,
     }).toPromise();
 
     Promise.all([
@@ -87,6 +99,9 @@ export class ContactsComponent implements OnInit {
       .then(([contacts, stats]) => {
         this.contacts = contacts || [];
         this.stats = stats || null;
+        // If server supports total count, it should provide it; otherwise fall back to array length
+        // Assume service returns contacts array; if it returns an object later, adjust accordingly
+        this.totalResults = (contacts && (contacts as any).total) ? (contacts as any).total : (contacts || []).length;
         this.loading = false;
       })
       .catch((error) => {
@@ -96,6 +111,12 @@ export class ContactsComponent implements OnInit {
         });
         this.loading = false;
       });
+  }
+
+  onPageChange(event: PageEvent): void {
+    this.pageSize = event.pageSize;
+    this.currentPage = event.pageIndex + 1;
+    this.loadData();
   }
 
   isAllSelected(): boolean {

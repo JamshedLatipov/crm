@@ -81,7 +81,7 @@ import { Stage, StageType } from '../../../pipeline/dtos';
               </div>
               <div class="info-content">
                 <div class="info-label">Компания</div>
-                <div class="info-value">{{ data.lead.company || 'Не указана' }}</div>
+                <div class="info-value">{{ data.lead.company?.name || data.lead.company?.legalName || 'Не указана' }}</div>
               </div>
             </div>
             

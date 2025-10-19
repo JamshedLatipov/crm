@@ -173,11 +173,16 @@ export class NotificationService {
   }
 
   async getUnreadCount(recipientId: string): Promise<number> {
+    // Count notifications that are not read
     return this.notificationRepository.count({
       where: {
         recipientId,
         status: NotificationStatus.READ
       }
+    }).then(totalRead => {
+      // Fallback: if repository.count with condition is not supported for 'not',
+      // compute by counting all and subtracting read ones. Safer for different DBs.
+      return this.notificationRepository.count({ where: { recipientId } }).then(all => all - (totalRead || 0));
     });
   }
 

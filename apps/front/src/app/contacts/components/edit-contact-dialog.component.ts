@@ -11,7 +11,9 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ContactsService } from '../contacts.service';
+import { CompanySelectorComponent } from '../../shared/components/company-selector/company-selector.component';
 import { Contact, ContactType, ContactSource } from '../contact.interfaces';
+import { CompaniesService } from '../../services/companies.service';
 
 @Component({
   selector: 'app-edit-contact-dialog',
@@ -27,271 +29,296 @@ import { Contact, ContactType, ContactSource } from '../contact.interfaces';
     MatIconModule,
     MatCheckboxModule,
     MatChipsModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    CompanySelectorComponent
+    ,
+    // shared selectors
+    // Company selector provides autocomplete + create dialog
+    // (kept local import to avoid changing barrel exports)
   ],
   template: `
-    <h2 mat-dialog-title>
-      <mat-icon>edit</mat-icon>
-      Редактирование контакта
-    </h2>
+    <div class="dialog-header">
+      <h2 mat-dialog-title>
+        <mat-icon>edit</mat-icon>
+        Редактирование контакта
+      </h2>
+      <button mat-icon-button (click)="onCancel()" class="close-button"><mat-icon>close</mat-icon></button>
+    </div>
 
     <mat-dialog-content class="dialog-content">
-      <form [formGroup]="contactForm" class="contact-form">
+      <form [formGroup]="contactForm" class="create-lead-form">
         <!-- Basic Information -->
         <div class="form-section">
-          <h3 class="section-title">Основная информация</h3>
-          
-          <div class="form-row">
-            <mat-form-field appearance="outline">
-              <mat-label>Тип контакта</mat-label>
-              <mat-select formControlName="type">
-                <mat-option value="person">Физическое лицо</mat-option>
-                <mat-option value="company">Компания</mat-option>
-              </mat-select>
-            </mat-form-field>
+          <div class="section-header">
+            <mat-icon class="section-icon">person</mat-icon>
+            <h3>Основная информация</h3>
+          </div>
+          <div class="form-field-container">
+            <div class="form-row">
+              <mat-form-field appearance="outline">
+                <mat-label>Тип контакта</mat-label>
+                <mat-select formControlName="type">
+                  <mat-option value="person">Физическое лицо</mat-option>
+                  <mat-option value="company">Компания</mat-option>
+                </mat-select>
+              </mat-form-field>
 
-            <mat-form-field appearance="outline">
-              <mat-label>Источник</mat-label>
-              <mat-select formControlName="source">
-                <mat-option *ngFor="let source of contactSources" [value]="source.value">
-                  {{ source.label }}
-                </mat-option>
-              </mat-select>
+              <mat-form-field appearance="outline">
+                <mat-label>Источник</mat-label>
+                <mat-select formControlName="source">
+                  <mat-option *ngFor="let source of contactSources" [value]="source.value">
+                    {{ source.label }}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+
+            <div class="form-row" *ngIf="contactForm.get('type')?.value === 'person'">
+              <mat-form-field appearance="outline" class="form-field">
+                <mat-label>Имя</mat-label>
+                <input matInput formControlName="firstName">
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="form-field">
+                <mat-label>Отчество</mat-label>
+                <input matInput formControlName="middleName">
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="form-field">
+                <mat-label>Фамилия</mat-label>
+                <input matInput formControlName="lastName">
+              </mat-form-field>
+            </div>
+
+            <mat-form-field appearance="outline" *ngIf="contactForm.get('type')?.value === 'company'" class="full-width">
+              <mat-label>Название компании</mat-label>
+              <input matInput formControlName="name" [required]="contactForm.get('type')?.value === 'company'">
             </mat-form-field>
           </div>
-
-          <div class="form-row" *ngIf="contactForm.get('type')?.value === 'person'">
-            <mat-form-field appearance="outline">
-              <mat-label>Имя</mat-label>
-              <input matInput formControlName="firstName">
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Отчество</mat-label>
-              <input matInput formControlName="middleName">
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Фамилия</mat-label>
-              <input matInput formControlName="lastName">
-            </mat-form-field>
-          </div>
-
-          <mat-form-field appearance="outline" *ngIf="contactForm.get('type')?.value === 'company'">
-            <mat-label>Название компании</mat-label>
-            <input matInput formControlName="name" [required]="contactForm.get('type')?.value === 'company'">
-          </mat-form-field>
         </div>
 
         <!-- Contact Information -->
         <div class="form-section">
-          <h3 class="section-title">Контактная информация</h3>
-          
-          <div class="form-row">
-            <mat-form-field appearance="outline">
-              <mat-label>Email</mat-label>
-              <input matInput type="email" formControlName="email">
-              <mat-error *ngIf="contactForm.get('email')?.hasError('email')">
-                Введите корректный email
-              </mat-error>
-            </mat-form-field>
+          <div class="section-header">
+            <mat-icon class="section-icon">contacts</mat-icon>
+            <h3>Контактная информация</h3>
+          </div>
+          <div class="form-field-container">
+            <div class="form-row">
+              <mat-form-field appearance="outline" class="form-field">
+                <mat-label>Email</mat-label>
+                <input matInput type="email" formControlName="email">
+                <mat-error *ngIf="contactForm.get('email')?.hasError('email')">Введите корректный email</mat-error>
+              </mat-form-field>
 
-            <mat-form-field appearance="outline">
-              <mat-label>Телефон</mat-label>
-              <input matInput formControlName="phone">
+              <mat-form-field appearance="outline" class="form-field">
+                <mat-label>Телефон</mat-label>
+                <input matInput formControlName="phone">
+              </mat-form-field>
+            </div>
+
+            <div class="form-row">
+              <mat-form-field appearance="outline" class="form-field">
+                <mat-label>Мобильный телефон</mat-label>
+                <input matInput formControlName="mobilePhone">
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="form-field">
+                <mat-label>Рабочий телефон</mat-label>
+                <input matInput formControlName="workPhone">
+              </mat-form-field>
+            </div>
+
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Веб-сайт</mat-label>
+              <input matInput type="url" formControlName="website">
             </mat-form-field>
           </div>
-
-          <div class="form-row">
-            <mat-form-field appearance="outline">
-              <mat-label>Мобильный телефон</mat-label>
-              <input matInput formControlName="mobilePhone">
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Рабочий телефон</mat-label>
-              <input matInput formControlName="workPhone">
-            </mat-form-field>
-          </div>
-
-          <mat-form-field appearance="outline">
-            <mat-label>Веб-сайт</mat-label>
-            <input matInput type="url" formControlName="website">
-          </mat-form-field>
         </div>
 
         <!-- Professional Information -->
         <div class="form-section">
-          <h3 class="section-title">Профессиональная информация</h3>
-          
-          <div class="form-row">
-            <mat-form-field appearance="outline">
-              <mat-label>Должность</mat-label>
-              <input matInput formControlName="position">
-            </mat-form-field>
+          <div class="section-header">
+            <mat-icon class="section-icon">work</mat-icon>
+            <h3>Профессиональная информация</h3>
+          </div>
+          <div class="form-field-container">
+            <div class="form-row">
+              <mat-form-field appearance="outline" class="form-field">
+                <mat-label>Должность</mat-label>
+                <input matInput formControlName="position">
+              </mat-form-field>
 
-            <mat-form-field appearance="outline">
-              <mat-label>Компания</mat-label>
-              <input matInput formControlName="companyName">
-            </mat-form-field>
+              <app-company-selector formControlName="companyId" placeholder="Компания"></app-company-selector>
+            </div>
           </div>
         </div>
 
         <!-- Address Information -->
         <div class="form-section" formGroupName="address">
-          <h3 class="section-title">Адрес</h3>
-          
-          <div class="form-row">
-            <mat-form-field appearance="outline">
-              <mat-label>Страна</mat-label>
-              <input matInput formControlName="country">
-            </mat-form-field>
+          <div class="section-header">
+            <mat-icon class="section-icon">location_city</mat-icon>
+            <h3>Адрес</h3>
+          </div>
+          <div class="form-field-container">
+            <div class="form-row">
+              <mat-form-field appearance="outline" class="form-field">
+                <mat-label>Страна</mat-label>
+                <input matInput formControlName="country">
+              </mat-form-field>
 
-            <mat-form-field appearance="outline">
-              <mat-label>Регион</mat-label>
-              <input matInput formControlName="region">
-            </mat-form-field>
+              <mat-form-field appearance="outline" class="form-field">
+                <mat-label>Регион</mat-label>
+                <input matInput formControlName="region">
+              </mat-form-field>
 
-            <mat-form-field appearance="outline">
-              <mat-label>Город</mat-label>
-              <input matInput formControlName="city">
+              <mat-form-field appearance="outline" class="form-field">
+                <mat-label>Город</mat-label>
+                <input matInput formControlName="city">
+              </mat-form-field>
+            </div>
+
+            <div class="form-row">
+              <mat-form-field appearance="outline" class="form-field">
+                <mat-label>Улица</mat-label>
+                <input matInput formControlName="street">
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="form-field">
+                <mat-label>Дом</mat-label>
+                <input matInput formControlName="building">
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="form-field">
+                <mat-label>Квартира</mat-label>
+                <input matInput formControlName="apartment">
+              </mat-form-field>
+            </div>
+
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Почтовый индекс</mat-label>
+              <input matInput formControlName="postalCode">
             </mat-form-field>
           </div>
-
-          <div class="form-row">
-            <mat-form-field appearance="outline">
-              <mat-label>Улица</mat-label>
-              <input matInput formControlName="street">
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Дом</mat-label>
-              <input matInput formControlName="building">
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Квартира</mat-label>
-              <input matInput formControlName="apartment">
-            </mat-form-field>
-          </div>
-
-          <mat-form-field appearance="outline">
-            <mat-label>Почтовый индекс</mat-label>
-            <input matInput formControlName="postalCode">
-          </mat-form-field>
         </div>
 
         <!-- Notes -->
         <div class="form-section">
-          <h3 class="section-title">Заметки</h3>
-          
-          <mat-form-field appearance="outline">
-            <mat-label>Заметки</mat-label>
-            <textarea matInput rows="4" formControlName="notes"></textarea>
-          </mat-form-field>
+          <div class="section-header">
+            <mat-icon class="section-icon">note</mat-icon>
+            <h3>Заметки</h3>
+          </div>
+          <div class="form-field-container">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Заметки</mat-label>
+              <textarea matInput rows="4" formControlName="notes"></textarea>
+            </mat-form-field>
+          </div>
         </div>
 
         <!-- Status Flags -->
         <div class="form-section">
-          <h3 class="section-title">Статус</h3>
-          
-          <div class="checkbox-group">
-            <mat-checkbox formControlName="isActive">Активный контакт</mat-checkbox>
+          <div class="section-header">
+            <mat-icon class="section-icon">flag</mat-icon>
+            <h3>Статус</h3>
+          </div>
+          <div class="form-field-container">
+            <div class="checkbox-group">
+              <mat-checkbox formControlName="isActive">Активный контакт</mat-checkbox>
+            </div>
           </div>
         </div>
       </form>
     </mat-dialog-content>
 
     <mat-dialog-actions class="dialog-actions">
-      <button mat-button type="button" (click)="onCancel()" [disabled]="saving">
-        Отмена
-      </button>
-      <button 
-        mat-raised-button 
-        color="primary" 
-        type="button"
-        (click)="onSave()" 
-        [disabled]="!contactForm.dirty || contactForm.invalid || saving"
-      >
-        <mat-spinner diameter="20" *ngIf="saving"></mat-spinner>
-        <span *ngIf="!saving">Сохранить</span>
-        <span *ngIf="saving">Сохранение...</span>
+      <button mat-stroked-button (click)="onCancel()" class="cancel-button" [disabled]="saving">Отмена</button>
+      <button mat-raised-button color="primary" (click)="onSave()" class="save-button" [disabled]="!contactForm.dirty || contactForm.invalid || saving">
+        <mat-spinner diameter="20" *ngIf="saving" class="button-spinner"></mat-spinner>
+        <mat-icon *ngIf="!saving">save</mat-icon>
+        <span>{{ saving ? 'Сохранение...' : 'Сохранить' }}</span>
       </button>
     </mat-dialog-actions>
   `,
-  styles: [`
-    .dialog-content {
-      max-width: 600px;
-      max-height: 70vh;
-      overflow-y: auto;
-    }
-
-    .contact-form {
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-    }
-
-    .form-section {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-
-    .section-title {
-      font-size: 1rem;
-      font-weight: 600;
-      color: #374151;
-      margin: 0;
-      padding-bottom: 0.5rem;
-      border-bottom: 1px solid #e5e7eb;
-    }
-
-    .form-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1rem;
-    }
-
-    .checkbox-group {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .dialog-actions {
-      padding: 1rem 1.5rem;
-      gap: 0.75rem;
-    }
-
-    .dialog-actions button {
-      min-width: 100px;
-    }
-
-    mat-form-field {
-      width: 100%;
-    }
-
-    h2[mat-dialog-title] {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      margin: 0;
-      padding: 1.5rem 1.5rem 1rem;
-      font-size: 1.25rem;
-      font-weight: 600;
-    }
-
-    @media (max-width: 600px) {
-      .form-row {
-        grid-template-columns: 1fr;
+    styles: [
+      `
+      /* Dialog Layout */
+      .dialog-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 24px 24px 0 24px;
+        border-bottom: 1px solid #e0e0e0;
+        margin-bottom: 0;
       }
-      
+
+      .dialog-header h2 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 600;
+        color: #1a1a1a;
+      }
+
+      .close-button { color: #666; }
+
       .dialog-content {
-        max-width: 90vw;
+        padding: 24px !important;
+        max-height: 70vh;
+        overflow-y: auto;
       }
-    }
-  `]
+
+      .dialog-actions {
+        padding: 16px 24px 24px 24px !important;
+        border-top: 1px solid #e0e0e0;
+        gap: 12px;
+        justify-content: flex-end;
+      }
+
+      .create-lead-form { width: 100%; max-width: 600px; }
+
+      .form-section { margin-bottom: 32px; }
+
+      .section-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #f0f0f0;
+      }
+
+      .section-icon { color: #4285f4; margin-right: 12px; font-size: 20px; }
+
+      .section-header h3 { margin: 0; font-size: 16px; font-weight: 600; color: #1a1a1a; }
+
+      .form-field-container { padding-left: 24px; }
+
+      .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; align-items: center; }
+
+      .form-field { width: 100%; }
+      .full-width { width: 100%; margin-bottom: 16px; }
+
+      .mat-mdc-form-field { .mat-mdc-text-field-wrapper { background-color: #fafafa; border-radius: 8px; transition: background-color 0.2s ease; } }
+      .required-field .mat-mdc-form-field-label::after { content: ' *'; color: #f44336; }
+
+      .cancel-button { border-color: #e0e0e0; color: #666; font-weight: 500; padding: 0 24px; height: 40px; }
+      .save-button { background-color: #4285f4; color: white; font-weight: 500; padding: 0 24px; height: 40px; box-shadow: 0 2px 4px rgba(66, 133, 244, 0.2); display: flex; align-items: center; gap: 8px; }
+
+      @media (max-width: 768px) {
+        .dialog-header { padding: 16px 16px 0 16px; }
+        .dialog-content { padding: 16px !important; }
+        .dialog-actions { padding: 12px 16px 16px 16px !important; flex-direction: column-reverse; }
+        .form-row { grid-template-columns: 1fr; gap: 12px; }
+        .form-field-container { padding-left: 0; }
+        .cancel-button, .save-button { width: 100%; height: 44px; }
+      }
+
+      @media (max-width: 480px) {
+        .dialog-header h2 { font-size: 20px; }
+        .section-header { margin-bottom: 16px; }
+        .form-section { margin-bottom: 24px; }
+      }
+      `
+    ]
 })
 export class EditContactDialogComponent {
   contactForm: FormGroup;
@@ -310,16 +337,45 @@ export class EditContactDialogComponent {
 
   private readonly dialogRef = inject(MatDialogRef<EditContactDialogComponent>);
   private readonly contactsService = inject(ContactsService);
+  private readonly companiesService = inject(CompaniesService);
   private readonly fb = inject(FormBuilder);
 
   constructor(@Inject(MAT_DIALOG_DATA) public data: { contact: Contact }) {
     this.contactForm = this.createForm();
     this.populateForm();
+
+    // When companyId changes (selected via CompanySelector), fetch company details
+    // and populate companyName and address.country if available.
+    const companyIdControl = this.contactForm.get('companyId');
+    if (companyIdControl) {
+      let lastCompanyId: string | null = null;
+      companyIdControl.valueChanges.subscribe((id) => {
+        if (!id || id === lastCompanyId) return;
+        lastCompanyId = id as string;
+        this.companiesService.getCompany(id).subscribe({
+          next: (company) => {
+            if (!company) return;
+            // set companyName for display/backward compatibility
+            this.contactForm.patchValue({ companyName: company.name || company.legalName || '' });
+
+            // if address.country is empty, set it from company.country
+            const addrGroup = this.contactForm.get('address');
+            if (company.country && addrGroup && addrGroup.get('country') && !addrGroup.get('country')?.value) {
+              addrGroup.patchValue({ country: company.country });
+            }
+          },
+          error: () => {
+            // ignore failures silently
+          }
+        });
+      });
+    }
   }
 
   private createForm(): FormGroup {
     return this.fb.group({
       type: [ContactType.PERSON, Validators.required],
+      companyId: [null],
       name: [''],
       firstName: [''],
       lastName: [''],
@@ -353,6 +409,7 @@ export class EditContactDialogComponent {
       // Обновляем основную форму
       this.contactForm.patchValue({
         type: contact.type || ContactType.PERSON,
+        companyId: contact.companyId || contact.company?.id || null,
         name: contact.name || '',
         firstName: contact.firstName || '',
         lastName: contact.lastName || '',
@@ -379,6 +436,27 @@ export class EditContactDialogComponent {
           building: contact.address.building || '',
           apartment: contact.address.apartment || '',
           postalCode: contact.address.postalCode || ''
+        });
+      }
+
+      // If contact has companyId, fetch company to prefill additional details like country
+      const cid = contact.companyId || contact.company?.id;
+      if (cid) {
+        this.companiesService.getCompany(cid).subscribe({
+          next: (company) => {
+            if (!company) return;
+            // patch companyName if missing
+            if (!this.contactForm.get('companyName')?.value) {
+              this.contactForm.patchValue({ companyName: company.name || company.legalName || '' });
+            }
+
+            // patch address country if empty
+            const addr = this.contactForm.get('address');
+            if (company.country && addr && !addr.get('country')?.value) {
+              addr.patchValue({ country: company.country });
+            }
+          },
+          error: () => {}
         });
       }
     }

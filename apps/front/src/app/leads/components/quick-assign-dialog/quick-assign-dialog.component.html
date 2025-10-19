@@ -23,7 +23,7 @@
               @if (data.lead.company) {
                 <span class="company">
                   <mat-icon>domain</mat-icon>
-                  {{ data.lead.company }}
+              {{ data.lead.company?.name || data.lead.company?.legalName || '-' }}
                 </span>
               }
               @if (data.lead.email) {
@@ -42,8 +42,9 @@
         <div class="current-assignee-section">
           <div class="section-label">Текущий ответственный:</div>
           <div class="current-assignee-card">
-            <app-user-avatar [fullName]="data.lead.assignedTo" size="small"></app-user-avatar>
-            <span class="assignee-name">{{ data.lead.assignedTo }}</span>
+            <!-- Показываем avatar и имя назначенного менеджера, если он загружен в availableManagers -->
+            <app-user-avatar [fullName]="getAssignedManager()?.fullName || data.lead.assignedTo" size="small"></app-user-avatar>
+            <span class="assignee-name">{{ getAssignedManager()?.fullName || data.lead.assignedTo }}</span>
             <mat-icon class="change-icon">swap_horiz</mat-icon>
           </div>
         </div>
@@ -71,34 +72,55 @@
       <mat-form-field class="full-width" appearance="outline">
         <mat-label>Выберите менеджера</mat-label>
         <mat-select [(ngModel)]="selectedManagerId" [disabled]="loading">
+          <!-- Trigger: show avatar + name for the selected manager -->
+          <mat-select-trigger>
+            <div class="selected-trigger">
+              <ng-container *ngIf="getSelectedManager(); else noSelected">
+                <app-user-avatar [fullName]="getSelectedManager()!.fullName" size="small"></app-user-avatar>
+                <span class="trigger-name">{{ getSelectedManager()!.fullName }}</span>
+              </ng-container>
+              <ng-template #noSelected>
+                <mat-icon>person</mat-icon>
+                <span class="trigger-placeholder">Не выбрано</span>
+              </ng-template>
+            </div>
+          </mat-select-trigger>
+
+          <!-- Снять назначение -->
           <mat-option value="" class="unassign-option">
             <div class="option-content">
               <mat-icon>person_off</mat-icon>
-              <span>Снять назначение</span>
+              <span class="muted">Снять назначение</span>
             </div>
           </mat-option>
-          <mat-option 
-            *ngFor="let manager of availableManagers; trackBy: trackByManagerId" 
+
+          <!-- Manager options -->
+          <mat-option
+            *ngFor="let manager of availableManagers; trackBy: trackByManagerId"
             [value]="manager.id"
             [disabled]="!manager.isAvailableForAssignment"
             [class.overloaded-option]="manager.isOverloaded"
           >
-            <div class="manager-option">
-              <app-user-avatar [fullName]="manager.fullName" size="small"></app-user-avatar>
-              <div class="manager-option-details">
-                <div class="manager-name">{{ manager.fullName }}</div>
-                <div class="manager-workload" [class.warning]="manager.isOverloaded">
-                  {{ manager.currentLeadsCount }}/{{ manager.maxLeadsCapacity }} лидов
+            <div class="manager-option" style="display: flex; align-items: center;">
+              <app-user-avatar style="margin-right: 10px;" [fullName]="manager.fullName" size="small"></app-user-avatar>
+              <div>
+                <div class="manager-option-details">
+                  <div class="manager-name">{{ manager.fullName }}</div>
+                  <div class="manager-meta">
+                    <span class="manager-role" *ngIf="manager.roles?.length">{{ getRoleLabel(manager.roles[0]) }}</span>
+                    <span class="manager-workload" [class.warning]="manager.isOverloaded">
+                      {{ manager.currentLeadsCount }}/{{ manager.maxLeadsCapacity }}
+                    </span>
+                  </div>
                 </div>
-              </div>
-              <div class="status-badge" [class.available]="manager.isAvailableForAssignment" [class.busy]="!manager.isAvailableForAssignment">
-                <mat-icon *ngIf="manager.isAvailableForAssignment">check_circle</mat-icon>
-                <mat-icon *ngIf="!manager.isAvailableForAssignment">block</mat-icon>
+                <div class="status-badge" [class.available]="manager.isAvailableForAssignment" [class.busy]="!manager.isAvailableForAssignment" aria-hidden="true">
+                  <mat-icon *ngIf="manager.isAvailableForAssignment">check_circle</mat-icon>
+                  <mat-icon *ngIf="!manager.isAvailableForAssignment">block</mat-icon>
+                </div>
               </div>
             </div>
           </mat-option>
         </mat-select>
-        <mat-icon matSuffix>person</mat-icon>
       </mat-form-field>
 
       <!-- Информация о выбранном менеджере -->
@@ -106,9 +128,9 @@
         <div class="info-card">
           <div class="manager-preview">
             <app-user-avatar [fullName]="getSelectedManager()!.fullName" size="medium"></app-user-avatar>
-            <div class="manager-details">
+              <div class="manager-details">
               <div class="name">{{ getSelectedManager()!.fullName }}</div>
-              <div class="role">{{ getSelectedManager()!.roles?.join(', ') || 'Менеджер' }}</div>
+              <div class="role">{{ getRolesLabel(getSelectedManager()!.roles) }}</div>
               <div class="department" *ngIf="getSelectedManager()!.department">{{ getSelectedManager()!.department }}</div>
             </div>
           </div>

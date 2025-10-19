@@ -243,12 +243,13 @@ import { User } from '../users/users.service';
             <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
             <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
           </table>
+          <div class="table-footer">
+            <div class="footer-info">
+              <!-- optional summary or controls could go here -->
+            </div>
+            <mat-paginator [length]="totalResults || filteredDeals.length" [pageSize]="pageSize" [pageIndex]="currentPage" [pageSizeOptions]="[10,25,50,100]" (page)="onPageChange($event)" showFirstLastButtons></mat-paginator>
+          </div>
         </div>
-
-        <!-- Пагинация -->
-        <ng-container *ngIf="!isLoading && filteredDeals.length > pageSize">
-          <mat-paginator [length]="filteredDeals.length" [pageSize]="pageSize" [pageSizeOptions]="[10,25,50,100]" (page)="onPageChange($event)" showFirstLastButtons></mat-paginator>
-        </ng-container>
       </div>
     `,
   styles: [`
@@ -476,11 +477,26 @@ import { User } from '../users/users.service';
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
       overflow: hidden;
       margin-bottom: 32px;
+      display: flex;
+      flex-direction: column;
     }
 
     .deals-table {
       width: 100%;
       background-color: white;
+    }
+
+    .table-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-top: 1px solid #e6e9ee;
+      background: var(--card-bg);
+    }
+
+    .table-footer .mat-paginator {
+      margin-left: auto;
     }
 
     .mat-mdc-header-row {
@@ -837,6 +853,7 @@ export class DealsComponent implements OnInit {
   // Пагинация
   pageSize = 25;
   currentPage = 0;
+  totalResults?: number;
   
   // Статистика
   stats: {
@@ -882,13 +899,23 @@ export class DealsComponent implements OnInit {
 
   loadDeals() {
     this.isLoading = true;
-    this.dealsService.listDeals().subscribe({
-      next: (deals) => {
+    // Pass 1-based page index to backend if supported
+    const backendPage = this.currentPage + 1;
+    this.dealsService.listDeals(backendPage, this.pageSize).subscribe({
+      next: (res) => {
+        // Accept both array or paged response { items, total }
+        const data: Deal[] = Array.isArray(res) ? res : (res as any).items || [];
+        const totalFromBackend: number | undefined = Array.isArray(res) ? undefined : (res as any).total;
+
         // Нормализуем данные сделок, убеждаемся что amount - число
-        this.deals = deals.map(deal => ({
+        this.deals = data.map(deal => ({
           ...deal,
           amount: typeof deal.amount === 'number' ? deal.amount : parseFloat(deal.amount) || 0
         }));
+        // Update totalResults (if backend provided total) or clear it when backend returned plain array
+        this.totalResults = typeof totalFromBackend === 'number' ? totalFromBackend : undefined;
+        // If backend returned full list for this page, treat it as current page data
+        // For now keep client-side filtering/sorting on top of received items
         this.applyFilters();
         this.calculateStats();
         this.isLoading = false;
@@ -902,6 +929,15 @@ export class DealsComponent implements OnInit {
   }
 
   applyFilters() {
+    // If server-side paging is active (we have totalResults), assume backend returned already filtered/sorted page.
+    if (typeof this.totalResults === 'number') {
+      // Do not apply client-side filtering/sorting; show server-provided page as-is
+      this.filteredDeals = [...this.deals];
+      // Keep currentPage as set by paginator (do not reset to 0)
+      this.updatePagination();
+      return;
+    }
+
     let filtered = [...this.deals];
 
     // Поиск
@@ -956,6 +992,12 @@ export class DealsComponent implements OnInit {
   }
 
   updatePagination() {
+    // If server-side paging is active, `filteredDeals` already contains the page items returned by backend
+    if (typeof this.totalResults === 'number') {
+      this.paginatedDeals = [...this.filteredDeals];
+      return;
+    }
+
     const startIndex = this.currentPage * this.pageSize;
     const endIndex = startIndex + this.pageSize;
     this.paginatedDeals = this.filteredDeals.slice(startIndex, endIndex);
@@ -994,7 +1036,8 @@ export class DealsComponent implements OnInit {
   onPageChange(event: PageEvent) {
     this.currentPage = event.pageIndex;
     this.pageSize = event.pageSize;
-    this.updatePagination();
+    // Re-fetch page from backend (server-side paging)
+    this.loadDeals();
   }
 
   openCreateDialog() {

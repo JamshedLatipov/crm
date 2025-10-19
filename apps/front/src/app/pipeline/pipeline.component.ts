@@ -60,8 +60,8 @@ export class PipelineComponent implements OnInit, OnDestroy {
     });
     
     // Загружаем сделки
-    this.dealsService.listDeals().subscribe((deals: Deal[]) => {
-      this.deals = deals || [];
+    this.dealsService.listDeals().subscribe((res: Deal[] | { items: Deal[]; total: number }) => {
+      this.deals = Array.isArray(res) ? res : (res as any).items || [];
       this.rebuildDealsByStage();
     });
     

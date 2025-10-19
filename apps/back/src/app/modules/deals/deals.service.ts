@@ -22,7 +22,21 @@ export class DealsService {
     private readonly userService: UserService,
   ) {}
 
-  async listDeals(): Promise<Deal[]> {
+  /**
+   * Если переданы page и limit - возвращаем постраничный ответ { items, total }
+   * иначе - возвращаем полный массив сделок для обратной совместимости
+   */
+  async listDeals(page?: number, limit?: number): Promise<Deal[] | { items: Deal[]; total: number }> {
+    if (page != null && limit != null) {
+      const [items, total] = await this.dealRepository.findAndCount({
+        relations: ['stage', 'company', 'contact', 'lead'],
+        order: { createdAt: 'DESC' },
+        skip: (page - 1) * limit,
+        take: limit,
+      });
+      return { items, total };
+    }
+
     return this.dealRepository.find({
       relations: ['stage', 'company', 'contact', 'lead'],
       order: { createdAt: 'DESC' },

@@ -42,6 +42,8 @@ export class DealsController {
     @Query('stageId') stageId?: string,
     @Query('status') status?: DealStatus,
     @Query('assignedTo') assignedTo?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
     if (stageId) {
       return this.dealsService.getDealsByStage(stageId);
@@ -55,7 +57,9 @@ export class DealsController {
       return this.dealsService.getDealsByManager(assignedTo);
     }
 
-    return this.dealsService.listDeals();
+    const pageNum = page ? Number(page) : undefined;
+    const limitNum = limit ? Number(limit) : undefined;
+    return this.dealsService.listDeals(pageNum, limitNum);
   }
 
   @Get('overdue')

@@ -21,7 +21,7 @@
           <div class="lead-meta">
             <span *ngIf="data.lead.company" class="company">
               <mat-icon>domain</mat-icon>
-              {{ data.lead.company }}
+              {{ data.lead.company?.name || data.lead.company?.legalName || '-' }}
             </span>
             <span *ngIf="data.lead.email" class="email">
               <mat-icon>email</mat-icon>

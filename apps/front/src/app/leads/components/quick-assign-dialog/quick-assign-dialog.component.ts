@@ -37,6 +37,34 @@ interface QuickAssignData {
   styleUrls: ['./quick-assign-dialog.component.scss'],
 })
 export class QuickAssignDialogComponent {
+  // Map role keys to human-friendly labels
+  private readonly ROLE_LABELS: Record<string, string> = {
+    operator: 'Оператор',
+    account_manager: 'Аккаунт-менеджер',
+    team_lead: 'Тимлид',
+    sales_manager: 'Менеджер по продажам',
+    senior_manager: 'Старший менеджер',
+    client: 'Клиент',
+  };
+
+  /**
+   * Returns a readable label for a role key. Falls back to capitalized key if unknown.
+   */
+  getRoleLabel(roleKey?: string): string {
+    if (!roleKey) return '';
+    return this.ROLE_LABELS[roleKey] || this.humanizeRoleKey(roleKey);
+  }
+
+  private humanizeRoleKey(key: string): string {
+    // Replace underscores with spaces and capitalize words
+    return key.split('_').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+  }
+
+  getRolesLabel(roles?: string[] | null): string {
+    if (!roles || roles.length === 0) return 'Менеджер';
+    return roles.map(r => this.getRoleLabel(r)).join(', ');
+  }
+
   private readonly leadService = inject(LeadService);
   private readonly userService = inject(UserService);
   private readonly dialogRef = inject(MatDialogRef<QuickAssignDialogComponent>);
@@ -110,6 +138,16 @@ export class QuickAssignDialogComponent {
   getSelectedManager(): Manager | null {
     if (!this.selectedManagerId) return null;
     return this.availableManagers.find(m => m.id === this.selectedManagerId) || null;
+  }
+
+  /**
+   * Возвращает объект менеджера, который сейчас назначен на лид (если он загружен в availableManagers).
+   * Если менеджер не найден, возвращает null. Шаблон использует это для показа имени вместо id.
+   */
+  getAssignedManager(): Manager | null {
+    const id = this.data.lead?.assignedTo;
+    if (!id) return null;
+    return this.availableManagers.find(m => m.id === id) || null;
   }
 
   close(): void {

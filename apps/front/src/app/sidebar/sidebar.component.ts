@@ -1,6 +1,7 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
+import { AuthService } from '../auth/auth.service';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -59,23 +60,28 @@ interface MenuItem {
       <!-- User Profile Section -->
       <div class="sidebar-footer">
         <div class="user-profile">
-          <div class="user-avatar">
-            <mat-icon>person</mat-icon>
+          <div class="user-left">
+            <div class="user-avatar">
+              <mat-icon>person</mat-icon>
+            </div>
+            <div class="user-info">
+              <span class="user-name">{{ userName() || '—' }}</span>
+              <span class="user-role">{{ userRole() }}</span>
+            </div>
           </div>
-          <div class="user-info">
-            <span class="user-name">Admin</span>
-            <span class="user-role">Manager</span>
+
+          <div class="profile-actions">
+            <button
+              mat-icon-button
+              class="settings-btn"
+              [matTooltip]="'Settings'"
+              matTooltipPosition="right"
+              aria-label="Settings"
+            >
+              <mat-icon>settings</mat-icon>
+            </button>
           </div>
         </div>
-
-        <button
-          mat-icon-button
-          class="settings-btn"
-          [matTooltip]="'Settings'"
-          matTooltipPosition="right"
-        >
-          <mat-icon>settings</mat-icon>
-        </button>
       </div>
     </aside>
   `,
@@ -206,12 +212,24 @@ interface MenuItem {
       .user-profile {
         display: flex;
         align-items: center;
+        justify-content: space-between;
         gap: 12px;
         padding: 12px;
         background: rgba(79, 70, 229, 0.05);
         border-radius: 12px;
         margin-bottom: 12px;
         border: 1px solid rgba(79, 70, 229, 0.1);
+      }
+
+      .user-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .profile-actions {
+        display: flex;
+        align-items: center;
       }
 
       .user-avatar {
@@ -286,6 +304,15 @@ interface MenuItem {
 })
 export class SidebarComponent {
   private router = inject(Router);
+  private auth = inject(AuthService);
+
+  // Expose signals for template binding
+  userName = this.auth.user;
+  userRole = computed(() => {
+    const data = this.auth.getUserData();
+    // Use first role if available
+    return data?.roles && data.roles.length > 0 ? data.roles[0] : '—';
+  });
 
   menuItems: MenuItem[] = [
     { icon: 'dashboard', label: 'Dashboard', route: '/dashboard' },

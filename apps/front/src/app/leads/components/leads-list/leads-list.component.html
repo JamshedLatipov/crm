@@ -307,6 +307,17 @@
           (click)="viewLead(row)"
         ></tr>
       </table>
+      <!-- Paginator -->
+      <div class="table-footer">
+        <mat-paginator
+          [length]="totalResults"
+          [pageSize]="pageSize"
+          [pageIndex]="currentPage - 1"
+          [pageSizeOptions]="[10, 20, 50]"
+          (page)="onPageChange($event)"
+        >
+        </mat-paginator>
+      </div>
     }
 
     <!-- No results message -->
