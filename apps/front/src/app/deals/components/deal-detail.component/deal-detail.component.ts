@@ -86,8 +86,18 @@ export class DealDetailComponent implements OnInit {
 
   updateAssignedUserName() {
     if (this.deal?.assignedTo) {
-      const user = this.users.find(u => u.id === this.deal?.assignedTo);
-      this.assignedUserName = user?.name || `ID: ${this.deal.assignedTo}`;
+      // Преобразуем assignedTo в строку для сравнения
+      const assignedToStr = String(this.deal.assignedTo);
+      const user = this.users.find(u => u.id === assignedToStr);
+      if (user) {
+        this.assignedUserName = user.name;
+      } else {
+        // Если пользователь не найден в локальном списке, показываем ID
+        console.warn('User not found for assignedTo:', assignedToStr, 'Available users:', this.users.map(u => u.id));
+        this.assignedUserName = `ID: ${assignedToStr}`;
+      }
+    } else {
+      this.assignedUserName = '';
     }
   }
 
@@ -97,6 +107,9 @@ export class DealDetailComponent implements OnInit {
     
     this.dealsService.getDealById(id).subscribe({
       next: (deal: Deal) => {
+        console.log('loadDeal response:', deal);
+        console.log('deal.assignedTo:', deal.assignedTo, 'type:', typeof deal.assignedTo);
+        
         this.deal = deal;
         // If backend returned only stageId (string) but not populated stage object,
         // try to fetch the stage by id so the template can render stage.name.
@@ -266,10 +279,22 @@ export class DealDetailComponent implements OnInit {
   private assignDeal(userId: string, user?: User): void {
     if (!this.deal) return;
 
+    console.log('assignDeal called with userId:', userId, 'user:', user);
+
     this.dealsService.assignDeal(this.deal.id, userId).subscribe({
       next: (updatedDeal) => {
-        this.deal = updatedDeal;
-        this.updateAssignedUserName();
+        console.log('assignDeal response:', updatedDeal);
+        console.log('updatedDeal.assignedTo:', updatedDeal.assignedTo, 'type:', typeof updatedDeal.assignedTo);
+        
+        // Принудительно устанавливаем имя из переданного user объекта
+        if (user) {
+          this.assignedUserName = user.name;
+          console.log('Set assignedUserName from user object:', this.assignedUserName);
+        }
+        
+        // Перезагружаем сделку полностью для получения актуальных данных
+        this.loadDeal(this.deal.id);
+        
         this.snackBar.open(
           `Ответственный успешно изменен на ${user?.name || userId}`, 
           'Закрыть', 

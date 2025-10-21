@@ -39,7 +39,9 @@ import { DealStatusComponent } from '../../shared/components';
                 tabindex="0"
                 role="button"
                 class="clickable"
-                [attr.aria-label]="'Просмотреть сделку ' + deal.title">{{ deal.title }}</h3>
+                [attr.aria-label]="'Просмотреть сделку ' + (deal.title || 'Без названия')">
+              {{ deal.title || 'Без названия' }}
+            </h3>
             <div class="deal-status">
               <app-deal-status 
                 [status]="deal.status"
@@ -191,12 +193,16 @@ import { DealStatusComponent } from '../../shared/components';
 
     .deal-title {
       flex: 1;
+      min-width: 0; /* Позволяет flex-элементу сжиматься */
       
       h3 {
         margin: 0 0 8px 0;
         font-size: 18px;
         font-weight: 600;
         color: var(--text-primary);
+        line-height: 1.4;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
         
         &.clickable {
           cursor: pointer;
@@ -367,8 +373,18 @@ export class DealCardComponent implements OnInit, OnChanges {
 
   private updateAssignedUserName() {
     if (this.deal?.assignedTo) {
-      const user = this.users.find(u => u.id === this.deal.assignedTo);
-      this.assignedUserName = user?.name || `ID: ${this.deal.assignedTo}`;
+      // Преобразуем assignedTo в строку для сравнения
+      const assignedToStr = String(this.deal.assignedTo);
+      const user = this.users.find(u => u.id === assignedToStr);
+      if (user) {
+        this.assignedUserName = user.name;
+      } else {
+        // Если пользователь не найден в локальном списке, показываем ID
+        console.warn('User not found for assignedTo:', assignedToStr, 'Available users:', this.users.map(u => u.id));
+        this.assignedUserName = `ID: ${assignedToStr}`;
+      }
+    } else {
+      this.assignedUserName = '';
     }
   }
   

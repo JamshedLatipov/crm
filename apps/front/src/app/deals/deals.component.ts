@@ -156,7 +156,7 @@ import { User } from '../users/users.service';
                 <div class="title-cell">
                   <div class="deal-icon">{{ deal.title ? (deal.title.charAt(0) | uppercase) : '?' }}</div>
                   <div class="title-meta">
-                    <a class="title-link" (click)="viewDeal(deal)">{{ deal.title }}</a>
+                    <a class="title-link" (click)="viewDeal(deal)">{{ deal.title || 'Без названия' }}</a>
                     <div *ngIf="deal.stage" class="deal-stage">{{ deal.stage.name }}</div>
                   </div>
                 </div>
@@ -580,6 +580,11 @@ import { User } from '../users/users.service';
     }
 
     .title-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0; /* Позволяет тексту переноситься */
+      
       .deal-title {
         font-weight: 600;
         margin-bottom: 2px;
@@ -590,6 +595,11 @@ import { User } from '../users/users.service';
         text-decoration: none;
         padding: 0;
         min-width: auto;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
         
         &:hover {
           text-decoration: underline;
@@ -1207,15 +1217,21 @@ export class DealsComponent implements OnInit {
   }
 
   changeAssignee(event: { deal: Deal; assignedTo: string; user: User }) {
-    this.dealsService.updateDeal(event.deal.id, { assignedTo: event.assignedTo }).subscribe({
+    this.dealsService.assignDeal(event.deal.id, event.assignedTo).subscribe({
       next: (updatedDeal) => {
         // Обновляем локальную копию сделки
         const index = this.deals.findIndex(d => d.id === updatedDeal.id);
         if (index !== -1) {
-          this.deals[index] = updatedDeal;
+          // Создаем новый объект сделки с обновленными данными
+          // Это триггернет ngOnChanges в дочернем компоненте
+          this.deals[index] = { ...updatedDeal };
           this.applyFilters();
         }
-        this.snackBar.open(`Ответственный изменен на ${event.user.name}`, 'Закрыть', { duration: 3000 });
+        this.snackBar.open(
+          `Ответственный изменен на ${event.user?.name || event.assignedTo}`, 
+          'Закрыть', 
+          { duration: 3000 }
+        );
       },
       error: (error) => {
         console.error('Ошибка изменения ответственного:', error);

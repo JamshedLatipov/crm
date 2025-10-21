@@ -7,8 +7,8 @@
       width: 56px;
       height: 56px;
       border-radius: 50%;
-      background: #4caf50;
-      color: white;
+      background: #e8f5e9;
+      color: #2e7d32;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -35,7 +35,7 @@
   
   p {
     margin-top: 16px;
-    color: #666;
+    color: #6b7280;
   }
 }
 
@@ -62,8 +62,8 @@
 
   .stat-card {
     background: white;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
     padding: 20px;
     display: flex;
     align-items: center;
@@ -73,51 +73,52 @@
     overflow: hidden;
 
     &:hover {
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
       transform: translateY(-2px);
+      border-color: #cbd5e1;
     }
 
     &.primary-stat {
-      background: linear-gradient(135deg, #2196f3, #21cbf3);
-      color: white;
-      border: none;
+      background: linear-gradient(to right, #dbeafe 0%, #eff6ff 100%);
+      color: #1e40af;
+      border: 1px solid #93c5fd;
 
       .stat-icon {
-        background: rgba(255,255,255,0.2);
+        background: #bfdbfe;
       }
 
       .stat-value {
-        color: white;
+        color: #1e40af;
       }
 
       .stat-label {
-        color: rgba(255,255,255,0.9);
+        color: #3b82f6;
       }
     }
 
     .stat-icon {
       width: 50px;
       height: 50px;
-      border-radius: 50%;
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      background: #f5f5f5;
+      background: #f1f5f9;
 
       &.update {
-        background: linear-gradient(135deg, #2196f3, #42a5f5);
-        color: white;
+        background: #dbeafe;
+        color: #2563eb;
       }
 
       &.stage {
-        background: linear-gradient(135deg, #ff9800, #ffb74d);
-        color: white;
+        background: #fed7aa;
+        color: #ea580c;
       }
 
       &.amount {
-        background: linear-gradient(135deg, #9c27b0, #ba68c8);
-        color: white;
+        background: #e9d5ff;
+        color: #9333ea;
       }
 
       mat-icon {
@@ -135,12 +136,12 @@
         font-weight: 700;
         line-height: 1;
         margin-bottom: 4px;
-        color: #333;
+        color: #111827;
       }
 
       .stat-label {
         font-size: 14px;
-        color: #666;
+        color: #6b7280;
         font-weight: 500;
       }
     }
@@ -151,7 +152,7 @@
 .detailed-stats {
   h4 {
     margin-bottom: 20px;
-    color: #333;
+    color: #111827;
     font-weight: 600;
   }
 
@@ -167,7 +168,7 @@
 
       &:hover {
         background-color: #f9f9f9;
-        border-color: #ccc;
+        border-color: #d1d5db;
       }
 
       .item-icon {
@@ -179,7 +180,7 @@
         justify-content: center;
         margin-right: 16px;
         background: #f5f5f5;
-        color: #666;
+        color: #6b7280;
 
         mat-icon {
           font-size: 20px;
@@ -193,13 +194,13 @@
 
         .item-label {
           font-weight: 600;
-          color: #333;
+          color: #111827;
           margin-bottom: 4px;
         }
 
         .item-description {
           font-size: 13px;
-          color: #666;
+          color: #6b7280;
         }
       }
 
@@ -210,7 +211,7 @@
         .value {
           font-size: 18px;
           font-weight: 700;
-          color: #333;
+          color: #111827;
           display: block;
           margin-bottom: 4px;
         }
@@ -218,13 +219,13 @@
         .progress-bar {
           width: 60px;
           height: 4px;
-          background: #e0e0e0;
+          background: #e5e7eb;
           border-radius: 2px;
           overflow: hidden;
 
           .progress-fill {
             height: 100%;
-            background: linear-gradient(135deg, #2196f3, #42a5f5);
+            background: #93c5fd;
             transition: width 0.3s ease;
           }
         }
@@ -232,33 +233,33 @@
 
       /* Стили для разных типов */
       &.type-created .item-icon {
-        background: linear-gradient(135deg, #4caf50, #66bb6a);
-        color: white;
+        background: #dcfce7;
+        color: #15803d;
       }
 
       &.type-updated .item-icon {
-        background: linear-gradient(135deg, #2196f3, #42a5f5);
-        color: white;
+        background: #dbeafe;
+        color: #1e40af;
       }
 
       &.type-stage_moved .item-icon {
-        background: linear-gradient(135deg, #ff9800, #ffb74d);
-        color: white;
+        background: #fed7aa;
+        color: #ea580c;
       }
 
       &.type-amount_changed .item-icon {
-        background: linear-gradient(135deg, #9c27b0, #ba68c8);
-        color: white;
+        background: #e9d5ff;
+        color: #9333ea;
       }
 
       &.type-won .item-icon {
-        background: linear-gradient(135deg, #4caf50, #8bc34a);
-        color: white;
+        background: #d1fae5;
+        color: #047857;
       }
 
       &.type-lost .item-icon {
-        background: linear-gradient(135deg, #f44336, #ef5350);
-        color: white;
+        background: #fecaca;
+        color: #dc2626;
       }
     }
   }
@@ -276,17 +277,17 @@
     font-size: 64px;
     width: 64px;
     height: 64px;
-    color: #ccc;
+    color: #d1d5db;
     margin-bottom: 16px;
   }
 
   h4 {
     margin-bottom: 8px;
-    color: #666;
+    color: #6b7280;
   }
 
   p {
-    color: #999;
+    color: #9ca3af;
   }
 }
 
@@ -294,7 +295,7 @@
 .user-activity-section {
   h4 {
     margin-bottom: 20px;
-    color: #333;
+    color: #111827;
     font-weight: 600;
   }
 
@@ -304,13 +305,13 @@
       align-items: center;
       justify-content: space-between;
       padding: 16px;
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
       margin-bottom: 12px;
       background: white;
 
       &:hover {
-        background-color: #f9f9f9;
+        background-color: #f9fafb;
       }
 
       .user-info {
@@ -322,8 +323,8 @@
           width: 40px;
           height: 40px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #607d8b, #90a4ae);
-          color: white;
+          background: #e0e7ff;
+          color: #4338ca;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -339,13 +340,13 @@
         .user-details {
           .user-name {
             font-weight: 600;
-            color: #333;
+            color: #111827;
             margin-bottom: 4px;
           }
 
           .user-meta {
             font-size: 13px;
-            color: #666;
+            color: #6b7280;
 
             .last-activity {
               font-style: italic;
@@ -356,23 +357,23 @@
 
       .activity-stats {
         .high-activity {
-          background-color: #e8f5e8;
-          color: #2e7d32;
+          background-color: #dcfce7;
+          color: #15803d;
         }
 
         .medium-activity {
-          background-color: #fff3e0;
-          color: #ef6c00;
+          background-color: #fed7aa;
+          color: #ea580c;
         }
 
         .low-activity {
-          background-color: #e3f2fd;
-          color: #1565c0;
+          background-color: #dbeafe;
+          color: #1e40af;
         }
 
         .minimal-activity {
-          background-color: #f5f5f5;
-          color: #666;
+          background-color: #f3f4f6;
+          color: #6b7280;
         }
       }
     }
@@ -383,7 +384,7 @@
 .stage-movement-section {
   h4 {
     margin-bottom: 20px;
-    color: #333;
+    color: #111827;
     font-weight: 600;
   }
 
@@ -393,13 +394,13 @@
       align-items: center;
       justify-content: space-between;
       padding: 16px;
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
       margin-bottom: 12px;
       background: white;
 
       &:hover {
-        background-color: #f9f9f9;
+        background-color: #f9fafb;
       }
 
       .movement-flow {
@@ -413,22 +414,22 @@
           align-items: center;
           gap: 8px;
           padding: 8px 12px;
-          background: #f5f5f5;
-          border-radius: 6px;
+          background: #f3f4f6;
+          border-radius: 8px;
           font-size: 14px;
-          color: #333;
+          color: #111827;
 
           mat-icon {
             font-size: 16px;
             width: 16px;
             height: 16px;
-            color: #666;
+            color: #6b7280;
           }
         }
 
         .movement-arrow {
           margin: 0 16px;
-          color: #666;
+          color: #6b7280;
 
           mat-icon {
             font-size: 20px;
@@ -451,7 +452,7 @@
 
   h4 {
     margin-bottom: 20px;
-    color: #333;
+    color: #111827;
     font-weight: 600;
   }
 
@@ -462,8 +463,8 @@
 
     .global-stat {
       background: white;
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
       padding: 20px;
       display: flex;
       align-items: center;
@@ -473,8 +474,8 @@
         width: 50px;
         height: 50px;
         border-radius: 50%;
-        background: linear-gradient(135deg, #673ab7, #9575cd);
-        color: white;
+        background: linear-gradient(135deg, #e9d5ff, #f3e8ff);
+        color: #9333ea;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -490,13 +491,13 @@
         .global-value {
           font-size: 24px;
           font-weight: 700;
-          color: #333;
+          color: #111827;
           margin-bottom: 4px;
         }
 
         .global-label {
           font-size: 14px;
-          color: #666;
+          color: #6b7280;
         }
       }
     }
@@ -507,7 +508,7 @@
 .active-deals-section {
   h4 {
     margin-bottom: 20px;
-    color: #333;
+    color: #111827;
     font-weight: 600;
   }
 
@@ -517,13 +518,13 @@
       align-items: center;
       justify-content: space-between;
       padding: 16px;
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
       margin-bottom: 12px;
       background: white;
 
       &:hover {
-        background-color: #f9f9f9;
+        background-color: #f9fafb;
       }
 
       .deal-info {
@@ -531,13 +532,13 @@
 
         .deal-title {
           font-weight: 600;
-          color: #333;
+          color: #111827;
           margin-bottom: 4px;
         }
 
         .deal-meta {
           font-size: 13px;
-          color: #666;
+          color: #6b7280;
 
           .last-change {
             font-style: italic;
@@ -584,80 +585,6 @@
     .movement-arrow {
       margin: 8px 0 !important;
       transform: rotate(90deg);
-    }
-  }
-}
-
-/* Темная тема */
-@media (prefers-color-scheme: dark) {
-  .stats-card {
-    background: #424242;
-    color: white;
-
-    .stat-card {
-      background: #616161;
-      border-color: #757575;
-      color: white;
-
-      .stat-icon {
-        background: #757575;
-        color: white;
-      }
-
-      .stat-value {
-        color: white;
-      }
-
-      .stat-label {
-        color: #e0e0e0;
-      }
-    }
-  }
-
-  .stats-item,
-  .activity-item,
-  .movement-item,
-  .deal-item,
-  .global-stat {
-    background: #616161 !important;
-    border-color: #757575 !important;
-    color: white;
-
-    &:hover {
-      background: #757575 !important;
-    }
-
-    .item-label,
-    .user-name,
-    .deal-title,
-    .global-value {
-      color: white;
-    }
-
-    .item-description,
-    .user-meta,
-    .deal-meta,
-    .global-label {
-      color: #e0e0e0;
-    }
-  }
-
-  .stage-from,
-  .stage-to {
-    background: #757575 !important;
-    color: white !important;
-  }
-
-  .empty-stats,
-  .empty-activity,
-  .empty-movement,
-  .empty-global {
-    h4 {
-      color: #e0e0e0;
-    }
-
-    p {
-      color: #bdbdbd;
     }
   }
 }

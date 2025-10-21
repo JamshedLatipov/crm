@@ -108,8 +108,11 @@ export class DealsService {
   }
 
   // Назначение сделки менеджеру
-  assignDeal(id: string, managerId: string): Observable<Deal> {
-    return this.http.patch<Deal>(`${this.apiUrl}/${id}/assign`, { assignedTo: managerId });
+  assignDeal(id: string, managerId: string | string[]): Observable<Deal> {
+    // Нормализуем managerId - если массив, берем первый элемент
+    const normalizedManagerId = Array.isArray(managerId) ? managerId[0] : managerId;
+    console.log('DealsService.assignDeal:', { id, originalManagerId: managerId, normalizedManagerId });
+    return this.http.patch<Deal>(`${this.apiUrl}/${id}/assign`, { assignedTo: normalizedManagerId });
   }
 
   // Получение текущих назначений сделки

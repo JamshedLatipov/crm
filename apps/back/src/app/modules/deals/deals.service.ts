@@ -448,26 +448,41 @@ export class DealsService {
   }
 
   async assignDeal(id: string, managerId: string, userId?: string, userName?: string): Promise<Deal> {
-    console.log('assignDeal called with:', { id, managerId, userId, userName });
+    // Нормализуем managerId - если это массив, берем первый элемент
+    // Если это объект/JSON, пытаемся извлечь значение
+    let normalizedManagerId: string;
+    
+    if (Array.isArray(managerId)) {
+      normalizedManagerId = String(managerId[0]);
+      console.log('assignDeal: managerId was an array, normalized to:', normalizedManagerId);
+    } else if (typeof managerId === 'object' && managerId !== null) {
+      // Если это объект, пытаемся получить значение
+      normalizedManagerId = String(Object.values(managerId)[0] || managerId);
+      console.log('assignDeal: managerId was an object, normalized to:', normalizedManagerId);
+    } else {
+      normalizedManagerId = String(managerId);
+    }
+    
+    console.log('assignDeal called with:', { id, originalManagerId: managerId, normalizedManagerId, userId, userName });
     const existingDeal = await this.getDealById(id);
     const oldAssignedTo = existingDeal.assignedTo;
     console.log('existing deal assignedTo:', oldAssignedTo, typeof oldAssignedTo);
 
     // Если пользователь уже назначен, ничего не делаем
-    if (oldAssignedTo === managerId) {
+    if (oldAssignedTo === normalizedManagerId) {
       return existingDeal;
     }
 
     // Получаем ID пользователя для назначения
     let userIdNum: number;
-    const parsedUserId = Number(managerId);
+    const parsedUserId = Number(normalizedManagerId);
     if (!Number.isNaN(parsedUserId)) {
       userIdNum = parsedUserId;
     } else {
-      // Если managerId - это username, ищем пользователя
-      const userEntity = await this.userService.findByUsername(managerId);
+      // Если normalizedManagerId - это username, ищем пользователя
+      const userEntity = await this.userService.findByUsername(normalizedManagerId);
       if (!userEntity) {
-        throw new Error(`User not found: ${managerId}`);
+        throw new Error(`User not found: ${normalizedManagerId}`);
       }
       userIdNum = userEntity.id;
     }
@@ -515,8 +530,8 @@ export class DealsService {
     });
     console.log('assignment result:', assignmentResult);
 
-    // Обновляем поле assignedTo в сделке
-    const updateData = { assignedTo: managerId };
+    // Обновляем поле assignedTo в сделке - используем нормализованное значение
+    const updateData = { assignedTo: normalizedManagerId };
     console.log('updating deal with:', updateData);
     const updated = await this.updateDeal(id, updateData, userId, userName);
     console.log('updated deal assignedTo:', updated.assignedTo, typeof updated.assignedTo);
