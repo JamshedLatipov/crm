@@ -14,14 +14,14 @@
   justify-content: center;
   color: white;
 }
-.card-avatar.profile { background: linear-gradient(135deg, #667eea, #764ba2); }
-.card-avatar.map { background: linear-gradient(135deg, #4facfe, #00f2fe); }
-.card-avatar.skills { background: linear-gradient(135deg, #8e2de2, #4a00e0); }
-.card-avatar.info { background: linear-gradient(135deg, #f5f7fa, #c3cfe2); color: #2b2b2b; }
-.card-avatar.notes { background: linear-gradient(135deg, #4facfe, #00f2fe); }
-.card-avatar.deals { background: linear-gradient(135deg, #f093fb, #f5576c); }
-.card-avatar.process { background: linear-gradient(135deg, #43e97b, #38f9d7); }
-.card-avatar.metadata { background: linear-gradient(135deg, #ffecd2, #fcb69f); color: #8b4513; }
+.card-avatar.profile { background: #667eea; }
+.card-avatar.map { background: #4facfe; }
+.card-avatar.skills { background: #8e2de2; }
+.card-avatar.info { background: #f5f7fa; color: #2b2b2b; }
+.card-avatar.notes { background: #4facfe; }
+.card-avatar.deals { background: #f093fb; }
+.card-avatar.process { background: #43e97b; }
+.card-avatar.metadata { background: #ffecd2; color: #8b4513; }
 
 /* Chips inside the user-detail area */
 ::ng-deep mat-chip {

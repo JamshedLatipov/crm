@@ -149,7 +149,7 @@
 
 /* Table Header */
 .table-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--primary-color, #667eea);
   color: white;
   padding: 20px 24px;
 }
@@ -266,7 +266,7 @@
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--primary-color, #667eea);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -415,7 +415,7 @@
 
 .workload-progress {
   height: 100%;
-  background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+  background: #10b981;
   transition: width 0.3s ease;
 }
 

@@ -26,17 +26,46 @@ export class DealsService {
    * Если переданы page и limit - возвращаем постраничный ответ { items, total }
    * иначе - возвращаем полный массив сделок для обратной совместимости
    */
-  async listDeals(page?: number, limit?: number): Promise<Deal[] | { items: Deal[]; total: number }> {
+  async listDeals(
+    page?: number,
+    limit?: number,
+    opts?: { q?: string; sortBy?: string; sortDir?: 'asc' | 'desc' }
+  ): Promise<Deal[] | { items: Deal[]; total: number }> {
+    // If paginated, build a query with optional filters/sorting
     if (page != null && limit != null) {
-      const [items, total] = await this.dealRepository.findAndCount({
-        relations: ['stage', 'company', 'contact', 'lead'],
-        order: { createdAt: 'DESC' },
-        skip: (page - 1) * limit,
-        take: limit,
-      });
+      const qb = this.dealRepository.createQueryBuilder('deal')
+        .leftJoinAndSelect('deal.stage', 'stage')
+        .leftJoinAndSelect('deal.company', 'company')
+        .leftJoinAndSelect('deal.contact', 'contact')
+        .leftJoinAndSelect('deal.lead', 'lead');
+
+      // Search query across title, contact.name and company.name if provided
+      if (opts?.q) {
+        const q = `%${opts.q}%`;
+        qb.andWhere('(deal.title ILIKE :q OR contact->>\'name\' ILIKE :q OR company->>\'name\' ILIKE :q)', { q });
+      }
+
+      // Sorting: support some known fields, default to createdAt desc
+      const sortField = opts?.sortBy || 'createdAt';
+      const sortDir = opts?.sortDir === 'asc' ? 'ASC' : 'DESC';
+      // Map sortBy to allowed columns to avoid SQL injection
+      const allowedSort: Record<string, string> = {
+        createdAt: 'deal.createdAt',
+        amount: 'deal.amount',
+        expectedCloseDate: 'deal.expectedCloseDate',
+        title: 'deal.title',
+      };
+      const orderColumn = allowedSort[sortField] || 'deal.createdAt';
+
+      qb.orderBy(orderColumn, sortDir as 'ASC' | 'DESC')
+        .skip((page - 1) * limit)
+        .take(limit);
+
+      const [items, total] = await qb.getManyAndCount();
       return { items, total };
     }
 
+    // Non-paginated legacy behavior
     return this.dealRepository.find({
       relations: ['stage', 'company', 'contact', 'lead'],
       order: { createdAt: 'DESC' },

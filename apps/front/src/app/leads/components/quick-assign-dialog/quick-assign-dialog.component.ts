@@ -7,6 +7,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { UserSelectorComponent } from '../../../shared/components/user-selector/user-selector.component';
 
 import { LeadService } from '../../services/lead.service';
 import { Lead } from '../../models/lead.model';
@@ -31,6 +32,7 @@ interface QuickAssignData {
     MatFormFieldModule,
     MatIconModule,
     MatProgressSpinnerModule,
+    UserSelectorComponent,
     UserAvatarComponent,
   ],
   templateUrl: './quick-assign-dialog.component.html',

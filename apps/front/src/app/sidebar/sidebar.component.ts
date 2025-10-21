@@ -90,7 +90,7 @@ interface MenuItem {
       .sidebar {
         width: 280px;
         height: 100vh;
-        background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        background: var(--surface-color);
         border-right: 1px solid #e2e8f0;
         display: flex;
         flex-direction: column;
@@ -235,7 +235,7 @@ interface MenuItem {
       .user-avatar {
         width: 40px;
         height: 40px;
-        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        background: var(--primary-color);
         border-radius: 10px;
         display: flex;
         align-items: center;
@@ -320,6 +320,7 @@ export class SidebarComponent {
     { icon: 'trending_up', label: 'Leads', route: '/leads' },
     { icon: 'account_tree', label: 'Pipeline', route: '/pipeline' },
     { icon: 'handshake', label: 'Deals', route: '/deals' },
+    { icon: 'task', label: 'Tasks', route: '/tasks' },
     { icon: 'phone', label: 'Calls', route: '/calls' },
     { icon: 'group', label: 'Users', route: '/users' },
     { icon: 'assessment', label: 'Reports', route: '/reports' },

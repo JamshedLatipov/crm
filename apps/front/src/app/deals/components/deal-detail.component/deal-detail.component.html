@@ -409,7 +409,10 @@
               </div>
             </mat-card-content>
           </mat-card>
+          <!-- Виджет задач -->
 
+          <app-task-list-widget [dealId]="deal.id"></app-task-list-widget>
+          
           <!-- Дополнительные данные -->
           <mat-card
             class="info-card metadata-card"
@@ -439,6 +442,7 @@
               </div>
             </mat-card-content>
           </mat-card>
+
         </div>
       </div>
     </div>

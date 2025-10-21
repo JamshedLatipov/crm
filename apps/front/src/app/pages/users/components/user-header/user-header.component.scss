@@ -2,8 +2,8 @@
   margin-bottom: 24px;
 
   .header-background {
-    /* Same gradient as contacts header */
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    /* Use flat primary color instead of gradient to improve contrast and consistency */
+    background: var(--primary-color, #667eea);
     padding: 18px 20px;
     border-radius: 16px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
@@ -71,7 +71,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: var(--primary-color, #667eea);
     color: white;
     font-size: 36px;
   }

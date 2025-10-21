@@ -1,0 +1,250 @@
+<div class="task-detail-container">
+  <!-- Compact Header -->
+  <div class="detail-header" *ngIf="task()">
+    <div class="header-wrapper">
+      <button mat-icon-button class="back-button" (click)="goBack()">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      
+      <div class="header-content">
+        <h1>{{ task()?.title }}</h1>
+        <div class="header-meta">
+          <mat-form-field class="status-select" appearance="outline">
+            <mat-select 
+              [value]="task()?.status" 
+              (selectionChange)="changeStatus($event.value)"
+              [disabled]="isLoading()">
+              <mat-option *ngFor="let status of statusOptions" [value]="status.value">
+                <span class="status-option" [style.color]="status.color">
+                  {{ status.label }}
+                </span>
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+          <span class="date-info" *ngIf="task()?.createdAt">
+            <mat-icon>schedule</mat-icon>
+            {{ task()?.createdAt | date:'dd.MM.yyyy HH:mm' }}
+          </span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button
+          mat-stroked-button
+          color="primary"
+          (click)="editTask()"
+          class="action-btn header-context size-medium"
+          matTooltip="Редактировать задачу"
+        >
+          <mat-icon>edit</mat-icon>
+          <span class="button-text">Редактировать</span>
+        </button>
+
+        <button
+          mat-stroked-button
+          color="warn"
+          (click)="deleteTask()"
+          class="action-btn header-context size-medium delete-btn"
+          matTooltip="Удалить задачу"
+        >
+          <mat-icon>delete</mat-icon>
+          <span class="button-text">Удалить</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading()" class="loading-container">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Загрузка задачи...</p>
+  </div>
+
+  <!-- Task Details -->
+  <div *ngIf="!isLoading() && task()" class="task-content">
+    <!-- Prominent description card -->
+    <mat-card class="description-card">
+      <mat-card-header>
+        <mat-card-title>Описание</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="description-large">
+          <ng-container *ngIf="task()?.description; else noDescLarge">
+            <div class="description-text large" [class.expanded]="descExpanded()" [class.collapsed]="!descExpanded()">
+              {{ task()?.description }}
+            </div>
+            <button *ngIf="task()?.description?.length > 300" mat-button class="desc-toggle" (click)="toggleDesc()">
+              {{ descExpanded() ? 'Свернуть' : 'Развернуть' }}
+            </button>
+          </ng-container>
+          <ng-template #noDescLarge>
+            <span class="muted">Нет описания</span>
+          </ng-template>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <div class="content-grid">
+      <!-- Main Info -->
+      <mat-card class="info-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>info</mat-icon>
+            Детали задачи
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="info-section">
+            <!-- description moved to prominent card above -->
+
+            <mat-divider></mat-divider>
+
+            <div class="info-row">
+              <span class="info-label">
+                <mat-icon>person</mat-icon>
+                Исполнитель
+              </span>
+              <span class="info-value">
+                <ng-container *ngIf="task()?.assignedTo; else noAssignee">
+                  <a 
+                    [routerLink]="['/users', task()?.assignedTo?.id]" 
+                    class="link-primary assignee-link"
+                    (click)="$event.stopPropagation()">
+                    <div class="assignee-info">
+                      <div class="user-avatar">
+                        {{ task()?.assignedTo.firstName?.charAt(0) || '?' }}
+                      </div>
+                      <span>{{ task()?.assignedTo.firstName }} {{ task()?.assignedTo.lastName }}</span>
+                      <mat-icon class="link-icon">open_in_new</mat-icon>
+                    </div>
+                  </a>
+                </ng-container>
+                <ng-template #noAssignee>
+                  <span class="muted">Не назначено</span>
+                </ng-template>
+              </span>
+            </div>
+
+            <mat-divider></mat-divider>
+
+            <div class="info-row">
+              <span class="info-label">
+                <mat-icon>event</mat-icon>
+                Срок выполнения
+              </span>
+              <span class="info-value">
+                {{ task()?.dueDate ? (task()?.dueDate | date:'dd.MM.yyyy') : 'Не указан' }}
+              </span>
+            </div>
+
+            <mat-divider *ngIf="task()?.lead || task()?.deal"></mat-divider>
+
+            <!-- Связь с лидом -->
+            <div class="info-row" *ngIf="task()?.lead">
+              <span class="info-label">
+                <mat-icon>person</mat-icon>
+                Связан с лидом
+              </span>
+              <span class="info-value">
+                <a [routerLink]="['/leads/view', task()?.lead?.id]" class="link-primary">
+                  {{ task()?.lead?.name }}
+                  <mat-icon class="link-icon">open_in_new</mat-icon>
+                </a>
+              </span>
+            </div>
+
+            <!-- Связь со сделкой -->
+            <div class="info-row" *ngIf="task()?.deal">
+              <span class="info-label">
+                <mat-icon>business_center</mat-icon>
+                Связан со сделкой
+              </span>
+              <span class="info-value">
+                <a [routerLink]="['/deals/view', task()?.deal?.id]" class="link-primary">
+                  {{ task()?.deal?.title }}
+                  <mat-icon class="link-icon">open_in_new</mat-icon>
+                </a>
+              </span>
+            </div>
+
+            <mat-divider></mat-divider>
+
+            <div class="info-row">
+              <span class="info-label">
+                <mat-icon>update</mat-icon>
+                Последнее обновление
+              </span>
+              <span class="info-value">
+                {{ task()?.updatedAt ? (task()?.updatedAt | date:'dd.MM.yyyy HH:mm') : '—' }}
+              </span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Comments Section -->
+      <mat-card class="comments-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>comment</mat-icon>
+            Комментарии ({{ comments().length }})
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <!-- Comments List -->
+          <div class="comments-list">
+            <div *ngIf="isLoadingComments()" class="comments-loading">
+              <mat-spinner diameter="30"></mat-spinner>
+            </div>
+
+            <div *ngIf="!isLoadingComments() && comments().length === 0" class="no-comments">
+              <mat-icon>comment</mat-icon>
+              <p>Пока нет комментариев</p>
+            </div>
+
+            <div *ngFor="let comment of comments()" class="comment-item">
+              <div class="comment-avatar">
+                {{ comment.author?.firstName?.charAt(0) || '?' }}
+              </div>
+              <div class="comment-content">
+                <div class="comment-header">
+                  <span class="comment-author">
+                    {{ comment.author?.firstName }} {{ comment.author?.lastName }}
+                  </span>
+                  <span class="comment-date">
+                    {{ comment.createdAt | date:'dd.MM.yyyy HH:mm' }}
+                  </span>
+                </div>
+                <div class="comment-text">{{ comment.text }}</div>
+              </div>
+            </div>
+          </div>
+
+          <mat-divider></mat-divider>
+
+          <!-- Add Comment Form -->
+          <div class="add-comment">
+            <mat-form-field appearance="outline" class="comment-input">
+              <mat-label>Добавить комментарий</mat-label>
+              <textarea 
+                matInput 
+                [(ngModel)]="newCommentText"
+                rows="3"
+                placeholder="Введите комментарий..."
+                (keydown.enter)="$any($event).ctrlKey && sendComment()"></textarea>
+            </mat-form-field>
+            <button 
+              mat-raised-button 
+              color="primary" 
+              (click)="sendComment()"
+              [disabled]="!newCommentText.trim() || isSendingComment">
+              <mat-spinner *ngIf="isSendingComment" diameter="20" class="button-spinner"></mat-spinner>
+              <mat-icon *ngIf="!isSendingComment">send</mat-icon>
+              <span *ngIf="!isSendingComment">Отправить</span>
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div>

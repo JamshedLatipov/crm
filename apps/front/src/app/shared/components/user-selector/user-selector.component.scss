@@ -1,0 +1,215 @@
+.user-selector-field {
+  width: 100%;
+  
+  // Фиксируем высоту самого поля
+  ::ng-deep {
+    .mat-mdc-text-field-wrapper {
+      // Не позволяем полю растягиваться
+      .mat-mdc-form-field-flex {
+        align-items: center;
+      }
+      
+      .mat-mdc-form-field-infix {
+        padding-top: 16px;
+        padding-bottom: 16px;
+        min-height: auto;
+        max-height: 56px; // Фиксированная максимальная высота
+        overflow: hidden; // Обрезаем всё что выходит за границы
+      }
+    }
+    
+    // Контролируем высоту значения
+    .mat-mdc-select-value {
+      max-height: 38px !important; // Строгое ограничение
+      overflow: hidden !important;
+      line-height: 1 !important;
+    }
+    
+    .mat-mdc-select-value-text {
+      overflow: hidden !important;
+      max-height: 38px !important;
+    }
+    
+    // Фиксируем trigger
+    .mat-mdc-select-trigger {
+      height: auto;
+      min-height: 0;
+      max-height: 38px; // Ограничиваем высоту trigger
+      overflow: hidden;
+    }
+  }
+}
+
+// Selected user display in trigger
+.selected-user-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+  line-height: 1; // Минимальная высота строки
+  max-height: 38px; // Жёсткое ограничение высоты
+
+  .selected-user-icon {
+    color: var(--primary-color);
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .selected-user-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0px; // Убираем зазор полностью
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    max-height: 38px; // Ограничиваем высоту info блока
+
+    .selected-user-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.3;
+      margin: 0;
+      padding: 0;
+    }
+
+    .selected-user-meta {
+      font-size: 10.5px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.2;
+      opacity: 0.8;
+      margin: 0;
+      padding: 0;
+      margin-top: 1px; // Минимальный отступ сверху
+    }
+  }
+}
+
+// Переопределяем высоту mat-select-value для фиксации
+::ng-deep {
+  // Custom styling for mat-select panel
+  .mat-mdc-select-panel {
+    .mat-mdc-option {
+      min-height: auto !important;
+      padding: 10px 16px !important;
+      
+      &:hover {
+        background: var(--hover-color, #f8fafc) !important;
+      }
+
+      &.mat-mdc-option-active,
+      &.mdc-list-item--selected {
+        background: var(--selected-color, rgba(99, 102, 241, 0.08)) !important;
+      }
+    }
+  }
+}
+
+.loading-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  
+  mat-spinner {
+    ::ng-deep circle {
+      stroke: var(--primary-color);
+    }
+  }
+}
+
+.user-option {
+  padding: 2px 0; // Уменьшили с 4px
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px; // Уменьшили с 4px
+}
+
+.user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+// Индикатор статуса - маленькая точка рядом с именем
+.status-indicator {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  
+  &.status-available {
+    background-color: #4caf50;
+    box-shadow: 0 0 4px rgba(76, 175, 80, 0.5);
+  }
+  
+  &.status-busy {
+    background-color: #ff9800;
+    box-shadow: 0 0 4px rgba(255, 152, 0, 0.5);
+  }
+}
+
+.user-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px; // Уменьшили с 12px
+  color: var(--text-secondary);
+  line-height: 1.3;
+
+  .user-role {
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .user-dept {
+    color: var(--text-secondary);
+    opacity: 0.85;
+  }
+  
+  .user-email {
+    opacity: 0.8;
+  }
+}
+
+// Custom styling for mat-select panel
+::ng-deep {
+  .mat-mdc-select-panel {
+    .mat-mdc-option {
+      min-height: auto !important;
+      padding: 10px 16px !important;
+      
+      &:hover {
+        background: var(--hover-color, #f8fafc) !important;
+      }
+
+      &.mat-mdc-option-active,
+      &.mdc-list-item--selected {
+        background: var(--selected-color, rgba(99, 102, 241, 0.08)) !important;
+      }
+    }
+  }
+}

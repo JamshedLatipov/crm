@@ -32,16 +32,33 @@ export class DealsService {
 
   // === CRUD операции ===
   // Can return either full array or a paged response { items, total }
-  listDeals(page?: number, limit?: number): Observable<Deal[] | { items: Deal[]; total: number }> {
+  // Extended to support server-side filtering/sorting. All params optional for backward compatibility.
+  listDeals(
+    page?: number,
+    limit?: number,
+    opts?: {
+      q?: string;
+      status?: string;
+      stageId?: string;
+      assignedTo?: string;
+      sortBy?: string;
+      sortDir?: 'asc' | 'desc';
+    }
+  ): Observable<Deal[] | { items: Deal[]; total: number }> {
     let params = new HttpParams();
     if (page != null) params = params.set('page', page.toString());
     if (limit != null) params = params.set('limit', limit.toString());
 
-    const hasParams = params.keys().length > 0;
-    if (hasParams) {
-      return this.http.get<Deal[] | { items: Deal[]; total: number }>(this.apiUrl, { params });
+    if (opts) {
+      if (opts.q) params = params.set('q', opts.q);
+      if (opts.status) params = params.set('status', opts.status);
+      if (opts.stageId) params = params.set('stageId', opts.stageId);
+      if (opts.assignedTo) params = params.set('assignedTo', opts.assignedTo);
+      if (opts.sortBy) params = params.set('sortBy', opts.sortBy);
+      if (opts.sortDir) params = params.set('sortDir', opts.sortDir);
     }
-    return this.http.get<Deal[] | { items: Deal[]; total: number }>(this.apiUrl);
+
+    return this.http.get<Deal[] | { items: Deal[]; total: number }>(this.apiUrl, { params });
   }
 
   getDealById(id: string): Observable<Deal> {

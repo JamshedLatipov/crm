@@ -5,6 +5,9 @@ import { Task } from './task.entity';
 import { TaskHistory } from './task-history.entity';
 import { TaskComment } from './task-comment.entity';
 import { User } from '../user/user.entity';
+import { Lead } from '../leads/lead.entity';
+import { Deal } from '../deals/deal.entity';
+import { CreateTaskDto, UpdateTaskDto } from './task.dto';
 
 @Injectable()
 export class TaskService {
@@ -26,37 +29,106 @@ export class TaskService {
   }
 
   async getComments(taskId: number): Promise<TaskComment[]> {
-    return this.commentRepo.find({ where: { task: { id: taskId } }, order: { createdAt: 'ASC' } });
+    return this.commentRepo.find({ 
+      where: { task: { id: taskId } }, 
+      relations: ['author'],
+      order: { createdAt: 'ASC' } 
+    });
   }
 
-  async create(data: Partial<Task>, userId?: number): Promise<Task> {
-    const task = await this.taskRepo.save(data);
+  async create(data: CreateTaskDto, userId?: number): Promise<Task> {
+    const taskData: any = {
+      title: data.title,
+      description: data.description,
+      status: data.status || 'pending',
+      dueDate: data.dueDate,
+    };
+    
+    if (data.assignedToId) {
+      taskData.assignedTo = { id: data.assignedToId } as User;
+    }
+
+    if (data.leadId) {
+      taskData.lead = { id: data.leadId } as Lead;
+      taskData.leadId = data.leadId;
+    }
+
+    if (data.dealId) {
+      taskData.deal = { id: data.dealId } as Deal;
+      taskData.dealId = data.dealId;
+    }
+    
+    const task = await this.taskRepo.save(taskData);
+    
     await this.historyRepo.save({
       task,
       action: 'created',
       details: data,
-      user: userId ? { id: userId } : null,
+      user: userId ? { id: userId } as User : null,
     });
-    return task;
+    
+    return this.findById(task.id);
   }
 
   async findAll(): Promise<Task[]> {
-    return this.taskRepo.find();
+    return this.taskRepo.find({ relations: ['assignedTo', 'lead', 'deal'] });
+  }
+
+  async findByLeadId(leadId: number): Promise<Task[]> {
+    return this.taskRepo.find({ 
+      where: { leadId },
+      relations: ['assignedTo', 'lead'],
+      order: { dueDate: 'ASC' }
+    });
+  }
+
+  async findByDealId(dealId: string): Promise<Task[]> {
+    return this.taskRepo.find({ 
+      where: { dealId },
+      relations: ['assignedTo', 'deal'],
+      order: { dueDate: 'ASC' }
+    });
   }
 
   async findById(id: number): Promise<Task | null> {
-    return this.taskRepo.findOneBy({ id });
+    return this.taskRepo.findOne({ 
+      where: { id }, 
+      relations: ['assignedTo', 'lead', 'deal'] 
+    });
   }
 
-  async update(id: number, data: Partial<Task>, userId?: number): Promise<Task> {
-    await this.taskRepo.update(id, data);
+  async update(id: number, data: UpdateTaskDto, userId?: number): Promise<Task> {
+    const updateData: any = {
+      title: data.title,
+      description: data.description,
+      status: data.status,
+      dueDate: data.dueDate,
+    };
+    
+    if (data.assignedToId !== undefined) {
+      updateData.assignedTo = data.assignedToId ? { id: data.assignedToId } as User : null;
+    }
+
+    if (data.leadId !== undefined) {
+      updateData.leadId = data.leadId;
+      updateData.lead = data.leadId ? { id: data.leadId } as Lead : null;
+    }
+
+    if (data.dealId !== undefined) {
+      updateData.dealId = data.dealId;
+      updateData.deal = data.dealId ? { id: data.dealId } as Deal : null;
+    }
+    
+    await this.taskRepo.update(id, updateData);
     const updated = await this.findById(id);
+    
     await this.historyRepo.save({
       task: updated,
       action: 'updated',
       details: data,
-      user: userId ? { id: userId } : null,
+      user: userId ? { id: userId } as User : null,
     });
+    
     return updated;
   }
 

@@ -16,9 +16,9 @@ import { Observable, debounceTime, distinctUntilChanged, switchMap, startWith, o
 import { DealsService } from '../../../pipeline/deals.service';
 import { ContactsService } from '../../../contacts/contacts.service';
 import { PipelineService } from '../../../pipeline/pipeline.service';
-import { UsersService, User } from '../../../users/users.service';
 import { Deal, CreateDealDto, UpdateDealDto, Stage, StageType } from '../../../pipeline/dtos';
 import { Contact } from '../../../contacts/contact.interfaces';
+import { UserSelectorComponent } from '../../../shared/components/user-selector/user-selector.component';
 
 export interface DealFormData {
   deal?: Deal;
@@ -43,7 +43,8 @@ export interface DealFormData {
     MatNativeDateModule,
     MatProgressSpinnerModule,
     MatSliderModule,
-    MatAutocompleteModule
+    MatAutocompleteModule,
+    UserSelectorComponent
   ],
   templateUrl: `./deal-form.component.html`,
   styleUrls: [`./deal-form.component.scss`]
@@ -55,7 +56,6 @@ export class DealFormComponent implements OnInit {
   private readonly dealsService = inject(DealsService);
   private readonly contactsService = inject(ContactsService);
   private readonly pipelineService = inject(PipelineService);
-  private readonly usersService = inject(UsersService);
 
   @Input() deal?: Deal;
   @Input() mode: 'create' | 'edit' = 'create';
@@ -64,7 +64,6 @@ export class DealFormComponent implements OnInit {
 
   dealForm!: FormGroup;
   stages: Stage[] = [];
-  availableUsers: User[] = [];
   selectedContact: Contact | null = null;
   filteredContacts!: Observable<Contact[]>;
   isLoading = false;
@@ -84,7 +83,6 @@ export class DealFormComponent implements OnInit {
   ngOnInit() {
     this.initializeForm();
     this.loadStages();
-    this.loadUsers();
     this.setupContactSearch();
     
     if (this.currentDeal) {
@@ -136,22 +134,6 @@ export class DealFormComponent implements OnInit {
     });
   }
 
-  private loadUsers() {
-    this.usersService.getAllManagers().subscribe({
-      next: (users) => {
-        this.availableUsers = users;
-        // Устанавливаем первого доступного пользователя по умолчанию для новой сделки
-        if (users.length > 0 && !this.currentDeal) {
-          const firstAvailableUser = users.find(u => u.isAvailable) || users[0];
-          this.dealForm.patchValue({ assignedTo: firstAvailableUser.id });
-        }
-      },
-      error: (error) => {
-        console.error('Ошибка загрузки пользователей:', error);
-      }
-    });
-  }
-
   private setupContactSearch() {
     const contactSearchControl = this.dealForm.get('contactSearch');
     if (!contactSearchControl) return;
@@ -174,6 +156,14 @@ export class DealFormComponent implements OnInit {
 
     const deal = this.currentDeal;
     
+    // Извлекаем ID из объекта assignedTo, если он пришел как объект
+    const assignedToId = typeof deal.assignedTo === 'object' && deal.assignedTo !== null
+      ? (deal.assignedTo as any).id
+      : deal.assignedTo;
+    
+    console.log('DealForm: assignedTo from API:', deal.assignedTo);
+    console.log('DealForm: extracted assignedToId:', assignedToId);
+    
     this.dealForm.patchValue({
       title: deal.title,
       amount: deal.amount,
@@ -182,7 +172,7 @@ export class DealFormComponent implements OnInit {
       expectedCloseDate: new Date(deal.expectedCloseDate),
       stageId: deal.stageId,
       status: deal.status,
-      assignedTo: deal.assignedTo,
+      assignedTo: assignedToId,
       notes: deal.notes
     });
 
@@ -213,24 +203,6 @@ export class DealFormComponent implements OnInit {
 
   displayContact(contact?: Contact): string {
     return contact ? contact.name : '';
-  }
-
-  /**
-   * Convert internal role code to a human-friendly description used in UI lists.
-   */
-  roleDisplay(role?: string | null): string {
-    if (!role) return '';
-    const map: Record<string, string> = {
-      admin: 'Администратор',
-      sales_manager: 'Менеджер продаж',
-      senior_manager: 'Старший менеджер',
-      team_lead: 'Руководитель команды',
-      account_manager: 'Менеджер аккаунтов',
-      client: 'Клиент',
-      intern: 'Стажёр',
-      support: 'Саппорт',
-    };
-    return map[role] || role;
   }
 
   onSubmit() {

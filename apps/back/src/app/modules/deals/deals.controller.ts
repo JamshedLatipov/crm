@@ -44,6 +44,9 @@ export class DealsController {
     @Query('assignedTo') assignedTo?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('q') q?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortDir') sortDir?: 'asc' | 'desc',
   ) {
     if (stageId) {
       return this.dealsService.getDealsByStage(stageId);
@@ -59,7 +62,11 @@ export class DealsController {
 
     const pageNum = page ? Number(page) : undefined;
     const limitNum = limit ? Number(limit) : undefined;
-    return this.dealsService.listDeals(pageNum, limitNum);
+    return this.dealsService.listDeals(pageNum, limitNum, {
+      q,
+      sortBy,
+      sortDir: sortDir as any
+    });
   }
 
   @Get('overdue')
