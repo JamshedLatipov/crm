@@ -291,6 +291,14 @@
     flex-shrink: 0;
   }
 
+  .emoji-icon {
+    font-size: 16px;
+    line-height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
   .date-info {
     display: flex;
     flex-direction: column;
@@ -349,14 +357,35 @@
   }
 }
 
-// Overdue - past deadline
+// Overdue - past deadline (most critical after SLA)
 .due-date-overdue {
-  background: #fef2f2;
-  color: #b91c1c;
-  border: 1px solid #fecaca;
+  background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+  color: #7f1d1d;
+  border: 2px solid #dc2626;
+  box-shadow: 0 0 10px rgba(220, 38, 38, 0.4);
+  animation: pulse-overdue 2.5s ease-in-out infinite;
 
   .date-icon {
     color: #dc2626;
+    font-weight: bold;
+  }
+
+  .date-relative {
+    font-weight: 700;
+  }
+}
+.due-date-error {
+  background:  #fecaca;
+  color: #7f1d1d;
+  border: 1px solid #dc2626;
+
+  .date-icon {
+    color: #dc2626;
+    font-weight: bold;
+  }
+
+  .date-relative {
+    font-weight: 700;
   }
 }
 
@@ -447,6 +476,15 @@
   }
   50% {
     box-shadow: 0 0 20px rgba(220, 38, 38, 0.6);
+  }
+}
+
+@keyframes pulse-overdue {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(220, 38, 38, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(220, 38, 38, 0.6);
   }
 }
 

@@ -486,6 +486,14 @@
             flex-shrink: 0;
           }
 
+          .emoji-icon {
+            font-size: 18px;
+            line-height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+
           .due-content {
             display: flex;
             flex-direction: column;
@@ -542,12 +550,19 @@
           }
 
           &.due-date-overdue {
-            background: #fef2f2;
-            color: #b91c1c;
-            border: 1px solid #fecaca;
+            background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+            color: #7f1d1d;
+            border: 2px solid #dc2626;
+            box-shadow: 0 0 10px rgba(220, 38, 38, 0.4);
+            animation: pulse-overdue 2.5s ease-in-out infinite;
 
             .due-icon {
               color: #dc2626;
+              font-weight: bold;
+            }
+
+            .due-time {
+              font-weight: 700;
             }
           }
 
@@ -634,6 +649,15 @@
           }
           50% {
             box-shadow: 0 0 24px rgba(220, 38, 38, 0.7);
+          }
+        }
+
+        @keyframes pulse-overdue {
+          0%, 100% {
+            box-shadow: 0 0 10px rgba(220, 38, 38, 0.4);
+          }
+          50% {
+            box-shadow: 0 0 16px rgba(220, 38, 38, 0.6);
           }
         }
 

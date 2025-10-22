@@ -253,23 +253,24 @@ export class TaskListComponent implements OnInit {
     if (task?.taskType?.timeFrameSettings) {
       const settings = task.taskType.timeFrameSettings;
       
-      // Проверяем SLA (приоритет выше остальных)
-      if (settings.slaResponseTime && diffMinutes < settings.slaResponseTime) {
+      // Проверяем SLA (приоритет выше остальных), только если еще не просрочено
+      if (settings.slaResponseTime && diffMinutes > 0 && diffMinutes < settings.slaResponseTime) {
         return 'due-date-sla-warning';
       }
       
-      // Проверяем предупреждение перед дедлайном
-      if (settings.warningBeforeDeadline && diffMinutes < settings.warningBeforeDeadline) {
+      // Проверяем предупреждение перед дедлайном, только если еще не просрочено
+      if (settings.warningBeforeDeadline && diffMinutes > 0 && diffMinutes < settings.warningBeforeDeadline) {
         return 'due-date-warning-zone';
       }
       
-      // Проверяем напоминание
-      if (settings.reminderBeforeDeadline && diffMinutes < settings.reminderBeforeDeadline) {
+      // Проверяем напоминание, только если еще не просрочено
+      if (settings.reminderBeforeDeadline && diffMinutes > 0 && diffMinutes < settings.reminderBeforeDeadline) {
         return 'due-date-reminder';
       }
     }
     
     // Стандартная логика
+    if (diffMinutes < 0) return 'due-date-error';
     if (diffDays < 0) return 'due-date-overdue';
     if (diffDays <= 1) return 'due-date-urgent';
     if (diffDays <= 3) return 'due-date-soon';
@@ -300,20 +301,19 @@ export class TaskListComponent implements OnInit {
     if (task?.taskType?.timeFrameSettings) {
       const settings = task.taskType.timeFrameSettings;
       
-      if (settings.slaResponseTime && diffMinutes < settings.slaResponseTime) {
+      if (settings.slaResponseTime && diffMinutes > 0 && diffMinutes < settings.slaResponseTime) {
         return 'flash_on'; // SLA критично
       }
       
-      if (settings.warningBeforeDeadline && diffMinutes < settings.warningBeforeDeadline) {
+      if (settings.warningBeforeDeadline && diffMinutes > 0 && diffMinutes < settings.warningBeforeDeadline) {
         return 'warning_amber'; // Предупреждение
       }
       
-      if (settings.reminderBeforeDeadline && diffMinutes < settings.reminderBeforeDeadline) {
+      if (settings.reminderBeforeDeadline && diffMinutes > 0 && diffMinutes < settings.reminderBeforeDeadline) {
         return 'notifications_active'; // Напоминание
       }
     }
-    
-    if (diffDays < 0) return 'error';
+    if (diffMinutes < 0) return 'error';
     if (diffDays <= 1) return 'warning';
     return 'event';
   }
@@ -370,9 +370,21 @@ export class TaskListComponent implements OnInit {
       }
     }
     
-    // Стандартная логика
-    if (diffDays < 0) {
-      const overdueDays = Math.abs(diffDays);
+    // Стандартная логика - проверяем по минутам для точности
+    if (diffMinutes < 0) {
+      const overdueMins = Math.abs(diffMinutes);
+      if (overdueMins < 60) {
+        return `Просрочено на ${overdueMins} мин`;
+      }
+      if (overdueMins < 1440) { // Меньше суток
+        const hours = Math.floor(overdueMins / 60);
+        const mins = overdueMins % 60;
+        if (mins > 0) {
+          return `Просрочено на ${hours}ч ${mins}мин`;
+        }
+        return `Просрочено на ${hours}ч`;
+      }
+      const overdueDays = Math.floor(overdueMins / 1440);
       if (overdueDays === 1) return 'Просрочено на 1 день';
       if (overdueDays < 5) return `Просрочено на ${overdueDays} дня`;
       return `Просрочено на ${overdueDays} дней`;
@@ -425,31 +437,63 @@ export class TaskListComponent implements OnInit {
     if (task?.taskType?.timeFrameSettings) {
       const settings = task.taskType.timeFrameSettings;
 
-      // SLA критично
-      if (settings.slaResponseTime && diffMinutes < settings.slaResponseTime) {
-        if (diffMinutes < 0) {
-          return '⚡ Критично! SLA нарушен - требуется немедленное реагирование';
-        }
+      // SLA критично - только если еще не просрочено
+      if (settings.slaResponseTime && diffMinutes > 0 && diffMinutes < settings.slaResponseTime) {
         return `⚡ Критично! Осталось ${diffMinutes} мин до нарушения SLA (${settings.slaResponseTime} мин)`;
       }
 
-      // Предупреждение
-      if (settings.warningBeforeDeadline && diffMinutes < settings.warningBeforeDeadline) {
+      // Предупреждение - только если еще не просрочено
+      if (settings.warningBeforeDeadline && diffMinutes > 0 && diffMinutes < settings.warningBeforeDeadline) {
+        if (diffMinutes < 60) {
+          const warningHours = Math.floor(settings.warningBeforeDeadline / 60);
+          return `⚠️ Предупреждение! До дедлайна осталось ${diffMinutes} мин - зона предупреждения (${warningHours}ч)`;
+        }
         const hours = Math.floor(diffMinutes / 60);
-        return `⚠️ Предупреждение! До дедлайна осталось ${hours}ч - зона предупреждения (${Math.floor(settings.warningBeforeDeadline / 60)}ч)`;
+        const mins = diffMinutes % 60;
+        const warningHours = Math.floor(settings.warningBeforeDeadline / 60);
+        if (mins > 0) {
+          return `⚠️ Предупреждение! До дедлайна осталось ${hours}ч ${mins}мин - зона предупреждения (${warningHours}ч)`;
+        }
+        return `⚠️ Предупреждение! До дедлайна осталось ${hours}ч - зона предупреждения (${warningHours}ч)`;
       }
 
-      // Напоминание
-      if (settings.reminderBeforeDeadline && diffMinutes < settings.reminderBeforeDeadline) {
+      // Напоминание - только если еще не просрочено
+      if (settings.reminderBeforeDeadline && diffMinutes > 0 && diffMinutes < settings.reminderBeforeDeadline) {
+        if (diffMinutes < 60) {
+          const reminderHours = Math.floor(settings.reminderBeforeDeadline / 60);
+          return `🔔 Напоминание: до дедлайна осталось ${diffMinutes} мин - зона напоминания (${reminderHours}ч)`;
+        }
         const hours = Math.floor(diffMinutes / 60);
-        return `🔔 Напоминание: до дедлайна осталось ${hours}ч ${diffMinutes % 60}мин - зона напоминания (${Math.floor(settings.reminderBeforeDeadline / 60)}ч)`;
+        const mins = diffMinutes % 60;
+        const reminderHours = Math.floor(settings.reminderBeforeDeadline / 60);
+        if (mins > 0) {
+          return `🔔 Напоминание: до дедлайна осталось ${hours}ч ${mins}мин - зона напоминания (${reminderHours}ч)`;
+        }
+        return `🔔 Напоминание: до дедлайна осталось ${hours}ч - зона напоминания (${reminderHours}ч)`;
       }
     }
 
     // Стандартные подсказки
     if (diffMinutes < 0) {
-      const overdueDays = Math.abs(Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-      return `❌ Просрочено на ${overdueDays} ${overdueDays === 1 ? 'день' : 'дней'}`;
+      const absDiffMs = Math.abs(diffMs);
+      const totalMinutes = Math.floor(absDiffMs / (1000 * 60));
+      
+      if (totalMinutes < 60) {
+        return `❌ Просрочено на ${totalMinutes} мин`;
+      }
+      
+      const hours = Math.floor(totalMinutes / 60);
+      const mins = totalMinutes % 60;
+      
+      if (hours < 24) {
+        if (mins > 0) {
+          return `❌ Просрочено на ${hours} ${this.getHoursText(hours)} ${mins} мин`;
+        }
+        return `❌ Просрочено на ${hours} ${this.getHoursText(hours)}`;
+      }
+      
+      const days = Math.floor(totalMinutes / (60 * 24));
+      return `❌ Просрочено на ${days} ${days === 1 ? 'день' : days < 5 ? 'дня' : 'дней'}`;
     }
 
     const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
