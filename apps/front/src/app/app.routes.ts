@@ -15,9 +15,9 @@ import { DealsComponent } from './deals/deals.component';
 import { DealDetailComponent } from './deals/components/deal-detail.component/deal-detail.component';
 import { PipelineComponent } from './pipeline/pipeline.component';
 import { CreateStageComponent } from './pipeline/create-stage.component';
-import { TaskListComponent } from './tasks/task-list.component';
-import { TaskFormComponent } from './tasks/task-form.component';
-import { TaskDetailComponent } from './tasks/task-detail.component';
+import { TaskListComponent } from './tasks/task-list/task-list.component';
+import { TaskFormComponent } from './tasks/task-form/task-form.component';
+import { TaskDetailComponent } from './tasks/task-detail/task-detail.component';
 import { TaskTypesManagerComponent } from './components/task-types-manager.component';
 import { usersRoutes } from './pages/users/users.routes';
 

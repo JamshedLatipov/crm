@@ -20,7 +20,7 @@ import { DealHistoryStatsComponent } from '../deal-history-stats.component';
 import { CommentsComponent } from '../../../shared/components/comments/comments.component';
 import { CommentEntityType } from '../../../shared/interfaces/comment.interface';
 import { AssignUserDialogComponent } from '../assign-user-dialog.component';
-import { TaskListWidgetComponent } from '../../../tasks/task-list-widget.component';
+import { TaskListWidgetComponent } from '../../../tasks/components/task-list-widget.component';
 
 @Component({
   selector: 'app-deal-detail',

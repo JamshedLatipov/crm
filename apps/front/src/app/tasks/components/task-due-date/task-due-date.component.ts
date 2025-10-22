@@ -1,218 +1,63 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatDividerModule } from '@angular/material/divider';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatInputModule } from '@angular/material/input';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { TasksService, TaskDto, TaskComment } from './tasks.service';
-import { AuthService } from '../auth/auth.service';
-import { HumanDatePipe } from '../shared/pipes/human-date.pipe';
-import { RelativeTimePipe } from '../shared/pipes/relative-time.pipe';
+import { HumanDatePipe } from '../../../shared/pipes/human-date.pipe';
+
+interface TaskForDueDate {
+  status?: string;
+  dueDate?: string;
+  updatedAt?: string;
+  taskType?: {
+    timeFrameSettings?: {
+      slaResponseTime?: number;
+      warningBeforeDeadline?: number;
+      reminderBeforeDeadline?: number;
+    };
+  };
+}
 
 @Component({
-  selector: 'app-task-detail',
+  selector: 'app-task-due-date',
   standalone: true,
   imports: [
     CommonModule,
-    FormsModule,
-    RouterModule,
-    MatCardModule,
-    MatButtonModule,
     MatIconModule,
-    MatChipsModule,
-    MatDividerModule,
-    MatProgressSpinnerModule,
-    MatInputModule,
-    MatFormFieldModule,
-    MatSelectModule,
     MatTooltipModule,
-    HumanDatePipe,
-    RelativeTimePipe
+    HumanDatePipe
   ],
-  templateUrl: './task-detail.component.html',
-  styleUrls: ['./task-detail.component.scss']
+  template: `
+    <div class="due-date-wrapper" 
+         [ngClass]="getDueDateClass()"
+         [matTooltip]="getDueDateTooltip()"
+         matTooltipPosition="above">
+      @let icon = getDueDateIcon();
+      @if (icon === '❌') {
+        <span class="due-icon emoji-icon">❌</span>
+      } @else {
+        <mat-icon class="due-icon">{{ icon }}</mat-icon>
+      }
+      <div class="due-content">
+        <div class="due-date-value">{{ task.dueDate | humanDate:showTime }}</div>
+        <div class="due-relative">{{ getRelativeDueDate() }}</div>
+      </div>
+    </div>
+  `,
+  styleUrls: ['./task-due-date.component.scss']
 })
-export class TaskDetailComponent implements OnInit {
-  private route = inject(ActivatedRoute);
-  private router = inject(Router);
-  private tasksService = inject(TasksService);
-  private snackBar = inject(MatSnackBar);
-  private auth = inject(AuthService);
-  
-  task = signal<TaskDto | null>(null);
-  comments = signal<TaskComment[]>([]);
-  isLoading = signal(true);
-  isLoadingComments = signal(false);
-
-  // Description expand/collapse
-  descExpanded = signal<boolean>(false);
-  
-  newCommentText = '';
-  isSendingComment = false;
-  
-  taskId?: number;
-
-  // Статусы для выбора
-  statusOptions = [
-    { value: 'pending', label: 'В ожидании', color: '#f59e0b' },
-    { value: 'in_progress', label: 'В работе', color: '#3b82f6' },
-    { value: 'done', label: 'Завершено', color: '#10b981' },
-    { value: 'overdue', label: 'Просрочено', color: '#ef4444' }
-  ];
-
-  ngOnInit() {
-    const id = this.route.snapshot.paramMap.get('id');
-    if (id) {
-      this.taskId = Number(id);
-      this.loadTask();
-      this.loadComments();
-    } else {
-      this.router.navigate(['/tasks']);
-    }
-  }
-
-  toggleDesc() {
-    this.descExpanded.update(v => !v);
-  }
-  
-  loadTask() {
-    if (!this.taskId) return;
-    
-    this.isLoading.set(true);
-    this.tasksService.get(this.taskId).subscribe({
-      next: (task) => {
-        this.task.set(task);
-        this.isLoading.set(false);
-      },
-      error: (err) => {
-        console.error('Error loading task:', err);
-        this.snackBar.open('Ошибка загрузки задачи', 'OK', { duration: 3000 });
-        this.isLoading.set(false);
-      }
-    });
-  }
-  
-  loadComments() {
-    if (!this.taskId) return;
-    
-    this.isLoadingComments.set(true);
-    this.tasksService.getComments(this.taskId).subscribe({
-      next: (comments) => {
-        this.comments.set(comments);
-        this.isLoadingComments.set(false);
-      },
-      error: (err) => {
-        console.error('Error loading comments:', err);
-        this.isLoadingComments.set(false);
-      }
-    });
-  }
-  
-  sendComment() {
-    if (!this.newCommentText.trim() || !this.taskId) return;
-    
-    const userData = this.auth.getUserData();
-    if (!userData?.sub) {
-      this.snackBar.open('Необходимо авторизоваться', 'OK', { duration: 3000 });
-      return;
-    }
-    
-    this.isSendingComment = true;
-    this.tasksService.addComment(this.taskId, userData.sub, this.newCommentText).subscribe({
-      next: (comment) => {
-        console.log('Comment received:', comment);
-        this.comments.update(comments => [...comments, comment]);
-        this.newCommentText = '';
-        this.isSendingComment = false;
-        this.snackBar.open('Комментарий добавлен', 'OK', { duration: 2000 });
-      },
-      error: (err) => {
-        console.error('Error sending comment:', err);
-        this.snackBar.open('Ошибка отправки комментария', 'OK', { duration: 3000 });
-        this.isSendingComment = false;
-      }
-    });
-  }
-  
-  editTask() {
-    if (this.taskId) {
-      this.router.navigate([`/tasks/edit/${this.taskId}`]);
-    }
-  }
-  
-  deleteTask() {
-    if (!this.taskId) return;
-    
-    if (confirm('Вы уверены, что хотите удалить эту задачу?')) {
-      this.tasksService.delete(this.taskId).subscribe({
-        next: () => {
-          this.snackBar.open('Задача удалена', 'OK', { duration: 3000 });
-          this.router.navigate(['/tasks']);
-        },
-        error: (err) => {
-          console.error('Error deleting task:', err);
-          this.snackBar.open('Ошибка удаления задачи', 'OK', { duration: 3000 });
-        }
-      });
-    }
-  }
-  
-  goBack() {
-    this.router.navigate(['/tasks']);
-  }
-
-  changeStatus(newStatus: string) {
-    if (!this.taskId || !this.task()) return;
-    
-    this.tasksService.update(this.taskId, { status: newStatus }).subscribe({
-      next: (updatedTask) => {
-        this.task.set(updatedTask);
-        this.snackBar.open('Статус обновлён', 'OK', { duration: 2000 });
-      },
-      error: (err) => {
-        console.error('Error updating status:', err);
-        this.snackBar.open('Ошибка обновления статуса', 'OK', { duration: 3000 });
-      }
-    });
-  }
-  
-  getStatusColor(status: string): string {
-    const colors: Record<string, string> = {
-      pending: 'warn',
-      in_progress: 'accent',
-      done: 'primary',
-      overdue: 'warn'
-    };
-    return colors[status] || 'default';
-  }
-  
-  getStatusLabel(status: string): string {
-    const labels: Record<string, string> = {
-      pending: 'В ожидании',
-      in_progress: 'В работе',
-      done: 'Завершено',
-      overdue: 'Просрочено'
-    };
-    return labels[status] || status;
-  }
+export class TaskDueDateComponent {
+  @Input({ required: true }) task!: TaskForDueDate;
+  @Input() showTime = false; // true для детальной страницы, false для таблицы
 
   // Определяет класс для дедлайна в зависимости от срока и настроек типа задачи
-  getDueDateClass(dueDate: string, status: string): string {
+  getDueDateClass(): string {
+    if (!this.task.dueDate) return 'due-date-normal';
+    
     // Проверяем, была ли задача просрочена при закрытии
-    if (status === 'done') {
-      const task = this.task();
-      if (task?.updatedAt && task?.dueDate) {
-        const closedAt = new Date(task.updatedAt);
-        const due = new Date(task.dueDate);
+    if (this.task.status === 'done') {
+      if (this.task.updatedAt && this.task.dueDate) {
+        const closedAt = new Date(this.task.updatedAt);
+        const due = new Date(this.task.dueDate);
         if (closedAt > due) {
           return 'due-date-done-late'; // Закрыта с опозданием
         }
@@ -220,16 +65,15 @@ export class TaskDetailComponent implements OnInit {
       return 'due-date-done'; // Закрыта вовремя
     }
     
-    const task = this.task();
     const now = new Date();
-    const due = new Date(dueDate);
+    const due = new Date(this.task.dueDate);
     const diffMs = due.getTime() - now.getTime();
     const diffMinutes = Math.ceil(diffMs / (1000 * 60));
     const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
     
     // Если есть тип задачи с настройками
-    if (task?.taskType?.timeFrameSettings) {
-      const settings = task.taskType.timeFrameSettings;
+    if (this.task.taskType?.timeFrameSettings) {
+      const settings = this.task.taskType.timeFrameSettings;
       
       // Проверяем SLA (приоритет выше остальных), только если еще не просрочено
       if (settings.slaResponseTime && diffMinutes > 0 && diffMinutes < settings.slaResponseTime) {
@@ -248,20 +92,21 @@ export class TaskDetailComponent implements OnInit {
     }
     
     // Стандартная логика
-    if (diffDays < 0) return 'due-date-overdue';
+    if (diffMinutes < 0) return 'due-date-overdue';
     if (diffDays <= 1) return 'due-date-urgent';
     if (diffDays <= 3) return 'due-date-soon';
     return 'due-date-normal';
   }
 
   // Определяет иконку для дедлайна с учетом настроек типа
-  getDueDateIcon(dueDate: string, status: string): string {
+  getDueDateIcon(): string {
+    if (!this.task.dueDate) return 'event';
+    
     // Проверяем, была ли задача просрочена при закрытии
-    if (status === 'done') {
-      const task = this.task();
-      if (task?.updatedAt && task?.dueDate) {
-        const closedAt = new Date(task.updatedAt);
-        const due = new Date(task.dueDate);
+    if (this.task.status === 'done') {
+      if (this.task.updatedAt && this.task.dueDate) {
+        const closedAt = new Date(this.task.updatedAt);
+        const due = new Date(this.task.dueDate);
         if (closedAt > due) {
           return 'schedule'; // Иконка часов для закрытых с опозданием
         }
@@ -269,16 +114,15 @@ export class TaskDetailComponent implements OnInit {
       return 'check_circle'; // Галочка для закрытых вовремя
     }
     
-    const task = this.task();
     const now = new Date();
-    const due = new Date(dueDate);
+    const due = new Date(this.task.dueDate);
     const diffMs = due.getTime() - now.getTime();
     const diffMinutes = Math.ceil(diffMs / (1000 * 60));
     const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
     
     // Если есть настройки типа задачи
-    if (task?.taskType?.timeFrameSettings) {
-      const settings = task.taskType.timeFrameSettings;
+    if (this.task.taskType?.timeFrameSettings) {
+      const settings = this.task.taskType.timeFrameSettings;
       
       if (settings.slaResponseTime && diffMinutes > 0 && diffMinutes < settings.slaResponseTime) {
         return 'flash_on'; // SLA критично
@@ -292,62 +136,62 @@ export class TaskDetailComponent implements OnInit {
         return 'notifications_active'; // Напоминание
       }
     }
-    if (diffMinutes < 0) return 'error';
-    if (diffDays < 0) return 'error'; // Эмодзи для просроченных задач
+    
+    if (diffMinutes < 0) return '❌'; // Эмодзи для просроченных задач
     if (diffDays <= 1) return 'warning';
     return 'event';
   }
 
   // Возвращает человекочитаемое относительное время с учетом настроек типа
-  getRelativeDueDate(dueDate: string, status: string): string {
-    if (status === 'done') return 'Завершено';
+  getRelativeDueDate(): string {
+    if (!this.task.dueDate) return '—';
+    if (this.task.status === 'done') return 'Завершено';
     
-    const task = this.task();
     const now = new Date();
-    const due = new Date(dueDate);
+    const due = new Date(this.task.dueDate);
     const diffMs = due.getTime() - now.getTime();
     const diffMinutes = Math.ceil(diffMs / (1000 * 60));
     const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
     
     // Если есть настройки типа задачи - показываем более детальную информацию
-    if (task?.taskType?.timeFrameSettings) {
-      const settings = task.taskType.timeFrameSettings;
+    if (this.task.taskType?.timeFrameSettings) {
+      const settings = this.task.taskType.timeFrameSettings;
       
       // SLA критично
       if (settings.slaResponseTime && diffMinutes < settings.slaResponseTime && diffMinutes > 0) {
         const minutesLeft = diffMinutes;
         if (minutesLeft < 60) {
-          return `SLA: осталось ${minutesLeft} мин`;
+          return `SLA: ${minutesLeft} мин`;
         }
         const hours = Math.floor(minutesLeft / 60);
         const mins = minutesLeft % 60;
-        return `SLA: ${hours}ч ${mins}мин до нарушения`;
+        return `SLA: ${hours}ч ${mins}мин`;
       }
       
       // Предупреждение
       if (settings.warningBeforeDeadline && diffMinutes < settings.warningBeforeDeadline && diffMinutes > 0) {
         if (diffMinutes < 60) {
-          return `Осталось ${diffMinutes} мин до дедлайна`;
+          return `${diffMinutes} мин до дедлайна`;
         }
         const hours = Math.floor(diffMinutes / 60);
         const mins = diffMinutes % 60;
         if (mins > 0) {
-          return `Осталось ${hours} ${this.getHoursText(hours)} ${mins} мин до дедлайна`;
+          return `${hours} ${this.getHoursText(hours)} ${mins} мин до дедлайна`;
         }
-        return `Осталось ${hours} ${this.getHoursText(hours)} до дедлайна`;
+        return `${hours} ${this.getHoursText(hours)} до дедлайна`;
       }
       
       // Напоминание
       if (settings.reminderBeforeDeadline && diffMinutes < settings.reminderBeforeDeadline && diffMinutes > 0) {
         if (diffMinutes < 60) {
-          return `Напоминание: ${diffMinutes} мин`;
+          return `${diffMinutes} мин`;
         }
         const hours = Math.floor(diffMinutes / 60);
         const mins = diffMinutes % 60;
         if (mins > 0) {
-          return `Напоминание: ${hours}ч ${mins}мин`;
+          return `${hours}ч ${mins}мин`;
         }
-        return `Напоминание: ${hours}ч`;
+        return `${hours}ч`;
       }
     }
     
@@ -384,13 +228,14 @@ export class TaskDetailComponent implements OnInit {
   }
 
   // Возвращает текст подсказки для иконки дедлайна
-  getDueDateTooltip(dueDate: string, status: string): string {
-    if (status === 'done') {
+  getDueDateTooltip(): string {
+    if (!this.task.dueDate) return 'Дедлайн не указан';
+    
+    if (this.task.status === 'done') {
       // Проверяем, была ли задача просрочена при закрытии
-      const task = this.task();
-      if (task?.updatedAt && task?.dueDate) {
-        const closedAt = new Date(task.updatedAt);
-        const due = new Date(task.dueDate);
+      if (this.task.updatedAt && this.task.dueDate) {
+        const closedAt = new Date(this.task.updatedAt);
+        const due = new Date(this.task.dueDate);
         if (closedAt > due) {
           const diffMs = closedAt.getTime() - due.getTime();
           const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
@@ -411,15 +256,13 @@ export class TaskDetailComponent implements OnInit {
     }
 
     const now = new Date();
-    const due = new Date(dueDate);
+    const due = new Date(this.task.dueDate);
     const diffMs = due.getTime() - now.getTime();
     const diffMinutes = Math.ceil(diffMs / (1000 * 60));
 
-    const currentTask = this.task();
-    
     // Если есть настройки типа задачи
-    if (currentTask?.taskType?.timeFrameSettings) {
-      const settings = currentTask.taskType.timeFrameSettings;
+    if (this.task.taskType?.timeFrameSettings) {
+      const settings = this.task.taskType.timeFrameSettings;
 
       // SLA критично - только если еще не просрочено
       if (settings.slaResponseTime && diffMinutes > 0 && diffMinutes < settings.slaResponseTime) {

@@ -31,7 +31,7 @@ import { CommentEntityType } from '../../../shared/interfaces/comment.interface'
 import { LeadStatusComponent } from '../lead-status/lead-status.component';
 import { LeadPriorityComponent } from '../lead-priority/lead-priority.component';
 import { LeadActionsComponent } from '../lead-actions/lead-actions.component';
-import { TaskListWidgetComponent } from '../../../tasks/task-list-widget.component';
+import { TaskListWidgetComponent } from '../../../tasks/components/task-list-widget.component';
 
 interface HistoryEntry {
   field: string;

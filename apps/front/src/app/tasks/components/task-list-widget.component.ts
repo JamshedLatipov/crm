@@ -6,7 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { TasksService, TaskDto } from './tasks.service';
+import { TasksService, TaskDto } from '../tasks.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 @Component({

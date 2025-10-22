@@ -213,16 +213,7 @@
         <th mat-header-cell *matHeaderCellDef mat-sort-header>Срок</th>
         <td mat-cell *matCellDef="let task">
           <ng-container *ngIf="task.dueDate; else noDueDate">
-            <div class="due-date" 
-                 [ngClass]="getDueDateClass(task.dueDate, task.status, task)"
-                 [matTooltip]="getDueDateTooltip(task.dueDate, task.status, task)"
-                 matTooltipPosition="above">
-              <mat-icon class="date-icon">{{ getDueDateIcon(task.dueDate, task.status, task) }}</mat-icon>
-              <div class="date-info">
-                <div class="date-value">{{ task.dueDate | humanDate }}</div>
-                <div class="date-relative">{{ getRelativeDueDate(task.dueDate, task.status, task) }}</div>
-              </div>
-            </div>
+            <app-task-due-date [task]="task" [showTime]="false"></app-task-due-date>
           </ng-container>
           <ng-template #noDueDate>
             <span class="muted">—</span>

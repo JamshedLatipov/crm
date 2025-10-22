@@ -157,16 +157,7 @@
               </span>
               <span class="info-value">
                 <ng-container *ngIf="task()?.dueDate; else noDueDate">
-                  <div class="due-date-detail" 
-                       [ngClass]="getDueDateClass(task()?.dueDate, task()?.status)"
-                       [matTooltip]="getDueDateTooltip(task()?.dueDate, task()?.status)"
-                       matTooltipPosition="above">
-                      <mat-icon class="due-icon">{{ getDueDateIcon(task()?.dueDate, task()?.status) }}</mat-icon>
-                    <div class="due-content">
-                      <div class="due-date-value">{{ task()?.dueDate | humanDate:true }}</div>
-                      <div class="due-relative">{{ getRelativeDueDate(task()?.dueDate, task()?.status) }}</div>
-                    </div>
-                  </div>
+                  <app-task-due-date [task]="task()!" [showTime]="true"></app-task-due-date>
                 </ng-container>
                 <ng-template #noDueDate>
                   <span class="muted">Не указан</span>
