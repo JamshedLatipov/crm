@@ -438,6 +438,217 @@
           }
         }
 
+        // Task Type Badge
+        .task-type-badge {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 8px;
+
+          .type-icon-badge {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+
+            mat-icon {
+              color: white;
+              font-size: 18px;
+              width: 18px;
+              height: 18px;
+            }
+          }
+
+          .type-name {
+            font-weight: 500;
+            color: #1e293b;
+          }
+        }
+
+        // Due Date Detail
+        .due-date-detail {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 8px;
+          padding: 8px 12px;
+          border-radius: 8px;
+          transition: all 0.2s;
+          min-height: 42px;
+
+          .due-icon {
+            font-size: 18px;
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+          }
+
+          .due-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            text-align: right;
+            min-width: 0;
+            flex: 1;
+
+            .due-date-value {
+              font-weight: 600;
+              font-size: 13px;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
+
+            .due-relative {
+              font-size: 11px;
+              opacity: 0.9;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
+          }
+
+          &.due-date-normal {
+            background: #f0fdf4;
+            color: #15803d;
+            border: 1px solid #86efac;
+
+            .due-icon {
+              color: #16a34a;
+            }
+          }
+
+          &.due-date-soon {
+            background: #fefce8;
+            color: #a16207;
+            border: 1px solid #fde047;
+
+            .due-icon {
+              color: #ca8a04;
+            }
+          }
+
+          &.due-date-urgent {
+            background: #fff7ed;
+            color: #c2410c;
+            border: 1px solid #fed7aa;
+
+            .due-icon {
+              color: #ea580c;
+            }
+          }
+
+          &.due-date-overdue {
+            background: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+
+            .due-icon {
+              color: #dc2626;
+            }
+          }
+
+          &.due-date-done {
+            background: #f3f4f6;
+            color: #6b7280;
+            border: 1px solid #d1d5db;
+            opacity: 0.7;
+
+            .due-icon {
+              color: #9ca3af;
+            }
+          }
+
+          &.due-date-done-late {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fbbf24;
+            opacity: 0.85;
+
+            .due-icon {
+              color: #d97706;
+            }
+            
+            .due-date-value {
+              font-weight: 600;
+            }
+          }
+
+          // Task Type specific styles
+
+          &.due-date-sla-warning {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            color: #991b1b;
+            border: 2px solid #dc2626;
+            box-shadow: 0 0 16px rgba(220, 38, 38, 0.4);
+            animation: pulse-sla 2s ease-in-out infinite;
+
+            .due-icon {
+              color: #dc2626;
+              animation: shake 0.5s ease-in-out infinite;
+            }
+
+            .due-relative {
+              font-weight: 700;
+            }
+          }
+
+          &.due-date-warning-zone {
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+            color: #92400e;
+            border: 2px solid #f59e0b;
+            box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
+
+            .due-icon {
+              color: #f59e0b;
+            }
+
+            .due-relative {
+              font-weight: 600;
+            }
+          }
+
+          &.due-date-reminder {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            color: #1e40af;
+            border: 2px solid #3b82f6;
+            box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
+
+            .due-icon {
+              color: #3b82f6;
+            }
+
+            .due-relative {
+              font-weight: 600;
+            }
+          }
+        }
+
+        // Animations
+        @keyframes pulse-sla {
+          0%, 100% {
+            box-shadow: 0 0 16px rgba(220, 38, 38, 0.4);
+          }
+          50% {
+            box-shadow: 0 0 24px rgba(220, 38, 38, 0.7);
+          }
+        }
+
+        @keyframes shake {
+          0%, 100% {
+            transform: translateX(0);
+          }
+          25% {
+            transform: translateX(-2px);
+          }
+          75% {
+            transform: translateX(2px);
+          }
+        }
+
         .muted {
           color: #94a3b8;
           font-style: italic;

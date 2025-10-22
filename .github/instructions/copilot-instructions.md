@@ -1,3 +1,7 @@
+---
+applyTo: '**'
+---
+
 # AI Assistant Instructions for crm Monorepo
 
 Purpose: Enable AI coding agents to contribute effectively to this Nx-based CRM monorepo (NestJS backend, Angular (Vite) frontend, Asterisk + TURN infra).

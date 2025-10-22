@@ -21,6 +21,9 @@ export class CreateTaskDto {
 
   @ApiProperty({ required: false, description: 'ID сделки, к которой привязана задача' })
   dealId?: string;
+
+  @ApiProperty({ required: false, description: 'ID типа задачи' })
+  taskTypeId?: number;
 }
 
 export class UpdateTaskDto {
@@ -44,4 +47,7 @@ export class UpdateTaskDto {
 
   @ApiProperty({ required: false })
   dealId?: string;
+
+  @ApiProperty({ required: false, description: 'ID типа задачи' })
+  taskTypeId?: number;
 }

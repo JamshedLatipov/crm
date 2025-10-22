@@ -88,7 +88,60 @@
         <div class="form-section">
           <h3 class="section-title">Временные рамки</h3>
           
+          <!-- Тип задачи -->
           <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Тип задачи</mat-label>
+            <mat-select formControlName="taskTypeId" (selectionChange)="onTaskTypeChange($event.value)">
+              <mat-option [value]="null">Без типа</mat-option>
+              <mat-option *ngFor="let type of taskTypes" [value]="type.id">
+                <div class="task-type-option">
+                  <span class="type-icon" [style.background-color]="type.color">
+                    <mat-icon>{{ type.icon || 'task' }}</mat-icon>
+                  </span>
+                  <span class="type-name">{{ type.name }}</span>
+                  <span class="type-duration" *ngIf="type.timeFrameSettings?.defaultDuration">
+                    ({{ type.timeFrameSettings.defaultDuration }} мин)
+                  </span>
+                </div>
+              </mat-option>
+            </mat-select>
+            <mat-icon matPrefix>category</mat-icon>
+          </mat-form-field>
+
+          <!-- Тоггл автоматического расчета -->
+          <div class="auto-calculate-toggle" 
+               [class.with-deadline]="form.get('autoCalculateDueDate')?.value && calculatedDueDate"
+               *ngIf="form.get('taskTypeId')?.value">
+            <div class="toggle-wrapper">
+              <mat-slide-toggle 
+                formControlName="autoCalculateDueDate"
+                color="primary"
+                (change)="onAutoCalculateToggle($event.checked)">
+                <div class="toggle-content">
+                  <mat-icon class="toggle-icon">schedule</mat-icon>
+                  <span class="toggle-label">Автоматический расчет</span>
+                </div>
+              </mat-slide-toggle>
+              <p class="toggle-hint" *ngIf="!form.get('autoCalculateDueDate')?.value">
+                На основе типа задачи
+              </p>
+            </div>
+            
+            <!-- Рассчитанный дедлайн внутри той же плашки -->
+            <div class="deadline-display" *ngIf="form.get('autoCalculateDueDate')?.value && calculatedDueDate">
+              <mat-icon class="deadline-icon">event</mat-icon>
+              <div class="deadline-content">
+                <span class="deadline-label">Дедлайн:</span>
+                <span class="deadline-value">{{ formatDate(calculatedDueDate) }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Датапикер (только если тоггл выключен) -->
+          <mat-form-field 
+            appearance="outline" 
+            class="full-width"
+            *ngIf="!form.get('autoCalculateDueDate')?.value || !form.get('taskTypeId')?.value">
             <mat-label>Срок выполнения</mat-label>
             <input 
               matInput 

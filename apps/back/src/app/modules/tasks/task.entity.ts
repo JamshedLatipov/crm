@@ -3,6 +3,7 @@ import { User } from '../../modules/user/user.entity';
 import { Lead } from '../leads/lead.entity';
 import { Deal } from '../deals/deal.entity';
 import { TaskComment } from './task-comment.entity';
+import { TaskType } from './entities/task-type.entity';
 
 @Entity('tasks')
 export class Task {
@@ -36,6 +37,14 @@ export class Task {
 
   @Column({ nullable: true })
   dealId: string;
+
+  // Тип задачи
+  @ManyToOne(() => TaskType, taskType => taskType.tasks, { nullable: true })
+  @JoinColumn({ name: 'taskTypeId' })
+  taskType: TaskType;
+
+  @Column({ nullable: true })
+  taskTypeId: number;
 
   @Column({ default: 'pending' })
   status: string; // pending, in_progress, done, overdue

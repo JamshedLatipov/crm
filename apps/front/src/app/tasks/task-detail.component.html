@@ -23,7 +23,7 @@
           </mat-form-field>
           <span class="date-info" *ngIf="task()?.createdAt">
             <mat-icon>schedule</mat-icon>
-            {{ task()?.createdAt | date:'dd.MM.yyyy HH:mm' }}
+            {{ task()?.createdAt | humanDate:true }}
           </span>
         </div>
       </div>
@@ -127,13 +127,50 @@
 
             <mat-divider></mat-divider>
 
+            <!-- Task Type -->
+            <div class="info-row">
+              <span class="info-label">
+                <mat-icon>category</mat-icon>
+                Тип задачи
+              </span>
+              <span class="info-value">
+                <ng-container *ngIf="task()?.taskType; else noTaskType">
+                  <div class="task-type-badge">
+                    <div class="type-icon-badge" [style.background-color]="task()?.taskType?.color || '#667eea'">
+                      <mat-icon>{{ task()?.taskType?.icon || 'task' }}</mat-icon>
+                    </div>
+                    <span class="type-name">{{ task()?.taskType?.name }}</span>
+                  </div>
+                </ng-container>
+                <ng-template #noTaskType>
+                  <span class="muted">Не указан</span>
+                </ng-template>
+              </span>
+            </div>
+
+            <mat-divider></mat-divider>
+
             <div class="info-row">
               <span class="info-label">
                 <mat-icon>event</mat-icon>
                 Срок выполнения
               </span>
               <span class="info-value">
-                {{ task()?.dueDate ? (task()?.dueDate | date:'dd.MM.yyyy') : 'Не указан' }}
+                <ng-container *ngIf="task()?.dueDate; else noDueDate">
+                  <div class="due-date-detail" 
+                       [ngClass]="getDueDateClass(task()?.dueDate, task()?.status)"
+                       [matTooltip]="getDueDateTooltip(task()?.dueDate, task()?.status)"
+                       matTooltipPosition="above">
+                    <mat-icon class="due-icon">{{ getDueDateIcon(task()?.dueDate, task()?.status) }}</mat-icon>
+                    <div class="due-content">
+                      <div class="due-date-value">{{ task()?.dueDate | humanDate:true }}</div>
+                      <div class="due-relative">{{ getRelativeDueDate(task()?.dueDate, task()?.status) }}</div>
+                    </div>
+                  </div>
+                </ng-container>
+                <ng-template #noDueDate>
+                  <span class="muted">Не указан</span>
+                </ng-template>
               </span>
             </div>
 
@@ -204,15 +241,20 @@
 
             <div *ngFor="let comment of comments()" class="comment-item">
               <div class="comment-avatar">
-                {{ comment.author?.firstName?.charAt(0) || '?' }}
+                {{ (comment.author?.firstName || 'U')?.charAt(0) }}
               </div>
               <div class="comment-content">
                 <div class="comment-header">
                   <span class="comment-author">
-                    {{ comment.author?.firstName }} {{ comment.author?.lastName }}
+                    <ng-container *ngIf="comment.author; else unknownAuthor">
+                      {{ comment.author.firstName }} {{ comment.author.lastName }}
+                    </ng-container>
+                    <ng-template #unknownAuthor>
+                      <span class="muted">Пользователь</span>
+                    </ng-template>
                   </span>
                   <span class="comment-date">
-                    {{ comment.createdAt | date:'dd.MM.yyyy HH:mm' }}
+                    {{ comment.createdAt | relativeTime }}
                   </span>
                 </div>
                 <div class="comment-text">{{ comment.text }}</div>

@@ -11,6 +11,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { TasksService } from './tasks.service';
 import { ActivatedRoute, RouterModule, Router } from '@angular/router';
 import { UserSelectorComponent } from '../shared/components/user-selector/user-selector.component';
@@ -18,6 +19,9 @@ import { LeadService } from '../leads/services/lead.service';
 import { DealsService } from '../pipeline/deals.service';
 import { Observable, of } from 'rxjs';
 import { map, startWith, catchError } from 'rxjs/operators';
+import { TaskTypeService, TaskType } from '../services/task-type.service';
+import { format } from 'date-fns';
+import { ru } from 'date-fns/locale';
 
 @Component({
   selector: 'app-task-form',
@@ -35,6 +39,7 @@ import { map, startWith, catchError } from 'rxjs/operators';
     MatIconModule,
     MatProgressSpinnerModule,
     MatAutocompleteModule,
+    MatSlideToggleModule,
     UserSelectorComponent
   ],
   templateUrl: './task-form.component.html',
@@ -48,6 +53,7 @@ export class TaskFormComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private snackBar = inject(MatSnackBar);
+  private taskTypeService = inject(TaskTypeService);
 
   form!: FormGroup;
   isEdit = false;
@@ -56,10 +62,12 @@ export class TaskFormComponent implements OnInit {
   dealId?: string;
   isLoading = false;
   isSaving = false;
+  calculatedDueDate: Date | null = null;
   
   // Списки для селекторов
   leads: any[] = [];
   deals: any[] = [];
+  taskTypes: TaskType[] = [];
   filteredLeads$!: Observable<any[]>;
   filteredDeals$!: Observable<any[]>;
   
@@ -70,8 +78,22 @@ export class TaskFormComponent implements OnInit {
     { value: 'overdue', label: 'Просрочено' }
   ];
 
+  // Форматирование даты в человеческом виде
+  formatDate(date: Date | null): string {
+    if (!date) return '';
+    try {
+      return format(date, "d MMMM yyyy 'в' HH:mm", { locale: ru });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return date.toLocaleString('ru-RU');
+    }
+  }
+
   ngOnInit() {
     this.initializeForm();
+    
+    // Загружаем типы задач
+    this.loadTaskTypes();
     
     // Получаем leadId и dealId из query параметров
     this.route.queryParamMap.subscribe(params => {
@@ -101,6 +123,60 @@ export class TaskFormComponent implements OnInit {
     }
   }
   
+  loadTaskTypes() {
+    this.taskTypeService.getAll(false).subscribe({
+      next: (types) => {
+        this.taskTypes = types.sort((a, b) => a.sortOrder - b.sortOrder);
+      },
+      error: (err) => {
+        console.error('Error loading task types:', err);
+        this.snackBar.open('Ошибка загрузки типов задач', 'Закрыть', { duration: 3000 });
+      }
+    });
+  }
+  
+  onTaskTypeChange(taskTypeId: number | null) {
+    if (!taskTypeId) {
+      this.form.patchValue({ autoCalculateDueDate: false });
+      this.calculatedDueDate = null;
+      return;
+    }
+    
+    // Автоматически включаем тоггл если есть тип задачи
+    const selectedType = this.taskTypes.find(t => t.id === taskTypeId);
+    if (selectedType?.timeFrameSettings?.defaultDuration) {
+      this.form.patchValue({ autoCalculateDueDate: true }, { emitEvent: false });
+      this.calculateDueDate(taskTypeId);
+    }
+  }
+
+  onAutoCalculateToggle(checked: boolean) {
+    if (checked) {
+      const taskTypeId = this.form.get('taskTypeId')?.value;
+      if (taskTypeId) {
+        this.calculateDueDate(taskTypeId);
+      }
+    } else {
+      this.calculatedDueDate = null;
+      this.form.patchValue({ dueDate: null });
+    }
+  }
+
+  private calculateDueDate(taskTypeId: number) {
+    this.taskTypeService.calculateDueDate(taskTypeId).subscribe({
+      next: (result) => {
+        if (result.dueDate) {
+          this.calculatedDueDate = new Date(result.dueDate);
+          this.snackBar.open('Дедлайн рассчитан автоматически', 'ОК', { duration: 2000 });
+        }
+      },
+      error: (err) => {
+        console.error('Error calculating due date:', err);
+        this.snackBar.open('Ошибка расчета дедлайна', 'Закрыть', { duration: 3000 });
+      }
+    });
+  }
+  
   initializeForm() {
     this.form = this.fb.group({
       title: ['', [Validators.required, Validators.minLength(3)]],
@@ -108,6 +184,8 @@ export class TaskFormComponent implements OnInit {
       status: ['pending', Validators.required],
       assignedToId: [null],
       dueDate: [null],
+      taskTypeId: [null],
+      autoCalculateDueDate: [false],
       leadId: [null],
       dealId: [null],
       leadSearch: [''],
@@ -231,6 +309,8 @@ export class TaskFormComponent implements OnInit {
           status: task.status || 'pending',
           assignedToId: assignedToId,
           dueDate: task.dueDate ? new Date(task.dueDate) : null,
+          taskTypeId: task.taskTypeId || null,
+          autoCalculateDueDate: false, // При редактировании по умолчанию выключен
           leadId: task.leadId || null,
           dealId: task.dealId || null,
           leadSearch: leadSearchValue,
@@ -264,12 +344,15 @@ export class TaskFormComponent implements OnInit {
       description: formValue.description,
       status: formValue.status,
       assignedToId: formValue.assignedToId,
+      taskTypeId: formValue.taskTypeId,
       leadId: formValue.leadId,
       dealId: formValue.dealId
     };
     
-    // Format date if exists
-    if (formValue.dueDate) {
+    // Используем рассчитанный дедлайн или введенный вручную
+    if (formValue.autoCalculateDueDate && this.calculatedDueDate) {
+      dto.dueDate = this.calculatedDueDate.toISOString();
+    } else if (formValue.dueDate) {
       dto.dueDate = new Date(formValue.dueDate).toISOString();
     }
 

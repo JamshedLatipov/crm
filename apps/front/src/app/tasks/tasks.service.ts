@@ -15,6 +15,8 @@ export interface TaskDto {
   lead?: any;
   dealId?: string;
   deal?: any;
+  taskTypeId?: number;
+  taskType?: any;
   createdAt?: string;
   updatedAt?: string;
 }
