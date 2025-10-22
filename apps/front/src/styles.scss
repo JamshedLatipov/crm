@@ -161,3 +161,21 @@ textarea.mat-input-element:focus {
 .mat-mdc-form-field .mat-mdc-form-field-infix::after {
   display: none !important;
 }
+
+/* Override Material select option icon and pseudo-checkbox spacing globally (overlay) */
+.mat-mdc-option .mat-icon,
+.mat-mdc-option .mat-pseudo-checkbox-full,
+.cdk-overlay-pane .mat-mdc-select-panel .mat-mdc-option .mat-icon,
+.cdk-overlay-pane .mat-mdc-select-panel .mat-mdc-option .mat-pseudo-checkbox-full,
+.cdk-overlay-pane .mat-select-panel .mat-option .mat-icon,
+.cdk-overlay-pane .mat-select-panel .mat-option .mat-pseudo-checkbox-full {
+  margin-right: -8px !important;
+  margin-top: 7px !important;
+}
+
+/* Ensure overlay mat-option aligns children centrally */
+.cdk-overlay-pane .mat-mdc-select-panel .mat-mdc-option,
+.cdk-overlay-pane .mat-select-panel .mat-option {
+  display: flex !important;
+  align-items: center !important;
+}

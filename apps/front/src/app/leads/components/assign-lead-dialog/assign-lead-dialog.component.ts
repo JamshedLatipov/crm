@@ -29,6 +29,7 @@ import { LeadService } from '../../services/lead.service';
 import { Lead } from '../../models/lead.model';
 import { Manager, UserService } from '../../../shared/services/user.service';
 import { UserAvatarComponent } from '../../../shared/components/user-avatar/user-avatar.component';
+import { roleDisplay } from '../../../shared/utils';
 
 interface AssignLeadData {
   lead: Lead;
@@ -77,14 +78,6 @@ export class AssignLeadDialogComponent {
   private readonly formBuilder = inject(FormBuilder);
   private readonly cdr = inject(ChangeDetectorRef);
 
-
-  private roleLabels = {
-    SALES_MANAGER: 'Менеджер по продажам',
-    SENIOR_MANAGER: 'Старший менеджер',
-    TEAM_LEAD: 'Руководитель группы',
-    ACCOUNT_MANAGER: 'Аккаунт-менеджер',
-  };
-
   constructor() {
     this.assignForm = this.formBuilder.group({
       assignmentType: ['single', Validators.required],
@@ -128,14 +121,8 @@ export class AssignLeadDialogComponent {
 
   public getRoleLabel(roles: string[]): string {
     if (!roles || roles.length === 0) return 'Неизвестная роль';
-    const role = roles.find(
-      (r) => this.roleLabels[r as keyof typeof this.roleLabels]
-    );
-    return (
-      this.roleLabels[role as keyof typeof this.roleLabels] ||
-      roles[0] ||
-      'Неизвестная роль'
-    );
+    const role = roles[0]; // Use first role
+    return roleDisplay(role) || 'Неизвестная роль';
   }
 
   public getAssignmentPreview(): string {

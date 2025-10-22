@@ -8,6 +8,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { LeadService } from '../../services/lead.service';
 import { Lead } from '../../models/lead.model';
 import { UserService, Manager } from '../../../shared/services/user.service';
+import { getWorkloadLabel } from '../../../shared/utils';
 
 
 interface ManagerStats {
@@ -40,13 +41,6 @@ export class AssignmentStatsComponent {
   managerStats: ManagerStats[] = [];
 
   private managers: Manager[] = [];
-
-  private workloadLabels = {
-    low: 'Низкая загрузка',
-    medium: 'Средняя загрузка', 
-    high: 'Высокая загрузка',
-    overloaded: 'Перегружен'
-  };
 
   constructor() {
     this.loadManagers();
@@ -115,7 +109,7 @@ export class AssignmentStatsComponent {
   }
 
   getWorkloadLabel(workload: string): string {
-    return this.workloadLabels[workload as keyof typeof this.workloadLabels] || workload;
+    return getWorkloadLabel(workload);
   }
 }
  

@@ -88,25 +88,13 @@
         <div class="form-section">
           <h3 class="section-title">Временные рамки</h3>
           
-          <!-- Тип задачи -->
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Тип задачи</mat-label>
-            <mat-select formControlName="taskTypeId" (selectionChange)="onTaskTypeChange($event.value)">
-              <mat-option [value]="null">Без типа</mat-option>
-              <mat-option *ngFor="let type of taskTypes" [value]="type.id">
-                <div class="task-type-option">
-                  <span class="type-icon" [style.background-color]="type.color">
-                    <mat-icon>{{ type.icon || 'task' }}</mat-icon>
-                  </span>
-                  <span class="type-name">{{ type.name }}</span>
-                  <span class="type-duration" *ngIf="type.timeFrameSettings?.defaultDuration">
-                    ({{ type.timeFrameSettings.defaultDuration }} мин)
-                  </span>
-                </div>
-              </mat-option>
-            </mat-select>
-            <mat-icon matPrefix>category</mat-icon>
-          </mat-form-field>
+          <!-- Тип задачи (вынесен в отдельный компонент) -->
+          <app-task-type-select
+            formControlName="taskTypeId"
+            [taskTypes]="taskTypes"
+            (selectionChange)="onTaskTypeChange($event)"
+            class="full-width">
+          </app-task-type-select>
 
           <!-- Тоггл автоматического расчета -->
           <div class="auto-calculate-toggle" 
@@ -118,7 +106,6 @@
                 color="primary"
                 (change)="onAutoCalculateToggle($event.checked)">
                 <div class="toggle-content">
-                  <mat-icon class="toggle-icon">schedule</mat-icon>
                   <span class="toggle-label">Автоматический расчет</span>
                 </div>
               </mat-slide-toggle>

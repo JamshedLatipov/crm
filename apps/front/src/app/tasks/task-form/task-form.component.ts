@@ -22,6 +22,7 @@ import { map, startWith, catchError } from 'rxjs/operators';
 import { TaskTypeService, TaskType } from '../../services/task-type.service';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import { TaskTypeSelectComponent } from '../components/task-type-select.component';
 
 @Component({
   selector: 'app-task-form',
@@ -40,7 +41,9 @@ import { ru } from 'date-fns/locale';
     MatProgressSpinnerModule,
     MatAutocompleteModule,
     MatSlideToggleModule,
-    UserSelectorComponent
+    UserSelectorComponent,
+    // Task type select component
+    TaskTypeSelectComponent
   ],
   templateUrl: './task-form.component.html',
   styleUrls: ['./task-form.component.scss']

@@ -21,6 +21,7 @@ import { CommentsComponent } from '../../../shared/components/comments/comments.
 import { CommentEntityType } from '../../../shared/interfaces/comment.interface';
 import { AssignUserDialogComponent } from '../assign-user-dialog.component';
 import { TaskListWidgetComponent } from '../../../tasks/components/task-list-widget.component';
+import { getCurrencySymbol, getCurrencyName, translateMetadataKey } from '../../../shared/utils';
 
 @Component({
   selector: 'app-deal-detail',
@@ -107,9 +108,6 @@ export class DealDetailComponent implements OnInit {
     
     this.dealsService.getDealById(id).subscribe({
       next: (deal: Deal) => {
-        console.log('loadDeal response:', deal);
-        console.log('deal.assignedTo:', deal.assignedTo, 'type:', typeof deal.assignedTo);
-        
         this.deal = deal;
         // If backend returned only stageId (string) but not populated stage object,
         // try to fetch the stage by id so the template can render stage.name.
@@ -184,72 +182,17 @@ export class DealDetailComponent implements OnInit {
     if (!this.deal?.meta) return [];
     
     return Object.entries(this.deal.meta).map(([key, value]) => ({
-      key: this.translateMetadataKey(key),
+      key: translateMetadataKey(key),
       value: String(value)
     }));
   }
 
-  translateMetadataKey(key: string): string {
-    const translations: Record<string, string> = {
-      'source': 'Источник',
-      'campaign': 'Кампания',
-      'utm_source': 'UTM источник',
-      'utm_medium': 'UTM канал',
-      'utm_campaign': 'UTM кампания',
-      'utm_content': 'UTM контент',
-      'utm_term': 'UTM термин',
-      'referrer': 'Реферер',
-      'landing_page': 'Посадочная страница',
-      'lead_score': 'Оценка лида',
-      'conversion_date': 'Дата конверсии',
-      'original_lead_id': 'ID исходного лида',
-      'sales_rep': 'Менеджер продаж',
-      'region': 'Регион',
-      'industry': 'Отрасль',
-      'company_size': 'Размер компании',
-      'budget': 'Бюджет',
-      'decision_maker': 'Лицо, принимающее решения',
-      'competitors': 'Конкуренты',
-      'pain_points': 'Болевые точки',
-      'demo_date': 'Дата демонстрации',
-      'proposal_sent_date': 'Дата отправки предложения',
-      'contract_type': 'Тип контракта',
-      'payment_terms': 'Условия оплаты',
-      'delivery_date': 'Дата поставки',
-      'custom_field_1': 'Дополнительное поле 1',
-      'custom_field_2': 'Дополнительное поле 2',
-      'custom_field_3': 'Дополнительное поле 3',
-      'notes': 'Заметки',
-      'tags': 'Теги'
-    };
-
-    return translations[key] || key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
-  }
-
   getCurrencySymbol(currency: string): string {
-    switch (currency) {
-      case 'RUB':
-        return '₽';
-      case 'USD':
-        return '$';
-      case 'EUR':
-        return '€';
-      default:
-        return currency;
-    }
+    return getCurrencySymbol(currency);
   }
 
   getCurrencyName(currency: string): string {
-    switch (currency) {
-      case 'RUB':
-        return 'Рубль';
-      case 'USD':
-        return 'Доллар';
-      case 'EUR':
-        return 'Евро';
-      default:
-        return currency;
-    }
+    return getCurrencyName(currency);
   }
 
   goToLead(leadId: number): void {

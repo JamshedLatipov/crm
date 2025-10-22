@@ -8,6 +8,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { TasksService, TaskDto } from '../tasks.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { taskStatusDisplay } from '../../shared/utils';
 
 @Component({
   selector: 'app-task-list-widget',
@@ -174,12 +175,6 @@ export class TaskListWidgetComponent implements OnInit, OnChanges {
   }
 
   getStatusLabel(status?: string): string {
-    const statusMap: Record<string, string> = {
-      'pending': 'В ожидании',
-      'in_progress': 'В работе',
-      'done': 'Завершено',
-      'overdue': 'Просрочено'
-    };
-    return statusMap[status || 'pending'] || status || 'Неизвестно';
+    return taskStatusDisplay(status || 'pending');
   }
 }
