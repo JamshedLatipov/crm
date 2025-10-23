@@ -7,11 +7,13 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { UserSelectorComponent } from '../../../shared/components/user-selector/user-selector.component';
 
 import { LeadService } from '../../services/lead.service';
 import { Lead } from '../../models/lead.model';
 import { Manager, UserService } from '../../../shared/services/user.service';
 import { UserAvatarComponent } from '../../../shared/components/user-avatar/user-avatar.component';
+import { roleDisplay } from '../../../shared/utils';
 
 interface QuickAssignData {
   // single lead or multiple leads for bulk assign
@@ -31,33 +33,18 @@ interface QuickAssignData {
     MatFormFieldModule,
     MatIconModule,
     MatProgressSpinnerModule,
+    UserSelectorComponent,
     UserAvatarComponent,
   ],
   templateUrl: './quick-assign-dialog.component.html',
   styleUrls: ['./quick-assign-dialog.component.scss'],
 })
 export class QuickAssignDialogComponent {
-  // Map role keys to human-friendly labels
-  private readonly ROLE_LABELS: Record<string, string> = {
-    operator: 'Оператор',
-    account_manager: 'Аккаунт-менеджер',
-    team_lead: 'Тимлид',
-    sales_manager: 'Менеджер по продажам',
-    senior_manager: 'Старший менеджер',
-    client: 'Клиент',
-  };
-
   /**
-   * Returns a readable label for a role key. Falls back to capitalized key if unknown.
+   * Returns a readable label for a role key.
    */
   getRoleLabel(roleKey?: string): string {
-    if (!roleKey) return '';
-    return this.ROLE_LABELS[roleKey] || this.humanizeRoleKey(roleKey);
-  }
-
-  private humanizeRoleKey(key: string): string {
-    // Replace underscores with spaces and capitalize words
-    return key.split('_').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+    return roleDisplay(roleKey);
   }
 
   getRolesLabel(roles?: string[] | null): string {

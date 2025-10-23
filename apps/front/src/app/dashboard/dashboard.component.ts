@@ -270,7 +270,7 @@ import { Router } from '@angular/router';
     .stat-icon {
       width: 48px;
       height: 48px;
-      border-radius: 12px;
+      border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -300,6 +300,9 @@ import { Router } from '@angular/router';
       font-size: 24px;
       width: 24px;
       height: 24px;
+      display: block;
+      margin: auto;
+      line-height: 1;
     }
 
     .stat-change {

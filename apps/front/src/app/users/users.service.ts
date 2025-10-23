@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
 export interface User {
@@ -40,7 +41,18 @@ export class UsersService {
   private readonly apiUrl = environment.apiBase;
 
   getAllManagers(): Observable<User[]> {
-    return this.http.get<User[]>(`${this.apiUrl}/users/managers`);
+    return this.http.get<User[]>(`${this.apiUrl}/users/managers`).pipe(
+      map(users => {
+        console.log('UsersService: Raw users from API:', users);
+        // Преобразуем ID в строку для единообразия
+        const transformed = users.map(user => ({
+          ...user,
+          id: String(user.id)
+        }));
+        console.log('UsersService: Transformed users:', transformed);
+        return transformed;
+      })
+    );
   }
 
   getAvailableManagers(): Observable<User[]> {

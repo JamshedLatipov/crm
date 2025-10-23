@@ -24,6 +24,9 @@ import { UserHeaderComponent } from '../components/user-header/user-header.compo
 import { UserRolesComponent } from '../components/user-roles/user-roles.component';
 import { UserTerritoriesComponent } from '../components/user-territories/user-territories.component';
 import { UserSkillsComponent } from '../components/user-skills/user-skills.component';
+import { roleDisplay, getUserStatusBadgeClass } from '../../../shared/utils';
+
+type TabType = 'overview' | 'performance' | 'activity';
 
 @Component({
   selector: 'app-user-detail',
@@ -237,14 +240,11 @@ export class UserDetailComponent implements OnInit {
   }
 
   getStatusBadgeClass(user: User): string {
-    const baseClasses = 'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium';
-    return user.isActive
-      ? `${baseClasses} bg-green-100 text-green-800`
-      : `${baseClasses} bg-red-100 text-red-800`;
+    return getUserStatusBadgeClass(user.isActive);
   }
 
   getRoleLabel(role: string): string {
-    return this.roleLabels[role] || role;
+    return roleDisplay(role);
   }
 
   // Map display name -> id (if user selects by name from autocomplete)

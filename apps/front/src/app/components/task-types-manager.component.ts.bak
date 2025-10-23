@@ -1,0 +1,314 @@
+import { Component, OnInit, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTableModule } from '@angular/material/table';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { TaskTypeService, TaskType } from '../services/task-type.service';
+import { TaskTypeDialogComponent } from './task-type-dialog.component';
+
+/**
+ * Компонент для управления типами задач
+ * Пример использования нового API
+ */
+@Component({
+  selector: 'app-task-types-manager',
+  standalone: true,
+  imports: [
+    CommonModule,
+    MatButtonModule,
+    MatCardModule,
+    MatIconModule,
+    MatChipsModule,
+    MatDialogModule,
+    MatSnackBarModule,
+    MatTableModule,
+    MatTooltipModule,
+    MatMenuModule,
+    MatProgressSpinnerModule,
+  ],
+  template: `
+    <div class="task-types-container">
+      <div class="header">
+        <h2>Управление типами задач</h2>
+        <button mat-raised-button color="primary" (click)="openCreateDialog()">
+          <mat-icon>add</mat-icon>
+          Создать тип
+        </button>
+      </div>
+
+      <div class="task-types-grid">
+        @for (type of taskTypes; track type.id) {
+          <mat-card class="task-type-card">
+            <mat-card-header>
+              <div class="type-header">
+                <div class="type-icon" [style.background-color]="type.color">
+                  <mat-icon>{{ type.icon || 'task' }}</mat-icon>
+                </div>
+                <div class="type-info">
+                  <h3>{{ type.name }}</h3>
+                  <p class="description">{{ type.description }}</p>
+                </div>
+              </div>
+            </mat-card-header>
+
+            <mat-card-content>
+              @if (type.timeFrameSettings) {
+                <div class="settings-summary">
+                  @if (type.timeFrameSettings.defaultDuration) {
+                    <div class="setting-item">
+                      <mat-icon>schedule</mat-icon>
+                      <span>{{ type.timeFrameSettings.defaultDuration }} минут</span>
+                    </div>
+                  }
+                  
+                  @if (type.timeFrameSettings.workingHours) {
+                    <div class="setting-item">
+                      <mat-icon>work_outline</mat-icon>
+                      <span>{{ type.timeFrameSettings.workingHours.start }} - {{ type.timeFrameSettings.workingHours.end }}</span>
+                    </div>
+                  }
+
+                  @if (type.timeFrameSettings.reminderBeforeDeadline) {
+                    <div class="setting-item">
+                      <mat-icon>notifications</mat-icon>
+                      <span>Напоминание за {{ type.timeFrameSettings.reminderBeforeDeadline }} мин</span>
+                    </div>
+                  }
+
+                  @if (type.timeFrameSettings.slaResponseTime) {
+                    <div class="setting-item">
+                      <mat-icon>speed</mat-icon>
+                      <span>SLA: {{ type.timeFrameSettings.slaResponseTime }} мин</span>
+                    </div>
+                  }
+                </div>
+              }
+
+              <div class="chip-container">
+                <mat-chip-set>
+                  @if (type.timeFrameSettings?.skipWeekends) {
+                    <mat-chip>Пропуск выходных</mat-chip>
+                  }
+                  @if (type.timeFrameSettings?.allowNoDueDate) {
+                    <mat-chip>Без дедлайна</mat-chip>
+                  }
+                  <mat-chip [class.inactive-chip]="!type.isActive">
+                    {{ type.isActive ? 'Активен' : 'Неактивен' }}
+                  </mat-chip>
+                </mat-chip-set>
+              </div>
+            </mat-card-content>
+
+            <mat-card-actions>
+              <button mat-button (click)="editType(type)">
+                <mat-icon>edit</mat-icon>
+                Редактировать
+              </button>
+              <button mat-button color="warn" (click)="deleteType(type)">
+                <mat-icon>delete</mat-icon>
+                Удалить
+              </button>
+            </mat-card-actions>
+          </mat-card>
+        }
+      </div>
+    </div>
+  `,
+  styles: [`
+    .task-types-container {
+      padding: 20px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .task-types-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 20px;
+    }
+
+    .task-type-card {
+      height: 100%;
+    }
+
+    .type-header {
+      display: flex;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .type-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .type-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .type-info h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 500;
+    }
+
+    .description {
+      margin: 4px 0 0;
+      font-size: 14px;
+      color: rgba(0, 0, 0, 0.6);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .settings-summary {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 16px 0;
+    }
+
+    .setting-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+    }
+
+    .setting-item mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: rgba(0, 0, 0, 0.54);
+    }
+
+    .chip-container {
+      margin-top: 12px;
+    }
+
+    .inactive-chip {
+      background-color: #f5f5f5 !important;
+      color: rgba(0, 0, 0, 0.38) !important;
+    }
+
+    mat-card-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+  `]
+})
+export class TaskTypesManagerComponent implements OnInit {
+  taskTypes = signal<TaskType[]>([]);
+  isLoading = signal(true);
+  displayedColumns: string[] = ['icon', 'name', 'duration', 'workingHours', 'sla', 'settings', 'actions'];
+
+  constructor(
+    private taskTypeService: TaskTypeService,
+    private dialog: MatDialog,
+    private snackBar: MatSnackBar
+  ) {}
+
+  ngOnInit() {
+    this.loadTaskTypes();
+  }
+
+  loadTaskTypes() {
+    this.isLoading.set(true);
+    this.taskTypeService.getAll(true).subscribe({
+      next: (types) => {
+        this.taskTypes.set(types.sort((a, b) => a.sortOrder - b.sortOrder));
+        this.isLoading.set(false);
+      },
+      error: (err) => {
+        console.error('Failed to load task types', err);
+        this.isLoading.set(false);
+        this.snackBar.open('Ошибка при загрузке типов задач', 'Закрыть', { duration: 5000 });
+      }
+    });
+  }
+
+  openCreateDialog() {
+    const dialogRef = this.dialog.open(TaskTypeDialogComponent, {
+      width: '800px',
+      maxHeight: '90vh',
+      data: {
+        mode: 'create'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.taskTypeService.create(result).subscribe({
+          next: () => {
+            this.snackBar.open('Тип задачи успешно создан', 'Закрыть', { duration: 3000 });
+            this.loadTaskTypes();
+          },
+          error: (err) => {
+            console.error('Failed to create task type', err);
+            this.snackBar.open('Ошибка при создании типа задачи', 'Закрыть', { duration: 5000 });
+          }
+        });
+      }
+    });
+  }
+
+  editType(type: TaskType) {
+    const dialogRef = this.dialog.open(TaskTypeDialogComponent, {
+      width: '800px',
+      maxHeight: '90vh',
+      data: {
+        mode: 'edit',
+        taskType: type
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.taskTypeService.update(type.id, result).subscribe({
+          next: () => {
+            this.snackBar.open('Тип задачи успешно обновлен', 'Закрыть', { duration: 3000 });
+            this.loadTaskTypes();
+          },
+          error: (err) => {
+            console.error('Failed to update task type', err);
+            this.snackBar.open('Ошибка при обновлении типа задачи', 'Закрыть', { duration: 5000 });
+          }
+        });
+      }
+    });
+  }
+
+  deleteType(type: TaskType) {
+    if (confirm(`Вы уверены, что хотите удалить тип "${type.name}"?`)) {
+      this.taskTypeService.remove(type.id).subscribe({
+        next: () => {
+          this.loadTaskTypes();
+        },
+        error: (err) => {
+          console.error('Failed to delete task type', err);
+          alert('Ошибка при удалении типа задачи');
+        }
+      });
+    }
+  }
+}

@@ -5,6 +5,8 @@
   border-radius: 50%;
   font-weight: 500;
   color: white;
+  /* Use theme primary color as avatar background instead of gradients */
+  background: var(--primary-color, #4f46e5);
   transition: all 0.2s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   position: relative;
@@ -17,7 +19,8 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
+    /* subtle highlight without gradient */
+    background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.18), rgba(255,255,255,0) 40%);
     pointer-events: none;
   }
 

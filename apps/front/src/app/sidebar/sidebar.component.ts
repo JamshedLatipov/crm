@@ -10,8 +10,10 @@ import { NotificationBellComponent } from '../components/notification-bell/notif
 interface MenuItem {
   icon: string;
   label: string;
-  route: string;
+  route?: string;
   active?: boolean;
+  expanded?: boolean;
+  children?: MenuItem[];
 }
 
 @Component({
@@ -42,7 +44,9 @@ interface MenuItem {
       <nav class="sidebar-nav">
         <ul class="nav-list">
           <li *ngFor="let item of menuItems" class="nav-item">
+            <!-- Link item -->
             <a
+              *ngIf="item.route"
               [routerLink]="item.route"
               routerLinkActive="active"
               class="nav-link"
@@ -53,6 +57,35 @@ interface MenuItem {
               <mat-icon class="nav-icon">{{ item.icon }}</mat-icon>
               <span class="nav-label">{{ item.label }}</span>
             </a>
+
+            <!-- Parent with children (dropdown) -->
+            <button
+              *ngIf="item.children?.length"
+              type="button"
+              class="nav-link nav-link-toggle"
+              (click)="toggleExpand(item)"
+              [class.active]="isChildRouteActive(item)"
+              [class.expanded]="item.expanded"
+              aria-label="Toggle submenu"
+            >
+              <mat-icon class="nav-icon">{{ item.icon }}</mat-icon>
+              <span class="nav-label">{{ item.label }}</span>
+              <mat-icon class="chev">{{ item.expanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+            </button>
+
+            <ul *ngIf="item.children?.length && item.expanded" class="sub-list">
+              <li *ngFor="let child of item.children" class="sub-item">
+                <a
+                  [routerLink]="child.route"
+                  routerLinkActive="active"
+                  class="sub-link"
+                  (click)="setActiveItem(child)"
+                >
+                  <mat-icon class="sub-icon">{{ child.icon }}</mat-icon>
+                  <span class="sub-label">{{ child.label }}</span>
+                </a>
+              </li>
+            </ul>
           </li>
         </ul>
       </nav>
@@ -90,7 +123,7 @@ interface MenuItem {
       .sidebar {
         width: 280px;
         height: 100vh;
-        background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        background: var(--surface-color);
         border-right: 1px solid #e2e8f0;
         display: flex;
         flex-direction: column;
@@ -173,7 +206,13 @@ interface MenuItem {
         transform: translateX(2px);
       }
 
+      .nav-link.nav-link-toggle {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+      }
       .nav-link.active {
+        width: 100%;
         background: #4285f4;
         color: #ffffff;
         box-shadow: 0 4px 12px rgba(66, 133, 244, 0.2);
@@ -201,6 +240,70 @@ interface MenuItem {
       .nav-label {
         font-weight: 500;
         letter-spacing: -0.01em;
+      }
+
+      /* Parent toggle specific */
+      .nav-link-toggle {
+        width: 100%;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .nav-link-toggle .chev {
+        transition: transform 0.18s ease;
+        font-size: 20px;
+      }
+
+      .nav-link-toggle.expanded .chev {
+        transform: rotate(180deg);
+      }
+
+      /* Submenu styles */
+      .sub-list {
+        list-style: none;
+        margin: 6px 0 6px 8px;
+        padding: 0 8px 8px 8px;
+        border-left: 1px solid rgba(14, 165, 233, 0.06);
+      }
+
+      .sub-item {
+        margin: 6px 0;
+      }
+
+      .sub-link {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        color: #64748b;
+        text-decoration: none;
+        font-size: 13px;
+        transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+      }
+
+      .sub-link:hover {
+        background: rgba(79, 70, 229, 0.04);
+        color: #475569;
+        transform: translateX(2px);
+      }
+
+      .sub-link.active {
+        background: rgba(66, 133, 244, 0.12);
+        color: #0f172a;
+        font-weight: 600;
+      }
+
+      .sub-icon {
+        font-size: 16px;
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+        color: #64748b;
+      }
+
+      .sub-label {
+        font-size: 13px;
       }
 
       /* Footer */
@@ -235,7 +338,7 @@ interface MenuItem {
       .user-avatar {
         width: 40px;
         height: 40px;
-        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        background: var(--primary-color);
         border-radius: 10px;
         display: flex;
         align-items: center;
@@ -320,16 +423,36 @@ export class SidebarComponent {
     { icon: 'trending_up', label: 'Leads', route: '/leads' },
     { icon: 'account_tree', label: 'Pipeline', route: '/pipeline' },
     { icon: 'handshake', label: 'Deals', route: '/deals' },
+    { icon: 'task', label: 'Tasks', route: '/tasks' },
     { icon: 'phone', label: 'Calls', route: '/calls' },
+    {
+      icon: 'contact_support',
+      label: 'Контакт центр',
+      expanded: false,
+      children: [
+        { icon: 'visibility', label: 'онлайн мониторинг', route: '/contact-center/monitoring' },
+        { icon: 'dialpad', label: 'ivr', route: '/contact-center/ivr' },
+      ],
+    },
     { icon: 'group', label: 'Users', route: '/users' },
     { icon: 'assessment', label: 'Reports', route: '/reports' },
     { icon: 'help_outline', label: 'Help', route: '/help' },
   ];
+
+  toggleExpand(item: MenuItem) {
+    item.expanded = !item.expanded;
+  }
 
   setActiveItem(item: MenuItem) {
     // Reset all items
     this.menuItems.forEach((menuItem) => (menuItem.active = false));
     // Set clicked item as active
     item.active = true;
+  }
+
+  isChildRouteActive(item: MenuItem) {
+    if (!item.children || item.children.length === 0) return false;
+    const current = this.router.url;
+    return item.children.some((c) => current.startsWith(c.route || ''));
   }
 }

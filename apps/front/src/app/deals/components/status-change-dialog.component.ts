@@ -97,11 +97,11 @@ export interface StatusChangeResult {
         }
         
         &.won {
-          background: linear-gradient(135deg, #16a34a, #22c55e);
+          background: var(--success-color, #16a34a);
         }
         
         &.lost {
-          background: linear-gradient(135deg, #dc2626, #ef4444);
+          background: var(--warn-color, #dc2626);
         }
       }
       

@@ -39,6 +39,7 @@ import { ChangeStatusDialogComponent } from '../change-status-dialog.component';
 import { AssignLeadDialogComponent } from '../assign-lead-dialog.component';
 import { QuickAssignDialogComponent } from '../quick-assign-dialog.component';
 import { ConvertToDealDialogComponent } from '../convert-to-deal-dialog/convert-to-deal-dialog.component';
+import { leadStatusDisplay, leadSourceDisplay, leadPriorityDisplay } from '../../../shared/utils';
 
 @Component({
   selector: 'app-leads-list',
@@ -448,50 +449,6 @@ export class LeadsListComponent implements OnInit {
     });
   }
 
-  // Helper methods for labels
-  getStatusLabel(status: LeadStatus): string {
-    const statusLabels: Record<LeadStatus, string> = {
-      [LeadStatus.NEW]: 'Новый',
-      [LeadStatus.CONTACTED]: 'Контакт установлен',
-      [LeadStatus.QUALIFIED]: 'Квалифицирован',
-      [LeadStatus.PROPOSAL_SENT]: 'Предложение отправлено',
-      [LeadStatus.NEGOTIATING]: 'Переговоры',
-      [LeadStatus.CONVERTED]: 'Конвертирован',
-      [LeadStatus.REJECTED]: 'Отклонен',
-      [LeadStatus.LOST]: 'Потерян',
-    };
-    return statusLabels[status] || status;
-  }
-
-  getSourceLabel(source: LeadSource): string {
-    const sourceLabels: Record<LeadSource, string> = {
-      [LeadSource.WEBSITE]: 'Веб-сайт',
-      [LeadSource.FACEBOOK]: 'Facebook',
-      [LeadSource.GOOGLE_ADS]: 'Google Ads',
-      [LeadSource.LINKEDIN]: 'LinkedIn',
-      [LeadSource.EMAIL]: 'Email',
-      [LeadSource.PHONE]: 'Телефон',
-      [LeadSource.REFERRAL]: 'Рекомендация',
-      [LeadSource.TRADE_SHOW]: 'Выставка',
-      [LeadSource.WEBINAR]: 'Вебинар',
-      [LeadSource.CONTENT_MARKETING]: 'Контент-маркетинг',
-      [LeadSource.COLD_OUTREACH]: 'Холодный обзвон',
-      [LeadSource.PARTNER]: 'Партнер',
-      [LeadSource.OTHER]: 'Другое',
-    };
-    return sourceLabels[source] || source;
-  }
-
-  getPriorityLabel(priority: LeadPriority): string {
-    const priorityLabels: Record<LeadPriority, string> = {
-      [LeadPriority.LOW]: 'Низкий',
-      [LeadPriority.MEDIUM]: 'Средний',
-      [LeadPriority.HIGH]: 'Высокий',
-      [LeadPriority.URGENT]: 'Срочный',
-    };
-    return priorityLabels[priority] || priority;
-  }
-
   getScoreClass(score: number): string {
     if (score >= 80) return 'score-high';
     if (score >= 50) return 'score-medium';
@@ -516,5 +473,18 @@ export class LeadsListComponent implements OnInit {
       (m) => m.id?.toString() === id.toString()
     );
     return manager?.fullName || id;
+  }
+
+  // Helper methods for labels
+  getStatusLabel(status: LeadStatus): string {
+    return leadStatusDisplay(status);
+  }
+
+  getSourceLabel(source: LeadSource): string {
+    return leadSourceDisplay(source);
+  }
+
+  getPriorityLabel(priority: LeadPriority): string {
+    return leadPriorityDisplay(priority);
   }
 }

@@ -1,6 +1,6 @@
 <div class="comments-section">
   <!-- Заголовок и счетчик -->
-  <div class="comments-header">
+  <!-- <div class="comments-header">
     <h3>
       <mat-icon>comment</mat-icon>
       Комментарии
@@ -8,7 +8,7 @@
         >({{ commentsData()?.total }})</span
       >
     </h3>
-  </div>
+  </div> -->
 
   <!-- Загрузка -->
   <div class="loading-container" *ngIf="isLoading()">
@@ -28,37 +28,45 @@
       class="comment-card"
     >
       <mat-card-header>
-        <div class="comment-author">
-          <mat-icon>person</mat-icon>
-          <span class="author-name">{{ comment.userName }}</span>
-          <span class="comment-date">{{ formatDate(comment.createdAt) }}</span>
-          <span
-            *ngIf="comment.updatedAt !== comment.createdAt"
-            class="edited-indicator"
-            title="Отредактирован {{ formatDate(comment.updatedAt) }}"
-          >
-            (изменен)
-          </span>
-        </div>
+        <div class="comment-header-content">
+          <div class="comment-author">
+            <div class="author-avatar">
+              <mat-icon>person</mat-icon>
+            </div>
+            <div class="author-info">
+              <span class="author-name">{{ comment.userName }}</span>
+              <div class="comment-meta">
+                <span class="comment-date">{{ formatDate(comment.createdAt) }}</span>
+                <span
+                  *ngIf="comment.updatedAt !== comment.createdAt"
+                  class="edited-indicator"
+                  title="Отредактирован {{ formatDate(comment.updatedAt) }}"
+                >
+                  • изменен
+                </span>
+              </div>
+            </div>
+          </div>
 
-        <div class="comment-actions" *ngIf="canEditComment(comment)">
-          <button mat-icon-button [matMenuTriggerFor]="commentMenu">
-            <mat-icon>more_vert</mat-icon>
-          </button>
-          <mat-menu #commentMenu="matMenu">
-            <button mat-menu-item (click)="startEdit(comment)">
-              <mat-icon>edit</mat-icon>
-              Редактировать
+          <div class="comment-actions" *ngIf="canEditComment(comment)">
+            <button mat-icon-button [matMenuTriggerFor]="commentMenu">
+              <mat-icon>more_vert</mat-icon>
             </button>
-            <button
-              mat-menu-item
-              (click)="deleteComment(comment)"
-              class="delete-action"
-            >
-              <mat-icon>delete</mat-icon>
-              Удалить
-            </button>
-          </mat-menu>
+            <mat-menu #commentMenu="matMenu">
+              <button mat-menu-item (click)="startEdit(comment)">
+                <mat-icon>edit</mat-icon>
+                Редактировать
+              </button>
+              <button
+                mat-menu-item
+                (click)="deleteComment(comment)"
+                class="delete-action"
+              >
+                <mat-icon>delete</mat-icon>
+                Удалить
+              </button>
+            </mat-menu>
+          </div>
         </div>
       </mat-card-header>
 

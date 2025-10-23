@@ -1,0 +1,233 @@
+.tree-node {
+  margin-bottom: 4px;
+}
+
+.node-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--surface-color, #ffffff);
+  border: 1px solid var(--border-color, #e0e0e0);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+
+  &:hover {
+    background: var(--brand-secondary, #f0f6fc);
+    border-color: var(--primary-color, #4285f4);
+    box-shadow: 0 2px 6px rgba(66, 133, 244, 0.1);
+  }
+}
+
+.node-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.selected .node-content {
+  background: var(--brand-secondary, #f0f6fc);
+  border-color: var(--primary-color, #4285f4);
+  box-shadow: 0 2px 8px rgba(66, 133, 244, 0.15);
+}
+
+.expand-btn {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+
+  ::ng-deep .mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  &[disabled] {
+    opacity: 0.5;
+    cursor: wait;
+  }
+}
+
+.node-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--primary-color, #4285f4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 8px;
+  margin-right: 8px;
+
+  mat-icon {
+    color: white;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  &.child-icon {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+}
+
+.node-info {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.node-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #212529);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  overflow: hidden;
+  cursor: default;
+
+  .node-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.node-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.action-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.children-count {
+  font-size: 11px;
+  color: var(--text-secondary, #6c757d);
+}
+
+.node-details {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px dashed var(--border-color, #e0e0e0);
+  margin-top: 4px;
+
+  .expand-btn {
+    margin-right: -8px;
+  }
+
+  .node-icon {
+    margin-right: 4px;
+  }
+}
+
+.detail-badges {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  flex: 1;
+
+  .digit-prefix {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 8px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
+    color: white;
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: 0 2px 6px rgba(66, 133, 244, 0.3);
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+
+    &:hover {
+      transform: translateY(-2px) scale(1.05);
+      box-shadow: 0 4px 10px rgba(66, 133, 244, 0.4);
+    }
+  }
+}
+
+.detail-badge {
+  width: 22px;
+  height: 22px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  cursor: help;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(102, 126, 234, 0.25);
+  flex-shrink: 0;
+
+  &:hover {
+    transform: translateY(-1px) scale(1.08);
+    box-shadow: 0 3px 6px rgba(102, 126, 234, 0.35);
+  }
+
+  &.early-dtmf {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  }
+}
+
+.node-actions {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+}
+
+.node-content:hover .node-actions {
+  opacity: 1;
+}
+
+.children-container {
+  margin-top: 4px;
+  padding-left: 0;
+}
+
+.loading-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  color: var(--text-secondary, #6c757d);
+  font-size: 13px;
+
+  .loading-text {
+    font-style: italic;
+  }
+}
+
+.has-children {
+  margin-bottom: 8px;
+}

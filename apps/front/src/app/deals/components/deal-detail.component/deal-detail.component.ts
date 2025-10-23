@@ -20,6 +20,8 @@ import { DealHistoryStatsComponent } from '../deal-history-stats.component';
 import { CommentsComponent } from '../../../shared/components/comments/comments.component';
 import { CommentEntityType } from '../../../shared/interfaces/comment.interface';
 import { AssignUserDialogComponent } from '../assign-user-dialog.component';
+import { TaskListWidgetComponent } from '../../../tasks/components/task-list-widget.component';
+import { getCurrencySymbol, getCurrencyName, translateMetadataKey } from '../../../shared/utils';
 
 @Component({
   selector: 'app-deal-detail',
@@ -35,7 +37,8 @@ import { AssignUserDialogComponent } from '../assign-user-dialog.component';
     DealStatusComponent,
     DealHistoryComponent,
     DealHistoryStatsComponent,
-    CommentsComponent
+    CommentsComponent,
+    TaskListWidgetComponent
   ],
   templateUrl: `./deal-detail.component.html`,
   styleUrls: [`./deal-detail.component.scss`]
@@ -84,8 +87,18 @@ export class DealDetailComponent implements OnInit {
 
   updateAssignedUserName() {
     if (this.deal?.assignedTo) {
-      const user = this.users.find(u => u.id === this.deal?.assignedTo);
-      this.assignedUserName = user?.name || `ID: ${this.deal.assignedTo}`;
+      // Преобразуем assignedTo в строку для сравнения
+      const assignedToStr = String(this.deal.assignedTo);
+      const user = this.users.find(u => u.id === assignedToStr);
+      if (user) {
+        this.assignedUserName = user.name;
+      } else {
+        // Если пользователь не найден в локальном списке, показываем ID
+        console.warn('User not found for assignedTo:', assignedToStr, 'Available users:', this.users.map(u => u.id));
+        this.assignedUserName = `ID: ${assignedToStr}`;
+      }
+    } else {
+      this.assignedUserName = '';
     }
   }
 
@@ -169,72 +182,17 @@ export class DealDetailComponent implements OnInit {
     if (!this.deal?.meta) return [];
     
     return Object.entries(this.deal.meta).map(([key, value]) => ({
-      key: this.translateMetadataKey(key),
+      key: translateMetadataKey(key),
       value: String(value)
     }));
   }
 
-  translateMetadataKey(key: string): string {
-    const translations: Record<string, string> = {
-      'source': 'Источник',
-      'campaign': 'Кампания',
-      'utm_source': 'UTM источник',
-      'utm_medium': 'UTM канал',
-      'utm_campaign': 'UTM кампания',
-      'utm_content': 'UTM контент',
-      'utm_term': 'UTM термин',
-      'referrer': 'Реферер',
-      'landing_page': 'Посадочная страница',
-      'lead_score': 'Оценка лида',
-      'conversion_date': 'Дата конверсии',
-      'original_lead_id': 'ID исходного лида',
-      'sales_rep': 'Менеджер продаж',
-      'region': 'Регион',
-      'industry': 'Отрасль',
-      'company_size': 'Размер компании',
-      'budget': 'Бюджет',
-      'decision_maker': 'Лицо, принимающее решения',
-      'competitors': 'Конкуренты',
-      'pain_points': 'Болевые точки',
-      'demo_date': 'Дата демонстрации',
-      'proposal_sent_date': 'Дата отправки предложения',
-      'contract_type': 'Тип контракта',
-      'payment_terms': 'Условия оплаты',
-      'delivery_date': 'Дата поставки',
-      'custom_field_1': 'Дополнительное поле 1',
-      'custom_field_2': 'Дополнительное поле 2',
-      'custom_field_3': 'Дополнительное поле 3',
-      'notes': 'Заметки',
-      'tags': 'Теги'
-    };
-
-    return translations[key] || key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
-  }
-
   getCurrencySymbol(currency: string): string {
-    switch (currency) {
-      case 'RUB':
-        return '₽';
-      case 'USD':
-        return '$';
-      case 'EUR':
-        return '€';
-      default:
-        return currency;
-    }
+    return getCurrencySymbol(currency);
   }
 
   getCurrencyName(currency: string): string {
-    switch (currency) {
-      case 'RUB':
-        return 'Рубль';
-      case 'USD':
-        return 'Доллар';
-      case 'EUR':
-        return 'Евро';
-      default:
-        return currency;
-    }
+    return getCurrencyName(currency);
   }
 
   goToLead(leadId: number): void {
@@ -264,10 +222,22 @@ export class DealDetailComponent implements OnInit {
   private assignDeal(userId: string, user?: User): void {
     if (!this.deal) return;
 
+    console.log('assignDeal called with userId:', userId, 'user:', user);
+
     this.dealsService.assignDeal(this.deal.id, userId).subscribe({
       next: (updatedDeal) => {
-        this.deal = updatedDeal;
-        this.updateAssignedUserName();
+        console.log('assignDeal response:', updatedDeal);
+        console.log('updatedDeal.assignedTo:', updatedDeal.assignedTo, 'type:', typeof updatedDeal.assignedTo);
+        
+        // Принудительно устанавливаем имя из переданного user объекта
+        if (user) {
+          this.assignedUserName = user.name;
+          console.log('Set assignedUserName from user object:', this.assignedUserName);
+        }
+        
+        // Перезагружаем сделку полностью для получения актуальных данных
+        this.loadDeal(this.deal.id);
+        
         this.snackBar.open(
           `Ответственный успешно изменен на ${user?.name || userId}`, 
           'Закрыть', 

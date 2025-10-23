@@ -31,6 +31,7 @@ import { CommentEntityType } from '../../../shared/interfaces/comment.interface'
 import { LeadStatusComponent } from '../lead-status/lead-status.component';
 import { LeadPriorityComponent } from '../lead-priority/lead-priority.component';
 import { LeadActionsComponent } from '../lead-actions/lead-actions.component';
+import { TaskListWidgetComponent } from '../../../tasks/components/task-list-widget.component';
 
 interface HistoryEntry {
   field: string;
@@ -62,6 +63,7 @@ interface HistoryEntry {
     LeadStatusComponent,
     LeadPriorityComponent,
     LeadActionsComponent,
+    TaskListWidgetComponent,
   ],
   templateUrl: './lead-detail.component.html',
   styleUrls: ['./lead-detail.component.scss'],
@@ -131,9 +133,11 @@ export class LeadDetailComponent implements OnInit {
   }
 
   private loadLead(id: string): void {
+    console.log('LeadDetail: Loading lead with id:', id, 'type:', typeof id);
     this.leadService.getLeadById(id).subscribe({
       next: (lead) => {
         this.lead = lead;
+        console.log('LeadDetail: Lead loaded:', lead, 'lead.id:', lead.id, 'type:', typeof lead.id);
         this.loadActivities();
         this.loadCurrentAssignments();
       },

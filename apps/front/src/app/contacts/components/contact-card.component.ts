@@ -144,7 +144,7 @@ import { ContactsService } from '../contacts.service';
       width: 48px;
       height: 48px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: var(--primary-color, #667eea);
       display: flex;
       align-items: center;
       justify-content: center;

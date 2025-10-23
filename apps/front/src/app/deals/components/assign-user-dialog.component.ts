@@ -33,8 +33,16 @@ export interface AssignUserDialogData {
   template: `
     <div class="assign-user-dialog">
       <div mat-dialog-title class="dialog-header">
-        <h2>Сменить ответственного</h2>
-        <p class="dialog-subtitle">Сделка: {{ data.deal.title }}</p>
+        <div class="header-content">
+          <mat-icon class="header-icon">person_search</mat-icon>
+          <div class="header-text">
+            <h2>Сменить ответственного</h2>
+            <p class="dialog-subtitle">{{ data.deal.title }}</p>
+          </div>
+        </div>
+        <button mat-icon-button class="close-button" (click)="onCancel()">
+          <mat-icon>close</mat-icon>
+        </button>
       </div>
 
       <div mat-dialog-content class="dialog-content">
@@ -42,7 +50,10 @@ export interface AssignUserDialogData {
         <mat-form-field appearance="outline" class="search-field">
           <mat-label>Поиск менеджера</mat-label>
           <mat-icon matPrefix>search</mat-icon>
-          <input matInput [(ngModel)]="searchQuery" placeholder="Введите имя или роль">
+          <input matInput [(ngModel)]="searchQuery" placeholder="Введите имя или роль" autocomplete="off">
+          <button matSuffix mat-icon-button *ngIf="searchQuery" (click)="searchQuery = ''">
+            <mat-icon>clear</mat-icon>
+          </button>
         </mat-form-field>
 
         <!-- Список пользователей -->
@@ -54,24 +65,41 @@ export interface AssignUserDialogData {
               [class.current-assignee]="user.id === data.deal.assignedTo">
               
               <div class="user-item">
+                <div class="user-avatar">
+                  <mat-icon>person</mat-icon>
+                </div>
                 <div class="user-info">
                   <div class="user-name">
                     {{ user.name }}
-                    <mat-icon *ngIf="user.id === data.deal.assignedTo" class="current-icon">
-                      check_circle
-                    </mat-icon>
+                    <span *ngIf="user.id === data.deal.assignedTo" class="current-badge">
+                      <mat-icon>check_circle</mat-icon>
+                      Текущий
+                    </span>
                   </div>
                   <div class="user-details">
-                    {{ user.role }} • {{ user.department }}
+                    <span class="user-role">{{ user.role }}</span>
+                    <span class="separator">•</span>
+                    <span class="user-department">{{ user.department }}</span>
                   </div>
                   <div class="user-workload" [class.overloaded]="!user.isAvailable">
-                    Загрузка: {{ user.workload }}/{{ user.maxCapacity }} 
-                    <span class="workload-percent">({{ user.workloadPercentage | number:'1.0-0' }}%)</span>
+                    <div class="workload-bar">
+                      <div class="workload-fill" [style.width.%]="user.workloadPercentage"></div>
+                    </div>
+                    <span class="workload-text">
+                      {{ user.workload }}/{{ user.maxCapacity }} задач
+                      ({{ user.workloadPercentage | number:'1.0-0' }}%)
+                    </span>
                   </div>
                 </div>
                 <div class="user-status">
-                  <mat-icon *ngIf="user.isAvailable" class="available-icon">verified</mat-icon>
-                  <mat-icon *ngIf="!user.isAvailable" class="unavailable-icon">warning</mat-icon>
+                  <span *ngIf="user.isAvailable" class="status-badge available">
+                    <mat-icon>check_circle</mat-icon>
+                    Доступен
+                  </span>
+                  <span *ngIf="!user.isAvailable" class="status-badge busy">
+                    <mat-icon>do_not_disturb</mat-icon>
+                    Занят
+                  </span>
                 </div>
               </div>
             </mat-list-option>
@@ -92,125 +120,270 @@ export interface AssignUserDialogData {
       </div>
 
       <div mat-dialog-actions class="dialog-actions">
-        <button mat-button (click)="onCancel()">
+        <button mat-stroked-button (click)="onCancel()" class="cancel-btn">
           Отмена
         </button>
         <button 
-          mat-raised-button 
+          mat-flat-button 
           color="primary"
+          class="assign-btn"
           [disabled]="!selectedUserId || selectedUserId === data.deal.assignedTo"
           (click)="onAssign()">
           <mat-icon>assignment_ind</mat-icon>
-          Назначить
+          <span class="btn-text">Назначить</span>
         </button>
       </div>
     </div>
   `,
   styles: [`
     .assign-user-dialog {
-      width: 500px;
-      max-height: 80vh;
+      max-width: 95vw;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
     }
 
     .dialog-header {
-      h2 {
-        margin: 0 0 8px 0;
-        color: var(--text-primary);
+      padding: 16px 20px !important;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 0 !important;
+
+      .header-content {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+        min-width: 0;
+
+        .header-icon {
+          font-size: 28px;
+          width: 28px;
+          height: 28px;
+          color: var(--primary-color);
+          flex-shrink: 0;
+        }
+
+        .header-text {
+          min-width: 0;
+          flex: 1;
+
+          h2 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1.3;
+          }
+          
+          .dialog-subtitle {
+            margin: 2px 0 0 0;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 400;
+            line-height: 1.4;
+          }
+        }
       }
-      
-      .dialog-subtitle {
-        margin: 0;
-        color: var(--text-secondary);
-        font-size: 14px;
+
+      .close-button {
+        flex-shrink: 0;
+        margin-left: 8px;
       }
     }
 
     .dialog-content {
-      max-height: 500px;
+      padding: 16px 20px !important;
       overflow-y: auto;
-      padding: 0 !important;
+      flex: 1;
     }
 
     .search-field {
       width: 100%;
       margin-bottom: 16px;
+
+      ::ng-deep .mat-mdc-text-field-wrapper {
+        background-color: var(--input-bg);
+      }
     }
 
     .users-list {
-      max-height: 400px;
+      max-height: 450px;
       overflow-y: auto;
+      margin: 0 -20px;
+      padding: 0 20px;
       
       mat-selection-list {
         padding: 0;
       }
       
       mat-list-option {
-        height: auto;
-        padding: 12px;
+        height: auto !important;
+        min-height: auto !important;
+        padding: 12px !important;
         border-bottom: 1px solid var(--border-color);
+        margin-bottom: 0;
+        transition: all 0.2s ease;
         
         &.current-assignee {
-          background-color: var(--primary-color-light);
-          border-left: 4px solid var(--primary-color);
+          background-color: var(--primary-color-light) !important;
+          border-left: 3px solid var(--primary-color);
         }
         
         &:hover {
-          background-color: var(--hover-color);
+          background-color: var(--hover-color) !important;
+          transform: translateX(2px);
+        }
+
+        &:last-child {
+          border-bottom: none;
         }
       }
     }
 
     .user-item {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      gap: 12px;
       width: 100%;
+      align-items: flex-start;
+      
+      .user-avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+
+        mat-icon {
+          color: white;
+          font-size: 24px;
+          width: 24px;
+          height: 24px;
+        }
+      }
       
       .user-info {
         flex: 1;
+        min-width: 0;
         
         .user-name {
           display: flex;
           align-items: center;
           gap: 8px;
-          font-weight: 500;
-          margin-bottom: 4px;
-          
-          .current-icon {
-            color: var(--primary-color);
-            font-size: 18px;
-            width: 18px;
-            height: 18px;
+          font-weight: 600;
+          font-size: 15px;
+          margin-bottom: 6px;
+          color: var(--text-primary);
+          line-height: 1.3;
+
+          .current-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            
+            mat-icon {
+              font-size: 14px;
+              width: 14px;
+              height: 14px;
+            }
           }
         }
         
         .user-details {
-          font-size: 14px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 13px;
           color: var(--text-secondary);
-          margin-bottom: 4px;
+          margin-bottom: 8px;
+
+          .user-role {
+            font-weight: 500;
+          }
+
+          .separator {
+            opacity: 0.6;
+          }
         }
         
         .user-workload {
-          font-size: 12px;
-          color: var(--text-secondary);
-          
-          &.overloaded {
-            color: var(--error-color);
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+
+          .workload-bar {
+            width: 100%;
+            height: 6px;
+            background-color: var(--border-color);
+            border-radius: 3px;
+            overflow: hidden;
+
+            .workload-fill {
+              height: 100%;
+              background: linear-gradient(90deg, #4caf50 0%, #8bc34a 50%, #ff9800 75%, #f44336 100%);
+              transition: width 0.3s ease;
+              border-radius: 3px;
+            }
+          }
+
+          .workload-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
           }
           
-          .workload-percent {
-            font-weight: 500;
+          &.overloaded {
+            .workload-text {
+              color: var(--error-color);
+            }
+
+            .workload-fill {
+              background: var(--error-color);
+            }
           }
         }
       }
       
       .user-status {
-        .available-icon {
-          color: var(--success-color);
-        }
-        
-        .unavailable-icon {
-          color: var(--warning-color);
+        flex-shrink: 0;
+        margin-top: 4px;
+
+        .status-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 6px 12px;
+          border-radius: 16px;
+          font-size: 12px;
+          font-weight: 500;
+
+          mat-icon {
+            font-size: 16px;
+            width: 16px;
+            height: 16px;
+          }
+
+          &.available {
+            background-color: rgba(76, 175, 80, 0.1);
+            color: var(--success-color);
+          }
+
+          &.busy {
+            background-color: rgba(255, 152, 0, 0.1);
+            color: var(--warning-color);
+          }
         }
       }
     }
@@ -250,14 +423,161 @@ export interface AssignUserDialogData {
     }
 
     .dialog-actions {
-      padding: 16px 0 0 0;
-      gap: 12px;
+      padding: 12px 20px !important;
+      border-top: 1px solid var(--border-color);
+      gap: 8px;
+      display: flex;
+      justify-content: flex-end;
+      margin: 0 !important;
+      flex-wrap: wrap;
       
       button {
-        min-width: 120px;
+        min-width: 100px;
+        height: 40px;
+        font-weight: 500;
         
         mat-icon {
-          margin-right: 8px;
+          margin-right: 6px;
+          font-size: 18px;
+          width: 18px;
+          height: 18px;
+        }
+      }
+
+      .cancel-btn {
+        border-color: var(--border-color);
+      }
+
+      .assign-btn {
+        .btn-text {
+          display: inline;
+        }
+      }
+
+      button[mat-stroked-button] {
+        border-color: var(--border-color);
+      }
+    }
+
+    /* Адаптивность для маленьких экранов */
+    @media (max-width: 600px) {
+      .assign-user-dialog {
+        width: 100vw;
+        max-width: 100vw;
+        max-height: 100vh;
+        margin: 0;
+      }
+
+      .dialog-header {
+        padding: 12px 16px !important;
+
+        .header-content {
+          gap: 10px;
+
+          .header-icon {
+            font-size: 24px;
+            width: 24px;
+            height: 24px;
+          }
+
+          .header-text {
+            h2 {
+              font-size: 16px;
+            }
+
+            .dialog-subtitle {
+              font-size: 12px;
+            }
+          }
+        }
+      }
+
+      .dialog-content {
+        padding: 12px 16px !important;
+      }
+
+      .users-list {
+        margin: 0 -16px;
+        padding: 0 16px;
+
+        mat-list-option {
+          padding: 10px !important;
+        }
+      }
+
+      .user-item {
+        gap: 10px;
+
+        .user-avatar {
+          width: 40px;
+          height: 40px;
+
+          mat-icon {
+            font-size: 22px;
+            width: 22px;
+            height: 22px;
+          }
+        }
+
+        .user-info {
+          .user-name {
+            font-size: 14px;
+
+            .current-badge {
+              font-size: 10px;
+              padding: 2px 6px;
+
+              mat-icon {
+                font-size: 12px;
+                width: 12px;
+                height: 12px;
+              }
+            }
+          }
+
+          .user-details {
+            font-size: 12px;
+          }
+
+          .user-workload {
+            .workload-text {
+              font-size: 11px;
+            }
+          }
+        }
+
+        .user-status {
+          .status-badge {
+            font-size: 11px;
+            padding: 4px 8px;
+
+            mat-icon {
+              font-size: 14px;
+              width: 14px;
+              height: 14px;
+            }
+          }
+        }
+      }
+
+      .dialog-actions {
+        padding: 10px 16px !important;
+        flex-wrap: nowrap;
+
+        button {
+          flex: 1;
+          min-width: 0;
+          font-size: 14px;
+        }
+
+        .assign-btn {
+          .btn-text {
+            display: none;
+          }
+
+          mat-icon {
+            margin-right: 0;
+          }
         }
       }
     }
@@ -265,14 +585,15 @@ export interface AssignUserDialogData {
     /* CSS переменные */
     :host {
       --primary-color: #2563eb;
-      --primary-color-light: rgba(37, 99, 235, 0.1);
-      --text-primary: #212121;
-      --text-secondary: #757575;
-      --border-color: #e0e0e0;
-      --hover-color: #f5f5f5;
-      --success-color: #4caf50;
-      --warning-color: #ff9800;
-      --error-color: #f44336;
+      --primary-color-light: rgba(37, 99, 235, 0.08);
+      --text-primary: #1a1a1a;
+      --text-secondary: #6b7280;
+      --border-color: #e5e7eb;
+      --hover-color: #f9fafb;
+      --input-bg: #f9fafb;
+      --success-color: #10b981;
+      --warning-color: #f59e0b;
+      --error-color: #ef4444;
     }
 
     /* Темная тема */
@@ -341,9 +662,19 @@ export class AssignUserDialogComponent {
 
   onAssign() {
     if (this.selectedUserId) {
-      const selectedUser = this.users.find(u => u.id === this.selectedUserId);
+      // mat-selection-list может возвращать массив даже с [multiple]="false"
+      // Извлекаем первый элемент если это массив
+      const userIdValue = Array.isArray(this.selectedUserId) 
+        ? this.selectedUserId[0] 
+        : this.selectedUserId;
+      
+      console.log('onAssign - selectedUserId:', this.selectedUserId, 'userIdValue:', userIdValue);
+      
+      const selectedUser = this.users.find(u => u.id === userIdValue);
+      console.log('onAssign - selectedUser:', selectedUser);
+      
       this.dialogRef.close({
-        userId: this.selectedUserId,
+        userId: userIdValue,
         user: selectedUser
       });
     }

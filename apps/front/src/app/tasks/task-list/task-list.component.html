@@ -1,0 +1,261 @@
+<div class="page-header">
+  <div class="header-content">
+    <h1>Задачи</h1>
+    <p class="subtitle">Управление задачами и их выполнением</p>
+  </div>
+  <div class="header-actions">
+    <button mat-stroked-button (click)="goToTaskTypes()">
+      <mat-icon>category</mat-icon>
+      Типы задач
+    </button>
+    <button mat-raised-button color="primary" (click)="createTask()">
+      <mat-icon>add</mat-icon>
+      Создать задачу
+    </button>
+  </div>
+</div>
+
+<!-- Статистика -->
+<div class="stats-section">
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon">
+        <mat-icon>task</mat-icon>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ stats.total }}</div>
+        <div class="stat-label">Всего задач</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon warning">
+        <mat-icon>pending</mat-icon>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ stats.pending }}</div>
+        <div class="stat-label">В ожидании</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon primary">
+        <mat-icon>play_circle</mat-icon>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ stats.inProgress }}</div>
+        <div class="stat-label">В работе</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon success">
+        <mat-icon>check_circle</mat-icon>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ stats.done }}</div>
+        <div class="stat-label">Завершено</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Основной контент -->
+<div class="tasks-section">
+  <!-- Загрузка -->
+  <div *ngIf="isLoading()" class="loading-container">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Загрузка задач...</p>
+  </div>
+
+  <!-- Пустое состояние -->
+  <div *ngIf="!isLoading() && filteredTasks().length === 0" class="empty-state">
+    <mat-icon class="empty-icon">task_alt</mat-icon>
+    <h3>{{ searchQuery ? 'Задачи не найдены' : 'Нет задач' }}</h3>
+    <p>{{ searchQuery ? 'Попробуйте изменить параметры поиска' : 'Создайте первую задачу для начала работы' }}</p>
+    <ng-container *ngIf="!searchQuery">
+      <button mat-raised-button color="primary" (click)="createTask()">
+        <mat-icon>add</mat-icon>
+        Создать задачу
+      </button>
+    </ng-container>
+  </div>
+
+  <!-- Фильтры -->
+  <div *ngIf="!isLoading() && tasks().length > 0" class="filters-section">
+    <div class="filters-card">
+      <div class="filters-grid">
+        <!-- Статус табы -->
+        <div class="status-tabs">
+          <button 
+            class="tab-button" 
+            [class.active]="selectedStatus === null"
+            (click)="onStatusTabChange(null)">
+            Все
+          </button>
+          <button 
+            class="tab-button" 
+            [class.active]="selectedStatus === 'pending'"
+            (click)="onStatusTabChange('pending')">
+            В ожидании
+          </button>
+          <button 
+            class="tab-button" 
+            [class.active]="selectedStatus === 'in_progress'"
+            (click)="onStatusTabChange('in_progress')">
+            В работе
+          </button>
+          <button 
+            class="tab-button" 
+            [class.active]="selectedStatus === 'done'"
+            (click)="onStatusTabChange('done')">
+            Завершено
+          </button>
+          <button 
+            class="tab-button" 
+            [class.active]="selectedStatus === 'overdue'"
+            (click)="onStatusTabChange('overdue')">
+            Просрочено
+          </button>
+        </div>
+
+        <!-- Поиск -->
+        <mat-form-field appearance="outline" class="search-field">
+          <mat-label>Поиск</mat-label>
+          <input 
+            matInput 
+            [(ngModel)]="searchQuery" 
+            (ngModelChange)="onSearchChange()" 
+            placeholder="По названию или описанию" />
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+      </div>
+    </div>
+  </div>
+
+  <!-- Таблица задач -->
+  <div *ngIf="!isLoading() && filteredTasks().length > 0" class="table-container">
+    <table mat-table [dataSource]="paginatedTasks()" matSort (matSortChange)="onSortChange($event)" class="mat-elevation-z1 tasks-table">
+      
+      <!-- Title Column -->
+      <ng-container matColumnDef="title">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Название</th>
+        <td mat-cell *matCellDef="let task">
+          <div class="title-cell">
+            <div class="task-icon">
+              <mat-icon>assignment</mat-icon>
+            </div>
+            <div class="title-meta">
+              <div class="task-title">{{ task.title }}</div>
+              <div *ngIf="task.description" class="task-description">{{ task.description }}</div>
+            </div>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Task Type Column -->
+      <ng-container matColumnDef="taskType">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Тип задачи</th>
+        <td mat-cell *matCellDef="let task">
+          <ng-container *ngIf="task.taskType; else noType">
+            <div class="task-type-cell">
+              <div class="type-icon-small" [style.background-color]="task.taskType.color || '#667eea'">
+                <mat-icon>{{ task.taskType.icon || 'task' }}</mat-icon>
+              </div>
+              <span>{{ task.taskType.name }}</span>
+            </div>
+          </ng-container>
+          <ng-template #noType>
+            <span class="muted">—</span>
+          </ng-template>
+        </td>
+      </ng-container>
+
+      <!-- Status Column -->
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Статус</th>
+        <td mat-cell *matCellDef="let task">
+          <div class="status-container">
+            <div class="status-indicator" [class.active]="task.status === 'in_progress' || task.status === 'done'" [class.inactive]="task.status === 'overdue' || task.status === 'pending'">
+              <mat-icon>{{ getStatusConfig(task.status).icon }}</mat-icon>
+              <span>{{ getStatusConfig(task.status).label }}</span>
+            </div>
+            <ng-container *ngIf="task.dueDate && task.status === 'overdue'">
+              <div class="availability-badge">
+                <mat-icon>warning</mat-icon>
+                <span>Просрочено</span>
+              </div>
+            </ng-container>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Assigned To Column -->
+      <ng-container matColumnDef="assignedTo">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Исполнитель</th>
+        <td mat-cell *matCellDef="let task">
+          <ng-container *ngIf="task.assignedTo; else noAssignee">
+            <div class="assignee-cell">
+              <div class="user-avatar">
+                {{ task.assignedTo.firstName?.charAt(0) || '?' }}
+              </div>
+              <span>{{ task.assignedTo.firstName }} {{ task.assignedTo.lastName }}</span>
+            </div>
+          </ng-container>
+          <ng-template #noAssignee>
+            <span class="muted">Не назначено</span>
+          </ng-template>
+        </td>
+      </ng-container>
+
+      <!-- Due Date Column -->
+      <ng-container matColumnDef="dueDate">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Срок</th>
+        <td mat-cell *matCellDef="let task">
+          <ng-container *ngIf="task.dueDate; else noDueDate">
+            <app-task-due-date [task]="task" [showTime]="false"></app-task-due-date>
+          </ng-container>
+          <ng-template #noDueDate>
+            <span class="muted">—</span>
+          </ng-template>
+        </td>
+      </ng-container>
+
+      <!-- Actions Column -->
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>Действия</th>
+        <td mat-cell *matCellDef="let task" (click)="$event.stopPropagation()">
+          <button mat-icon-button [matMenuTriggerFor]="menu">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #menu="matMenu">
+            <button mat-menu-item (click)="viewTask(task.id)">
+              <mat-icon>visibility</mat-icon>
+              <span>Просмотр</span>
+            </button>
+            <button mat-menu-item (click)="editTask(task.id)">
+              <mat-icon>edit</mat-icon>
+              <span>Редактировать</span>
+            </button>
+            <button mat-menu-item (click)="deleteTask(task.id)">
+              <mat-icon>delete</mat-icon>
+              <span>Удалить</span>
+            </button>
+          </mat-menu>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="task-row" (click)="viewTask(row.id)"></tr>
+    </table>
+
+    <!-- Пагинация -->
+    <mat-paginator
+      [length]="totalResults"
+      [pageSize]="pageSize"
+      [pageSizeOptions]="[5, 10, 20, 50]"
+      (page)="onPageChange($event)"
+      showFirstLastButtons>
+    </mat-paginator>
+  </div>
+</div>

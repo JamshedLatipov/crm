@@ -182,7 +182,7 @@ export interface DealStatusConfig {
 
     /* Статус: Открыта */
     .status-open {
-      background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+      background: #e3f2fd;
       border-color: #2196f3;
       color: #1565c0;
       
@@ -193,26 +193,12 @@ export interface DealStatusConfig {
 
     /* Статус: Выиграна */
     .status-won {
-      background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
+      background: #e8f5e8;
       border-color: #4caf50;
       color: #2e7d32;
       
       .status-icon {
         color: #388e3c;
-      }
-      
-      &::before {
-        content: '';
-        position: absolute;
-        top: -2px;
-        left: -2px;
-        right: -2px;
-        bottom: -2px;
-        background: linear-gradient(45deg, #4caf50, #66bb6a, #4caf50);
-        border-radius: 22px;
-        z-index: -1;
-        opacity: 0.3;
-        animation: shimmer 3s infinite;
       }
     }
 
@@ -223,7 +209,7 @@ export interface DealStatusConfig {
 
     /* Статус: Проиграна */
     .status-lost {
-      background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+      background: #ffebee;
       border-color: #f44336;
       color: #c62828;
       
@@ -303,19 +289,19 @@ export interface DealStatusConfig {
     /* Темная тема */
     :host-context(.dark) {
       .status-open {
-        background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
+        background: #1a237e;
         border-color: #3f51b5;
         color: #bbdefb;
       }
       
       .status-won {
-        background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%);
+        background: #1b5e20;
         border-color: #4caf50;
         color: #c8e6c9;
       }
       
       .status-lost {
-        background: linear-gradient(135deg, #b71c1c 0%, #d32f2f 100%);
+        background: #b71c1c;
         border-color: #f44336;
         color: #ffcdd2;
       }

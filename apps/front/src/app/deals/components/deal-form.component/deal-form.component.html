@@ -241,47 +241,20 @@
         </div>
 
         <div class="form-grid">
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Ответственный</mat-label>
-            <mat-select formControlName="assignedTo">
-              <mat-option value="">-- Выберите ответственного --</mat-option>
-              <mat-option *ngIf="availableUsers.length === 0" disabled>
-                <div class="loading-option">
-                  <mat-spinner diameter="20"></mat-spinner>
-                  <span>Загрузка пользователей...</span>
-                </div>
-              </mat-option>
-              <mat-option *ngFor="let user of availableUsers" [value]="user.id">
-                <div class="user-option">
-                  <div class="user-info">
-                    <div class="user-name">{{ user.name }}</div>
-
-                    <div class="user-meta">
-                      · <span class="user-role">{{ roleDisplay(user.role) }}</span>
-                      <span class="user-dept" *ngIf="user.department">· {{ user.department }}</span>
-                    </div>
-
-                    <div class="user-extra" *ngIf="user.email">
-                      <mat-icon class="email-icon">email</mat-icon>
-                      <span class="user-email">{{ user.email }}</span>
-                    </div>
-
-                    <div
-                      class="user-status"
-                      [class.user-available]="user.isAvailable"
-                      [class.user-busy]="!user.isAvailable"
-                    >
-                      {{ user.isAvailable ? 'Доступен' : 'Занят' }}
-                    </div>
-                  </div>
-                </div>
-              </mat-option>
-            </mat-select>
-            <mat-icon matSuffix>person_pin</mat-icon>
-            <mat-error *ngIf="dealForm.get('assignedTo')?.hasError('required')">
-              Ответственный обязателен
-            </mat-error>
-          </mat-form-field>
+          <app-user-selector
+            formControlName="assignedTo"
+            label="Ответственный"
+            placeholder="-- Выберите ответственного --"
+            [required]="true"
+            appearance="outline"
+            [showEmail]="true"
+            [showStatus]="true"
+            [showDepartment]="true"
+            [showRole]="true"
+            icon="person_pin"
+            errorMessage="Ответственный обязателен"
+            class="full-width">
+          </app-user-selector>
 
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Заметки</mat-label>

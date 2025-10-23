@@ -1,4 +1,5 @@
 import { Controller, Post, UseInterceptors, UploadedFile, Get, Delete, Param } from '@nestjs/common';
+import { Body, Put } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { IvrMediaService } from './ivr-media.service';
@@ -29,4 +30,10 @@ export class IvrMediaController {
 
   @Delete(':id')
   async del(@Param('id') id: string){ await this.svc.remove(id); return { ok: true }; }
+
+  @Put(':id')
+  async rename(@Param('id') id: string, @Body() body: { name: string }){
+    const res = await this.svc.rename(id, body.name);
+    return res ? res : { ok: false };
+  }
 }

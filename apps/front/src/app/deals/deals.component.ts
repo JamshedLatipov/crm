@@ -156,7 +156,7 @@ import { User } from '../users/users.service';
                 <div class="title-cell">
                   <div class="deal-icon">{{ deal.title ? (deal.title.charAt(0) | uppercase) : '?' }}</div>
                   <div class="title-meta">
-                    <a class="title-link" (click)="viewDeal(deal)">{{ deal.title }}</a>
+                    <a class="title-link" (click)="viewDeal(deal)">{{ deal.title || 'Без названия' }}</a>
                     <div *ngIf="deal.stage" class="deal-stage">{{ deal.stage.name }}</div>
                   </div>
                 </div>
@@ -285,7 +285,7 @@ import { User } from '../users/users.service';
         gap: 12px;
 
         button[mat-raised-button][color="primary"] {
-          background: linear-gradient(90deg,#2f78ff,#2b6bff);
+          background: var(--primary-color);
           color: #fff;
           border-radius: 10px;
           padding: 10px 16px;
@@ -386,9 +386,15 @@ import { User } from '../users/users.service';
         border: 1px solid var(--border-color);
         
         .stat-icon {
-          padding: 12px;
+          width: 48px;
+          height: 48px;
+          padding: 0;
           border-radius: 50%;
           background: var(--primary-color-light);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          align-self: center;
           
           &.success {
             background: rgba(46, 125, 50, 0.1);
@@ -409,6 +415,12 @@ import { User } from '../users/users.service';
             width: 24px;
             height: 24px;
             font-size: 24px;
+          }
+          /* force mat-icon to be centered inside the square stat-icon */
+          mat-icon {
+            display: block;
+            margin: auto;
+            line-height: 1;
           }
         }
         
@@ -555,7 +567,7 @@ import { User } from '../users/users.service';
 
     /* Large rounded icon at the start of the row */
     .deal-icon {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: var(--primary-color, #667eea);
       color: white;
       border-radius: 50%;
       width: 48px;
@@ -568,6 +580,11 @@ import { User } from '../users/users.service';
     }
 
     .title-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0; /* Позволяет тексту переноситься */
+      
       .deal-title {
         font-weight: 600;
         margin-bottom: 2px;
@@ -578,6 +595,11 @@ import { User } from '../users/users.service';
         text-decoration: none;
         padding: 0;
         min-width: auto;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
         
         &:hover {
           text-decoration: underline;
@@ -901,7 +923,12 @@ export class DealsComponent implements OnInit {
     this.isLoading = true;
     // Pass 1-based page index to backend if supported
     const backendPage = this.currentPage + 1;
-    this.dealsService.listDeals(backendPage, this.pageSize).subscribe({
+    this.dealsService.listDeals(backendPage, this.pageSize, {
+      q: this.searchQuery || undefined,
+      status: this.selectedStatus || undefined,
+      sortBy: this.sortBy,
+      sortDir: this.sortDirection
+    }).subscribe({
       next: (res) => {
         // Accept both array or paged response { items, total }
         const data: Deal[] = Array.isArray(res) ? res : (res as any).items || [];
@@ -910,13 +937,20 @@ export class DealsComponent implements OnInit {
         // Нормализуем данные сделок, убеждаемся что amount - число
         this.deals = data.map(deal => ({
           ...deal,
-          amount: typeof deal.amount === 'number' ? deal.amount : parseFloat(deal.amount) || 0
+          amount: typeof deal.amount === 'number' ? deal.amount : parseFloat(deal.amount as any) || 0
         }));
-        // Update totalResults (if backend provided total) or clear it when backend returned plain array
+
+        // Update totalResults (if backend provided total)
         this.totalResults = typeof totalFromBackend === 'number' ? totalFromBackend : undefined;
-        // If backend returned full list for this page, treat it as current page data
-        // For now keep client-side filtering/sorting on top of received items
-        this.applyFilters();
+
+        // When backend provided paged response, show server page directly; otherwise, client-side filtering will be applied
+        if (typeof this.totalResults === 'number') {
+          this.filteredDeals = [...this.deals];
+          this.updatePagination();
+        } else {
+          this.applyFilters();
+        }
+
         this.calculateStats();
         this.isLoading = false;
       },
@@ -929,64 +963,67 @@ export class DealsComponent implements OnInit {
   }
 
   applyFilters() {
-    // If server-side paging is active (we have totalResults), assume backend returned already filtered/sorted page.
-    if (typeof this.totalResults === 'number') {
-      // Do not apply client-side filtering/sorting; show server-provided page as-is
-      this.filteredDeals = [...this.deals];
-      // Keep currentPage as set by paginator (do not reset to 0)
-      this.updatePagination();
-      return;
+    // Build a working copy of available deals (typically current page when backend paging is used)
+    let filtered = Array.isArray(this.deals) ? [...this.deals] : [];
+
+    const query = (this.searchQuery || '').toString().trim().toLowerCase();
+
+    // Safe search: guard against missing fields
+    if (query) {
+      filtered = filtered.filter(deal => {
+        const title = (deal.title || '').toString().toLowerCase();
+        const contactName = (deal.contact?.name || '').toString().toLowerCase();
+        const companyName = (deal.company?.name || '').toString().toLowerCase();
+        const notes = (deal.notes || '').toString().toLowerCase();
+        return title.includes(query) || contactName.includes(query) || companyName.includes(query) || notes.includes(query);
+      });
     }
 
-    let filtered = [...this.deals];
-
-    // Поиск
-    if (this.searchQuery.trim()) {
-      const query = this.searchQuery.toLowerCase();
-      filtered = filtered.filter(deal =>
-        deal.title.toLowerCase().includes(query) ||
-        (deal.contact?.name?.toLowerCase().includes(query)) ||
-        (deal.company?.name?.toLowerCase().includes(query)) ||
-        (deal.notes?.toLowerCase().includes(query))
-      );
-    }
-
-    // Фильтр по статусу
+    // Filter by status if provided
     if (this.selectedStatus) {
-      filtered = filtered.filter(deal => deal.status === this.selectedStatus);
+      filtered = filtered.filter(deal => deal?.status === this.selectedStatus);
     }
 
-    // Сортировка
+    // Sorting: keep original behavior but guard field access
     filtered.sort((a, b) => {
-      let aValue: string | number | Date;
-      let bValue: string | number | Date;
+      let aValue: string | number | Date | undefined;
+      let bValue: string | number | Date | undefined;
 
       switch (this.sortBy) {
         case 'amount':
-          aValue = a.amount;
-          bValue = b.amount;
+          aValue = typeof a.amount === 'number' ? a.amount : parseFloat(a.amount as any) || 0;
+          bValue = typeof b.amount === 'number' ? b.amount : parseFloat(b.amount as any) || 0;
           break;
         case 'expectedCloseDate':
-          aValue = new Date(a.expectedCloseDate);
-          bValue = new Date(b.expectedCloseDate);
+          aValue = a.expectedCloseDate ? new Date(a.expectedCloseDate) : new Date(0);
+          bValue = b.expectedCloseDate ? new Date(b.expectedCloseDate) : new Date(0);
           break;
         case 'title':
-          aValue = a.title.toLowerCase();
-          bValue = b.title.toLowerCase();
+          aValue = (a.title || '').toString().toLowerCase();
+          bValue = (b.title || '').toString().toLowerCase();
           break;
         case 'createdAt':
         default:
-          aValue = new Date(a.createdAt);
-          bValue = new Date(b.createdAt);
+          aValue = a.createdAt ? new Date(a.createdAt) : new Date(0);
+          bValue = b.createdAt ? new Date(b.createdAt) : new Date(0);
           break;
       }
+
+      // Compare gracefully
+      if (aValue == null && bValue == null) return 0;
+      if (aValue == null) return this.sortDirection === 'asc' ? -1 : 1;
+      if (bValue == null) return this.sortDirection === 'asc' ? 1 : -1;
 
       if (aValue < bValue) return this.sortDirection === 'asc' ? -1 : 1;
       if (aValue > bValue) return this.sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
 
+    // Even when server-side paging is used (totalResults present), allow client-side filtering/sorting
+    // on the page of items we have fetched. This makes search/tabs work immediately without
+    // requiring backend filtering to be implemented.
     this.filteredDeals = filtered;
+    // Reset to first page of client-side view
     this.currentPage = 0;
     this.updatePagination();
   }
@@ -1017,15 +1054,19 @@ export class DealsComponent implements OnInit {
   }
 
   onSearchChange() {
-    this.applyFilters();
+    // When user types, request server-side filtered results (or client-side if backend returns full array)
+    this.currentPage = 0;
+    this.loadDeals();
   }
 
   onFilterChange() {
-    this.applyFilters();
+    this.currentPage = 0;
+    this.loadDeals();
   }
 
   onSortChange() {
-    this.applyFilters();
+    this.currentPage = 0;
+    this.loadDeals();
   }
 
   toggleSortDirection() {
@@ -1176,15 +1217,21 @@ export class DealsComponent implements OnInit {
   }
 
   changeAssignee(event: { deal: Deal; assignedTo: string; user: User }) {
-    this.dealsService.updateDeal(event.deal.id, { assignedTo: event.assignedTo }).subscribe({
+    this.dealsService.assignDeal(event.deal.id, event.assignedTo).subscribe({
       next: (updatedDeal) => {
         // Обновляем локальную копию сделки
         const index = this.deals.findIndex(d => d.id === updatedDeal.id);
         if (index !== -1) {
-          this.deals[index] = updatedDeal;
+          // Создаем новый объект сделки с обновленными данными
+          // Это триггернет ngOnChanges в дочернем компоненте
+          this.deals[index] = { ...updatedDeal };
           this.applyFilters();
         }
-        this.snackBar.open(`Ответственный изменен на ${event.user.name}`, 'Закрыть', { duration: 3000 });
+        this.snackBar.open(
+          `Ответственный изменен на ${event.user?.name || event.assignedTo}`, 
+          'Закрыть', 
+          { duration: 3000 }
+        );
       },
       error: (error) => {
         console.error('Ошибка изменения ответственного:', error);
@@ -1212,7 +1259,8 @@ export class DealsComponent implements OnInit {
       this.sortBy = column;
       this.sortDirection = 'desc';
     }
-    this.applyFilters();
+    this.currentPage = 0;
+    this.loadDeals();
   }
 
   onStatusTabChange(status: string | null) {

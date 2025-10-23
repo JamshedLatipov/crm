@@ -22,6 +22,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { UserManagementService, User, UserFilters } from '../../../services/user-management.service';
 import { PasswordResetSnackbarComponent } from '../../../shared/components/password-reset-snackbar/password-reset-snackbar.component';
 import { StatusTabsComponent } from '../../../shared/components/status-tabs/status-tabs.component';
+import { roleDisplay, getWorkloadColor } from '../../../shared/utils';
 
 @Component({
   selector: 'app-user-list',
@@ -348,15 +349,7 @@ export class UserListComponent implements OnInit {
 
   // Utility methods
   getRoleDisplayName(role: string): string {
-    const roleNames: Record<string, string> = {
-      'admin': 'Администратор',
-      'sales_manager': 'Менеджер продаж',
-      'senior_manager': 'Старший менеджер',
-      'team_lead': 'Руководитель команды',
-      'account_manager': 'Менеджер аккаунтов',
-      'client': 'Клиент'
-    };
-    return roleNames[role] || role;
+    return roleDisplay(role);
   }
 
   getSkillsTooltip(skills: string[]): string {
@@ -372,8 +365,6 @@ export class UserListComponent implements OnInit {
   }
 
   getWorkloadColor(percentage: number): string {
-    if (percentage < 50) return 'bg-green-500';
-    if (percentage < 80) return 'bg-yellow-500';
-    return 'bg-red-500';
+    return getWorkloadColor(percentage);
   }
 }

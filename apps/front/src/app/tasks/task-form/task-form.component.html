@@ -1,0 +1,247 @@
+<div class="task-form-container">
+  <!-- Хедер -->
+  <div class="form-header">
+    <button mat-icon-button class="back-button" (click)="cancel()">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <div class="header-content">
+      <h1>{{ isEdit ? 'Редактировать задачу' : 'Новая задача' }}</h1>
+      <p class="subtitle">{{ isEdit ? 'Обновите информацию о задаче' : 'Заполните информацию о новой задаче' }}</p>
+    </div>
+  </div>
+
+  <!-- Загрузка -->
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Загрузка данных...</p>
+  </div>
+
+  <!-- Форма -->
+  <form *ngIf="!isLoading" [formGroup]="form" (ngSubmit)="save()" class="task-form">
+    <mat-card class="form-card">
+      <mat-card-content>
+        <!-- Название задачи -->
+        <div class="form-section">
+          <h3 class="section-title">Основная информация</h3>
+          
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Название задачи</mat-label>
+            <input 
+              matInput 
+              formControlName="title" 
+              placeholder="Введите название задачи"
+              required />
+            <mat-icon matPrefix>title</mat-icon>
+            <mat-error *ngIf="form.get('title')?.hasError('required')">
+              Название обязательно
+            </mat-error>
+            <mat-error *ngIf="form.get('title')?.hasError('minlength')">
+              Минимум 3 символа
+            </mat-error>
+          </mat-form-field>
+
+          <!-- Описание -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Описание</mat-label>
+            <textarea 
+              matInput 
+              formControlName="description" 
+              rows="4"
+              placeholder="Опишите задачу подробнее"></textarea>
+            <mat-icon matPrefix>description</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <!-- Статус и исполнитель -->
+        <div class="form-section">
+          <h3 class="section-title">Назначение и статус</h3>
+          
+          <div class="form-row">
+            <!-- Статус -->
+            <mat-form-field appearance="outline" class="half-width">
+              <mat-label>Статус</mat-label>
+              <mat-select formControlName="status" required>
+                <mat-option *ngFor="let status of statusOptions" [value]="status.value">
+                  {{ status.label }}
+                </mat-option>
+              </mat-select>
+              <mat-icon matPrefix>flag</mat-icon>
+            </mat-form-field>
+
+            <!-- Исполнитель -->
+            <app-user-selector
+              formControlName="assignedToId"
+              label="Исполнитель"
+              placeholder="Не назначено"
+              [required]="false"
+              [showEmail]="true"
+              [showStatus]="true"
+              [showDepartment]="true"
+              [showRole]="true"
+              icon="person"
+              class="half-width">
+            </app-user-selector>
+          </div>
+        </div>
+
+        <!-- Срок выполнения -->
+        <div class="form-section">
+          <h3 class="section-title">Временные рамки</h3>
+          
+          <!-- Тип задачи (вынесен в отдельный компонент) -->
+          <app-task-type-select
+            formControlName="taskTypeId"
+            [taskTypes]="taskTypes"
+            (selectionChange)="onTaskTypeChange($event)"
+            class="full-width">
+          </app-task-type-select>
+
+          <!-- Тоггл автоматического расчета -->
+          <div class="auto-calculate-toggle" 
+               [class.with-deadline]="form.get('autoCalculateDueDate')?.value && calculatedDueDate"
+               *ngIf="form.get('taskTypeId')?.value">
+            <div class="toggle-wrapper">
+              <mat-slide-toggle 
+                formControlName="autoCalculateDueDate"
+                color="primary"
+                (change)="onAutoCalculateToggle($event.checked)">
+                <div class="toggle-content">
+                  <span class="toggle-label">Автоматический расчет</span>
+                </div>
+              </mat-slide-toggle>
+              <p class="toggle-hint" *ngIf="!form.get('autoCalculateDueDate')?.value">
+                На основе типа задачи
+              </p>
+            </div>
+            
+            <!-- Рассчитанный дедлайн внутри той же плашки -->
+            <div class="deadline-display" *ngIf="form.get('autoCalculateDueDate')?.value && calculatedDueDate">
+              <mat-icon class="deadline-icon">event</mat-icon>
+              <div class="deadline-content">
+                <span class="deadline-label">Дедлайн:</span>
+                <span class="deadline-value">{{ formatDate(calculatedDueDate) }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Датапикер (только если тоггл выключен) -->
+          <mat-form-field 
+            appearance="outline" 
+            class="full-width"
+            *ngIf="!form.get('autoCalculateDueDate')?.value || !form.get('taskTypeId')?.value">
+            <mat-label>Срок выполнения</mat-label>
+            <input 
+              matInput 
+              [matDatepicker]="picker" 
+              formControlName="dueDate"
+              placeholder="Выберите дату" />
+            <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+            <mat-datepicker #picker></mat-datepicker>
+            <mat-icon matPrefix>event</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <!-- Привязка к лиду или сделке -->
+        <div class="form-section">
+          <h3 class="section-title">Связь с лидом или сделкой</h3>
+          <p class="section-subtitle">Привяжите задачу к лиду или сделке (необязательно)</p>
+          
+          <div class="form-row">
+            <!-- Выбор лида -->
+            <mat-form-field appearance="outline" class="half-width">
+              <mat-label>Лид</mat-label>
+              <input 
+                type="text"
+                matInput 
+                formControlName="leadSearch"
+                [matAutocomplete]="autoLead"
+                placeholder="Начните вводить имя лида" />
+              <mat-icon matPrefix>person_search</mat-icon>
+              <button 
+                mat-icon-button 
+                matSuffix 
+                *ngIf="form.get('leadId')?.value"
+                (click)="form.patchValue({leadId: null, leadSearch: ''}); $event.stopPropagation()"
+                type="button">
+                <mat-icon>clear</mat-icon>
+              </button>
+              <mat-autocomplete 
+                #autoLead="matAutocomplete" 
+                (optionSelected)="onLeadSelected($event.option.value)">
+                <mat-option *ngFor="let lead of filteredLeads$ | async" [value]="lead">
+                  <div class="autocomplete-option">
+                    <span class="option-name">{{ lead.name }}</span>
+                    <span class="option-detail" *ngIf="lead.email">{{ lead.email }}</span>
+                  </div>
+                </mat-option>
+              </mat-autocomplete>
+            </mat-form-field>
+
+            <!-- Выбор сделки -->
+            <mat-form-field appearance="outline" class="half-width">
+              <mat-label>Сделка</mat-label>
+              <input 
+                type="text"
+                matInput 
+                formControlName="dealSearch"
+                [matAutocomplete]="autoDeal"
+                placeholder="Начните вводить название сделки" />
+              <mat-icon matPrefix>business_center</mat-icon>
+              <button 
+                mat-icon-button 
+                matSuffix 
+                *ngIf="form.get('dealId')?.value"
+                (click)="form.patchValue({dealId: null, dealSearch: ''}); $event.stopPropagation()"
+                type="button">
+                <mat-icon>clear</mat-icon>
+              </button>
+              <mat-autocomplete 
+                #autoDeal="matAutocomplete"
+                (optionSelected)="onDealSelected($event.option.value)">
+                <mat-option *ngFor="let deal of filteredDeals$ | async" [value]="deal">
+                  <div class="autocomplete-option">
+                    <span class="option-name">{{ deal.title }}</span>
+                    <span class="option-detail" *ngIf="deal.amount">
+                      {{ deal.amount | currency:deal.currency:'symbol':'1.0-0' }}
+                    </span>
+                  </div>
+                </mat-option>
+              </mat-autocomplete>
+            </mat-form-field>
+          </div>
+
+          <!-- Отображение выбранных значений -->
+          <div class="selected-items" *ngIf="form.get('leadId')?.value || form.get('dealId')?.value">
+            <div class="selected-item" *ngIf="form.get('leadId')?.value">
+              <mat-icon>link</mat-icon>
+              <span>Привязано к лиду: <strong>{{ displayLeadFn(form.get('leadId')?.value) }}</strong></span>
+            </div>
+            <div class="selected-item" *ngIf="form.get('dealId')?.value">
+              <mat-icon>link</mat-icon>
+              <span>Привязано к сделке: <strong>{{ displayDealFn(form.get('dealId')?.value) }}</strong></span>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Кнопки действий -->
+    <div class="form-actions">
+      <button 
+        mat-raised-button 
+        type="button" 
+        (click)="cancel()"
+        [disabled]="isSaving">
+        Отмена
+      </button>
+      <button 
+        mat-raised-button 
+        color="primary" 
+        type="submit"
+        [disabled]="form.invalid || isSaving">
+        <mat-spinner *ngIf="isSaving" diameter="20" class="button-spinner"></mat-spinner>
+        <span *ngIf="!isSaving">{{ isEdit ? 'Обновить' : 'Создать' }}</span>
+      </button>
+    </div>
+  </form>
+</div>

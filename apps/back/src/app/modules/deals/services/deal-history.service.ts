@@ -351,12 +351,16 @@ export class DealHistoryService {
   }>> {
     const queryBuilder = this.historyRepo
       .createQueryBuilder('history')
-      .select('history.oldValue', 'fromStage')
-      .addSelect('history.newValue', 'toStage') 
+      .leftJoin('pipeline_stages', 'fromStageEntity', 'fromStageEntity.id = history."oldValue"::uuid')
+      .leftJoin('pipeline_stages', 'toStageEntity', 'toStageEntity.id = history."newValue"::uuid')
+      .select('history.oldValue', 'fromStageId')
+      .addSelect('history.newValue', 'toStageId')
+      .addSelect('fromStageEntity.name', 'fromStage')
+      .addSelect('toStageEntity.name', 'toStage')
       .addSelect('COUNT(*)', 'count')
       .where('history.changeType = :changeType', { changeType: DealChangeType.STAGE_MOVED })
       .andWhere('history.fieldName = :fieldName', { fieldName: 'stageId' })
-      .groupBy('history.oldValue, history.newValue');
+      .groupBy('history.oldValue, history.newValue, fromStageEntity.name, toStageEntity.name');
 
     if (dateFrom) {
       queryBuilder.andWhere('history.createdAt >= :dateFrom', { dateFrom });
@@ -369,8 +373,8 @@ export class DealHistoryService {
     const results = await queryBuilder.getRawMany();
 
     return results.map(result => ({
-      fromStage: result.fromStage || 'Неизвестно',
-      toStage: result.toStage || 'Неизвестно',
+      fromStage: result.fromStage || 'Неизвестный этап',
+      toStage: result.toStage || 'Неизвестный этап',
       count: parseInt(result.count, 10)
     }));
   }

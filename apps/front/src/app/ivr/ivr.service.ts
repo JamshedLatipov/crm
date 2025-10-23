@@ -19,6 +19,7 @@ export interface IvrNodeDto {
   repeatDigit?: string | null;
   rootDigit?: string | null;
   queueName?: string | null;
+  hasChildren?: boolean; // Признак наличия дочерних элементов
 }
 
 @Injectable({ providedIn: 'root' })
@@ -56,5 +57,14 @@ export class IvrApiService {
   }
   deleteMedia(id: string) {
     return this.http.delete(environment.apiBase + `/ivr/media/${id}`);
+  }
+
+  renameMedia(id: string, name: string) {
+    return this.http.put(environment.apiBase + `/ivr/media/${id}`, { name });
+  }
+
+  // Queues
+  queues() {
+    return this.http.get<{ id: number; name: string }[]>(environment.apiBase + '/queues');
   }
 }

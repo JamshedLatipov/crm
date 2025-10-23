@@ -1,0 +1,61 @@
+<mat-form-field [appearance]="appearance" class="user-selector-field">
+  <mat-label>{{ label }}</mat-label>
+  <mat-select 
+    [value]="value" 
+    (valueChange)="onValueChange($event)"
+    [disabled]="isDisabled"
+    [required]="required">
+    
+    <!-- Custom trigger for selected value display -->
+    <mat-select-trigger *ngIf="selectedUser">
+      <div class="selected-user-display">
+        <mat-icon class="selected-user-icon">account_circle</mat-icon>
+        <div class="selected-user-info">
+          <span class="selected-user-name">{{ selectedUser.name }}</span>
+          <span class="selected-user-meta" *ngIf="(showRole && selectedUser.role) || (showDepartment && selectedUser.department)">
+            <ng-container *ngIf="showRole && selectedUser.role">{{ roleDisplay(selectedUser.role) }}</ng-container>
+            <ng-container *ngIf="showRole && selectedUser.role && showDepartment && selectedUser.department"> · </ng-container>
+            <ng-container *ngIf="showDepartment && selectedUser.department">{{ departmentDisplay(selectedUser.department) }}</ng-container>
+          </span>
+        </div>
+      </div>
+    </mat-select-trigger>
+    
+    <mat-option [value]="null">{{ placeholder }}</mat-option>
+    
+    <mat-option *ngIf="isLoading" disabled>
+      <div class="loading-option">
+        <mat-spinner diameter="18"></mat-spinner>
+        <span>Загрузка пользователей...</span>
+      </div>
+    </mat-option>
+    
+    <mat-option *ngFor="let user of availableUsers" [value]="user.id">
+      <div class="user-option">
+        <div class="user-info">
+          <div class="user-name">
+            <span class="status-indicator" 
+                  *ngIf="showStatus"
+                  [class.status-available]="user.isAvailable"
+                  [class.status-busy]="!user.isAvailable"></span>
+            {{ user.name }}
+          </div>
+
+          <div class="user-meta" *ngIf="showRole || showDepartment || (showEmail && user.email)">
+            <span class="user-role" *ngIf="showRole && user.role">{{ roleDisplay(user.role) }}</span>
+            <span *ngIf="showRole && user.role && showDepartment && user.department"> · </span>
+            <span class="user-dept" *ngIf="showDepartment && user.department">
+              {{ departmentDisplay(user.department) }}
+            </span>
+            <span *ngIf="(showRole || showDepartment) && showEmail && user.email"> · </span>
+            <span class="user-email" *ngIf="showEmail && user.email">{{ user.email }}</span>
+          </div>
+        </div>
+      </div>
+    </mat-option>
+  </mat-select>
+  
+  <mat-icon matSuffix *ngIf="icon">{{ icon }}</mat-icon>
+  
+  <mat-error *ngIf="required">{{ errorMessage }}</mat-error>
+</mat-form-field>

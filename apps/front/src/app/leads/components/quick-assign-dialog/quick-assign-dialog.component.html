@@ -67,61 +67,17 @@
       </div>
     }
 
-    <!-- Выбор менеджера -->
+    <!-- Выбор менеджера (общий селектор) -->
     <div class="manager-selection-section">
-      <mat-form-field class="full-width" appearance="outline">
-        <mat-label>Выберите менеджера</mat-label>
-        <mat-select [(ngModel)]="selectedManagerId" [disabled]="loading">
-          <!-- Trigger: show avatar + name for the selected manager -->
-          <mat-select-trigger>
-            <div class="selected-trigger">
-              <ng-container *ngIf="getSelectedManager(); else noSelected">
-                <app-user-avatar [fullName]="getSelectedManager()!.fullName" size="small"></app-user-avatar>
-                <span class="trigger-name">{{ getSelectedManager()!.fullName }}</span>
-              </ng-container>
-              <ng-template #noSelected>
-                <mat-icon>person</mat-icon>
-                <span class="trigger-placeholder">Не выбрано</span>
-              </ng-template>
-            </div>
-          </mat-select-trigger>
-
-          <!-- Снять назначение -->
-          <mat-option value="" class="unassign-option">
-            <div class="option-content">
-              <mat-icon>person_off</mat-icon>
-              <span class="muted">Снять назначение</span>
-            </div>
-          </mat-option>
-
-          <!-- Manager options -->
-          <mat-option
-            *ngFor="let manager of availableManagers; trackBy: trackByManagerId"
-            [value]="manager.id"
-            [disabled]="!manager.isAvailableForAssignment"
-            [class.overloaded-option]="manager.isOverloaded"
-          >
-            <div class="manager-option" style="display: flex; align-items: center;">
-              <app-user-avatar style="margin-right: 10px;" [fullName]="manager.fullName" size="small"></app-user-avatar>
-              <div>
-                <div class="manager-option-details">
-                  <div class="manager-name">{{ manager.fullName }}</div>
-                  <div class="manager-meta">
-                    <span class="manager-role" *ngIf="manager.roles?.length">{{ getRoleLabel(manager.roles[0]) }}</span>
-                    <span class="manager-workload" [class.warning]="manager.isOverloaded">
-                      {{ manager.currentLeadsCount }}/{{ manager.maxLeadsCapacity }}
-                    </span>
-                  </div>
-                </div>
-                <div class="status-badge" [class.available]="manager.isAvailableForAssignment" [class.busy]="!manager.isAvailableForAssignment" aria-hidden="true">
-                  <mat-icon *ngIf="manager.isAvailableForAssignment">check_circle</mat-icon>
-                  <mat-icon *ngIf="!manager.isAvailableForAssignment">block</mat-icon>
-                </div>
-              </div>
-            </div>
-          </mat-option>
-        </mat-select>
-      </mat-form-field>
+      <app-user-selector
+        class="full-width"
+        [(ngModel)]="selectedManagerId"
+        [placeholder]="'Выберите менеджера'"
+        [appearance]="'outline'"
+        [showEmail]="true"
+        [showRole]="true"
+        [showDepartment]="true"
+      ></app-user-selector>
 
       <!-- Информация о выбранном менеджере -->
       <div class="selected-manager-info" *ngIf="getSelectedManager()">

@@ -26,17 +26,46 @@ export class DealsService {
    * Если переданы page и limit - возвращаем постраничный ответ { items, total }
    * иначе - возвращаем полный массив сделок для обратной совместимости
    */
-  async listDeals(page?: number, limit?: number): Promise<Deal[] | { items: Deal[]; total: number }> {
+  async listDeals(
+    page?: number,
+    limit?: number,
+    opts?: { q?: string; sortBy?: string; sortDir?: 'asc' | 'desc' }
+  ): Promise<Deal[] | { items: Deal[]; total: number }> {
+    // If paginated, build a query with optional filters/sorting
     if (page != null && limit != null) {
-      const [items, total] = await this.dealRepository.findAndCount({
-        relations: ['stage', 'company', 'contact', 'lead'],
-        order: { createdAt: 'DESC' },
-        skip: (page - 1) * limit,
-        take: limit,
-      });
+      const qb = this.dealRepository.createQueryBuilder('deal')
+        .leftJoinAndSelect('deal.stage', 'stage')
+        .leftJoinAndSelect('deal.company', 'company')
+        .leftJoinAndSelect('deal.contact', 'contact')
+        .leftJoinAndSelect('deal.lead', 'lead');
+
+      // Search query across title, contact.name and company.name if provided
+      if (opts?.q) {
+        const q = `%${opts.q}%`;
+        qb.andWhere('(deal.title ILIKE :q OR contact->>\'name\' ILIKE :q OR company->>\'name\' ILIKE :q)', { q });
+      }
+
+      // Sorting: support some known fields, default to createdAt desc
+      const sortField = opts?.sortBy || 'createdAt';
+      const sortDir = opts?.sortDir === 'asc' ? 'ASC' : 'DESC';
+      // Map sortBy to allowed columns to avoid SQL injection
+      const allowedSort: Record<string, string> = {
+        createdAt: 'deal.createdAt',
+        amount: 'deal.amount',
+        expectedCloseDate: 'deal.expectedCloseDate',
+        title: 'deal.title',
+      };
+      const orderColumn = allowedSort[sortField] || 'deal.createdAt';
+
+      qb.orderBy(orderColumn, sortDir as 'ASC' | 'DESC')
+        .skip((page - 1) * limit)
+        .take(limit);
+
+      const [items, total] = await qb.getManyAndCount();
       return { items, total };
     }
 
+    // Non-paginated legacy behavior
     return this.dealRepository.find({
       relations: ['stage', 'company', 'contact', 'lead'],
       order: { createdAt: 'DESC' },
@@ -419,26 +448,41 @@ export class DealsService {
   }
 
   async assignDeal(id: string, managerId: string, userId?: string, userName?: string): Promise<Deal> {
-    console.log('assignDeal called with:', { id, managerId, userId, userName });
+    // Нормализуем managerId - если это массив, берем первый элемент
+    // Если это объект/JSON, пытаемся извлечь значение
+    let normalizedManagerId: string;
+    
+    if (Array.isArray(managerId)) {
+      normalizedManagerId = String(managerId[0]);
+      console.log('assignDeal: managerId was an array, normalized to:', normalizedManagerId);
+    } else if (typeof managerId === 'object' && managerId !== null) {
+      // Если это объект, пытаемся получить значение
+      normalizedManagerId = String(Object.values(managerId)[0] || managerId);
+      console.log('assignDeal: managerId was an object, normalized to:', normalizedManagerId);
+    } else {
+      normalizedManagerId = String(managerId);
+    }
+    
+    console.log('assignDeal called with:', { id, originalManagerId: managerId, normalizedManagerId, userId, userName });
     const existingDeal = await this.getDealById(id);
     const oldAssignedTo = existingDeal.assignedTo;
     console.log('existing deal assignedTo:', oldAssignedTo, typeof oldAssignedTo);
 
     // Если пользователь уже назначен, ничего не делаем
-    if (oldAssignedTo === managerId) {
+    if (oldAssignedTo === normalizedManagerId) {
       return existingDeal;
     }
 
     // Получаем ID пользователя для назначения
     let userIdNum: number;
-    const parsedUserId = Number(managerId);
+    const parsedUserId = Number(normalizedManagerId);
     if (!Number.isNaN(parsedUserId)) {
       userIdNum = parsedUserId;
     } else {
-      // Если managerId - это username, ищем пользователя
-      const userEntity = await this.userService.findByUsername(managerId);
+      // Если normalizedManagerId - это username, ищем пользователя
+      const userEntity = await this.userService.findByUsername(normalizedManagerId);
       if (!userEntity) {
-        throw new Error(`User not found: ${managerId}`);
+        throw new Error(`User not found: ${normalizedManagerId}`);
       }
       userIdNum = userEntity.id;
     }
@@ -486,8 +530,8 @@ export class DealsService {
     });
     console.log('assignment result:', assignmentResult);
 
-    // Обновляем поле assignedTo в сделке
-    const updateData = { assignedTo: managerId };
+    // Обновляем поле assignedTo в сделке - используем нормализованное значение
+    const updateData = { assignedTo: normalizedManagerId };
     console.log('updating deal with:', updateData);
     const updated = await this.updateDeal(id, updateData, userId, userName);
     console.log('updated deal assignedTo:', updated.assignedTo, typeof updated.assignedTo);

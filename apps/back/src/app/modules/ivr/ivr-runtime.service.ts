@@ -6,6 +6,7 @@ import { IvrNode } from './entities/ivr-node.entity';
 import axios from 'axios';
 import { IvrLogService } from './ivr-log.service';
 import { IvrLogEvent } from './entities/ivr-log.entity';
+import { IvrMedia } from '../ivr-media/entities/ivr-media.entity';
 
 interface AriPlaybackEvent {
   playback?: { id?: string; target_uri?: string };
@@ -37,6 +38,7 @@ export class IvrRuntimeService implements OnModuleInit {
   constructor(
     private readonly ari: AriService,
     @InjectRepository(IvrNode) private readonly repo: Repository<IvrNode>,
+    @InjectRepository(IvrMedia) private readonly mediaRepo: Repository<IvrMedia>,
     private readonly logSvc: IvrLogService
   ) {}
 
@@ -120,16 +122,27 @@ export class IvrRuntimeService implements OnModuleInit {
     switch (node.action) {
       case 'playback': {
         if (node.payload) {
+          let mediaRef = node.payload;
+          // if payload looks like a UUID (media id), resolve filename
+          if (/^[0-9a-fA-F-]{36,}$/.test(String(node.payload))) {
+            const m = await this.mediaRepo.findOne({ where: { id: node.payload } });
+            if (m) mediaRef = m.filename.replace(/\.[^.]+$/, '');
+          }
           await this.safeChannelOp(channelId, () =>
-            client.channels.play({ channelId, media: `sound:${node.payload}` })
+            client.channels.play({ channelId, media: `sound:${mediaRef}` })
           );
         }
         break;
       }
       case 'menu': {
         if (node.payload) {
+          let mediaRef = node.payload;
+          if (/^[0-9a-fA-F-]{36,}$/.test(String(node.payload))) {
+            const m = await this.mediaRepo.findOne({ where: { id: node.payload } });
+            if (m) mediaRef = m.filename.replace(/\.[^.]+$/, '');
+          }
           await this.safeChannelOp(channelId, () =>
-            client.channels.play({ channelId, media: `sound:${node.payload}` })
+            client.channels.play({ channelId, media: `sound:${mediaRef}` })
           );
           const stLocal = this.calls.get(channelId);
           if (stLocal) stLocal.waitingForDigit = node.allowEarlyDtmf;

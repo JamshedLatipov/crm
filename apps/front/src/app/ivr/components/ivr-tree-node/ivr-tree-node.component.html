@@ -1,0 +1,168 @@
+<div
+  class="tree-node"
+  [class.selected]="isSelected()"
+  [class.has-children]="hasChildren()"
+  [style.padding-left.px]="level() * 20"
+>
+  <div class="node-content" (click)="onSelect.emit(node())">
+    <div class="node-main">
+      <div class="node-info">
+        <div class="node-icon" [class.child-icon]="level() > 0">
+          <mat-icon>{{
+            level() === 0 ? 'device_hub' : 'subdirectory_arrow_right'
+          }}</mat-icon>
+        </div>
+        <div>
+          <div
+            class="node-title"
+            [matTooltip]="node.name || '(без названия)'"
+            matTooltipPosition="above"
+          >
+            <span class="node-name">{{ node.name || '(без названия)' }}</span>
+          </div>
+          <div class="node-meta">
+            <span class="action-badge">{{ actionLabel() }}</span>
+            <span class="children-count" *ngIf="hasChildren() && childrenCount() > 0">
+              {{ childrenCount() }}
+              {{ childrenCount() === 1 ? 'элемент' : 'элементов' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="node-actions">
+        <button
+          mat-icon-button
+          color="primary"
+          (click)="onAddChild.emit(node()); $event.stopPropagation()"
+          matTooltip="Добавить дочерний"
+        >
+          <mat-icon>add</mat-icon>
+        </button>
+        <button
+          mat-icon-button
+          color="primary"
+          (click)="onEdit.emit(node()); $event.stopPropagation()"
+          matTooltip="Редактировать"
+        >
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button
+          mat-icon-button
+          color="warn"
+          (click)="onDelete.emit(node()); $event.stopPropagation()"
+          matTooltip="Удалить"
+        >
+          <mat-icon>delete</mat-icon>
+        </button>
+      </div>
+    </div>
+
+  <div class="node-details" *ngIf="shouldShowDetails()">
+      <button
+        mat-icon-button
+        class="expand-btn"
+        *ngIf="hasChildren()"
+        (click)="toggleExpand($event)"
+      >
+        <!-- use signal-call syntax so template updates as soon as signals change -->
+        <mat-icon *ngIf="!childrenLoaded()">chevron_right</mat-icon>
+        <mat-icon *ngIf="childrenLoaded()">{{ expanded() ? 'expand_more' : 'chevron_right' }}</mat-icon>
+      </button>
+
+      <div class="detail-badges">
+        <span class="digit-prefix" *ngIf="node().digit"
+          >{{ node().digit }}</span
+        >
+
+        <mat-icon
+          *ngIf="node().queueName"
+          class="detail-badge"
+          [matTooltip]="'Очередь: ' + node().queueName"
+          matTooltipPosition="above"
+          >group</mat-icon
+        >
+
+        <mat-icon
+          *ngIf="node().payload"
+          class="detail-badge"
+          [matTooltip]="'Аудиофайл: ' + node().payload"
+          matTooltipPosition="above"
+          >music_note</mat-icon
+        >
+
+        <mat-icon
+          *ngIf="node().webhookUrl"
+          class="detail-badge"
+          [matTooltip]="(node().webhookMethod || 'GET') + ': ' + node().webhookUrl"
+          matTooltipPosition="above"
+          >webhook</mat-icon
+        >
+
+        <mat-icon
+          *ngIf="node().timeoutMs"
+          class="detail-badge"
+          [matTooltip]="'Таймаут: ' + node().timeoutMs + 'мс'"
+          matTooltipPosition="above"
+          >timer</mat-icon
+        >
+
+        <mat-icon
+          *ngIf="node().backDigit"
+          class="detail-badge"
+          [matTooltip]="'Назад по клавише: ' + node().backDigit"
+          matTooltipPosition="above"
+          >keyboard_return</mat-icon
+        >
+
+        <mat-icon
+          *ngIf="node().repeatDigit"
+          class="detail-badge"
+          [matTooltip]="'Повтор по клавише: ' + node().repeatDigit"
+          matTooltipPosition="above"
+          >repeat</mat-icon
+        >
+
+        <mat-icon
+          *ngIf="node().rootDigit"
+          class="detail-badge"
+          [matTooltip]="'В корень по клавише: ' + node().rootDigit"
+          matTooltipPosition="above"
+          >home</mat-icon
+        >
+
+        <mat-icon
+          *ngIf="node().allowEarlyDtmf"
+          class="detail-badge early-dtmf"
+          matTooltip="Ранний ввод DTMF разрешён"
+          matTooltipPosition="above"
+          >dialpad</mat-icon
+        >
+      </div>
+    </div>
+  </div>
+
+  <!-- render children container as soon as user expands; show loader while children are not yet loaded -->
+  <div class="children-container" *ngIf="expanded()">
+    <div class="loading-container" *ngIf="!childrenLoaded()">
+      <mat-spinner diameter="20"></mat-spinner>
+      <span class="loading-text">Загрузка...</span>
+    </div>
+    
+    <app-ivr-tree-node
+      *ngFor="let child of loadedChildren()"
+      [node]="child"
+      [children]="getNodeChildren(child.id)"
+      [selectedId]="selectedId()"
+      [level]="level() + 1"
+      [actionLabels]="actionLabels()"
+      [allNodes]="allNodes()"
+      [lazyLoad]="lazyLoad()"
+      (onSelect)="onSelect.emit($event)"
+      (onAddChild)="onAddChild.emit($event)"
+      (onEdit)="onEdit.emit($event)"
+      (onDelete)="onDelete.emit($event)"
+      (onLoadChildren)="onLoadChildren.emit($event)"
+    ></app-ivr-tree-node>
+  </div>
+</div>

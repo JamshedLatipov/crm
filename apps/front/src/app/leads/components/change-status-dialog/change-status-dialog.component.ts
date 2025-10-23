@@ -17,6 +17,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { LeadService } from '../../services/lead.service';
 import { Lead, LeadStatus } from '../../models/lead.model';
 import { LeadStatusComponent } from '../lead-status/lead-status.component';
+import { leadStatusDisplay, getLeadStatusColor, getLeadStatusProgress } from '../../../shared/utils';
 
 interface ChangeStatusData {
   lead: Lead;
@@ -138,31 +139,11 @@ export class ChangeStatusDialogComponent {
   }
 
   getStatusProgress(status: LeadStatus): number {
-    const progressMap: Record<LeadStatus, number> = {
-      [LeadStatus.NEW]: 10,
-      [LeadStatus.CONTACTED]: 25,
-      [LeadStatus.QUALIFIED]: 40,
-      [LeadStatus.PROPOSAL_SENT]: 60,
-      [LeadStatus.NEGOTIATING]: 80,
-      [LeadStatus.CONVERTED]: 100,
-      [LeadStatus.REJECTED]: 0,
-      [LeadStatus.LOST]: 0,
-    };
-    return progressMap[status] || 0;
+    return getLeadStatusProgress(status);
   }
 
   getStatusColor(status: LeadStatus): string {
-    const colorMap: Record<LeadStatus, string> = {
-      [LeadStatus.NEW]: '#4caf50',
-      [LeadStatus.CONTACTED]: '#2196f3',
-      [LeadStatus.QUALIFIED]: '#ffc107',
-      [LeadStatus.PROPOSAL_SENT]: '#9c27b0',
-      [LeadStatus.NEGOTIATING]: '#ff5722',
-      [LeadStatus.CONVERTED]: '#4caf50',
-      [LeadStatus.REJECTED]: '#f44336',
-      [LeadStatus.LOST]: '#616161',
-    };
-    return colorMap[status] || '#616161';
+    return getLeadStatusColor(status);
   }
 
   isValidTransition(fromStatus: LeadStatus, toStatus: LeadStatus): boolean {
@@ -181,23 +162,12 @@ export class ChangeStatusDialogComponent {
     return validTransitions[fromStatus]?.includes(toStatus) || false;
   }
 
-  private statusLabels: Record<LeadStatus, string> = {
-    [LeadStatus.NEW]: 'Новый',
-    [LeadStatus.CONTACTED]: 'Контакт установлен',
-    [LeadStatus.QUALIFIED]: 'Квалифицирован',
-    [LeadStatus.PROPOSAL_SENT]: 'Предложение отправлено',
-    [LeadStatus.NEGOTIATING]: 'Переговоры',
-    [LeadStatus.CONVERTED]: 'Конвертирован',
-    [LeadStatus.REJECTED]: 'Отклонен',
-    [LeadStatus.LOST]: 'Потерян',
-  };
-
   selectStatus(status: LeadStatus): void {
     if (status !== this.data.currentStatus) this.selectedStatus = status;
   }
 
   getStatusLabel(status: LeadStatus): string {
-    return this.statusLabels[status] || String(status);
+    return leadStatusDisplay(status);
   }
 
   getNextSteps(
