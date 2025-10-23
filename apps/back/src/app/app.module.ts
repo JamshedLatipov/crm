@@ -41,7 +41,7 @@ import { ADS_INTEGRATION_MIGRATIONS } from './modules/ads-integration/migrations
         ...TASKS_MIGRATIONS,
         ...ADS_INTEGRATION_MIGRATIONS,
       ],
-      migrationsRun: true,
+      migrationsRun: false,
     }),
     ClientsModule.register([
       {

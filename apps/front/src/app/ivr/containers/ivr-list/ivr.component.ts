@@ -1,8 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IvrApiService, IvrNodeDto } from '../../ivr.service';
-import { FormBuilder, ReactiveFormsModule, FormGroup } from '@angular/forms';
-import { Subscription } from 'rxjs';
+import { ReactiveFormsModule } from '@angular/forms';
 
 // Angular Material modules (incremental UI)
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -12,6 +11,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatListModule } from '@angular/material/list';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import {
   DragDropModule,
   CdkDragDrop,
@@ -21,6 +21,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { IvrTreeNodeComponent } from '../../components/ivr-tree-node/ivr-tree-node.component';
+import { IvrNodeDialogComponent } from '../../components/ivr-node-dialog/ivr-node-dialog.component';
 
 const ACTIONS = ['menu', 'playback', 'dial', 'goto', 'hangup', 'queue'];
 
@@ -42,13 +43,15 @@ const ACTIONS = ['menu', 'playback', 'dial', 'goto', 'hangup', 'queue'];
     MatInputModule,
     MatTooltipModule,
     IvrTreeNodeComponent,
+    MatDialogModule,
   ],
   templateUrl: './ivr.component.html',
   styleUrls: ['./ivr.component.scss'],
 })
 export class IvrAdminComponent {
   private api = inject(IvrApiService);
-  private fb = inject(FormBuilder);
+  // FormBuilder removed; modal dialog handles editing
+  private dialog = inject(MatDialog);
 
   // expose cdk helpers
 
@@ -58,8 +61,7 @@ export class IvrAdminComponent {
   childrenMap: Record<string, IvrNodeDto[]> = {};
   selected?: IvrNodeDto;
   treeRoot?: IvrNodeDto; // корень для отображения дерева
-  form?: FormGroup<any>;
-  private formSub?: Subscription;
+  // Inline editor removed: editing is handled in modal dialog component
   actions = ACTIONS;
   errors: { [k: string]: string | undefined } = {};
   actionLabels: Record<string, string> = {
@@ -123,7 +125,7 @@ export class IvrAdminComponent {
     this.api.roots().subscribe({
       next: (roots) => {
         // Фильтруем только корневые элементы
-        this.rootNodes = (roots || []).filter(n => !n.parentId);
+        this.rootNodes = (roots || []).filter((n) => !n.parentId);
         // Добавляем корневые элементы в allNodes
         this.allNodes = [...this.rootNodes];
         // НЕ загружаем детей - они загрузятся по требованию при выборе узла
@@ -131,7 +133,7 @@ export class IvrAdminComponent {
       error: () => {
         this.rootNodes = [];
         this.allNodes = [];
-      }
+      },
     });
   }
 
@@ -155,14 +157,16 @@ export class IvrAdminComponent {
             resolve([]);
             return;
           }
-          
+
           // Добавляем детей в allNodes
           // Use a new array reference so child inputs/signals detect the change immediately
-          const newChildren = children.filter(child => !this.allNodes.find(n => n.id === child.id));
+          const newChildren = children.filter(
+            (child) => !this.allNodes.find((n) => n.id === child.id)
+          );
           if (newChildren.length > 0) {
             this.allNodes = [...this.allNodes, ...newChildren];
           }
-          
+
           // Сохраняем в childrenMap
           this.childrenMap[parentId] = children;
           resolve(children);
@@ -170,13 +174,16 @@ export class IvrAdminComponent {
         error: () => {
           this.childrenMap[parentId] = [];
           resolve([]);
-        }
+        },
       });
     });
   }
 
   loadQueues() {
-    this.api.queues().subscribe({ next: (q: any) => (this.queues = q || []), error: () => (this.queues = []) });
+    this.api.queues().subscribe({
+      next: (q: any) => (this.queues = q || []),
+      error: () => (this.queues = []),
+    });
   }
 
   select(n: IvrNodeDto) {
@@ -189,62 +196,56 @@ export class IvrAdminComponent {
     if (!this.treeRoot && n.parentId) {
       this.treeRoot = this.findRootNode(n);
     }
-    this.form = this.fb.group({
-      id: [n.id],
-      name: [n.name],
-      action: [n.action || 'menu'],
-      digit: [n.digit || null],
-      payload: [n.payload || null],
-  queueName: [(n as IvrNodeDto).queueName || null],
-      timeoutMs: [n.timeoutMs ?? 5000],
-      webhookUrl: [n.webhookUrl || null],
-      webhookMethod: [n.webhookMethod || null],
-      backDigit: [n.backDigit || null],
-      allowEarlyDtmf: [n.allowEarlyDtmf ?? true],
-      repeatDigit: [n.repeatDigit || null],
-      rootDigit: [n.rootDigit || null],
-    });
-  // try to convert existing queueName (which may be a name) into queue id
-    if (this.form && n.queueName) {
-      const byName = this.queues.find((q) => q.name === n.queueName);
-      if (byName) this.form.patchValue({ queueName: byName.id });
-      // if it's already an id string/number and matches, leave as-is
-      const byId = this.queues.find((q) => String(q.id) === String(n.queueName));
-      if (byId) this.form.patchValue({ queueName: byId.id });
-    }
     // initialize media selection value from payload if matches known media id
     this.selectedMediaId = undefined as any;
     if (n.payload && typeof n.payload === 'string') {
-      const found = this.mediaList.find((m) => m.filename === n.payload || m.id === n.payload);
+      const found = this.mediaList.find(
+        (m) => m.filename === n.payload || m.id === n.payload
+      );
       if (found) this.selectedMediaId = found.id;
     }
     // Загружаем детей выбранного узла для отображения в дереве
-    if (n.id) {
+    if (!n.parentId) {
       this.loadNodeChildren(n.id);
     }
-    this.setupFormValidation();
   }
 
   loadMediaList() {
-    this.api.mediaList().subscribe({ next: (m: any) => (this.mediaList = m || []), error: () => (this.mediaList = []) });
+    this.api.mediaList().subscribe({
+      next: (m: any) => (this.mediaList = m || []),
+      error: () => (this.mediaList = []),
+    });
   }
 
   onMediaSelect(id: string | null) {
     this.selectedMediaId = id;
-    if (!this.form) return;
-    // set payload to media id (store id as string)
-    this.form.patchValue({ payload: id ? String(id) : null });
+    if (!this.selected) return;
+    // when selecting media from page, if a node is selected update its payload locally
+    // (this keeps inline page in sync; dialog is canonical for edits)
+    // Note: actual persist is done via modal; this is only UI convenience
+    (this.selected as any).payload = id ? String(id) : null;
   }
 
   onFileSelected(ev: Event) {
     const input = ev.target as HTMLInputElement;
-    if (!input.files || input.files.length === 0) { this.selectedFile = undefined; return; }
+    if (!input.files || input.files.length === 0) {
+      this.selectedFile = undefined;
+      return;
+    }
     const f = input.files[0];
     // validate type and size: only .wav and <= 8MB
     const allowed = ['wav'];
     const ext = (f.name.split('.').pop() || '').toLowerCase();
-    if (!allowed.includes(ext)) { this.mediaError = 'Только WAV формат разрешён'; this.selectedFile = undefined; return; }
-    if (f.size > 8 * 1024 * 1024) { this.mediaError = 'Файл слишком большой (макс. 8MB)'; this.selectedFile = undefined; return; }
+    if (!allowed.includes(ext)) {
+      this.mediaError = 'Только WAV формат разрешён';
+      this.selectedFile = undefined;
+      return;
+    }
+    if (f.size > 8 * 1024 * 1024) {
+      this.mediaError = 'Файл слишком большой (макс. 8MB)';
+      this.selectedFile = undefined;
+      return;
+    }
     this.mediaError = null;
     this.selectedFile = f;
   }
@@ -253,18 +254,28 @@ export class IvrAdminComponent {
     if (!this.selectedFile) return;
     const fd = new FormData();
     fd.append('file', this.selectedFile, this.selectedFile.name);
-    this.api.uploadMedia(fd).subscribe({ next: () => { this.selectedFile = undefined; this.loadMediaList(); }, error: () => {} });
+    this.api.uploadMedia(fd).subscribe({
+      next: () => {
+        this.selectedFile = undefined;
+        this.loadMediaList();
+      },
+      error: () => {},
+    });
   }
 
   deleteMedia(id: string) {
     if (!confirm('Удалить медиа?')) return;
-    this.api.deleteMedia(id).subscribe({ next: () => this.loadMediaList(), error: () => {} });
+    this.api
+      .deleteMedia(id)
+      .subscribe({ next: () => this.loadMediaList(), error: () => {} });
   }
 
   renameMedia(id: string) {
     const name = prompt('Новое имя медиа');
     if (!name) return;
-    this.api.renameMedia(id, name).subscribe({ next: () => this.loadMediaList(), error: () => {} });
+    this.api
+      .renameMedia(id, name)
+      .subscribe({ next: () => this.loadMediaList(), error: () => {} });
   }
 
   // Устаревший метод - оставлен для обратной совместимости
@@ -287,203 +298,81 @@ export class IvrAdminComponent {
   }
 
   newRoot() {
-    this.selected = undefined;
-    this.form = this.fb.group({
-      name: ['new root'],
-      action: ['menu'],
-      digit: [null],
-      payload: [null],
-      queueName: [null],
-      timeoutMs: [5000],
-      webhookUrl: [null],
-      webhookMethod: [null],
-      backDigit: [null],
-      allowEarlyDtmf: [true],
-      repeatDigit: [null],
-      rootDigit: [null],
+    const ref = this.dialog.open(IvrNodeDialogComponent, {
+      data: {},
+      maxHeight: '80vh',
     });
-    this.setupFormValidation();
+    ref.afterClosed().subscribe((res: IvrNodeDto | undefined) => {
+      if (!res) return;
+      // handle deletion result from dialog
+      if ((res as any).deletedId) {
+        const delId = (res as any).deletedId as string;
+        this.removeNodeAndChildren(delId);
+        if (this.selected?.id === delId) {
+          this.selected = undefined;
+        }
+        return;
+      }
+      // append node locally (same logic as save)
+      this.allNodes = [...this.allNodes, res];
+      if (res.parentId) {
+        const existing = this.childrenMap[res.parentId] || [];
+        this.childrenMap = {
+          ...this.childrenMap,
+          [res.parentId]: [...existing, res],
+        };
+      } else {
+        this.rootNodes = [...this.rootNodes, res];
+      }
+    });
   }
 
   newChild() {
     const parentId = this.selected?.id;
-    this.selected = undefined;
-    this.form = this.fb.group({
-      parentId: [parentId || null],
-      name: ['new child'],
-      action: ['menu'],
-      digit: [null],
-      payload: [null],
-      queueName: [null],
-      timeoutMs: [5000],
-      webhookUrl: [null],
-      webhookMethod: [null],
-      backDigit: [null],
-      allowEarlyDtmf: [true],
-      repeatDigit: [null],
-      rootDigit: [null],
+    const ref = this.dialog.open(IvrNodeDialogComponent, {
+      data: { node: { parentId } as IvrNodeDto },
     });
-    this.setupFormValidation();
-  }
-
-  private setupFormValidation() {
-    // cleanup previous subscription
-    if (this.formSub) { try { this.formSub.unsubscribe(); } catch (e) {} this.formSub = undefined; }
-    if (!this.form) return;
-    // run validate at start and on every change
-    this.validate();
-    this.formSub = this.form.valueChanges.subscribe(() => this.validate());
-  }
-
-  validate() {
-    if (!this.form) {
-      this.errors = {};
-      return;
-    }
-    const v = this.form.value as Partial<IvrNodeDto>;
-    const errs: { [k: string]: string | undefined } = {};
-    if (
-      v.action &&
-      ['playback', 'dial', 'goto'].includes(v.action) &&
-      !v.payload
-    )
-      errs['payload'] = 'Payload required for this action';
-    if (v.digit && !/^[0-9*#]$/.test(v.digit as string))
-      errs['digit'] = 'Digit must be 0-9, * or #';
-    this.errors = errs;
-    // propagate errors to form controls so Angular Material shows invalid state
-    // clear previous control errors we manage
-    const keys = Object.keys(this.form.controls || {});
-    for (const k of keys) {
-      const ctrl = this.form!.get(k as any);
-      if (!ctrl) continue;
-      if (errs[k]) {
-        // set a custom error key so mat-form-field treats it as invalid
-        ctrl.setErrors({ custom: errs[k] });
+    ref.afterClosed().subscribe((res: IvrNodeDto | undefined) => {
+      if (!res) return;
+      this.allNodes = [...this.allNodes, res];
+      if (res.parentId) {
+        const existing = this.childrenMap[res.parentId] || [];
+        this.childrenMap = {
+          ...this.childrenMap,
+          [res.parentId]: [...existing, res],
+        };
       } else {
-        // remove our custom error while preserving other Angular errors
-        const current = ctrl.errors || null;
-        if (current) {
-          if (current['custom']) {
-            const copy = { ...current };
-            delete copy['custom'];
-            const hasOther = Object.keys(copy).length > 0;
-            ctrl.setErrors(hasOther ? copy : null);
-          }
-        }
+        this.rootNodes = [...this.rootNodes, res];
       }
-    }
+    });
   }
 
-  hasErrors() {
-    return Object.keys(this.errors).some((k) => !!this.errors[k]);
-  }
-
-  save() {
-    if (!this.form) return;
-    const val = { ...this.form.value } as IvrNodeDto;
-    // coerce queueName to string or null (backend expects string)
-    if (val.queueName != null) val.queueName = String(val.queueName);
-    
-    if (val.id) {
-      // Обновление существующего элемента
-      this.api.update(val.id, val).subscribe((updatedNode: IvrNodeDto) => {
-        // Обновляем в allNodes
-        const idx = this.allNodes.findIndex(n => n.id === val.id);
-        if (idx >= 0) {
-          this.allNodes[idx] = { ...this.allNodes[idx], ...updatedNode };
-        }
-        
-        // Обновляем в rootNodes если это корневой
-        if (!updatedNode.parentId) {
-          const rootIdx = this.rootNodes.findIndex(n => n.id === val.id);
-          if (rootIdx >= 0) {
-            this.rootNodes[rootIdx] = { ...this.rootNodes[rootIdx], ...updatedNode };
-          }
-        }
-        
-        // Обновляем в childrenMap если есть родитель
-        if (updatedNode.parentId) {
-          const siblings = this.childrenMap[updatedNode.parentId] || [];
-          const sibIdx = siblings.findIndex(n => n.id === val.id);
-          if (sibIdx >= 0) {
-            siblings[sibIdx] = { ...siblings[sibIdx], ...updatedNode };
-            this.childrenMap[updatedNode.parentId] = [...siblings];
-          }
-        }
-        
-        // Обновляем selected без пересоздания формы
-        if (this.selected?.id === val.id) {
-          this.selected = { ...this.selected, ...updatedNode };
-        }
-        
-        // Обновляем форму с новыми значениями без пересоздания
-        if (this.form) {
-          this.form.patchValue(updatedNode, { emitEvent: false });
-        }
-      });
-    } else {
-      // Создание нового элемента
-      this.api.create(val).subscribe((newNode: IvrNodeDto) => {
-        // Добавляем в allNodes
-        this.allNodes.push(newNode);
-        
-        // Добавляем в соответствующий список
-        if (newNode.parentId) {
-          // Добавляем в childrenMap
-          if (!this.childrenMap[newNode.parentId]) {
-            this.childrenMap[newNode.parentId] = [];
-          }
-          this.childrenMap[newNode.parentId].push(newNode);
-          
-          // Если создаем дочерний элемент, сохраняем выбор родителя
-          const parent = this.allNodes.find(n => n.id === newNode.parentId) || 
-                        this.rootNodes.find(n => n.id === newNode.parentId);
-          if (parent && this.selected?.id !== parent.id) {
-            this.selected = parent;
-          }
-        } else {
-          // Добавляем в rootNodes
-          this.rootNodes.push(newNode);
-        }
-        
-        // Обновляем форму с ID нового элемента без полного пересоздания
-        if (this.form) {
-          this.form.patchValue({ id: newNode.id }, { emitEvent: false });
-        }
-        
-        // Обновляем selected только если это новый узел
-        if (!this.selected || !this.selected.id) {
-          this.selected = newNode;
-        }
-      });
-    }
-  }
+  // Note: save/create/edit flows are handled in the modal dialog component.
+  // This component maintains local state and optimistic updates when dialogs close.
 
   del() {
     if (!this.selected || !this.selected.id) return;
-    
+
     // Проверяем, есть ли дочерние элементы
-    const hasChildren = this.allNodes.some(n => n.parentId === this.selected!.id);
-    const confirmMessage = hasChildren 
+    const hasChildren = this.allNodes.some((n) => n.parentId === this.selected!.id);
+    const confirmMessage = hasChildren
       ? 'Этот элемент имеет дочерние элементы. Вы уверены, что хотите удалить его вместе со всеми дочерними элементами?'
       : 'Вы уверены, что хотите удалить этот элемент?';
-    
+
     if (!confirm(confirmMessage)) return;
-    
+
     const deletedId = this.selected.id;
     const parentId = this.selected.parentId;
-    
+
     this.api.remove(deletedId).subscribe(() => {
       // Рекурсивно удаляем все дочерние элементы из локального состояния
       this.removeNodeAndChildren(deletedId);
-      
-      // Закрываем форму редактирования
-      this.form = undefined;
-      
+
       // Выбираем родительский элемент, если он есть
       if (parentId) {
-        const parent = this.allNodes.find(n => n.id === parentId) || this.rootNodes.find(n => n.id === parentId);
+        const parent =
+          this.allNodes.find((n) => n.id === parentId) ||
+          this.rootNodes.find((n) => n.id === parentId);
         if (parent) {
           this.selected = parent;
           this.select(parent);
@@ -498,39 +387,35 @@ export class IvrAdminComponent {
 
   private removeNodeAndChildren(nodeId: string) {
     // Находим всех детей
-    const children = this.allNodes.filter(n => n.parentId === nodeId);
-    
+    const children = this.allNodes.filter((n) => n.parentId === nodeId);
+
     // Рекурсивно удаляем детей
-    children.forEach(child => {
+    children.forEach((child) => {
       if (child.id) {
         this.removeNodeAndChildren(child.id);
       }
     });
-    
+
     // Удаляем из allNodes
-    this.allNodes = this.allNodes.filter(n => n.id !== nodeId);
-    
+    this.allNodes = this.allNodes.filter((n) => n.id !== nodeId);
+
     // Удаляем из rootNodes если это корневой
-    this.rootNodes = this.rootNodes.filter(n => n.id !== nodeId);
-    
+    this.rootNodes = this.rootNodes.filter((n) => n.id !== nodeId);
+
     // Удаляем из childrenMap всех родителей
-    Object.keys(this.childrenMap).forEach(parentKey => {
-      this.childrenMap[parentKey] = this.childrenMap[parentKey].filter(n => n.id !== nodeId);
+    Object.keys(this.childrenMap).forEach((parentKey) => {
+      this.childrenMap[parentKey] = this.childrenMap[parentKey].filter(
+        (n) => n.id !== nodeId
+      );
     });
-    
+
     // Удаляем собственные дочерние элементы из childrenMap
     delete this.childrenMap[nodeId];
   }
 
   cancelEdit() {
+    // No inline editor to cancel; keep behavior for compatibility
     this.selected = undefined;
-    this.form = undefined;
-    if (this.formSub) {
-      try {
-        this.formSub.unsubscribe();
-      } catch (e) {}
-      this.formSub = undefined;
-    }
   }
 
   getActionIcon(action: string): string {
@@ -547,14 +432,14 @@ export class IvrAdminComponent {
 
   getNodeChildren(nodeId?: string): IvrNodeDto[] {
     if (!nodeId) return [];
-    return this.allNodes.filter(n => n.parentId === nodeId);
+    return this.allNodes.filter((n) => n.parentId === nodeId);
   }
 
   findRootNode(node: IvrNodeDto): IvrNodeDto | undefined {
     let current = node;
     // Идем вверх по дереву пока не найдем корень
     while (current.parentId) {
-      const parent = this.allNodes.find(n => n.id === current.parentId);
+      const parent = this.allNodes.find((n) => n.id === current.parentId);
       if (!parent) break;
       current = parent;
     }
@@ -577,7 +462,33 @@ export class IvrAdminComponent {
   }
 
   onNodeEdit(node: IvrNodeDto) {
-    this.select(node);
+    const ref = this.dialog.open(IvrNodeDialogComponent, {
+      data: { node },
+      maxHeight: '80vh',
+    });
+    ref.afterClosed().subscribe((res: IvrNodeDto | undefined) => {
+      if (!res) return;
+      // immutable update for allNodes
+      this.allNodes = this.allNodes.map((n) =>
+        n.id === res.id ? { ...n, ...res } : n
+      );
+
+      // immutable update for rootNodes
+      if (!res.parentId) {
+        this.rootNodes = this.rootNodes.map((n) =>
+          n.id === res.id ? { ...n, ...res } : n
+        );
+      }
+
+      // immutable update for childrenMap
+      if (res.parentId) {
+        const siblings = this.childrenMap[res.parentId] || [];
+        const newSiblings = siblings.map((n) =>
+          n.id === res.id ? { ...n, ...res } : n
+        );
+        this.childrenMap = { ...this.childrenMap, [res.parentId]: newSiblings };
+      }
+    });
   }
 
   onNodeDelete(node: IvrNodeDto) {

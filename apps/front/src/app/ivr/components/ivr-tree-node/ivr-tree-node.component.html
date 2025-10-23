@@ -15,10 +15,10 @@
         <div>
           <div
             class="node-title"
-            [matTooltip]="node.name || '(без названия)'"
+            [matTooltip]="node().name || '(без названия)'"
             matTooltipPosition="above"
           >
-            <span class="node-name">{{ node.name || '(без названия)' }}</span>
+            <span class="node-name">{{ node().name || '(без названия)' }}</span>
           </div>
           <div class="node-meta">
             <span class="action-badge">{{ actionLabel() }}</span>
@@ -158,6 +158,7 @@
       [actionLabels]="actionLabels()"
       [allNodes]="allNodes()"
       [lazyLoad]="lazyLoad()"
+      [expandOnSelect]="expandOnSelect()"
       (onSelect)="onSelect.emit($event)"
       (onAddChild)="onAddChild.emit($event)"
       (onEdit)="onEdit.emit($event)"

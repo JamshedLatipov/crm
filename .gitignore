@@ -16,3 +16,4 @@ apps/back/.env
 data/asterisk/sounds/custom/*
 turnserver/data/turnserver/turndb
 tmp/*
+tmp/nx-cache

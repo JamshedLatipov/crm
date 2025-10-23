@@ -40,10 +40,12 @@ export class IvrApiService {
     return this.http.post<IvrNodeDto>(this.base, dto);
   }
   update(id: string, dto: Partial<IvrNodeDto>): Observable<IvrNodeDto> {
-    return this.http.put<IvrNodeDto>(`${this.base}/${id}`, dto);
+    const url = `${this.base}/${id}`;
+    return this.http.put<IvrNodeDto>(url, dto);
   }
   remove(id: string) {
-    return this.http.delete(`${this.base}/${id}`);
+    const url = `${this.base}/${id}`;
+    return this.http.delete(url);
   }
 
   // Media endpoints

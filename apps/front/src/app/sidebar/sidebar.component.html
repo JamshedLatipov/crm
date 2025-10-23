@@ -1,0 +1,91 @@
+<aside class="sidebar">
+  <!-- Header with Logo -->
+  <div class="sidebar-header">
+    <div class="logo">
+      <mat-icon class="logo-icon">business</mat-icon>
+      <span class="logo-text">CRM</span>
+    </div>
+    <div class="header-actions">
+      <app-notification-bell></app-notification-bell>
+    </div>
+  </div>
+
+  <!-- Navigation Menu -->
+  <nav class="sidebar-nav">
+    <ul class="nav-list">
+      <li *ngFor="let item of menuItems" class="nav-item">
+        <!-- Link item -->
+        <a
+          *ngIf="item.route"
+          [routerLink]="item.route"
+          routerLinkActive="active"
+          class="nav-link"
+          [matTooltip]="item.label"
+          matTooltipPosition="right"
+          (click)="setActiveItem(item)"
+        >
+          <mat-icon class="nav-icon">{{ item.icon }}</mat-icon>
+          <span class="nav-label">{{ item.label }}</span>
+        </a>
+
+        <!-- Parent with children (dropdown) -->
+        <button
+          *ngIf="item.children?.length"
+          type="button"
+          class="nav-link nav-link-toggle"
+          (click)="toggleExpand(item)"
+          [class.active]="isChildRouteActive(item)"
+          [class.expanded]="item.expanded"
+          aria-label="Toggle submenu"
+        >
+          <mat-icon class="nav-icon">{{ item.icon }}</mat-icon>
+          <span class="nav-label">{{ item.label }}</span>
+          <mat-icon class="chev">{{
+            item.expanded ? 'expand_less' : 'expand_more'
+          }}</mat-icon>
+        </button>
+
+        <ul *ngIf="item.children?.length && item.expanded" class="sub-list">
+          <li *ngFor="let child of item.children" class="sub-item">
+            <a
+              [routerLink]="child.route"
+              routerLinkActive="active"
+              class="sub-link"
+              (click)="setActiveItem(child)"
+            >
+              <mat-icon class="sub-icon">{{ child.icon }}</mat-icon>
+              <span class="sub-label">{{ child.label }}</span>
+            </a>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- User Profile Section -->
+  <div class="sidebar-footer">
+    <div class="user-profile">
+      <div class="user-left">
+        <div class="user-avatar">
+          <mat-icon>person</mat-icon>
+        </div>
+        <div class="user-info">
+          <span class="user-name">{{ userName() || '—' }}</span>
+          <span class="user-role">{{ userRole() }}</span>
+        </div>
+      </div>
+
+      <div class="profile-actions">
+        <button
+          mat-icon-button
+          class="settings-btn"
+          [matTooltip]="'Settings'"
+          matTooltipPosition="right"
+          aria-label="Settings"
+        >
+          <mat-icon>settings</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+</aside>

@@ -2,8 +2,8 @@ import { Controller, Get, Post, Body, Param, Patch, Query } from '@nestjs/common
 import { PipelineService } from './pipeline.service';
 import { CreateStageDto } from './dto/create-stage.dto';
 import { UpdateStageDto } from './dto/update-stage.dto';
-import { CreateLeadDto } from './dto/create-lead.dto';
-import { UpdateLeadDto } from './dto/update-lead.dto';
+import { PipelineCreateLeadDto } from './dto/create-lead.dto';
+import { PipelineUpdateLeadDto } from './dto/update-lead.dto';
 import { StageType } from './pipeline.entity';
 
 class ReorderDto {
@@ -40,7 +40,7 @@ export class PipelineController {
   }
 
   @Post('leads')
-  createLead(@Body() dto: CreateLeadDto) {
+  createLead(@Body() dto: PipelineCreateLeadDto) {
     return this.svc.createLead(dto);
   }
 
@@ -50,7 +50,7 @@ export class PipelineController {
   }
 
   @Patch('leads/:id')
-  updateLead(@Param('id') id: string, @Body() dto: UpdateLeadDto) {
+  updateLead(@Param('id') id: string, @Body() dto: PipelineUpdateLeadDto) {
     return this.svc.updateLead(id, dto);
   }
 

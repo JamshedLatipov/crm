@@ -1,0 +1,123 @@
+/* Dialog editor styles copied from ivr.component.scss */
+.panel {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.panel-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(224, 224, 224, 1);
+  display: flex;
+  align-items: center;
+}
+.dialog-actions {
+  border-top: 1px solid rgba(224, 224, 224, 1);
+}
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+.panel-title mat-icon {
+  color: var(--primary-color, #4285f4);
+  font-size: 24px;
+}
+.panel-content {
+  padding: 0;
+}
+.editor-form {
+  padding: 16px;
+}
+.form-section {
+  margin-bottom: 24px;
+}
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #f1f3f5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.full-width {
+  width: 100%;
+  margin-bottom: 12px;
+}
+.checkbox-field {
+  margin: 12px 0;
+}
+.media-upload-section {
+  background: var(--brand-secondary, #f0f6fc);
+  padding: 12px;
+  border-radius: 8px;
+  margin-top: 12px;
+}
+.upload-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.selected-file-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: white;
+  border-radius: 6px;
+  margin-top: 8px;
+}
+.media-error-msg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: #ffebee;
+  border-radius: 6px;
+  color: #c62828;
+  margin-top: 8px;
+}
+.media-actions-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+@media (max-width: 600px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Invalid state styling */
+.editor-form
+  ::ng-deep
+  .mat-form-field-appearance-outline.mat-form-field-invalid
+  .mat-form-field-outline {
+  color: #c62828;
+}
+.editor-form
+  ::ng-deep
+  .mat-form-field-appearance-outline.mat-form-field-invalid
+  .mat-form-field-outline-thick {
+  stroke: #c62828;
+}
+.editor-form
+  ::ng-deep
+  .mat-form-field.mat-form-field-invalid
+  .mat-form-field-label {
+  color: #c62828 !important;
+}
+.editor-form ::ng-deep .mat-error {
+  color: #c62828;
+}

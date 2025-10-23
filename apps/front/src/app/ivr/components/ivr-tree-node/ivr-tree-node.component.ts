@@ -27,6 +27,9 @@ export class IvrTreeNodeComponent {
   actionLabels = input<Record<string, string>>({});
   allNodes = input<IvrNodeDto[]>([]);
   lazyLoad = input<boolean>(true); // Включить ленивую загрузку
+  // When true (default), selecting the node will auto-expand and load children.
+  // Set to false from parent (e.g. in a tree-structure column) to avoid loading on click.
+  expandOnSelect = input<boolean>(true);
 
   onSelect = output<IvrNodeDto>();
   onAddChild = output<IvrNodeDto>();
@@ -41,6 +44,8 @@ export class IvrTreeNodeComponent {
 
   private wasSelected = signal(false);
   private hadChildren = signal(false); // Флаг что у узла были/есть дети
+  // Track last node id to reset per-instance flags when ngFor reuses component
+  private _lastNodeId?: string | number | null;
 
   // Computed signals so template auto-tracks and updates immediately
   isSelected = computed(() => this.node().id === this.selectedId());
@@ -49,9 +54,22 @@ export class IvrTreeNodeComponent {
     effect(() => {
       const nowSelected = this.isSelected();
       if (nowSelected && !this.wasSelected()) {
-        this.expanded.set(true);
-        this.loadChildren();
+        // Only auto-expand / load children when parent allows it via `expandOnSelect`.
+        if (this.expandOnSelect()) {
+          this.expanded.set(true);
+          this.loadChildren();
+        }
+        // Mark as seen as selected so this effect runs only once per selection
         this.wasSelected.set(true);
+      }
+    });
+
+    // Reset wasSelected when node changes (Angular may reuse component instances for different items)
+    effect(() => {
+      const id = this.node()?.id;
+      if (id !== this._lastNodeId) {
+        this.wasSelected.set(false);
+        this._lastNodeId = id;
       }
     });
 

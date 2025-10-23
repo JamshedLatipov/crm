@@ -1,4 +1,4 @@
-export class CreateLeadDto {
+export class PipelineCreateLeadDto {
   title: string;
   contact?: string;
   stageId?: string;

@@ -29,11 +29,13 @@ export class IvrService {
   ) {}
 
   create(dto: CreateIvrNodeDto) {
+    // Ensure any incoming 'id' is ignored so the database can generate it
+    const { id: _incomingId, ...rest } = dto as any;
     const node = this.repo.create({
-      ...dto,
+      ...rest,
       order: dto.order ?? 0,
       timeoutMs: dto.timeoutMs ?? 5000,
-  allowEarlyDtmf: dto.allowEarlyDtmf ?? true,
+      allowEarlyDtmf: dto.allowEarlyDtmf ?? true,
     });
     return this.repo.save(node);
   }

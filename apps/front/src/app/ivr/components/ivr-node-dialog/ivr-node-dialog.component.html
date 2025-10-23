@@ -1,0 +1,262 @@
+<div class="panel">
+  <div mat-dialog-title class="panel-title">
+    <mat-icon>edit</mat-icon>
+    <h3>{{ form.value.id ? 'Редактирование' : 'Создание' }}</h3>
+  </div>
+
+  <mat-dialog-content>
+    <div class="panel-content">
+      <form [formGroup]="form" (ngSubmit)="onSave()" class="editor-form">
+        <!-- Basic Settings -->
+        <div class="form-section">
+          <h4 class="section-title">Основные настройки</h4>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Название</mat-label>
+            <input
+              matInput
+              formControlName="name"
+              placeholder="Введите название узла"
+            />
+            <mat-icon matPrefix>label</mat-icon>
+          </mat-form-field>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Действие</mat-label>
+              <mat-select formControlName="action">
+                <mat-option *ngFor="let a of actions" [value]="a">
+                  <mat-icon>{{ getActionIcon(a) }}</mat-icon>
+                  {{ actionLabels[a] || a }}
+                </mat-option>
+              </mat-select>
+              <mat-icon matPrefix>settings</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Клавиша</mat-label>
+              <input
+                matInput
+                maxlength="1"
+                formControlName="digit"
+                placeholder="0-9, *, #"
+              />
+              <mat-icon matPrefix>dialpad</mat-icon>
+              <mat-hint>DTMF клавиша для навигации</mat-hint>
+              <mat-error *ngIf="errors['digit']">{{
+                errors['digit']
+              }}</mat-error>
+            </mat-form-field>
+          </div>
+        </div>
+
+        <!-- Action-specific Settings -->
+        <div
+          class="form-section"
+          *ngIf="
+            form.value.action === 'playback' || form.value.action === 'menu'
+          "
+        >
+          <h4 class="section-title">Медиа</h4>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Выбрать медиафайл</mat-label>
+            <mat-select
+              [value]="selectedMediaId"
+              (selectionChange)="onMediaSelect($event.value)"
+            >
+              <mat-option [value]="null">
+                <mat-icon>clear</mat-icon>
+                (нет)
+              </mat-option>
+              <mat-option *ngFor="let m of mediaList" [value]="m.id">
+                <mat-icon>audiotrack</mat-icon>
+                {{ m.name || m.filename }}
+              </mat-option>
+            </mat-select>
+            <mat-icon matPrefix>audio_file</mat-icon>
+          </mat-form-field>
+
+          <div class="media-upload-section">
+            <input
+              accept=".wav"
+              type="file"
+              #fileInput
+              (change)="onFileSelected($event)"
+              hidden
+            />
+            <div class="upload-actions">
+              <button
+                mat-stroked-button
+                type="button"
+                (click)="fileInput.click()"
+              >
+                <mat-icon>upload_file</mat-icon>
+                Выбрать файл
+              </button>
+              <button
+                mat-raised-button
+                color="primary"
+                type="button"
+                (click)="uploadSelectedFile()"
+                [disabled]="!selectedFile"
+              >
+                <mat-icon>cloud_upload</mat-icon>
+                Загрузить
+              </button>
+            </div>
+            <div class="selected-file-info" *ngIf="selectedFile">
+              <mat-icon>insert_drive_file</mat-icon>
+              <span>{{ selectedFile.name }}</span>
+            </div>
+            <div class="media-error-msg" *ngIf="mediaError">
+              <mat-icon>error</mat-icon>
+              {{ mediaError }}
+            </div>
+            <div class="media-actions-buttons" *ngIf="selectedMediaId">
+              <button
+                mat-icon-button
+                type="button"
+                (click)="renameMedia(selectedMediaId)"
+                matTooltip="Переименовать"
+              >
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button
+                mat-icon-button
+                type="button"
+                color="warn"
+                (click)="deleteMedia(selectedMediaId)"
+                matTooltip="Удалить"
+              >
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payload -->
+        <div
+          class="form-section"
+          *ngIf="form.value.action === 'dial' || form.value.action === 'goto'"
+        >
+          <h4 class="section-title">Параметры действия</h4>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Payload (данные)</mat-label>
+            <input
+              matInput
+              formControlName="payload"
+              placeholder="Номер или ID узла"
+            />
+            <mat-icon matPrefix>data_object</mat-icon>
+            <mat-error *ngIf="errors['payload']">{{
+              errors['payload']
+            }}</mat-error>
+          </mat-form-field>
+        </div>
+
+        <!-- Queue Settings -->
+        <div class="form-section" *ngIf="form.value.action === 'queue'">
+          <h4 class="section-title">Настройки очереди</h4>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Очередь</mat-label>
+            <mat-select formControlName="queueName">
+              <mat-option [value]="null">(нет)</mat-option>
+              <mat-option *ngFor="let q of queues" [value]="q.id">
+                <mat-icon>groups</mat-icon>
+                {{ q.name }}
+              </mat-option>
+            </mat-select>
+            <mat-icon matPrefix>support_agent</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <!-- Advanced Settings -->
+        <div class="form-section">
+          <h4 class="section-title">Расширенные настройки</h4>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Таймаут (мс)</mat-label>
+              <input matInput type="number" formControlName="timeoutMs" />
+              <mat-icon matPrefix>timer</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Клавиша "назад"</mat-label>
+              <input matInput maxlength="1" formControlName="backDigit" />
+              <mat-icon matPrefix>arrow_back</mat-icon>
+            </mat-form-field>
+          </div>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Клавиша повтора</mat-label>
+              <input matInput maxlength="1" formControlName="repeatDigit" />
+              <mat-icon matPrefix>replay</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Клавиша корня</mat-label>
+              <input matInput maxlength="1" formControlName="rootDigit" />
+              <mat-icon matPrefix>home</mat-icon>
+            </mat-form-field>
+          </div>
+
+          <mat-checkbox formControlName="allowEarlyDtmf" class="checkbox-field">
+            Разрешить ранний DTMF
+          </mat-checkbox>
+        </div>
+
+        <!-- Webhook Settings -->
+        <div class="form-section">
+          <h4 class="section-title">Webhook интеграция</h4>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Webhook URL</mat-label>
+            <input
+              matInput
+              formControlName="webhookUrl"
+              placeholder="https://example.com/webhook"
+            />
+            <mat-icon matPrefix>link</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Метод HTTP</mat-label>
+            <mat-select formControlName="webhookMethod">
+              <mat-option value="GET">GET</mat-option>
+              <mat-option value="POST">POST</mat-option>
+              <mat-option value="PUT">PUT</mat-option>
+            </mat-select>
+            <mat-icon matPrefix>http</mat-icon>
+          </mat-form-field>
+        </div>
+      </form>
+    </div>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end" class="dialog-actions">
+    <!-- Form Actions -->
+    <button
+      mat-stroked-button
+      type="button"
+      (click)="del()"
+      *ngIf="selected?.id"
+    >
+      <mat-icon>delete</mat-icon>
+      Удалить
+    </button>
+    <button mat-button type="button" (click)="cancelEdit()">Отмена</button>
+    <button
+      mat-raised-button
+      color="primary"
+      (click)="onSave()"
+      [disabled]="hasErrors()"
+    >
+      <mat-icon>save</mat-icon>
+      Сохранить
+    </button>
+  </mat-dialog-actions>
+</div>

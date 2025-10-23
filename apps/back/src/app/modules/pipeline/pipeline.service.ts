@@ -7,8 +7,8 @@ import { Lead } from '../leads/lead.entity';
 import { Deal } from '../deals/deal.entity';
 import { CreateStageDto } from './dto/create-stage.dto';
 import { UpdateStageDto } from './dto/update-stage.dto';
-import { CreateLeadDto } from './dto/create-lead.dto';
-import { UpdateLeadDto } from './dto/update-lead.dto';
+import { PipelineCreateLeadDto } from './dto/create-lead.dto';
+import { PipelineUpdateLeadDto } from './dto/update-lead.dto';
 import { ContactsService } from '../contacts/contacts.service';
 import { ContactSource } from '../contacts/contact.entity';
 import { DataSource } from 'typeorm';
@@ -57,7 +57,7 @@ export class PipelineService {
   }
 
   // Leads
-  createLead(dto: CreateLeadDto) {
+  createLead(dto: PipelineCreateLeadDto) {
     const l = this.leadsRepo.create(dto);
     return this.leadsRepo.save(l);
   }
@@ -66,7 +66,7 @@ export class PipelineService {
     return this.leadsRepo.find({ order: { updatedAt: 'DESC' } });
   }
 
-  async updateLead(id: string, dto: UpdateLeadDto) {
+  async updateLead(id: string, dto: PipelineUpdateLeadDto) {
     await this.leadsRepo.update(id, dto);
     return this.leadsRepo.findOneBy({ id });
   }
