@@ -22,6 +22,8 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { IvrTreeNodeComponent } from '../../components/ivr-tree-node/ivr-tree-node.component';
 import { IvrNodeDialogComponent } from '../../components/ivr-node-dialog/ivr-node-dialog.component';
+import { IvrHeaderComponent } from '../../components/ivr-header/ivr-header.component';
+import { IvrRootsListComponent } from '../../components/ivr-roots-list/ivr-roots-list.component';
 
 const ACTIONS = ['menu', 'playback', 'dial', 'goto', 'hangup', 'queue'];
 
@@ -44,6 +46,8 @@ const ACTIONS = ['menu', 'playback', 'dial', 'goto', 'hangup', 'queue'];
     MatTooltipModule,
     IvrTreeNodeComponent,
     MatDialogModule,
+    IvrHeaderComponent,
+    IvrRootsListComponent,
   ],
   templateUrl: './ivr.component.html',
   styleUrls: ['./ivr.component.scss'],
@@ -98,6 +102,14 @@ export class IvrAdminComponent {
         n.id &&
         this.api.update(n.id, { order: n.order }).subscribe({ error: () => {} })
     );
+  }
+
+  // called when child emits reordered roots array
+  handleRootsReorder(arr: IvrNodeDto[]) {
+    this.rootNodes = arr;
+    arr.forEach((n) => {
+      if (n.id) this.api.update(n.id, { order: n.order }).subscribe({ error: () => {} });
+    });
   }
 
   // children helpers

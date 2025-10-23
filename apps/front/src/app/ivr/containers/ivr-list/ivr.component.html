@@ -1,97 +1,18 @@
 <!-- Page Header -->
-<div class="page-header">
-  <div class="header-content">
-    <div class="header-icon">
-      <mat-icon>dialpad</mat-icon>
-    </div>
-    <div class="header-text">
-      <h1>Управление IVR</h1>
-      <p class="subtitle">Интерактивное голосовое меню и автоматизация звонков</p>
-    </div>
-  </div>
-  <div class="header-actions">
-    <button mat-stroked-button (click)="reload()">
-      <mat-icon>refresh</mat-icon>
-      Обновить
-    </button>
-    <button mat-raised-button color="primary" (click)="newRoot()">
-      <mat-icon>add</mat-icon>
-      Добавить корень
-    </button>
-  </div>
-</div>
+
+<app-ivr-header (reload)="reload()" (newRoot)="newRoot()"></app-ivr-header>
 
 <div class="container">
-  <!-- Roots Panel -->
-  <div class="panel roots-panel">
-    <div class="panel-header">
-      <div class="panel-title">
-        <mat-icon>account_tree</mat-icon>
-        <h3>Корневые элементы</h3>
-      </div>
-      <span class="panel-badge">{{ rootNodes.length }}</span>
-    </div>
-    
-    <div class="panel-content" *ngIf="rootNodes.length > 0; else emptyRoots">
-      <div 
-        cdkDropList 
-        (cdkDropListDropped)="dropRoot($event)"
-        class="ivr-list"
-      >
-        <div
-          *ngFor="let r of rootNodes; let i = index"
-          cdkDrag
-          (click)="select(r)"
-          [class.selected]="selected?.id === r.id"
-          class="ivr-item"
-          tabindex="0"
-        >
-          <div class="drag-handle" cdkDragHandle>
-            <mat-icon>drag_indicator</mat-icon>
-          </div>
-          <div class="item-icon">
-            <mat-icon>device_hub</mat-icon>
-          </div>
-          <div class="item-content">
-            <div class="item-title">{{ r.name || '(без названия)' }}</div>
-            <div class="item-meta">
-              <span class="action-badge">{{ actionLabels[r.action] || r.action }}</span>
-              <span *ngIf="r.digit" class="digit-badge">Клавиша: {{ r.digit }}</span>
-            </div>
-          </div>
-          <div class="item-actions">
-            <button
-              mat-icon-button
-              color="primary"
-              (click)="$event.stopPropagation(); onNodeEdit(r)"
-              matTooltip="Редактировать"
-            >
-              <mat-icon>edit</mat-icon>
-            </button>
-            <button
-              mat-icon-button
-              color="warn"
-              (click)="$event.stopPropagation(); onNodeDelete(r)"
-              matTooltip="Удалить"
-            >
-              <mat-icon>delete</mat-icon>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <ng-template #emptyRoots>
-      <div class="empty-state">
-        <mat-icon>account_tree</mat-icon>
-        <p>Нет корневых элементов</p>
-        <button mat-stroked-button (click)="newRoot()">
-          <mat-icon>add</mat-icon>
-          Создать первый элемент
-        </button>
-      </div>
-    </ng-template>
-  </div>
+  <app-ivr-roots-list
+    [roots]="rootNodes"
+    [selectedId]="selected?.id"
+    [actionLabels]="actionLabels"
+    (select)="select($event)"
+    (edit)="onNodeEdit($event)"
+    (delete)="onNodeDelete($event)"
+    (reorder)="handleRootsReorder($event)"
+    (createFirst)="newRoot()"
+  ></app-ivr-roots-list>
 
   <!-- Tree Panel -->
   <div class="panel children-panel">

@@ -1,0 +1,55 @@
+<div class="panel roots-panel">
+  <div class="panel-header">
+    <div class="panel-title">
+      <mat-icon>account_tree</mat-icon>
+      <h3>Корневые элементы</h3>
+    </div>
+    <span class="panel-badge">{{ roots?.length || 0 }}</span>
+  </div>
+
+  <div class="panel-content" *ngIf="roots?.length > 0; else emptyRoots">
+    <div cdkDropList (cdkDropListDropped)="drop($event)" class="ivr-list">
+      <div
+        *ngFor="let r of roots; let i = index"
+        cdkDrag
+        (click)="onSelect(r)"
+        [class.selected]="selectedId === r.id"
+        class="ivr-item"
+        tabindex="0"
+      >
+        <div class="drag-handle" cdkDragHandle>
+          <mat-icon>drag_indicator</mat-icon>
+        </div>
+        <div class="item-icon">
+          <mat-icon>device_hub</mat-icon>
+        </div>
+        <div class="item-content">
+          <div class="item-title">{{ r.name || '(без названия)' }}</div>
+          <div class="item-meta">
+            <span class="action-badge">{{ actionLabels[r.action] || r.action }}</span>
+            <span *ngIf="r.digit" class="digit-badge">Клавиша: {{ r.digit }}</span>
+          </div>
+        </div>
+        <div class="item-actions">
+          <button mat-icon-button color="primary" (click)="onEdit(r, $event)" matTooltip="Редактировать">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button color="warn" (click)="onDelete(r, $event)" matTooltip="Удалить">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <ng-template #emptyRoots>
+    <div class="empty-state">
+      <mat-icon>account_tree</mat-icon>
+      <p>Нет корневых элементов</p>
+      <button mat-stroked-button (click)="$event.stopPropagation(); createFirst.emit()">
+        <mat-icon>add</mat-icon>
+        Создать первый элемент
+      </button>
+    </div>
+  </ng-template>
+</div>
