@@ -1,283 +1,466 @@
-<div class="task-detail-container">
-  <!-- Compact Header -->
-  <div class="detail-header" *ngIf="task()">
-    <div class="header-wrapper">
-      <button mat-icon-button class="back-button" (click)="goBack()">
-        <mat-icon>arrow_back</mat-icon>
-      </button>
-      
-      <div class="header-content">
-        <h1>{{ task()?.title }}</h1>
-        <div class="header-meta">
-          <mat-form-field class="status-select" appearance="outline">
-            <mat-select 
-              [value]="task()?.status" 
-              (selectionChange)="changeStatus($event.value)"
-              [disabled]="isLoading()">
-              <mat-option *ngFor="let status of statusOptions" [value]="status.value">
-                <span class="status-option" [style.color]="status.color">
-                  {{ status.label }}
-                </span>
-              </mat-option>
-            </mat-select>
-          </mat-form-field>
-          <span class="date-info" *ngIf="task()?.createdAt">
-            <mat-icon>schedule</mat-icon>
-            {{ task()?.createdAt | humanDate:true }}
-          </span>
-        </div>
-      </div>
-
-      <div class="header-actions">
-        <button
-          mat-stroked-button
-          color="primary"
-          (click)="editTask()"
-          class="action-btn header-context size-medium"
-          matTooltip="Редактировать задачу"
-        >
-          <mat-icon>edit</mat-icon>
-          <span class="button-text">Редактировать</span>
-        </button>
-
-        <button
-          mat-stroked-button
-          color="warn"
-          (click)="deleteTask()"
-          class="action-btn header-context size-medium delete-btn"
-          matTooltip="Удалить задачу"
-        >
-          <mat-icon>delete</mat-icon>
-          <span class="button-text">Удалить</span>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Loading -->
+<div class="task-detail-page">
+  <!-- Загрузка -->
   <div *ngIf="isLoading()" class="loading-container">
     <mat-spinner diameter="40"></mat-spinner>
     <p>Загрузка задачи...</p>
   </div>
 
-  <!-- Task Details -->
+  <!-- Ошибка -->
+  <div *ngIf="!isLoading() && !task()" class="error-container">
+    <div class="error-card">
+      <mat-icon class="error-icon">sentiment_dissatisfied</mat-icon>
+      <h3>Задача не найдена</h3>
+      <p>Запрашиваемая задача не существует или была удалена.</p>
+      <button mat-raised-button color="primary" (click)="goBack()">
+        <mat-icon>arrow_back</mat-icon>
+        Вернуться к списку
+      </button>
+    </div>
+  </div>
+
+  <!-- Детали задачи -->
   <div *ngIf="!isLoading() && task()" class="task-content">
-    <!-- Prominent description card -->
-    <mat-card class="description-card">
-      <mat-card-header>
-        <mat-card-title>Описание</mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <div class="description-large">
-          <ng-container *ngIf="task()?.description; else noDescLarge">
-            <div class="description-text large" [class.expanded]="descExpanded()" [class.collapsed]="!descExpanded()">
-              {{ task()?.description }}
-            </div>
-            <button *ngIf="task()?.description?.length > 300" mat-button class="desc-toggle" (click)="toggleDesc()">
-              {{ descExpanded() ? 'Свернуть' : 'Развернуть' }}
+    <!-- Заголовок -->
+    <div class="page-header">
+      <div class="header-background">
+        <div class="header-top">
+          <div class="breadcrumb">
+            <button mat-button (click)="goBack()" class="breadcrumb-link">
+              <mat-icon>arrow_back</mat-icon>
+              <span>Задачи</span>
             </button>
-          </ng-container>
-          <ng-template #noDescLarge>
-            <span class="muted">Нет описания</span>
-          </ng-template>
+            <mat-icon class="separator">chevron_right</mat-icon>
+            <span class="current">{{ task()?.title }}</span>
+          </div>
+
+          <div class="header-actions-top">
+            <button
+              mat-stroked-button
+              (click)="editTask()"
+              class="action-btn edit-btn"
+            >
+              <mat-icon>edit</mat-icon>
+              <span>Редактировать</span>
+            </button>
+            
+            <div class="complete-button-group">
+              <button
+                mat-stroked-button
+                class="action-btn complete-main-btn"
+                (click)="completeTask()"
+              >
+                <mat-icon>check_circle</mat-icon>
+                <span>Завершить</span>
+              </button>
+              
+              <button
+                mat-stroked-button
+                class="action-btn complete-dropdown-btn"
+                [matMenuTriggerFor]="statusMenu"
+              >
+                <mat-icon>keyboard_arrow_down</mat-icon>
+              </button>
+            </div>
+            
+            <button
+              mat-stroked-button
+              color="warn"
+              (click)="deleteTask()"
+              class="action-btn delete-btn"
+            >
+              <mat-icon>delete</mat-icon>
+              <span>Удалить</span>
+            </button>
+          </div>
         </div>
-      </mat-card-content>
-    </mat-card>
 
-    <div class="content-grid">
-      <!-- Main Info -->
-      <mat-card class="info-card">
-        <mat-card-header>
-          <mat-card-title>
-            <mat-icon>info</mat-icon>
-            Детали задачи
-          </mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <div class="info-section">
-            <!-- description moved to prominent card above -->
-
-            <mat-divider></mat-divider>
-
-            <div class="info-row">
-              <span class="info-label">
-                <mat-icon>person</mat-icon>
-                Исполнитель
-              </span>
-              <span class="info-value">
-                <ng-container *ngIf="task()?.assignedTo; else noAssignee">
-                  <a 
-                    [routerLink]="['/users', task()?.assignedTo?.id]" 
-                    class="link-primary assignee-link"
-                    (click)="$event.stopPropagation()">
-                    <div class="assignee-info">
-                      <div class="user-avatar">
-                        {{ task()?.assignedTo.firstName?.charAt(0) || '?' }}
-                      </div>
-                      <span>{{ task()?.assignedTo.firstName }} {{ task()?.assignedTo.lastName }}</span>
-                      <mat-icon class="link-icon">open_in_new</mat-icon>
-                    </div>
-                  </a>
-                </ng-container>
-                <ng-template #noAssignee>
-                  <span class="muted">Не назначено</span>
-                </ng-template>
-              </span>
-            </div>
-
-            <mat-divider></mat-divider>
-
-            <!-- Task Type -->
-            <div class="info-row">
-              <span class="info-label">
-                <mat-icon>category</mat-icon>
-                Тип задачи
-              </span>
-              <span class="info-value">
-                <ng-container *ngIf="task()?.taskType; else noTaskType">
-                  <div class="task-type-badge">
-                    <div class="type-icon-badge" [style.background-color]="task()?.taskType?.color || '#667eea'">
-                      <mat-icon>{{ task()?.taskType?.icon || 'task' }}</mat-icon>
-                    </div>
-                    <span class="type-name">{{ task()?.taskType?.name }}</span>
-                  </div>
-                </ng-container>
-                <ng-template #noTaskType>
-                  <span class="muted">Не указан</span>
-                </ng-template>
-              </span>
-            </div>
-
-            <mat-divider></mat-divider>
-
-            <div class="info-row">
-              <span class="info-label">
-                <mat-icon>event</mat-icon>
-                Срок выполнения
-              </span>
-              <span class="info-value">
-                <ng-container *ngIf="task()?.dueDate; else noDueDate">
-                  <app-task-due-date [task]="task()!" [showTime]="true"></app-task-due-date>
-                </ng-container>
-                <ng-template #noDueDate>
-                  <span class="muted">Не указан</span>
-                </ng-template>
-              </span>
-            </div>
-
-            <mat-divider *ngIf="task()?.lead || task()?.deal"></mat-divider>
-
-            <!-- Связь с лидом -->
-            <div class="info-row" *ngIf="task()?.lead">
-              <span class="info-label">
-                <mat-icon>person</mat-icon>
-                Связан с лидом
-              </span>
-              <span class="info-value">
-                <a [routerLink]="['/leads/view', task()?.lead?.id]" class="link-primary">
-                  {{ task()?.lead?.name }}
-                  <mat-icon class="link-icon">open_in_new</mat-icon>
-                </a>
-              </span>
-            </div>
-
-            <!-- Связь со сделкой -->
-            <div class="info-row" *ngIf="task()?.deal">
-              <span class="info-label">
-                <mat-icon>business_center</mat-icon>
-                Связан со сделкой
-              </span>
-              <span class="info-value">
-                <a [routerLink]="['/deals/view', task()?.deal?.id]" class="link-primary">
-                  {{ task()?.deal?.title }}
-                  <mat-icon class="link-icon">open_in_new</mat-icon>
-                </a>
-              </span>
-            </div>
-
-            <mat-divider></mat-divider>
-
-            <div class="info-row">
-              <span class="info-label">
-                <mat-icon>update</mat-icon>
-                Последнее обновление
-              </span>
-              <span class="info-value">
-                {{ task()?.updatedAt ? (task()?.updatedAt | date:'dd.MM.yyyy HH:mm') : '—' }}
-              </span>
-            </div>
-          </div>
-        </mat-card-content>
-      </mat-card>
-
-      <!-- Comments Section -->
-      <mat-card class="comments-card">
-        <mat-card-header>
-          <mat-card-title>
-            <mat-icon>comment</mat-icon>
-            Комментарии ({{ comments().length }})
-          </mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <!-- Comments List -->
-          <div class="comments-list">
-            <div *ngIf="isLoadingComments()" class="comments-loading">
-              <mat-spinner diameter="30"></mat-spinner>
-            </div>
-
-            <div *ngIf="!isLoadingComments() && comments().length === 0" class="no-comments">
-              <mat-icon>comment</mat-icon>
-              <p>Пока нет комментариев</p>
-            </div>
-
-            <div *ngFor="let comment of comments()" class="comment-item">
-              <div class="comment-avatar">
-                {{ (comment.author?.firstName || 'U')?.charAt(0) }}
-              </div>
-              <div class="comment-content">
-                <div class="comment-header">
-                  <span class="comment-author">
-                    <ng-container *ngIf="comment.author; else unknownAuthor">
-                      {{ comment.author.firstName }} {{ comment.author.lastName }}
-                    </ng-container>
-                    <ng-template #unknownAuthor>
-                      <span class="muted">Пользователь</span>
-                    </ng-template>
-                  </span>
-                  <span class="comment-date">
-                    {{ comment.createdAt | relativeTime }}
-                  </span>
-                </div>
-                <div class="comment-text">{{ comment.text }}</div>
-              </div>
-            </div>
-          </div>
-
+        <!-- Dropdown меню для статусов -->
+        <mat-menu #statusMenu="matMenu" class="status-menu">
+          <button mat-menu-item (click)="completeTask()" class="complete-quick">
+            <mat-icon>check_circle</mat-icon>
+            <span>Завершить задачу</span>
+          </button>
           <mat-divider></mat-divider>
+          <button 
+            mat-menu-item 
+            *ngFor="let status of statusOptions" 
+            (click)="changeStatus(status.value)"
+            [disabled]="task()?.status === status.value"
+          >
+            <mat-icon [style.color]="status.color">{{ getStatusIcon(status.value) }}</mat-icon>
+            <span>{{ status.label }}</span>
+            <mat-icon *ngIf="task()?.status === status.value" class="current-status">check</mat-icon>
+          </button>
+        </mat-menu>
 
-          <!-- Add Comment Form -->
-          <div class="add-comment">
-            <mat-form-field appearance="outline" class="comment-input">
-              <mat-label>Добавить комментарий</mat-label>
-              <textarea 
-                matInput 
-                [(ngModel)]="newCommentText"
-                rows="3"
-                placeholder="Введите комментарий..."
-                (keydown.enter)="$any($event).ctrlKey && sendComment()"></textarea>
-            </mat-form-field>
-            <button 
-              mat-raised-button 
-              color="primary" 
-              (click)="sendComment()"
-              [disabled]="!newCommentText.trim() || isSendingComment">
-              <mat-spinner *ngIf="isSendingComment" diameter="20" class="button-spinner"></mat-spinner>
-              <mat-icon *ngIf="!isSendingComment">send</mat-icon>
-              <span *ngIf="!isSendingComment">Отправить</span>
-            </button>
+        <div class="header-main">
+          <div class="task-header-left">
+            <div class="task-title-section">
+              <h1 class="task-title">{{ task()?.title || 'Без названия' }}</h1>
+              <div class="task-badges">
+                <app-task-type-display
+                  [taskType]="task()?.taskType"
+                ></app-task-type-display>
+              </div>
+            </div>
+
+            <div class="task-metrics">
+              <div class="metric-card primary-metric">
+                <div class="metric-icon">
+                  <mat-icon>schedule</mat-icon>
+                </div>
+                <div class="metric-info">
+                  <div class="metric-label">Статус</div>
+                  <div class="metric-value">
+                    {{ getStatusLabel(task()?.status) }}
+                  </div>
+                </div>
+              </div>
+
+              <div class="metric-card" *ngIf="task()?.assignedTo">
+                <div class="metric-icon">
+                  <mat-icon>person</mat-icon>
+                </div>
+                <div class="metric-info">
+                  <div class="metric-label">Исполнитель</div>
+                  <div class="metric-value">{{ task()?.assignedTo.firstName }} {{ task()?.assignedTo.lastName }}</div>
+                </div>
+              </div>
+
+              <div class="metric-card" *ngIf="task()?.dueDate">
+                <div class="metric-icon">
+                  <mat-icon>event</mat-icon>
+                </div>
+                <div class="metric-info">
+                  <div class="metric-label">Срок выполнения</div>
+                  <div class="metric-value">{{ task()?.dueDate | date: 'dd.MM.yyyy' }}</div>
+                </div>
+              </div>
+
+              <div class="metric-card" *ngIf="task()?.createdAt">
+                <div class="metric-icon">
+                  <mat-icon>today</mat-icon>
+                </div>
+                <div class="metric-info">
+                  <div class="metric-label">Создана</div>
+                  <div class="metric-value">{{ task()?.createdAt | date: 'dd.MM.yyyy' }}</div>
+                </div>
+              </div>
+            </div>
           </div>
-        </mat-card-content>
-      </mat-card>
+        </div>
+      </div>
+    </div>
+
+    <!-- Основная информация -->
+    <div class="main-content">
+      <div class="content-grid">
+        <!-- Левая колонка -->
+        <div class="left-column">
+          <!-- Описание -->
+          <mat-card class="info-card highlight-card">
+            <mat-card-header>
+              <div mat-card-avatar class="card-avatar description">
+                <mat-icon>description</mat-icon>
+              </div>
+              <mat-card-title>Описание</mat-card-title>
+              <mat-card-subtitle>Детали и требования задачи</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="description-content">
+                <ng-container *ngIf="task()?.description; else noDesc">
+                  <div class="description-text" [class.expanded]="descExpanded()" [class.collapsed]="!descExpanded()">
+                    {{ task()?.description }}
+                  </div>
+                  <button *ngIf="task()?.description?.length > 300" mat-button class="desc-toggle" (click)="toggleDesc()">
+                    {{ descExpanded() ? 'Свернуть' : 'Развернуть' }}
+                  </button>
+                </ng-container>
+                <ng-template #noDesc>
+                  <span class="muted">Нет описания</span>
+                </ng-template>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Детали задачи -->
+          <mat-card class="info-card">
+            <mat-card-header>
+              <div mat-card-avatar class="card-avatar details">
+                <mat-icon>info</mat-icon>
+              </div>
+              <mat-card-title>Детали задачи</mat-card-title>
+              <mat-card-subtitle>Основная информация</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="details-grid">
+                <div class="detail-item">
+                  <div class="detail-icon">
+                    <mat-icon>person</mat-icon>
+                  </div>
+                  <div class="detail-info">
+                    <span class="label">Исполнитель</span>
+                    <div class="value">
+                      <ng-container *ngIf="task()?.assignedTo; else noAssignee">
+                        <div class="assignee-info">
+                          <div class="user-avatar">
+                            {{ task()?.assignedTo.firstName?.charAt(0) || '?' }}
+                          </div>
+                          <span>{{ task()?.assignedTo.firstName }} {{ task()?.assignedTo.lastName }}</span>
+                        </div>
+                      </ng-container>
+                      <ng-template #noAssignee>
+                        <span class="muted">Не назначено</span>
+                      </ng-template>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="detail-item">
+                  <div class="detail-icon">
+                    <mat-icon>category</mat-icon>
+                  </div>
+                  <div class="detail-info">
+                    <span class="label">Тип задачи</span>
+                    <div class="value">
+                      <ng-container *ngIf="task()?.taskType; else noTaskType">
+                        <app-task-type-display [taskType]="task()?.taskType"></app-task-type-display>
+                      </ng-container>
+                      <ng-template #noTaskType>
+                        <span class="muted">Не указан</span>
+                      </ng-template>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="detail-item">
+                  <div class="detail-icon">
+                    <mat-icon>event</mat-icon>
+                  </div>
+                  <div class="detail-info">
+                    <span class="label">Срок выполнения</span>
+                    <div class="value">
+                      <ng-container *ngIf="task()?.dueDate; else noDueDate">
+                        <app-task-due-date [task]="task()!" [showTime]="true"></app-task-due-date>
+                      </ng-container>
+                      <ng-template #noDueDate>
+                        <span class="muted">Не указан</span>
+                      </ng-template>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="detail-item" *ngIf="task()?.lead">
+                  <div class="detail-icon">
+                    <mat-icon>person</mat-icon>
+                  </div>
+                  <div class="detail-info">
+                    <span class="label">Связан с лидом</span>
+                    <div class="value">
+                      <a [routerLink]="['/leads/view', task()?.lead?.id]" class="link-primary">
+                        {{ task()?.lead?.name }}
+                        <mat-icon class="link-icon">open_in_new</mat-icon>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="detail-item" *ngIf="task()?.deal">
+                  <div class="detail-icon">
+                    <mat-icon>business_center</mat-icon>
+                  </div>
+                  <div class="detail-info">
+                    <span class="label">Связан со сделкой</span>
+                    <div class="value">
+                      <a [routerLink]="['/deals/view', task()?.deal?.id]" class="link-primary">
+                        {{ task()?.deal?.title }}
+                        <mat-icon class="link-icon">open_in_new</mat-icon>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- История и активность -->
+          <div class="history-section">
+            <div class="section-header">
+              <div class="section-icon">
+                <mat-icon>history</mat-icon>
+              </div>
+              <div class="section-title">
+                <h3>Активность по задаче</h3>
+                <p>Комментарии и история изменений</p>
+              </div>
+            </div>
+
+            <mat-tab-group mat-stretch-tabs="false" class="history-tabs" animationDuration="300ms">
+              <!-- Комментарии -->
+              <mat-tab>
+                <ng-template mat-tab-label>
+                  <div class="tab-label">
+                    <mat-icon>comment</mat-icon>
+                    <span>Комментарии</span>
+                  </div>
+                </ng-template>
+                <div class="tab-content">
+                  <div class="comments-list">
+                    <div *ngIf="isLoadingComments()" class="comments-loading">
+                      <mat-spinner diameter="30"></mat-spinner>
+                    </div>
+
+                    <div *ngIf="!isLoadingComments() && comments().length === 0" class="no-comments">
+                      <mat-icon>comment</mat-icon>
+                      <p>Пока нет комментариев</p>
+                    </div>
+
+                    <div *ngFor="let comment of comments()" class="comment-item">
+                      <div class="comment-avatar">
+                        {{ (comment.author?.firstName || 'U')?.charAt(0) }}
+                      </div>
+                      <div class="comment-content">
+                        <div class="comment-header">
+                          <span class="comment-author">
+                            <ng-container *ngIf="comment.author; else unknownAuthor">
+                              {{ comment.author.firstName }} {{ comment.author.lastName }}
+                            </ng-container>
+                            <ng-template #unknownAuthor>
+                              <span class="muted">Пользователь</span>
+                            </ng-template>
+                          </span>
+                          <span class="comment-date">
+                            {{ comment.createdAt | relativeTime }}
+                          </span>
+                        </div>
+                        <div class="comment-text">{{ comment.text }}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <mat-divider></mat-divider>
+
+                  <!-- Add Comment Form -->
+                  <div class="add-comment">
+                    <mat-form-field appearance="outline" class="comment-input">
+                      <mat-label>Добавить комментарий</mat-label>
+                      <textarea 
+                        matInput 
+                        [(ngModel)]="newCommentText"
+                        rows="3"
+                        placeholder="Введите комментарий..."
+                        (keydown.enter)="$any($event).ctrlKey && sendComment()"></textarea>
+                    </mat-form-field>
+                    <button 
+                      mat-raised-button 
+                      color="primary" 
+                      (click)="sendComment()"
+                      [disabled]="!newCommentText.trim() || isSendingComment">
+                      <mat-spinner *ngIf="isSendingComment" diameter="20" class="button-spinner"></mat-spinner>
+                      <mat-icon *ngIf="!isSendingComment">send</mat-icon>
+                      <span *ngIf="!isSendingComment">Отправить</span>
+                    </button>
+                  </div>
+                </div>
+              </mat-tab>
+
+              <!-- История изменений -->
+              <mat-tab>
+                <ng-template mat-tab-label>
+                  <div class="tab-label">
+                    <mat-icon>timeline</mat-icon>
+                    <span>История</span>
+                  </div>
+                </ng-template>
+                <div class="tab-content">
+                  <div class="history-placeholder">
+                    <mat-icon>timeline</mat-icon>
+                    <p>История изменений будет доступна в следующих версиях</p>
+                  </div>
+                </div>
+              </mat-tab>
+            </mat-tab-group>
+          </div>
+        </div>
+
+        <!-- Правая колонка -->
+        <div class="right-column">
+          <!-- Процесс выполнения -->
+          <mat-card class="info-card process-card">
+            <mat-card-header>
+              <div mat-card-avatar class="card-avatar process">
+                <mat-icon>auto_graph</mat-icon>
+              </div>
+              <mat-card-title>Процесс выполнения</mat-card-title>
+              <mat-card-subtitle>Информация о ходе задачи</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="process-timeline">
+                <div class="timeline-item">
+                  <div class="timeline-icon status" [class]="getStatusClass(task()?.status)">
+                    <mat-icon>{{ getStatusIcon(task()?.status) }}</mat-icon>
+                  </div>
+                  <div class="timeline-content">
+                    <span class="label">Текущий статус</span>
+                    <div class="value highlight">{{ getStatusLabel(task()?.status) }}</div>
+                  </div>
+                </div>
+
+                <div class="timeline-item">
+                  <div class="timeline-icon user">
+                    <mat-icon>person_pin</mat-icon>
+                  </div>
+                  <div class="timeline-content">
+                    <span class="label">Ответственный</span>
+                    <div class="value">
+                      <div class="assignee-info">
+                        <span>{{ task()?.assignedTo ? (task()?.assignedTo.firstName + ' ' + task()?.assignedTo.lastName) : 'Не назначен' }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="timeline-item">
+                  <div class="timeline-icon date">
+                    <mat-icon>event</mat-icon>
+                  </div>
+                  <div class="timeline-content">
+                    <span class="label">Дата создания</span>
+                    <div class="value">
+                      {{ task()?.createdAt | date : 'dd.MM.yyyy HH:mm' }}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="timeline-item" *ngIf="task()?.dueDate">
+                  <div class="timeline-icon" [class]="isOverdue(task()?.dueDate) ? 'warning' : 'schedule'">
+                    <mat-icon>{{ isOverdue(task()?.dueDate) ? 'warning' : 'schedule' }}</mat-icon>
+                  </div>
+                  <div class="timeline-content">
+                    <span class="label">Срок выполнения</span>
+                    <div class="value" [class]="isOverdue(task()?.dueDate) ? 'overdue' : ''">
+                      {{ task()?.dueDate | date : 'dd.MM.yyyy' }}
+                      <span class="overdue-badge" *ngIf="isOverdue(task()?.dueDate)">Просрочена</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="timeline-item" *ngIf="task()?.status === 'done' && task()?.updatedAt">
+                  <div class="timeline-icon success">
+                    <mat-icon>check_circle</mat-icon>
+                  </div>
+                  <div class="timeline-content">
+                    <span class="label">Дата завершения</span>
+                    <div class="value success">
+                      {{ task()?.updatedAt | date : 'dd.MM.yyyy HH:mm' }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </div>
     </div>
   </div>
 </div>

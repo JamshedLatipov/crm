@@ -12,12 +12,15 @@ import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TasksService, TaskDto, TaskComment } from '../tasks.service';
 import { AuthService } from '../../auth/auth.service';
 import { HumanDatePipe } from '../../shared/pipes/human-date.pipe';
 import { RelativeTimePipe } from '../../shared/pipes/relative-time.pipe';
 import { TaskDueDateComponent } from '../components/task-due-date/task-due-date.component';
+import { TaskTypeDisplayComponent } from '../components/task-type-display/task-type-display.component';
 
 @Component({
   selector: 'app-task-detail',
@@ -36,9 +39,11 @@ import { TaskDueDateComponent } from '../components/task-due-date/task-due-date.
     MatFormFieldModule,
     MatSelectModule,
     MatTooltipModule,
-    HumanDatePipe,
+    MatTabsModule,
+    MatMenuModule,
     RelativeTimePipe,
-    TaskDueDateComponent
+    TaskDueDateComponent,
+    TaskTypeDisplayComponent
   ],
   templateUrl: './task-detail.component.html',
   styleUrls: ['./task-detail.component.scss']
@@ -172,6 +177,10 @@ export class TaskDetailComponent implements OnInit {
     this.router.navigate(['/tasks']);
   }
 
+  completeTask() {
+    this.changeStatus('done');
+  }
+
   changeStatus(newStatus: string) {
     if (!this.taskId || !this.task()) return;
     
@@ -205,5 +214,32 @@ export class TaskDetailComponent implements OnInit {
       overdue: 'Просрочено'
     };
     return labels[status] || status;
+  }
+
+  getStatusClass(status: string): string {
+    const classes: Record<string, string> = {
+      pending: 'pending',
+      in_progress: 'in-progress',
+      done: 'success',
+      overdue: 'warning'
+    };
+    return classes[status] || 'pending';
+  }
+
+  getStatusIcon(status: string): string {
+    const icons: Record<string, string> = {
+      pending: 'schedule',
+      in_progress: 'play_arrow',
+      done: 'check_circle',
+      overdue: 'warning'
+    };
+    return icons[status] || 'schedule';
+  }
+
+  isOverdue(dueDate: string | Date | undefined): boolean {
+    if (!dueDate) return false;
+    const now = new Date();
+    const due = new Date(dueDate);
+    return due < now;
   }
 }
