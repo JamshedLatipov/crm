@@ -322,6 +322,7 @@ export class SidebarComponent {
     { icon: 'handshake', label: 'Deals', route: '/deals' },
     { icon: 'task', label: 'Tasks', route: '/tasks' },
     { icon: 'phone', label: 'Calls', route: '/calls' },
+    { icon: 'dialpad', label: 'IVR', route: '/ivr' },
     { icon: 'group', label: 'Users', route: '/users' },
     { icon: 'assessment', label: 'Reports', route: '/reports' },
     { icon: 'help_outline', label: 'Help', route: '/help' },

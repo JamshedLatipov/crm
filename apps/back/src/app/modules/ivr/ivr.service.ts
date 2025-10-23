@@ -55,8 +55,18 @@ export class IvrService {
     return this.repo.find({ where: { parentId: null }, order: { order: 'ASC' } });
   }
 
-  findChildren(parentId: string) {
-    return this.repo.find({ where: { parentId }, order: { order: 'ASC' } });
+  async findChildren(parentId: string) {
+    const children = await this.repo.find({ where: { parentId }, order: { order: 'ASC' } });
+    
+    // Добавляем информацию о наличии дочерних элементов для каждого child
+    const childrenWithFlag = await Promise.all(
+      children.map(async (child) => {
+        const childCount = await this.repo.count({ where: { parentId: child.id } });
+        return { ...child, hasChildren: childCount > 0 };
+      })
+    );
+    
+    return childrenWithFlag;
   }
 
   async getSubtree(id: string): Promise<IvrNode & { children: IvrNode[] }> {

@@ -99,4 +99,11 @@ export class IvrMediaService {
     try { await fs.promises.unlink(path.join(this.mediaDir, r.filename)); } catch (e) { this.logger.debug('unlink: '+(e as Error).message); }
     await this.repo.delete(id);
   }
+
+  async rename(id: string, name: string) {
+    const r = await this.repo.findOne({ where: { id } });
+    if (!r) return null;
+    r.name = name;
+    return this.repo.save(r);
+  }
 }

@@ -3,7 +3,7 @@ import { SoftphoneComponent } from './softphone/softphone.component';
 import { LoginComponent } from './login/login.component';
 import { authGuard } from './auth/auth.guard';
 import { AuthTestComponent } from './auth/auth-test.component';
-import { IvrAdminComponent } from './ivr/ivr.component';
+import { IvrAdminComponent } from './ivr/containers/ivr-list/ivr.component';
 import { LeadsComponent } from './leads/leads.component';
 import { LeadsListComponent } from './leads/components/leads-list/leads-list.component';
 import { LeadsDashboardComponent } from './leads/components/leads-dashboard.component';

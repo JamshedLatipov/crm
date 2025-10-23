@@ -1,0 +1,365 @@
+<!-- Page Header -->
+<div class="page-header">
+  <div class="header-content">
+    <div class="header-icon">
+      <mat-icon>dialpad</mat-icon>
+    </div>
+    <div class="header-text">
+      <h1>Управление IVR</h1>
+      <p class="subtitle">Интерактивное голосовое меню и автоматизация звонков</p>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button mat-stroked-button (click)="reload()">
+      <mat-icon>refresh</mat-icon>
+      Обновить
+    </button>
+    <button mat-raised-button color="primary" (click)="newRoot()">
+      <mat-icon>add</mat-icon>
+      Добавить корень
+    </button>
+  </div>
+</div>
+
+<div class="container">
+  <!-- Roots Panel -->
+  <div class="panel roots-panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <mat-icon>account_tree</mat-icon>
+        <h3>Корневые элементы</h3>
+      </div>
+      <span class="panel-badge">{{ rootNodes.length }}</span>
+    </div>
+    
+    <div class="panel-content" *ngIf="rootNodes.length > 0; else emptyRoots">
+      <div 
+        cdkDropList 
+        (cdkDropListDropped)="dropRoot($event)"
+        class="ivr-list"
+      >
+        <div
+          *ngFor="let r of rootNodes; let i = index"
+          cdkDrag
+          (click)="select(r)"
+          [class.selected]="selected?.id === r.id"
+          class="ivr-item"
+          tabindex="0"
+        >
+          <div class="drag-handle" cdkDragHandle>
+            <mat-icon>drag_indicator</mat-icon>
+          </div>
+          <div class="item-icon">
+            <mat-icon>device_hub</mat-icon>
+          </div>
+          <div class="item-content">
+            <div class="item-title">{{ r.name || '(без названия)' }}</div>
+            <div class="item-meta">
+              <span class="action-badge">{{ actionLabels[r.action] || r.action }}</span>
+              <span *ngIf="r.digit" class="digit-badge">Клавиша: {{ r.digit }}</span>
+            </div>
+          </div>
+          <div class="item-actions">
+            <button
+              mat-icon-button
+              color="primary"
+              (click)="$event.stopPropagation(); select(r)"
+              matTooltip="Редактировать"
+            >
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button
+              mat-icon-button
+              color="warn"
+              (click)="$event.stopPropagation(); del()"
+              matTooltip="Удалить"
+            >
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #emptyRoots>
+      <div class="empty-state">
+        <mat-icon>account_tree</mat-icon>
+        <p>Нет корневых элементов</p>
+        <button mat-stroked-button (click)="newRoot()">
+          <mat-icon>add</mat-icon>
+          Создать первый элемент
+        </button>
+      </div>
+    </ng-template>
+  </div>
+
+  <!-- Tree Panel -->
+  <div class="panel children-panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <mat-icon>account_tree</mat-icon>
+        <h3>Структура дерева</h3>
+      </div>
+      <button 
+        mat-mini-fab 
+        color="primary" 
+        (click)="newChild()"
+        matTooltip="Добавить дочерний элемент"
+        class="add-child-btn"
+        [disabled]="!treeRoot?.id"
+      >
+        <mat-icon>add</mat-icon>
+      </button>
+    </div>
+    
+    <div class="panel-content">
+      <!-- Show tree when tree root is selected -->
+      <ng-container *ngIf="treeRoot?.id">
+        <div class="tree-container" *ngIf="childrenOfTreeRoot().length > 0; else emptyChildren">
+          <app-ivr-tree-node
+            *ngFor="let child of childrenOfTreeRoot()"
+            [node]="child"
+            [children]="getNodeChildren(child.id)"
+            [selectedId]="selected?.id"
+            [level]="0"
+            [actionLabels]="actionLabels"
+            [allNodes]="allNodes"
+            [lazyLoad]="true"
+            (onSelect)="onNodeSelect($event)"
+            (onAddChild)="onNodeAddChild($event)"
+            (onEdit)="onNodeEdit($event)"
+            (onDelete)="onNodeDelete($event)"
+            (onLoadChildren)="handleLoadChildren($event)"
+          ></app-ivr-tree-node>
+        </div>
+
+        <ng-template #emptyChildren>
+          <div class="empty-state small">
+            <mat-icon>inbox</mat-icon>
+            <p>Нет дочерних элементов</p>
+          </div>
+        </ng-template>
+      </ng-container>
+
+      <!-- Show prompt when no parent is selected -->
+      <div class="empty-state" *ngIf="!selected?.id">
+        <mat-icon>touch_app</mat-icon>
+        <p>Выберите корневой элемент</p>
+        <small>Выберите элемент слева для просмотра его дочерних элементов</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Editor Panel -->
+  <div class="panel editor-panel" *ngIf="form">
+    <div class="panel-header">
+      <div class="panel-title">
+        <mat-icon>edit</mat-icon>
+        <h3>{{ selected?.id ? 'Редактирование' : 'Создание' }}</h3>
+      </div>
+    </div>
+    
+    <div class="panel-content">
+      <form [formGroup]="form" (ngSubmit)="save()" class="editor-form">
+        <!-- Basic Settings -->
+        <div class="form-section">
+          <h4 class="section-title">Основные настройки</h4>
+          
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Название</mat-label>
+            <input matInput formControlName="name" placeholder="Введите название узла" />
+            <mat-icon matPrefix>label</mat-icon>
+          </mat-form-field>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Действие</mat-label>
+              <mat-select formControlName="action">
+                <mat-option *ngFor="let a of actions" [value]="a">
+                  <mat-icon>{{ getActionIcon(a) }}</mat-icon>
+                  {{ actionLabels[a] || a }}
+                </mat-option>
+              </mat-select>
+              <mat-icon matPrefix>settings</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Клавиша</mat-label>
+              <input matInput maxlength="1" formControlName="digit" placeholder="0-9, *, #" />
+              <mat-icon matPrefix>dialpad</mat-icon>
+              <mat-hint>DTMF клавиша для навигации</mat-hint>
+              <mat-error *ngIf="errors['digit']">{{ errors['digit'] }}</mat-error>
+            </mat-form-field>
+          </div>
+        </div>
+
+        <!-- Action-specific Settings -->
+        <div class="form-section" *ngIf="form.value.action === 'playback' || form.value.action === 'menu'">
+          <h4 class="section-title">Медиа</h4>
+          
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Выбрать медиафайл</mat-label>
+            <mat-select [value]="selectedMediaId" (selectionChange)="onMediaSelect($event.value)">
+              <mat-option [value]="null">
+                <mat-icon>clear</mat-icon>
+                (нет)
+              </mat-option>
+              <mat-option *ngFor="let m of mediaList" [value]="m.id">
+                <mat-icon>audiotrack</mat-icon>
+                {{ m.name || m.filename }}
+              </mat-option>
+            </mat-select>
+            <mat-icon matPrefix>audio_file</mat-icon>
+          </mat-form-field>
+
+          <div class="media-upload-section">
+            <input accept=".wav" type="file" #fileInput (change)="onFileSelected($event)" hidden />
+            <div class="upload-actions">
+              <button mat-stroked-button type="button" (click)="fileInput.click()">
+                <mat-icon>upload_file</mat-icon>
+                Выбрать файл
+              </button>
+              <button 
+                mat-raised-button 
+                color="primary" 
+                type="button" 
+                (click)="uploadSelectedFile()" 
+                [disabled]="!selectedFile"
+              >
+                <mat-icon>cloud_upload</mat-icon>
+                Загрузить
+              </button>
+            </div>
+            <div class="selected-file-info" *ngIf="selectedFile">
+              <mat-icon>insert_drive_file</mat-icon>
+              <span>{{ selectedFile.name }}</span>
+            </div>
+            <div class="media-error-msg" *ngIf="mediaError">
+              <mat-icon>error</mat-icon>
+              {{ mediaError }}
+            </div>
+            <div class="media-actions-buttons" *ngIf="selectedMediaId">
+              <button mat-icon-button type="button" (click)="renameMedia(selectedMediaId)" matTooltip="Переименовать">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button type="button" color="warn" (click)="deleteMedia(selectedMediaId)" matTooltip="Удалить">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payload -->
+        <div class="form-section" *ngIf="form.value.action === 'dial' || form.value.action === 'goto'">
+          <h4 class="section-title">Параметры действия</h4>
+          
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Payload (данные)</mat-label>
+            <input matInput formControlName="payload" placeholder="Номер или ID узла" />
+            <mat-icon matPrefix>data_object</mat-icon>
+            <mat-error *ngIf="errors['payload']">{{ errors['payload'] }}</mat-error>
+          </mat-form-field>
+        </div>
+
+        <!-- Queue Settings -->
+        <div class="form-section" *ngIf="form.value.action === 'queue'">
+          <h4 class="section-title">Настройки очереди</h4>
+          
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Очередь</mat-label>
+            <mat-select formControlName="queueName">
+              <mat-option [value]="null">(нет)</mat-option>
+              <mat-option *ngFor="let q of queues" [value]="q.id">
+                <mat-icon>groups</mat-icon>
+                {{ q.name }}
+              </mat-option>
+            </mat-select>
+            <mat-icon matPrefix>support_agent</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <!-- Advanced Settings -->
+        <div class="form-section">
+          <h4 class="section-title">Расширенные настройки</h4>
+          
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Таймаут (мс)</mat-label>
+              <input matInput type="number" formControlName="timeoutMs" />
+              <mat-icon matPrefix>timer</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Клавиша "назад"</mat-label>
+              <input matInput maxlength="1" formControlName="backDigit" />
+              <mat-icon matPrefix>arrow_back</mat-icon>
+            </mat-form-field>
+          </div>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Клавиша повтора</mat-label>
+              <input matInput maxlength="1" formControlName="repeatDigit" />
+              <mat-icon matPrefix>replay</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Клавиша корня</mat-label>
+              <input matInput maxlength="1" formControlName="rootDigit" />
+              <mat-icon matPrefix>home</mat-icon>
+            </mat-form-field>
+          </div>
+
+          <mat-checkbox formControlName="allowEarlyDtmf" class="checkbox-field">
+            Разрешить ранний DTMF
+          </mat-checkbox>
+        </div>
+
+        <!-- Webhook Settings -->
+        <div class="form-section">
+          <h4 class="section-title">Webhook интеграция</h4>
+          
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Webhook URL</mat-label>
+            <input matInput formControlName="webhookUrl" placeholder="https://example.com/webhook" />
+            <mat-icon matPrefix>link</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Метод HTTP</mat-label>
+            <mat-select formControlName="webhookMethod">
+              <mat-option value="GET">GET</mat-option>
+              <mat-option value="POST">POST</mat-option>
+              <mat-option value="PUT">PUT</mat-option>
+            </mat-select>
+            <mat-icon matPrefix>http</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions">
+          <button mat-raised-button color="primary" type="submit" [disabled]="hasErrors()">
+            <mat-icon>save</mat-icon>
+            Сохранить
+          </button>
+          <button mat-stroked-button type="button" (click)="del()" *ngIf="selected?.id">
+            <mat-icon>delete</mat-icon>
+            Удалить
+          </button>
+          <button mat-button type="button" (click)="cancelEdit()">
+            Отмена
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Empty Editor State -->
+  <div class="panel editor-panel empty" *ngIf="!form">
+    <div class="empty-state large">
+      <mat-icon>touch_app</mat-icon>
+      <h3>Выберите элемент для редактирования</h3>
+      <p>Кликните на элемент из списка слева или создайте новый корневой элемент</p>
+    </div>
+  </div>
+</div>

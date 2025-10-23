@@ -15,6 +15,7 @@ import { PsEndpointController } from './controllers/ps-endpoint.controller';
 import { PsAorController } from './controllers/ps-aor.controller';
 import { PsAuthController } from './controllers/ps-auth.controller';
 import { CallsController } from './controllers/calls.controller';
+import { QueuesController } from './controllers/queues.controller';
 import { CallTransferService } from './services/call-transfer.service';
 import { AriModule } from '../ari/ari.module';
 import { QueueLog } from './entities/queuelog.entity';
@@ -45,6 +46,7 @@ import { QueueLog } from './entities/queuelog.entity';
     PsAuthController,
     CdrController,
     CallsController,
+    QueuesController,
   ],
   exports: [
     PsEndpointService,
