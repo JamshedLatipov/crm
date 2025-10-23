@@ -1173,12 +1173,20 @@
           border-radius: 10px;
           font-weight: 600;
           font-size: 14px;
-          padding: 0 20px;
           display: flex;
           align-items: center;
-          gap: 8px;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           backdrop-filter: blur(10px);
+
+          // Базовый gap для кнопок с текстом
+          &:not(.edit-btn):not(.delete-btn) {
+            gap: 8px;
+          }
+
+          // Базовый padding для кнопок с текстом
+          &:not(.edit-btn):not(.delete-btn) {
+            padding: 0 20px;
+          }
 
           mat-icon {
             width: 20px;
@@ -1186,7 +1194,35 @@
             font-size: 20px;
           }
 
+          .btn-text {
+            @media (max-width: 1024px) {
+              display: none;
+            }
+          }
+
+          @media (max-width: 1024px) {
+            &:not(.edit-btn):not(.delete-btn) {
+              padding: 0 12px;
+              min-width: 40px;
+            }
+          }
+
           &.edit-btn {
+            width: 40px !important;
+            min-width: 40px !important;
+            padding: 0 !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            gap: 0 !important;
+            text-align: center !important;
+
+            ::ng-deep mat-icon {
+              margin: 0 auto !important;
+              display: block !important;
+              text-align: center !important;
+            }
+
             background: rgba(255, 255, 255, 0.15);
             border: 1px solid rgba(255, 255, 255, 0.3);
             color: white;
@@ -1200,15 +1236,80 @@
           }
 
           &.delete-btn {
-            background: rgba(239, 68, 68, 0.2);
-            border: 1px solid rgba(239, 68, 68, 0.3);
+            width: 40px !important;
+            min-width: 40px !important;
+            padding: 0 !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            gap: 0 !important;
+            text-align: center !important;
+
+            ::ng-deep mat-icon {
+              margin: 0 auto !important;
+              display: block !important;
+              text-align: center !important;
+              color: #ef4444 !important;
+            }
+
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
             color: white;
 
             &:hover {
-              background: rgba(239, 68, 68, 0.3);
-              border-color: rgba(239, 68, 68, 0.5);
+              background: rgba(255, 255, 255, 0.25);
+              border-color: rgba(255, 255, 255, 0.45);
               transform: translateY(-2px);
-              box-shadow: 0 6px 20px rgba(239, 68, 68, 0.3);
+              box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+            }
+          }
+
+          &.complete-dropdown-btn {
+            width: 40px !important;
+            min-width: 40px !important;
+            padding: 0 !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            gap: 0 !important;
+            text-align: center !important;
+
+            ::ng-deep mat-icon {
+              margin: 0 auto !important;
+              display: block !important;
+              text-align: center !important;
+            }
+
+
+            &:hover {
+              background: rgba(59, 130, 246, 0.3);
+              border-color: rgba(59, 130, 246, 0.5);
+              transform: translateY(-2px);
+              box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
+            }
+          }
+
+          &.assign-btn {
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: white;
+            padding: 0 20px;
+            width: auto;
+            min-width: auto;
+
+            &:hover {
+              background: rgba(59, 130, 246, 0.3);
+              border-color: rgba(59, 130, 246, 0.5);
+              transform: translateY(-2px);
+              box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
+            }
+
+            .btn-text {
+              display: inline !important;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              max-width: 150px;
             }
           }
         }
@@ -1279,6 +1380,60 @@
               }
             }
 
+            &.status-card {
+              &.pending {
+                border-color: #f59e0b;
+                background: rgba(245, 158, 11, 0.1);
+
+                .metric-icon {
+                  background: #f59e0b;
+
+                  mat-icon {
+                    color: white;
+                  }
+                }
+              }
+
+              &.in-progress {
+                border-color: #3b82f6;
+                background: rgba(59, 130, 246, 0.1);
+
+                .metric-icon {
+                  background: #3b82f6;
+
+                  mat-icon {
+                    color: white;
+                  }
+                }
+              }
+
+              &.success {
+                border-color: #10b981;
+                background: rgba(16, 185, 129, 0.1);
+
+                .metric-icon {
+                  background: #10b981;
+
+                  mat-icon {
+                    color: white;
+                  }
+                }
+              }
+
+              &.warning {
+                border-color: #ef4444;
+                background: rgba(239, 68, 68, 0.1);
+
+                .metric-icon {
+                  background: #ef4444;
+
+                  mat-icon {
+                    color: white;
+                  }
+                }
+              }
+            }
+
             .metric-icon {
               width: 48px;
               height: 48px;
@@ -1304,7 +1459,7 @@
               .metric-label {
                 font-size: 12px;
                 font-weight: 500;
-                color: rgba(255, 255, 255, 0.8);
+                color: white;
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
                 margin-bottom: 4px;
@@ -1317,6 +1472,42 @@
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
+
+                .status-badge {
+                  display: inline-block;
+                  padding: 4px 12px;
+                  border-radius: 20px;
+                  font-size: 12px;
+                  font-weight: 600;
+                  color: white;
+                  text-transform: uppercase;
+                  letter-spacing: 0.5px;
+                  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+                }
+
+                .link-primary {
+                  color: white;
+                  text-decoration: none;
+                  font-weight: 700;
+                  transition: color 0.2s;
+
+                  &:hover {
+                    color: rgba(255, 255, 255, 0.8);
+                    text-decoration: underline;
+                  }
+
+                  .link-icon {
+                    width: 16px;
+                    height: 16px;
+                    font-size: 16px;
+                    margin-left: 4px;
+                    opacity: 0.8;
+                  }
+                }
+
+                .type-name {
+                  color: white !important;
+                }
               }
             }
           }
@@ -1660,6 +1851,32 @@
             justify-content: center;
             font-weight: 600;
             font-size: 14px;
+          }
+
+          .change-assignee-btn {
+            width: 28px;
+            height: 28px;
+            line-height: 28px;
+
+            mat-icon {
+              font-size: 16px;
+              width: 16px;
+              height: 16px;
+            }
+          }
+        }
+
+        .assign-btn {
+          height: 32px;
+          font-size: 13px;
+          font-weight: 500;
+          padding: 0 12px;
+          margin-top: 8px;
+
+          mat-icon {
+            font-size: 16px;
+            width: 16px;
+            height: 16px;
           }
         }
 

@@ -38,9 +38,33 @@
               mat-stroked-button
               (click)="editTask()"
               class="action-btn edit-btn"
+              matTooltip="Редактировать задачу"
             >
               <mat-icon>edit</mat-icon>
-              <span>Редактировать</span>
+            </button>
+
+            <button
+              mat-stroked-button
+              (click)="deleteTask()"
+              class="action-btn delete-btn"
+              matTooltip="Удалить задачу"
+            >
+              <mat-icon>delete</mat-icon>
+            </button>
+
+            <button
+              mat-stroked-button
+              (click)="assignTask()"
+              class="action-btn assign-btn"
+              matTooltip="Сменить исполнителя"
+            >
+              <mat-icon>person_add</mat-icon>
+              <span class="btn-text">
+                <ng-container *ngIf="task()?.assignedTo; else noAssigneeBtn">
+                  {{ task()?.assignedTo.firstName }} {{ task()?.assignedTo.lastName }}
+                </ng-container>
+                <ng-template #noAssigneeBtn>Назначить</ng-template>
+              </span>
             </button>
             
             <div class="complete-button-group">
@@ -50,7 +74,7 @@
                 (click)="completeTask()"
               >
                 <mat-icon>check_circle</mat-icon>
-                <span>Завершить</span>
+                <span class="btn-text">Завершить</span>
               </button>
               
               <button
@@ -61,16 +85,6 @@
                 <mat-icon>keyboard_arrow_down</mat-icon>
               </button>
             </div>
-            
-            <button
-              mat-stroked-button
-              color="warn"
-              (click)="deleteTask()"
-              class="action-btn delete-btn"
-            >
-              <mat-icon>delete</mat-icon>
-              <span>Удалить</span>
-            </button>
           </div>
         </div>
 
@@ -102,14 +116,16 @@
             </div>
 
             <div class="task-metrics">
-              <div class="metric-card primary-metric">
+              <div class="metric-card primary-metric status-card" [class]="getStatusClass(task()?.status)">
                 <div class="metric-icon">
-                  <mat-icon>schedule</mat-icon>
+                  <mat-icon>{{ getStatusIcon(task()?.status) }}</mat-icon>
                 </div>
                 <div class="metric-info">
                   <div class="metric-label">Статус</div>
-                  <div class="metric-value">
-                    {{ getStatusLabel(task()?.status) }}
+                  <div class="metric-value status-value">
+                    <span class="status-badge" [style.background-color]="getStatusColor(task()?.status)">
+                      {{ getStatusLabel(task()?.status) }}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -126,55 +142,33 @@
                 </div>
               </div>
 
-              <div class="metric-card assignee-metric">
+              <div class="metric-card" *ngIf="task()?.lead">
                 <div class="metric-icon">
-                  <mat-icon>person</mat-icon>
+                  <mat-icon>person_add</mat-icon>
                 </div>
                 <div class="metric-info">
-                  <div class="metric-label">Исполнитель</div>
+                  <div class="metric-label">Связан с лидом</div>
                   <div class="metric-value">
-                    <ng-container *ngIf="task()?.assignedTo; else assignSection">
-                      <div class="assigned-info">
-                        <span>{{ task()?.assignedTo.firstName }} {{ task()?.assignedTo.lastName }}</span>
-                        <button 
-                          mat-icon-button 
-                          class="change-assignee-btn"
-                          (click)="assignTask()"
-                          matTooltip="Изменить исполнителя">
-                          <mat-icon>edit</mat-icon>
-                        </button>
-                      </div>
-                    </ng-container>
-                    <ng-template #assignSection>
-                      <button 
-                        mat-stroked-button 
-                        class="assign-btn"
-                        (click)="assignTask()">
-                        <mat-icon>add</mat-icon>
-                        <span>Назначить</span>
-                      </button>
-                    </ng-template>
+                    <a [routerLink]="['/leads/view', task()?.lead?.id]" class="link-primary">
+                      {{ task()?.lead?.name }}
+                      <mat-icon class="link-icon">open_in_new</mat-icon>
+                    </a>
                   </div>
                 </div>
               </div>
 
-              <div class="metric-card" *ngIf="task()?.dueDate">
+              <div class="metric-card" *ngIf="task()?.deal">
                 <div class="metric-icon">
-                  <mat-icon>event</mat-icon>
+                  <mat-icon>business_center</mat-icon>
                 </div>
                 <div class="metric-info">
-                  <div class="metric-label">Срок выполнения</div>
-                  <div class="metric-value">{{ task()?.dueDate | date: 'dd.MM.yyyy' }}</div>
-                </div>
-              </div>
-
-              <div class="metric-card" *ngIf="task()?.createdAt">
-                <div class="metric-icon">
-                  <mat-icon>today</mat-icon>
-                </div>
-                <div class="metric-info">
-                  <div class="metric-label">Создана</div>
-                  <div class="metric-value">{{ task()?.createdAt | date: 'dd.MM.yyyy' }}</div>
+                  <div class="metric-label">Связан со сделкой</div>
+                  <div class="metric-value">
+                    <a [routerLink]="['/deals/view', task()?.deal?.id]" class="link-primary">
+                      {{ task()?.deal?.title }}
+                      <mat-icon class="link-icon">open_in_new</mat-icon>
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
@@ -214,103 +208,6 @@
             </mat-card-content>
           </mat-card>
 
-          <!-- Детали задачи -->
-          <mat-card class="info-card">
-            <mat-card-header>
-              <div mat-card-avatar class="card-avatar details">
-                <mat-icon>info</mat-icon>
-              </div>
-              <mat-card-title>Детали задачи</mat-card-title>
-              <mat-card-subtitle>Основная информация</mat-card-subtitle>
-            </mat-card-header>
-            <mat-card-content>
-              <div class="details-grid">
-                <div class="detail-item">
-                  <div class="detail-icon">
-                    <mat-icon>person</mat-icon>
-                  </div>
-                  <div class="detail-info">
-                    <span class="label">Исполнитель</span>
-                    <div class="value">
-                      <ng-container *ngIf="task()?.assignedTo; else noAssignee">
-                        <div class="assignee-info">
-                          <div class="user-avatar">
-                            {{ task()?.assignedTo.firstName?.charAt(0) || '?' }}
-                          </div>
-                          <span>{{ task()?.assignedTo.firstName }} {{ task()?.assignedTo.lastName }}</span>
-                        </div>
-                      </ng-container>
-                      <ng-template #noAssignee>
-                        <span class="muted">Не назначено</span>
-                      </ng-template>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="detail-item">
-                  <div class="detail-info">
-                    <span class="label">Тип задачи</span>
-                    <div class="value">
-                      <ng-container *ngIf="task()?.taskType; else noTaskType">
-                        <app-task-type-display [taskType]="task()?.taskType"></app-task-type-display>
-                      </ng-container>
-                      <ng-template #noTaskType>
-                        <span class="muted">Не указан</span>
-                      </ng-template>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="detail-item">
-                  <div class="detail-icon">
-                    <mat-icon>event</mat-icon>
-                  </div>
-                  <div class="detail-info">
-                    <span class="label">Срок выполнения</span>
-                    <div class="value">
-                      <ng-container *ngIf="task()?.dueDate; else noDueDate">
-                        <app-task-due-date [task]="task()!" [showTime]="true"></app-task-due-date>
-                      </ng-container>
-                      <ng-template #noDueDate>
-                        <span class="muted">Не указан</span>
-                      </ng-template>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="detail-item" *ngIf="task()?.lead">
-                  <div class="detail-icon">
-                    <mat-icon>person</mat-icon>
-                  </div>
-                  <div class="detail-info">
-                    <span class="label">Связан с лидом</span>
-                    <div class="value">
-                      <a [routerLink]="['/leads/view', task()?.lead?.id]" class="link-primary">
-                        {{ task()?.lead?.name }}
-                        <mat-icon class="link-icon">open_in_new</mat-icon>
-                      </a>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="detail-item" *ngIf="task()?.deal">
-                  <div class="detail-icon">
-                    <mat-icon>business_center</mat-icon>
-                  </div>
-                  <div class="detail-info">
-                    <span class="label">Связан со сделкой</span>
-                    <div class="value">
-                      <a [routerLink]="['/deals/view', task()?.deal?.id]" class="link-primary">
-                        {{ task()?.deal?.title }}
-                        <mat-icon class="link-icon">open_in_new</mat-icon>
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </mat-card-content>
-          </mat-card>
-
           <!-- История и активность -->
           <div class="history-section">
             <div class="section-header">
@@ -333,62 +230,10 @@
                   </div>
                 </ng-template>
                 <div class="tab-content">
-                  <div class="comments-list">
-                    <div *ngIf="isLoadingComments()" class="comments-loading">
-                      <mat-spinner diameter="30"></mat-spinner>
-                    </div>
-
-                    <div *ngIf="!isLoadingComments() && comments().length === 0" class="no-comments">
-                      <mat-icon>comment</mat-icon>
-                      <p>Пока нет комментариев</p>
-                    </div>
-
-                    <div *ngFor="let comment of comments()" class="comment-item">
-                      <div class="comment-avatar">
-                        {{ (comment.author?.firstName || 'U')?.charAt(0) }}
-                      </div>
-                      <div class="comment-content">
-                        <div class="comment-header">
-                          <span class="comment-author">
-                            <ng-container *ngIf="comment.author; else unknownAuthor">
-                              {{ comment.author.firstName }} {{ comment.author.lastName }}
-                            </ng-container>
-                            <ng-template #unknownAuthor>
-                              <span class="muted">Пользователь</span>
-                            </ng-template>
-                          </span>
-                          <span class="comment-date">
-                            {{ comment.createdAt | relativeTime }}
-                          </span>
-                        </div>
-                        <div class="comment-text">{{ comment.text }}</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <mat-divider></mat-divider>
-
-                  <!-- Add Comment Form -->
-                  <div class="add-comment">
-                    <mat-form-field appearance="outline" class="comment-input">
-                      <mat-label>Добавить комментарий</mat-label>
-                      <textarea 
-                        matInput 
-                        [(ngModel)]="newCommentText"
-                        rows="3"
-                        placeholder="Введите комментарий..."
-                        (keydown.enter)="$any($event).ctrlKey && sendComment()"></textarea>
-                    </mat-form-field>
-                    <button 
-                      mat-raised-button 
-                      color="primary" 
-                      (click)="sendComment()"
-                      [disabled]="!newCommentText.trim() || isSendingComment">
-                      <mat-spinner *ngIf="isSendingComment" diameter="20" class="button-spinner"></mat-spinner>
-                      <mat-icon *ngIf="!isSendingComment">send</mat-icon>
-                      <span *ngIf="!isSendingComment">Отправить</span>
-                    </button>
-                  </div>
+                  <app-comments 
+                    [entityType]="CommentEntityType.TASK" 
+                    [entityId]="task()?.id?.toString()">
+                  </app-comments>
                 </div>
               </mat-tab>
 
@@ -413,74 +258,69 @@
 
         <!-- Правая колонка -->
         <div class="right-column">
-          <!-- Процесс выполнения -->
-          <mat-card class="info-card process-card">
+          <!-- Детали задачи -->
+          <mat-card class="info-card">
             <mat-card-header>
-              <div mat-card-avatar class="card-avatar process">
-                <mat-icon>auto_graph</mat-icon>
+              <div mat-card-avatar class="card-avatar details">
+                <mat-icon>info</mat-icon>
               </div>
-              <mat-card-title>Процесс выполнения</mat-card-title>
-              <mat-card-subtitle>Информация о ходе задачи</mat-card-subtitle>
+              <mat-card-title>Детали задачи</mat-card-title>
+              <mat-card-subtitle>Основная информация</mat-card-subtitle>
             </mat-card-header>
             <mat-card-content>
-              <div class="process-timeline">
-                <div class="timeline-item">
-                  <div class="timeline-icon status" [class]="getStatusClass(task()?.status)">
-                    <mat-icon>{{ getStatusIcon(task()?.status) }}</mat-icon>
-                  </div>
-                  <div class="timeline-content">
-                    <span class="label">Текущий статус</span>
-                    <div class="value highlight">{{ getStatusLabel(task()?.status) }}</div>
-                  </div>
-                </div>
-
-                <div class="timeline-item">
-                  <div class="timeline-icon user">
-                    <mat-icon>person_pin</mat-icon>
-                  </div>
-                  <div class="timeline-content">
-                    <span class="label">Ответственный</span>
-                    <div class="value">
-                      <div class="assignee-info">
-                        <span>{{ task()?.assignedTo ? (task()?.assignedTo.firstName + ' ' + task()?.assignedTo.lastName) : 'Не назначен' }}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="timeline-item">
-                  <div class="timeline-icon date">
+              <div class="details-grid">
+                <div class="detail-item">
+                  <div class="detail-icon">
                     <mat-icon>event</mat-icon>
                   </div>
-                  <div class="timeline-content">
+                  <div class="detail-info">
+                    <span class="label">Срок выполнения</span>
+                    <div class="value">
+                      <ng-container *ngIf="task()?.dueDate; else noDueDate">
+                        <app-task-due-date [task]="task()!" [showTime]="true"></app-task-due-date>
+                      </ng-container>
+                      <ng-template #noDueDate>
+                        <span class="muted">Не указан</span>
+                      </ng-template>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="detail-item" *ngIf="task()?.createdAt">
+                  <div class="detail-icon">
+                    <mat-icon>schedule</mat-icon>
+                  </div>
+                  <div class="detail-info">
                     <span class="label">Дата создания</span>
                     <div class="value">
-                      {{ task()?.createdAt | date : 'dd.MM.yyyy HH:mm' }}
+                      {{ task()?.createdAt | humanDate }}
                     </div>
                   </div>
                 </div>
 
-                <div class="timeline-item" *ngIf="task()?.dueDate">
-                  <div class="timeline-icon" [class]="isOverdue(task()?.dueDate) ? 'warning' : 'schedule'">
-                    <mat-icon>{{ isOverdue(task()?.dueDate) ? 'warning' : 'schedule' }}</mat-icon>
+                <div class="detail-item" *ngIf="task()?.updatedAt">
+                  <div class="detail-icon">
+                    <mat-icon>update</mat-icon>
                   </div>
-                  <div class="timeline-content">
-                    <span class="label">Срок выполнения</span>
-                    <div class="value" [class]="isOverdue(task()?.dueDate) ? 'overdue' : ''">
-                      {{ task()?.dueDate | date : 'dd.MM.yyyy' }}
-                      <span class="overdue-badge" *ngIf="isOverdue(task()?.dueDate)">Просрочена</span>
+                  <div class="detail-info">
+                    <span class="label">Дата обновления</span>
+                    <div class="value">
+                      {{ task()?.updatedAt | humanDate }}
                     </div>
                   </div>
                 </div>
 
-                <div class="timeline-item" *ngIf="task()?.status === 'done' && task()?.updatedAt">
-                  <div class="timeline-icon success">
-                    <mat-icon>check_circle</mat-icon>
+                <div class="detail-item" *ngIf="task()?.deal">
+                  <div class="detail-icon">
+                    <mat-icon>business_center</mat-icon>
                   </div>
-                  <div class="timeline-content">
-                    <span class="label">Дата завершения</span>
-                    <div class="value success">
-                      {{ task()?.updatedAt | date : 'dd.MM.yyyy HH:mm' }}
+                  <div class="detail-info">
+                    <span class="label">Связан со сделкой</span>
+                    <div class="value">
+                      <a [routerLink]="['/deals/view', task()?.deal?.id]" class="link-primary">
+                        {{ task()?.deal?.title }}
+                        <mat-icon class="link-icon">open_in_new</mat-icon>
+                      </a>
                     </div>
                   </div>
                 </div>

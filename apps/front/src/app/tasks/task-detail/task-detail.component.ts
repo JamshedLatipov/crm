@@ -16,14 +16,15 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { TasksService, TaskDto, TaskComment } from '../tasks.service';
+import { TasksService, TaskDto } from '../tasks.service';
 import { AuthService } from '../../auth/auth.service';
 import { UsersService, User } from '../../users/users.service';
 import { HumanDatePipe } from '../../shared/pipes/human-date.pipe';
-import { RelativeTimePipe } from '../../shared/pipes/relative-time.pipe';
 import { TaskDueDateComponent } from '../components/task-due-date/task-due-date.component';
 import { TaskTypeDisplayComponent } from '../components/task-type-display/task-type-display.component';
 import { AssignUserDialogComponent } from '../../deals/components/assign-user-dialog.component';
+import { CommentsComponent } from '../../shared/components/comments/comments.component';
+import { CommentEntityType } from '../../shared/interfaces/comment.interface';
 
 // Интерфейс данных для модалки назначения исполнителя (адаптирован для задач)
 interface AssignUserDialogData {
@@ -52,9 +53,10 @@ interface AssignUserDialogData {
     MatTabsModule,
     MatMenuModule,
     MatDialogModule,
-    RelativeTimePipe,
+    HumanDatePipe,
     TaskDueDateComponent,
-    TaskTypeDisplayComponent
+    TaskTypeDisplayComponent,
+    CommentsComponent
   ],
   templateUrl: './task-detail.component.html',
   styleUrls: ['./task-detail.component.scss']
@@ -68,18 +70,16 @@ export class TaskDetailComponent implements OnInit {
   private usersService = inject(UsersService);
   private dialog = inject(MatDialog);
   
+  // Enum для использования в шаблоне
+  readonly CommentEntityType = CommentEntityType;
+  
   task = signal<TaskDto | null>(null);
-  comments = signal<TaskComment[]>([]);
   isLoading = signal(true);
-  isLoadingComments = signal(false);
   managers = signal<User[]>([]);
   isLoadingManagers = signal(false);
 
   // Description expand/collapse
   descExpanded = signal<boolean>(false);
-  
-  newCommentText = '';
-  isSendingComment = false;
   
   taskId?: number;
 
@@ -96,7 +96,6 @@ export class TaskDetailComponent implements OnInit {
     if (id) {
       this.taskId = Number(id);
       this.loadTask();
-      this.loadComments();
       this.loadManagers();
     } else {
       this.router.navigate(['/tasks']);
@@ -124,22 +123,6 @@ export class TaskDetailComponent implements OnInit {
     });
   }
   
-  loadComments() {
-    if (!this.taskId) return;
-    
-    this.isLoadingComments.set(true);
-    this.tasksService.getComments(this.taskId).subscribe({
-      next: (comments) => {
-        this.comments.set(comments);
-        this.isLoadingComments.set(false);
-      },
-      error: (err) => {
-        console.error('Error loading comments:', err);
-        this.isLoadingComments.set(false);
-      }
-    });
-  }
-  
   loadManagers() {
     this.isLoadingManagers.set(true);
     this.usersService.getAllManagers().subscribe({
@@ -151,32 +134,6 @@ export class TaskDetailComponent implements OnInit {
         console.error('Error loading managers:', err);
         this.snackBar.open('Ошибка загрузки списка менеджеров', 'OK', { duration: 3000 });
         this.isLoadingManagers.set(false);
-      }
-    });
-  }
-  
-  sendComment() {
-    if (!this.newCommentText.trim() || !this.taskId) return;
-    
-    const userData = this.auth.getUserData();
-    if (!userData?.sub) {
-      this.snackBar.open('Необходимо авторизоваться', 'OK', { duration: 3000 });
-      return;
-    }
-    
-    this.isSendingComment = true;
-    this.tasksService.addComment(this.taskId, userData.sub, this.newCommentText).subscribe({
-      next: (comment) => {
-        console.log('Comment received:', comment);
-        this.comments.update(comments => [...comments, comment]);
-        this.newCommentText = '';
-        this.isSendingComment = false;
-        this.snackBar.open('Комментарий добавлен', 'OK', { duration: 2000 });
-      },
-      error: (err) => {
-        console.error('Error sending comment:', err);
-        this.snackBar.open('Ошибка отправки комментария', 'OK', { duration: 3000 });
-        this.isSendingComment = false;
       }
     });
   }
