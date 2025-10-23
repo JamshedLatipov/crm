@@ -66,7 +66,7 @@
 
 /* Make header buttons visually grouped and keep primary CTA prominent */
 .header-actions > button[mat-raised-button][color="primary"] {
-  background: linear-gradient(90deg,#2f78ff,#2b6bff);
+  background: #2f78ff;
   color: #fff;
 }
 
@@ -172,7 +172,7 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #667eea;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -338,7 +338,7 @@
   gap: 12px;
   padding: 12px 16px;
   margin: 8px 12px 12px 12px;
-  background: linear-gradient(180deg, #ffffff, #fbfdff);
+  background: #ffffff;
   border-radius: 10px;
   box-shadow: 0 6px 20px rgba(15, 23, 42, 0.04);
   border: 1px solid rgba(15, 23, 42, 0.04);
@@ -555,7 +555,7 @@
 }
 
 .avatar-icon {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #667eea;
   color: white;
   border-radius: 50%;
   width: 40px;

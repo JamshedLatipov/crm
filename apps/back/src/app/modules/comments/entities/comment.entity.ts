@@ -4,7 +4,8 @@ export enum CommentEntityType {
   DEAL = 'deal',
   LEAD = 'lead',
   CONTACT = 'contact',
-  COMPANY = 'company'
+  COMPANY = 'company',
+  TASK = 'task'
 }
 
 @Entity('comments')

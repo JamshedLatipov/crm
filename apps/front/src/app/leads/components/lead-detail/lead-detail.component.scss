@@ -72,7 +72,7 @@
   margin-bottom: 32px;
 
   .header-background {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #667eea;
     padding: 32px;
     border-radius: 24px 24px 0 0 ;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
@@ -142,9 +142,9 @@
 
   .lead-header-info {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: flex-start;
-    gap: 24px;
+    gap: 32px;
     flex-wrap: wrap;
   }
 
@@ -215,39 +215,23 @@
 
   .header-actions {
     display: flex;
-    flex-flow: column;
-    gap: 12px;
+    align-items: center;
+    gap: 16px;
     position: relative;
     z-index: 1;
+    flex-shrink: 0;
+  }
 
-    .action-btn {
-        min-width: 180px;
-        height: 44px;
-        border-radius: 12px;
-        font-weight: 600;
-        font-size: 14px;
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        color: white;
-        transition: all 0.3s ease;
-
-        &:hover {
-          background: rgba(255, 255, 255, 0.2);
-          border-color: rgba(255, 255, 255, 0.4);
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-
-        &.win-btn {
-          background: rgba(76, 175, 80, 0.2);
-          border-color: rgba(76, 175, 80, 0.4);
-
-          &:hover {
-            background: rgba(76, 175, 80, 0.3);
-            border-color: rgba(76, 175, 80, 0.5);
-          }
-        }
-      }
+  // Отдельный блок с lead-status
+  .header-background > .header-actions {
+    position: absolute;
+    top: 32px;
+    right: 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+    z-index: 2;
   }
 }
 
@@ -292,8 +276,14 @@
   }
 
   &.highlight-card {
-    background: linear-gradient(135deg, #f8f9ff 0%, #e8f2ff 100%);
+    background: #f8f9ff;
     border: 1px solid rgba(102, 126, 234, 0.2);
+  }
+
+  &.process-card {
+    background: #f8fafc;
+    border: 2px solid #e3f2fd;
+    position: relative;
   }
 
   mat-card-header {
@@ -308,27 +298,27 @@
       justify-content: center;
 
       &.metrics {
-        background: linear-gradient(135deg, #667eea, #764ba2);
+        background: #667eea;
         color: white;
       }
 
       &.contact {
-        background: linear-gradient(135deg, #f093fb, #f5576c);
+        background: #f093fb;
         color: white;
       }
 
       &.notes {
-        background: linear-gradient(135deg, #4facfe, #00f2fe);
+        background: #4facfe;
         color: white;
       }
 
       &.process {
-        background: linear-gradient(135deg, #43e97b, #38f9d7);
+        background: #43e97b;
         color: white;
       }
 
       &.metadata {
-        background: linear-gradient(135deg, #ffecd2, #fcb69f);
+        background: #ffecd2;
         color: #8b4513;
       }
 
@@ -381,7 +371,7 @@
   }
 
   &.primary {
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+    background: rgba(102, 126, 234, 0.1);
     border-color: rgba(102, 126, 234, 0.3);
   }
 
@@ -392,7 +382,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: #667eea;
     color: white;
     flex-shrink: 0;
 
@@ -449,7 +439,7 @@
 
         .probability-fill {
           height: 100%;
-          background: linear-gradient(90deg, #4CAF50, #8BC34A);
+          background: #4CAF50;
           border-radius: 4px;
           transition: width 0.3s ease;
         }
@@ -481,9 +471,25 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #f093fb, #f5576c);
     color: white;
     flex-shrink: 0;
+
+    &.email {
+      background: #f093fb;
+    }
+
+    &.phone {
+      background: #4facfe;
+    }
+
+    &.company {
+      background: #43e97b;
+    }
+
+    &.position {
+      background: #ffecd2;
+      color: #333;
+    }
 
     mat-icon {
       width: 20px;
@@ -532,7 +538,7 @@
   justify-content: center;
 
   .contact-button {
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: #667eea;
     color: white;
     border: none;
     border-radius: 12px;
@@ -543,7 +549,7 @@
     &:hover {
       transform: translateY(-2px);
       box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
-      background: linear-gradient(135deg, #764ba2, #667eea);
+      background: #764ba2;
     }
 
     mat-icon {
@@ -568,39 +574,61 @@
 .process-timeline {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
+  position: relative;
+
+  // Добавляем вертикальную линию
+  &::before {
+    content: '';
+    position: absolute;
+    left: 20px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #e3f2fd;
+    border-radius: 1px;
+  }
 }
 
 .timeline-item {
   display: flex;
   align-items: flex-start;
   gap: 16px;
+  position: relative;
 
   .timeline-icon {
     width: 40px;
     height: 40px;
-    border-radius: 10px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #43e97b, #38f9d7);
+    background: #43e97b;
     color: white;
     flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s ease;
+
+    &:hover {
+      transform: scale(1.1);
+    }
 
     &.source {
-      background: linear-gradient(135deg, #667eea, #764ba2);
+      background: #667eea;
     }
 
     &.user {
-      background: linear-gradient(135deg, #f093fb, #f5576c);
+      background: #f093fb;
     }
 
     &.date {
-      background: linear-gradient(135deg, #4facfe, #00f2fe);
+      background: #4facfe;
     }
 
     &.contact {
-      background: linear-gradient(135deg, #ffecd2, #fcb69f);
+      background: #ffecd2;
     }
 
     mat-icon {
@@ -733,7 +761,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: #667eea;
     color: white;
     flex-shrink: 0;
 
@@ -795,7 +823,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #4facfe, #00f2fe);
+    background: #4facfe;
     color: white;
     flex-shrink: 0;
 
@@ -903,11 +931,17 @@
     .header-actions {
       width: 100%;
       justify-content: stretch;
+      flex-direction: column;
+      gap: 12px;
+    }
 
-      .action-btn {
-        flex: 1;
-        justify-content: center;
-      }
+    // Отдельный блок с lead-status на мобильных
+    .header-background > .header-actions {
+      position: static;
+      margin-top: 16px;
+      align-items: flex-start;
+      flex-direction: row;
+      justify-content: space-between;
     }
   }
 

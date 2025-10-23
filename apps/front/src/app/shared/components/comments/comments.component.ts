@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -20,6 +20,11 @@ import {
   CreateCommentRequest,
   PaginatedComments
 } from '../../interfaces/comment.interface';
+
+interface CommentGroup {
+  userName: string;
+  comments: Comment[];
+}
 
 @Component({
   selector: 'app-comments',
@@ -44,6 +49,7 @@ import {
 export class CommentsComponent implements OnInit, OnDestroy {
   @Input({ required: true }) entityType!: CommentEntityType;
   @Input({ required: true }) entityId!: string;
+  @Output() commentCountChange = new EventEmitter<number>();
 
   private readonly commentsService = inject(CommentsService);
   private readonly authService = inject(AuthService);
@@ -64,6 +70,27 @@ export class CommentsComponent implements OnInit, OnDestroy {
 
   // Computed свойства
   comments = computed(() => this.commentsData()?.items || []);
+  commentGroups = computed(() => {
+    const comments = this.comments();
+    const groups: CommentGroup[] = [];
+    
+    for (const comment of comments) {
+      const lastGroup = groups[groups.length - 1];
+      
+      if (lastGroup && lastGroup.userName === comment.userName) {
+        // Добавляем к существующей группе
+        lastGroup.comments.push(comment);
+      } else {
+        // Создаем новую группу
+        groups.push({
+          userName: comment.userName,
+          comments: [comment]
+        });
+      }
+    }
+    
+    return groups;
+  });
   isAuthenticated = computed(() => this.authService.isAuthenticated());
   canSubmit = computed(() => {
       return this.newCommentText.invalid;
@@ -81,6 +108,10 @@ export class CommentsComponent implements OnInit, OnDestroy {
     return comment.id;
   }
 
+  trackByGroupUser(index: number, group: CommentGroup): string {
+    return group.userName;
+  }
+
   loadComments() {
     this.isLoading.set(true);
     
@@ -89,6 +120,7 @@ export class CommentsComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (data) => {
           this.commentsData.set(data);
+          this.commentCountChange.emit(data.total);
           this.isLoading.set(false);
         },
         error: (error) => {
@@ -215,10 +247,54 @@ export class CommentsComponent implements OnInit, OnDestroy {
     return this.authService.user() === comment.userName;
   }
 
+  canEditGroup(group: CommentGroup): boolean {
+    return this.authService.user() === group.userName;
+  }
+
+  startEditGroup(group: CommentGroup) {
+    // Пока просто редактируем первое сообщение группы
+    if (group.comments.length > 0) {
+      this.startEdit(group.comments[0]);
+    }
+  }
+
+  deleteGroup(group: CommentGroup) {
+    if (!confirm(`Вы уверены, что хотите удалить все ${group.comments.length} сообщений пользователя ${group.userName}?`)) {
+      return;
+    }
+
+    // Удаляем все комментарии группы
+    const deletePromises = group.comments.map(comment => 
+      this.commentsService.deleteComment(comment.id).toPromise()
+    );
+
+    Promise.all(deletePromises).then(() => {
+      this.snackBar.open('Сообщения удалены', 'Закрыть', {
+        duration: 2000,
+        panelClass: ['success-snackbar']
+      });
+      this.loadComments();
+    }).catch((error) => {
+      console.error('Ошибка удаления сообщений:', error);
+      this.snackBar.open('Ошибка удаления сообщений', 'Закрыть', {
+        duration: 3000,
+        panelClass: ['error-snackbar']
+      });
+    });
+  }
+
   onPageChange(event: PageEvent) {
     this.currentPage = event.pageIndex + 1;
     this.pageSize = event.pageSize;
     this.loadComments();
+  }
+
+  formatTime(dateString: string): string {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('ru-RU', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
   }
 
   formatDate(dateString: string): string {

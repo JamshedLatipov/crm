@@ -2,7 +2,8 @@ export enum CommentEntityType {
   DEAL = 'deal',
   LEAD = 'lead',
   CONTACT = 'contact',
-  COMPANY = 'company'
+  COMPANY = 'company',
+  TASK = 'task'
 }
 
 export interface Comment {

@@ -15,7 +15,6 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import {
   DragDropModule,
   CdkDragDrop,
-  moveItemInArray,
 } from '@angular/cdk/drag-drop';
 import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -61,7 +60,6 @@ export class IvrAdminComponent {
 
   rootNodes: IvrNodeDto[] = [];
   allNodes: IvrNodeDto[] = [];
-  children: IvrNodeDto[] = [];
   childrenMap: Record<string, IvrNodeDto[]> = {};
   selected?: IvrNodeDto;
   treeRoot?: IvrNodeDto; // корень для отображения дерева
@@ -87,21 +85,6 @@ export class IvrAdminComponent {
 
   constructor() {
     this.reload();
-  }
-
-  dropRoot(ev: CdkDragDrop<IvrNodeDto[]>) {
-    // reorder locally
-    const arr = [...this.rootNodes];
-    moveItemInArray(arr, ev.previousIndex, ev.currentIndex);
-    // reassign order based on index
-    arr.forEach((n, idx) => (n.order = idx));
-    this.rootNodes = arr;
-    // persist changes for moved items (fire & forget)
-    arr.forEach(
-      (n) =>
-        n.id &&
-        this.api.update(n.id, { order: n.order }).subscribe({ error: () => {} })
-    );
   }
 
   // called when child emits reordered roots array
@@ -291,22 +274,14 @@ export class IvrAdminComponent {
   }
 
   // Устаревший метод - оставлен для обратной совместимости
-  loadChildren(parentId: string) {
-    this.loadNodeChildren(parentId);
-  }
+  // loadChildren is deprecated — use loadNodeChildren / handleLoadChildren instead
 
   dropChildren(ev: CdkDragDrop<IvrNodeDto[]>) {
+    // Deprecated: children drag/drop is handled by child components now.
+    // Keep method for compatibility but no-op to avoid runtime errors if invoked.
     const id = this.selected?.id;
     if (!id) return;
-    const arr = [...(this.childrenMap[id] || [])];
-    moveItemInArray(arr, ev.previousIndex, ev.currentIndex);
-    arr.forEach((n, idx) => (n.order = idx));
-    this.childrenMap[id] = arr;
-    arr.forEach(
-      (n) =>
-        n.id &&
-        this.api.update(n.id, { order: n.order }).subscribe({ error: () => {} })
-    );
+    // no-op: ordering is performed by child; parent persists via other handlers
   }
 
   newRoot() {

@@ -1,0 +1,312 @@
+/* Card title */
+.card-title {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+/*
+  Clean, design-system aligned styles for Online Monitoring
+  - Uses CSS custom properties for tokens
+  - Accessible badges and focus styles
+  - Responsive grid for KPI / content areas
+*/
+
+:root {
+  /* core tokens (can be overridden by global theme) */
+  --space-2: 8px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --card-bg: #fff;
+  --card-border: rgba(2, 6, 23, 0.06);
+  --muted: #6b7280;
+  --accent: var(--primary-color, #2563eb);
+  --success: #10b981;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --focus-ring: rgba(37, 99, 235, 0.16);
+}
+
+.monitoring-root {
+  padding: 32px;
+  color: #1e293b;
+}
+
+.monitoring-header {
+  margin-bottom: 32px;
+
+  h2 {
+    margin: 0 0 8px 0;
+    font-size: 32px;
+    font-weight: 700;
+    color: #1e293b;
+  }
+
+  p {
+    margin: 0;
+    font-size: 16px;
+    color: #64748b;
+  }
+}
+
+/* KPI row */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 32px;
+}
+.kpi-card {
+  padding: 24px;
+  border-radius: 16px;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  }
+
+  &.highlight {
+    background: white;
+    color: #1e293b;
+    border: 2px solid #fbbf24;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(251, 191, 36, 0.1), transparent);
+      animation: shimmer 2s infinite;
+    }
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+.kpi-title {
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+.kpi-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.kpi-sub {
+  font-size: 14px;
+  color: #64748b;
+}
+
+/* mid row */
+.mid-row {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 20px;
+  margin-bottom: 32px;
+}
+.stat-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.stat-card {
+  flex: 1 1 160px;
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  &.wide {
+    flex: 2 1 320px;
+  }
+}
+
+.stat-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.stat-info h3 {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  color: #1f2937;
+}
+
+.stat-info p {
+  margin: 0;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-card.service-level .stat-icon {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+}
+
+.stat-card.missed-calls .stat-icon {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.stat-card.queue-status .stat-icon {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+mat-icon {
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
+  display: block;
+  margin: auto;
+  line-height: 1;
+}
+.chart-card {
+  padding: 24px;
+  border-radius: 16px;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  }
+}
+.chart-container {
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.chart-legend { 
+  display: none; 
+}
+.dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:8px; }
+.dot.green { background: var(--success); }
+.dot.red { background: var(--danger); }
+.dot.yellow { background: var(--warning); }
+.dot.blue { background: var(--accent); }
+.dot.gray { background: var(--muted); }
+
+/* operators table */
+.operators-area {
+  margin-top: 32px;
+}
+.operators-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+.search {
+  width: 320px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+  background: white;
+
+  &:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+}
+
+.operators-table {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Mirror CRM deals table: header cells, padding, hover state */
+.table-row { display:flex; align-items:center; padding: 12px 16px; border-bottom: 1px solid #eef2f6; }
+.table-row:hover { background: rgba(47,120,255,0.03); }
+.table-head { font-weight:600; color: var(--text-secondary, #64748b); background: transparent; }
+.col { flex:1; }
+.op-col { flex:2; display:flex; align-items:center; gap: var(--space-2); }
+
+/* Avatar / title like deals table */
+.avatar-dot { width:36px; height:36px; border-radius:6px; background: var(--primary-color-light, #eef5ff); display:flex; align-items:center; justify-content:center; font-weight:700; color:var(--primary-color, #2f78ff); }
+.avatar-dot.offline { opacity:0.5; filter:grayscale(.25); }
+.op-name { font-weight:600 }
+
+/* Title meta mimic */
+.title-meta { font-weight:600 }
+
+.status-badge { padding:6px 10px; border-radius:999px; font-size:13px; display:inline-flex; align-items:center; gap:8px; }
+.status-badge.on-call { background: var(--accent); color: #fff; }
+.status-badge.wrap_up { background: rgba(0,0,0,0.06); color: var(--muted); }
+.status-badge.idle { background: rgba(16,185,129,0.12); color: var(--success); }
+.status-badge.offline { background: rgba(107,114,128,0.08); color: var(--muted); }
+
+.time-bar { height:8px; background: rgba(2,6,23,0.04); border-radius:999px; overflow:hidden; margin-top:6px }
+.time-fill { height:100%; background: linear-gradient(90deg, var(--accent), #06b6d4); width:0%; transition: width .3s ease; }
+
+.tag { background: rgba(37,99,235,0.08); padding:4px 8px; border-radius:8px; font-size:12px }
+.details { color: var(--accent); text-decoration:none; }
+.details:focus, .details:hover { text-decoration:underline; outline-offset:3px }
+
+/* responsive adjustments */
+@media (max-width: 900px) {
+  .kpi-row { grid-template-columns: 1fr; }
+  .mid-row { grid-template-columns: 1fr; }
+  .search { width: 100%; }
+  .monitoring-root { padding: 16px; }
+  .monitoring-header { margin-bottom: 24px; }
+  .kpi-row { margin-bottom: 24px; }
+  .mid-row { margin-bottom: 24px; }
+  .operators-area { margin-top: 24px; }
+}
+

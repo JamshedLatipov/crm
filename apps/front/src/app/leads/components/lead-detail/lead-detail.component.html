@@ -72,7 +72,7 @@
         <div class="header-actions">
           <app-lead-status
             [status]="lead.status"
-            size="large"
+            size="medium"
             [showIcon]="true"
           >
           </app-lead-status>
@@ -186,7 +186,7 @@
             <mat-card-content>
               <div class="contact-grid">
                 <div class="contact-item" *ngIf="lead.email">
-                  <div class="contact-icon">
+                  <div class="contact-icon email">
                     <mat-icon>email</mat-icon>
                   </div>
                   <div class="contact-details">
@@ -201,7 +201,7 @@
                 </div>
 
                 <div class="contact-item" *ngIf="lead.phone">
-                  <div class="contact-icon">
+                  <div class="contact-icon phone">
                     <mat-icon>phone</mat-icon>
                   </div>
                   <div class="contact-details">
@@ -216,7 +216,7 @@
                 </div>
 
                 <div class="contact-item" *ngIf="lead.company">
-                  <div class="contact-icon">
+                  <div class="contact-icon company">
                     <mat-icon>business</mat-icon>
                   </div>
                   <div class="contact-details">
@@ -226,7 +226,7 @@
                 </div>
 
                 <div class="contact-item" *ngIf="lead.position">
-                  <div class="contact-icon">
+                  <div class="contact-icon position">
                     <mat-icon>work</mat-icon>
                   </div>
                   <div class="contact-details">

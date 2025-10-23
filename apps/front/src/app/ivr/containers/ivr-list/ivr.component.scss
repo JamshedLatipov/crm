@@ -147,10 +147,14 @@
   }
 
   .panel-content {
-    flex: 1;
+    flex: 2;
     overflow-y: auto;
-    max-height: calc(100vh - 240px);
   }
+}
+
+/* Children panel should sit in the second column so panels are side-by-side */
+.panel.children-panel {
+  grid-column: 2 / 4;
 }
 
 /* IVR List */

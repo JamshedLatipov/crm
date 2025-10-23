@@ -9,6 +9,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { TasksService, TaskDto } from '../tasks.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { taskStatusDisplay } from '../../shared/utils';
+import { TaskDueDateComponent } from './task-due-date/task-due-date.component';
+import { TaskTypeDisplayComponent } from './task-type-display/task-type-display.component';
 
 @Component({
   selector: 'app-task-list-widget',
@@ -21,13 +23,15 @@ import { taskStatusDisplay } from '../../shared/utils';
     MatIconModule,
     MatChipsModule,
     MatProgressSpinnerModule,
-    MatTooltipModule
+    MatTooltipModule,
+    TaskDueDateComponent,
+    TaskTypeDisplayComponent
   ],
   template: `
-    <mat-card class="mb-4">
+    <mat-card class="task-widget-card task-list-widget">
       <mat-card-header>
         <mat-card-title>
-          <div class="flex items-center justify-between w-full">
+          <div class="task-widget-header">
             <span>Задачи</span>
             <button mat-icon-button color="primary" [routerLink]="createTaskLink" [queryParams]="createTaskParams">
               <mat-icon>add</mat-icon>
@@ -37,79 +41,43 @@ import { taskStatusDisplay } from '../../shared/utils';
       </mat-card-header>
       
       <mat-card-content>
-        <div *ngIf="isLoading" class="flex justify-center p-4">
+        <div *ngIf="isLoading" class="loading-container">
           <mat-spinner diameter="40"></mat-spinner>
         </div>
 
-        <div *ngIf="!isLoading && tasks.length === 0" class="text-center text-gray-500 p-4">
-          Нет задач
+        <div *ngIf="!isLoading && tasks.length === 0" class="no-tasks">
+          <mat-icon class="no-tasks-icon">checklist</mat-icon>
+          <div class="no-tasks-text">Нет активных задач</div>
+          <div class="no-tasks-subtitle">Создайте новую задачу, чтобы начать работу</div>
         </div>
 
-        <div *ngIf="!isLoading && tasks.length > 0" class="space-y-2">
+        <div *ngIf="!isLoading && tasks.length > 0" class="tasks-list">
           <div *ngFor="let task of tasks" 
-               class="p-3 border rounded hover:bg-gray-50 cursor-pointer"
+               class="task-item"
                [routerLink]="['/tasks', task.id]">
-            <div class="flex items-start justify-between">
-              <div class="flex-1">
-                <h4 class="font-medium mb-1">{{ task.title }}</h4>
-                <p *ngIf="task.description" class="text-sm text-gray-600 mb-2">
-                  {{ task.description }}
-                </p>
-                <div class="flex items-center gap-2 text-xs">
-                  <mat-chip [class.bg-yellow-100]="task.status === 'pending'"
-                           [class.bg-blue-100]="task.status === 'in_progress'"
-                           [class.bg-green-100]="task.status === 'done'"
-                           [class.bg-red-100]="task.status === 'overdue'">
-                    {{ getStatusLabel(task.status) }}
-                  </mat-chip>
-                  <span *ngIf="task.dueDate" class="text-gray-500">
-                    <mat-icon class="text-sm inline-block align-middle">event</mat-icon>
-                    {{ task.dueDate | date:'dd.MM.yyyy' }}
-                  </span>
-                  <span *ngIf="task.assignedTo" class="text-gray-500">
-                    <mat-icon class="text-sm inline-block align-middle">person</mat-icon>
-                    {{ task.assignedTo.username || task.assignedTo.email }}
-                  </span>
-                </div>
-                <!-- Связи с лидом/сделкой (только если не показываем уже в контексте) -->
-                <div *ngIf="!leadId && !dealId && (task.lead || task.deal)" class="flex items-center gap-2 mt-2 text-xs">
-                  <a *ngIf="task.lead" 
-                     [routerLink]="['/leads/view', task.lead.id]" 
-                     class="flex items-center gap-1 text-blue-600 hover:underline"
-                     (click)="$event.stopPropagation()">
-                    <mat-icon class="text-sm">person</mat-icon>
-                    <span>Лид: {{ task.lead.name }}</span>
-                  </a>
-                  <a *ngIf="task.deal" 
-                     [routerLink]="['/deals/view', task.deal.id]" 
-                     class="flex items-center gap-1 text-blue-600 hover:underline"
-                     (click)="$event.stopPropagation()">
-                    <mat-icon class="text-sm">business_center</mat-icon>
-                    <span>Сделка: {{ task.deal.title }}</span>
-                  </a>
-                </div>
+            <div class="task-content">
+              <div class="task-title">{{ task.title }}</div>
+              <p *ngIf="task.description" class="task-description">
+                {{ task.description }}
+              </p>
+              <div class="task-meta">
+                <app-task-type-display [taskType]="task.taskType" [compact]="true"></app-task-type-display>
+                <app-task-due-date *ngIf="task.dueDate" [task]="task" class="task-due-date-component"></app-task-due-date>
+                <span *ngIf="task.assignedTo" class="task-assignee">
+                  <mat-icon>person</mat-icon>
+                  {{ task.assignedTo.username || task.assignedTo.email }}
+                </span>
               </div>
+            </div>
+            <div class="task-status" [class]="getStatusClass(task.status)">
+              {{ getStatusLabel(task.status) }}
             </div>
           </div>
         </div>
       </mat-card-content>
     </mat-card>
   `,
-  styles: [`
-    :host {
-      display: block;
-    }
-    
-    mat-card {
-      background-color: white;
-    }
-    ::ng-deep{
-
-      .mat-mdc-card-header-text {
-        width: 100%;
-      }
-    }
-  `]
+  styleUrls: ['./task-list-widget.component.scss']
 })
 export class TaskListWidgetComponent implements OnInit, OnChanges {
   private tasksService = inject(TasksService);
@@ -174,7 +142,67 @@ export class TaskListWidgetComponent implements OnInit, OnChanges {
     });
   }
 
+  getStatusClass(status?: string): string {
+    switch (status) {
+      case 'pending': return 'status-pending';
+      case 'in_progress': return 'status-in-progress';
+      case 'done': return 'status-done';
+      case 'overdue': return 'status-overdue';
+      default: return 'status-pending';
+    }
+  }
+
   getStatusLabel(status?: string): string {
     return taskStatusDisplay(status || 'pending');
+  }
+
+  getTaskTypeIcon(typeName?: string): string {
+    if (!typeName) return 'task';
+    
+    const lowerType = typeName.toLowerCase();
+    
+    // Проверяем на наличие ключевых слов
+    if (lowerType.includes('звонок') || lowerType.includes('call') || lowerType.includes('phone')) {
+      return 'phone';
+    }
+    if (lowerType.includes('встреча') || lowerType.includes('meeting') || lowerType.includes('event')) {
+      return 'event';
+    }
+    if (lowerType.includes('email') || lowerType.includes('письмо') || lowerType.includes('mail')) {
+      return 'email';
+    }
+    if (lowerType.includes('задача') || lowerType.includes('task')) {
+      return 'task';
+    }
+    if (lowerType.includes('просмотр') || lowerType.includes('view') || lowerType.includes('review')) {
+      return 'visibility';
+    }
+    if (lowerType.includes('документ') || lowerType.includes('document') || lowerType.includes('file')) {
+      return 'description';
+    }
+    if (lowerType.includes('срочн') || lowerType.includes('urgent') || lowerType.includes('важно')) {
+      return 'priority_high';
+    }
+    
+    // Резервная карта для точных совпадений
+    const iconMap: { [key: string]: string } = {
+      'звонок': 'phone',
+      'встреча': 'event',
+      'email': 'email',
+      'задача': 'task',
+      'просмотр': 'visibility',
+      'документы': 'description',
+      'срочный звонок': 'phone',
+      'важная встреча': 'event',
+      'срочная задача': 'priority_high'
+    };
+    
+    return iconMap[lowerType] || 'task';
+  }
+
+  isUrgentTask(typeName?: string): boolean {
+    if (!typeName) return false;
+    const lowerType = typeName.toLowerCase();
+    return lowerType.includes('срочн') || lowerType.includes('urgent') || lowerType.includes('важно');
   }
 }

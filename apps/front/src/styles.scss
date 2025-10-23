@@ -57,8 +57,19 @@ body {
   --text-secondary: #6c757d;
   --border-color: #dee2e6;
   --warning-color: #f59e0b;
+  --success-color: #10b981;
+  --error-color: #ef4444;
   --brand-primary: #0a4d8c; /* SecureCall brand */
   --brand-secondary: #f0f6fc;
+  --page-background: #f8fafc;
+  --card-background: #ffffff;
+  --primary-dark: #3977e6;
+  --primary-light: rgba(66, 133, 244, 0.1);
+  --info-color: #4285f4;
+  --info-light: rgba(66, 133, 244, 0.1);
+  --warning-light: rgba(245, 158, 11, 0.1);
+  --success-light: rgba(16, 185, 129, 0.1);
+  --error-light: rgba(239, 68, 68, 0.1);
 }
 
 /* Material Icons */

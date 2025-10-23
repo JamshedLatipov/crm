@@ -1,0 +1,104 @@
+<div class="monitoring-root">
+  <header class="monitoring-header">
+    <h2>Онлайн мониторинг</h2>
+    <p>Состояние операторов и очередей в реальном времени</p>
+  </header>
+
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-title">Оператор дня</div>
+      <div class="kpi-value">152</div>
+      <div class="kpi-sub">Обработано звонков · <strong>Liam Johnson</strong></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">Оператор недели</div>
+      <div class="kpi-value">98%</div>
+      <div class="kpi-sub">Удовлетворенность · <strong>Emma Wilson</strong></div>
+    </div>
+    <div class="kpi-card highlight">
+      <div class="kpi-title">Оператор месяца</div>
+      <div class="kpi-value">2m 15s</div>
+      <div class="kpi-sub">
+        Среднее время решения · <strong>Noah Brown</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="mid-row">
+    <div class="mid-left">
+      <div class="stat-row">
+        <div class="stat-card service-level">
+          <div class="stat-content">
+            <div class="stat-info">
+              <h3>95.2%</h3>
+              <p>Уровень обслуживания</p>
+            </div>
+            <div class="stat-icon">
+              <mat-icon>trending_up</mat-icon>
+            </div>
+          </div>
+        </div>
+        <div class="stat-card missed-calls">
+          <div class="stat-content">
+            <div class="stat-info">
+              <h3>12</h3>
+              <p>Пропущенные звонки<br><small>(Сегодня)</small></p>
+            </div>
+            <div class="stat-icon">
+              <mat-icon>call_missed</mat-icon>
+            </div>
+          </div>
+        </div>
+        <div class="stat-card wide queue-status">
+          <div class="stat-content">
+            <div class="stat-info">
+              <h3>12 Активных / 3 Ожидающих</h3>
+              <p>Статус очереди</p>
+            </div>
+            <div class="stat-icon">
+              <mat-icon>queue</mat-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mid-right">
+      <div class="chart-card">
+        <h3 class="card-title">Статус операторов</h3>
+        <div class="chart-container">
+          <canvas baseChart
+                  [data]="chartData"
+                  [options]="chartOptions"
+                  [type]="'pie'">
+          </canvas>
+        </div>
+        <div class="chart-legend">
+          <div>
+            <span class="dot green"></span> Доступен
+            <span class="muted">{{ getPercentage('idle') }}%</span>
+          </div>
+          <div>
+            <span class="dot blue"></span> На звонке <span class="muted">{{ getPercentage('on_call') }}%</span>
+          </div>
+          <div>
+            <span class="dot yellow"></span> Завершение
+            <span class="muted">{{ getPercentage('wrap_up') }}%</span>
+          </div>
+          <div>
+            <span class="dot gray"></span> Оффлайн
+            <span class="muted">{{ getPercentage('offline') }}%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="operators-area">
+    <div class="operators-header">
+      <input class="search" placeholder="Поиск операторов..." />
+    </div>
+      <div class="operators-table">
+        <crm-table [title]="'Операторы'" [columns]="columns" [data]="operators$ | async" [showPaginator]="false"></crm-table>
+      </div>
+  </div>
+</div>

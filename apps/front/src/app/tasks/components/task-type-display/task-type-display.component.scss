@@ -1,0 +1,43 @@
+.task-type-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &.compact {
+    gap: 4px;
+  }
+
+  .type-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+
+    mat-icon {
+      color: white;
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    &:hover {
+      transform: scale(1.05);
+    }
+  }
+
+  .type-name {
+    font-weight: 500;
+    color: #475569;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+}
+
+.muted {
+  color: #94a3b8;
+  font-style: italic;
+}
