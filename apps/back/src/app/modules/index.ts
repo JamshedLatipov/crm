@@ -12,6 +12,8 @@ import { CompaniesModule } from './companies/companies.module';
 import { CommentsModule } from './comments/comments.module';
 import { NotificationModule } from './notifications/notification.module';
 import { SharedModule } from './shared/shared.module';
+import { AdsIntegrationModule } from './ads-integration/ads-integration.module';
+import { ReportsModule } from './reports/reports.module';
 
 export const MODULES = [
     LeadModule,
@@ -28,4 +30,6 @@ export const MODULES = [
     CommentsModule,
     NotificationModule,
     SharedModule,
+    AdsIntegrationModule,
+    ReportsModule,
 ];

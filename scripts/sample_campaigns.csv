@@ -1,0 +1,7 @@
+campaign_id,campaign_name,spend,leads,sales,revenue,date
+cmp_1,Google Search - Brand,1200,60,12,3600,2025-09-01
+cmp_2,Facebook Prospecting,2000,150,10,5000,2025-09-02
+cmp_3,LinkedIn Leads,3500,40,8,8000,2025-09-05
+cmp_4,Twitter Promo,300,5,0,0,2025-09-03
+cmp_5,Email Newsletter,150,30,6,1800,2025-09-04
+cmp_6,Referral Program,0,20,5,2500,2025-09-06

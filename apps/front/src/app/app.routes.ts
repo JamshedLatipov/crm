@@ -20,6 +20,9 @@ import { TaskFormComponent } from './tasks/task-form/task-form.component';
 import { TaskDetailComponent } from './tasks/task-detail/task-detail.component';
 import { TaskTypesManagerComponent } from './components/task-types-manager.component';
 import { usersRoutes } from './pages/users/users.routes';
+import { AdsCampaignsComponent } from './pages/ads/ads-campaigns.component';
+import { AdsCampaignDetailComponent } from './pages/ads/ads-campaign-detail.component';
+import { AdsAccountsComponent } from './pages/ads/ads-accounts.component';
 
 export const appRoutes: Route[] = [
     { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
@@ -38,6 +41,7 @@ export const appRoutes: Route[] = [
     { path: 'ivr', component: IvrAdminComponent, canActivate: [authGuard] },
     { path: 'calls', redirectTo: 'softphone' }, // Redirect calls to softphone
     { path: 'reports', component: DashboardComponent, canActivate: [authGuard] }, // Temporary redirect
+    { path: 'reports/dashboard', loadComponent: () => import('./pages/reports/reports-dashboard.component').then(m => m.ReportsDashboardComponent), canActivate: [authGuard] },
     { path: 'help', component: DashboardComponent, canActivate: [authGuard] }, // Temporary redirect
     { path: 'pipeline', component: PipelineComponent, canActivate: [authGuard] },
     { path: 'pipeline/create-stage', component: CreateStageComponent, canActivate: [authGuard] },
@@ -71,4 +75,8 @@ export const appRoutes: Route[] = [
             { path: 'edit/:id', component: TaskFormComponent }
         ]
     }
+    ,
+    { path: 'ads', component: AdsCampaignsComponent, canActivate: [authGuard] },
+    { path: 'ads/:id', component: AdsCampaignDetailComponent, canActivate: [authGuard] },
+    { path: 'ads/accounts', component: AdsAccountsComponent, canActivate: [authGuard] }
 ];

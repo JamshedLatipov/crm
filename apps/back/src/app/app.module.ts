@@ -15,6 +15,7 @@ import { LEADS_MIGRATIONS } from './modules/leads/migrations';
 import { COMMENTS_MIGRATIONS } from './modules/comments/migrations';
 import { SHARED_MIGRATIONS } from './modules/shared/migrations';
 import { TASKS_MIGRATIONS } from './modules/tasks/migrations';
+import { ADS_INTEGRATION_MIGRATIONS } from './modules/ads-integration/migrations';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { TASKS_MIGRATIONS } from './modules/tasks/migrations';
         ...COMMENTS_MIGRATIONS,
         ...SHARED_MIGRATIONS,
         ...TASKS_MIGRATIONS,
+        ...ADS_INTEGRATION_MIGRATIONS,
       ],
       migrationsRun: true,
     }),
