@@ -14,13 +14,22 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TasksService, TaskDto, TaskComment } from '../tasks.service';
 import { AuthService } from '../../auth/auth.service';
+import { UsersService, User } from '../../users/users.service';
 import { HumanDatePipe } from '../../shared/pipes/human-date.pipe';
 import { RelativeTimePipe } from '../../shared/pipes/relative-time.pipe';
 import { TaskDueDateComponent } from '../components/task-due-date/task-due-date.component';
 import { TaskTypeDisplayComponent } from '../components/task-type-display/task-type-display.component';
+import { AssignUserDialogComponent } from '../../deals/components/assign-user-dialog.component';
+
+// Интерфейс данных для модалки назначения исполнителя (адаптирован для задач)
+interface AssignUserDialogData {
+  task: TaskDto;
+  currentUsers: User[];
+}
 
 @Component({
   selector: 'app-task-detail',
@@ -40,7 +49,9 @@ import { TaskTypeDisplayComponent } from '../components/task-type-display/task-t
     MatSelectModule,
     MatTooltipModule,
     MatTabsModule,
+    MatTabsModule,
     MatMenuModule,
+    MatDialogModule,
     RelativeTimePipe,
     TaskDueDateComponent,
     TaskTypeDisplayComponent
@@ -54,11 +65,15 @@ export class TaskDetailComponent implements OnInit {
   private tasksService = inject(TasksService);
   private snackBar = inject(MatSnackBar);
   private auth = inject(AuthService);
+  private usersService = inject(UsersService);
+  private dialog = inject(MatDialog);
   
   task = signal<TaskDto | null>(null);
   comments = signal<TaskComment[]>([]);
   isLoading = signal(true);
   isLoadingComments = signal(false);
+  managers = signal<User[]>([]);
+  isLoadingManagers = signal(false);
 
   // Description expand/collapse
   descExpanded = signal<boolean>(false);
@@ -82,6 +97,7 @@ export class TaskDetailComponent implements OnInit {
       this.taskId = Number(id);
       this.loadTask();
       this.loadComments();
+      this.loadManagers();
     } else {
       this.router.navigate(['/tasks']);
     }
@@ -120,6 +136,21 @@ export class TaskDetailComponent implements OnInit {
       error: (err) => {
         console.error('Error loading comments:', err);
         this.isLoadingComments.set(false);
+      }
+    });
+  }
+  
+  loadManagers() {
+    this.isLoadingManagers.set(true);
+    this.usersService.getAllManagers().subscribe({
+      next: (managers) => {
+        this.managers.set(managers);
+        this.isLoadingManagers.set(false);
+      },
+      error: (err) => {
+        console.error('Error loading managers:', err);
+        this.snackBar.open('Ошибка загрузки списка менеджеров', 'OK', { duration: 3000 });
+        this.isLoadingManagers.set(false);
       }
     });
   }
@@ -175,6 +206,58 @@ export class TaskDetailComponent implements OnInit {
   
   goBack() {
     this.router.navigate(['/tasks']);
+  }
+
+  assignTask(managerId?: string) {
+    if (!this.task()) return;
+
+    if (managerId) {
+      // Прямое назначение (для обратной совместимости)
+      this.doAssignTask(managerId);
+    } else {
+      // Открываем модалку для выбора исполнителя
+      const dialogData: AssignUserDialogData = {
+        task: this.task()!,
+        currentUsers: this.managers()
+      };
+
+      const dialogRef = this.dialog.open(AssignUserDialogComponent, {
+        data: dialogData,
+        width: '600px',
+        maxWidth: '95vw',
+        maxHeight: '85vh',
+        disableClose: false
+      });
+
+      dialogRef.afterClosed().subscribe(result => {
+        if (result && result.userId) {
+          this.doAssignTask(result.userId);
+        }
+      });
+    }
+  }
+
+  private doAssignTask(managerId: string) {
+    if (!this.taskId) return;
+
+    const updateData: Partial<TaskDto> = managerId
+      ? { assignedToId: Number(managerId) }
+      : { assignedToId: undefined };
+
+    this.tasksService.update(this.taskId, updateData).subscribe({
+      next: (updatedTask) => {
+        this.task.set(updatedTask);
+        this.snackBar.open(
+          managerId ? 'Исполнитель назначен' : 'Назначение снято',
+          'OK',
+          { duration: 2000 }
+        );
+      },
+      error: (err) => {
+        console.error('Error assigning task:', err);
+        this.snackBar.open('Ошибка изменения исполнителя', 'OK', { duration: 3000 });
+      }
+    });
   }
 
   completeTask() {

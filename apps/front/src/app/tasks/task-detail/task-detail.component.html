@@ -93,15 +93,12 @@
           </button>
         </mat-menu>
 
+
+
         <div class="header-main">
           <div class="task-header-left">
             <div class="task-title-section">
               <h1 class="task-title">{{ task()?.title || 'Без названия' }}</h1>
-              <div class="task-badges">
-                <app-task-type-display
-                  [taskType]="task()?.taskType"
-                ></app-task-type-display>
-              </div>
             </div>
 
             <div class="task-metrics">
@@ -117,13 +114,47 @@
                 </div>
               </div>
 
-              <div class="metric-card" *ngIf="task()?.assignedTo">
+              <div class="metric-card task-type-metric" *ngIf="task()?.taskType">
+                <div class="metric-icon">
+                  <mat-icon>category</mat-icon>
+                </div>
+                <div class="metric-info">
+                  <div class="metric-label">Тип задачи</div>
+                  <div class="metric-value">
+                    <app-task-type-display [taskType]="task()?.taskType" [hideIcon]="true"></app-task-type-display>
+                  </div>
+                </div>
+              </div>
+
+              <div class="metric-card assignee-metric">
                 <div class="metric-icon">
                   <mat-icon>person</mat-icon>
                 </div>
                 <div class="metric-info">
                   <div class="metric-label">Исполнитель</div>
-                  <div class="metric-value">{{ task()?.assignedTo.firstName }} {{ task()?.assignedTo.lastName }}</div>
+                  <div class="metric-value">
+                    <ng-container *ngIf="task()?.assignedTo; else assignSection">
+                      <div class="assigned-info">
+                        <span>{{ task()?.assignedTo.firstName }} {{ task()?.assignedTo.lastName }}</span>
+                        <button 
+                          mat-icon-button 
+                          class="change-assignee-btn"
+                          (click)="assignTask()"
+                          matTooltip="Изменить исполнителя">
+                          <mat-icon>edit</mat-icon>
+                        </button>
+                      </div>
+                    </ng-container>
+                    <ng-template #assignSection>
+                      <button 
+                        mat-stroked-button 
+                        class="assign-btn"
+                        (click)="assignTask()">
+                        <mat-icon>add</mat-icon>
+                        <span>Назначить</span>
+                      </button>
+                    </ng-template>
+                  </div>
                 </div>
               </div>
 
@@ -217,9 +248,6 @@
                 </div>
 
                 <div class="detail-item">
-                  <div class="detail-icon">
-                    <mat-icon>category</mat-icon>
-                  </div>
                   <div class="detail-info">
                     <span class="label">Тип задачи</span>
                     <div class="value">

@@ -16,7 +16,7 @@ interface TaskType {
   template: `
     <ng-container *ngIf="taskType; else noType">
       <div class="task-type-display" [class.compact]="compact">
-        <div class="type-icon" [style.background-color]="taskType.color || '#667eea'">
+        <div class="type-icon" [style.background-color]="taskType.color || '#667eea'" *ngIf="!hideIcon">
           <mat-icon>{{ getTaskTypeIcon(taskType.icon) }}</mat-icon>
         </div>
         <span class="type-name" *ngIf="!compact">{{ taskType.name }}</span>
@@ -31,6 +31,7 @@ interface TaskType {
 export class TaskTypeDisplayComponent {
   @Input({ required: true }) taskType?: TaskType;
   @Input() compact = false; // Для компактного отображения (только иконка)
+  @Input() hideIcon = false; // Для скрытия иконки
 
   getTaskTypeIcon(iconName?: string): string {
     if (!iconName) return 'task';

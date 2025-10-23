@@ -10,9 +10,11 @@ import { MatInputModule } from '@angular/material/input';
 import { FormsModule } from '@angular/forms';
 import { UsersService, User } from '../../users/users.service';
 import { Deal } from '../../pipeline/dtos';
+import { TaskDto } from '../../tasks/tasks.service';
 
 export interface AssignUserDialogData {
-  deal: Deal;
+  deal?: Deal;
+  task?: TaskDto;
   currentUsers: User[];
 }
 
@@ -37,7 +39,7 @@ export interface AssignUserDialogData {
           <mat-icon class="header-icon">person_search</mat-icon>
           <div class="header-text">
             <h2>Сменить ответственного</h2>
-            <p class="dialog-subtitle">{{ data.deal.title }}</p>
+            <p class="dialog-subtitle">{{ data.deal?.title || data.task?.title }}</p>
           </div>
         </div>
         <button mat-icon-button class="close-button" (click)="onCancel()">
@@ -62,7 +64,7 @@ export interface AssignUserDialogData {
             <mat-list-option 
               *ngFor="let user of filteredUsers" 
               [value]="user.id"
-              [class.current-assignee]="user.id === data.deal.assignedTo">
+              [class.current-assignee]="user.id === (data.deal?.assignedTo || data.task?.assignedToId?.toString())">
               
               <div class="user-item">
                 <div class="user-avatar">
@@ -71,7 +73,7 @@ export interface AssignUserDialogData {
                 <div class="user-info">
                   <div class="user-name">
                     {{ user.name }}
-                    <span *ngIf="user.id === data.deal.assignedTo" class="current-badge">
+                    <span *ngIf="user.id === (data.deal?.assignedTo || data.task?.assignedToId?.toString())" class="current-badge">
                       <mat-icon>check_circle</mat-icon>
                       Текущий
                     </span>
@@ -127,7 +129,7 @@ export interface AssignUserDialogData {
           mat-flat-button 
           color="primary"
           class="assign-btn"
-          [disabled]="!selectedUserId || selectedUserId === data.deal.assignedTo"
+          [disabled]="!selectedUserId || selectedUserId === (data.deal?.assignedTo || data.task?.assignedToId?.toString())"
           (click)="onAssign()">
           <mat-icon>assignment_ind</mat-icon>
           <span class="btn-text">Назначить</span>
