@@ -14,6 +14,7 @@ import { NotificationModule } from './notifications/notification.module';
 import { SharedModule } from './shared/shared.module';
 import { AdsIntegrationModule } from './ads-integration/ads-integration.module';
 import { ReportsModule } from './reports/reports.module';
+import { ContactCenterModule } from './contact-center/contact-center.module';
 
 export const MODULES = [
     LeadModule,
@@ -32,4 +33,5 @@ export const MODULES = [
     SharedModule,
     AdsIntegrationModule,
     ReportsModule,
+    ContactCenterModule,
 ];

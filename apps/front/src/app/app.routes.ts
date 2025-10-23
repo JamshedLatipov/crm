@@ -4,6 +4,7 @@ import { LoginComponent } from './login/login.component';
 import { authGuard } from './auth/auth.guard';
 import { AuthTestComponent } from './auth/auth-test.component';
 import { IvrAdminComponent } from './ivr/containers/ivr-list/ivr.component';
+import { OnlineMonitoringComponent } from './contact-center/monitoring/online-monitoring.component';
 import { LeadsComponent } from './leads/leads.component';
 import { LeadsListComponent } from './leads/components/leads-list/leads-list.component';
 import { LeadsDashboardComponent } from './leads/components/leads-dashboard.component';
@@ -38,7 +39,15 @@ export const appRoutes: Route[] = [
     },
     { path: 'deals/view/:id', component: DealDetailComponent, canActivate: [authGuard] },
     { path: 'softphone', component: SoftphoneComponent, canActivate: [authGuard] },
-    { path: 'ivr', component: IvrAdminComponent, canActivate: [authGuard] },
+    {
+        path: 'contact-center',
+        canActivate: [authGuard],
+        children: [
+            { path: '', redirectTo: 'monitoring', pathMatch: 'full' },
+            { path: 'monitoring', component: OnlineMonitoringComponent },
+            { path: 'ivr', component: IvrAdminComponent }
+        ]
+    },
     { path: 'calls', redirectTo: 'softphone' }, // Redirect calls to softphone
     { path: 'reports', component: DashboardComponent, canActivate: [authGuard] }, // Temporary redirect
     { path: 'reports/dashboard', loadComponent: () => import('./pages/reports/reports-dashboard.component').then(m => m.ReportsDashboardComponent), canActivate: [authGuard] },
