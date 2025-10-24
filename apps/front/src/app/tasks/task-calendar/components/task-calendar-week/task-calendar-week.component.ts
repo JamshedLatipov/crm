@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, ElementRef, ViewChild, AfterViewInit, HostListener } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ElementRef, ViewChild, AfterViewInit, HostListener, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CalendarTask } from '../../task-calendar.service';
 
@@ -9,7 +9,7 @@ import { CalendarTask } from '../../task-calendar.service';
   templateUrl: './task-calendar-week.component.html',
   styleUrls: ['./task-calendar-week.component.scss'],
 })
-export class TaskCalendarWeekComponent {
+export class TaskCalendarWeekComponent implements OnChanges {
   @Input() weekDays: Array<{ date: Date; tasks: CalendarTask[]; tasksByHour?: CalendarTask[][]; tasksWithSpan?: Array<{ task: CalendarTask; startIdx: number; span: number }>; isToday?: boolean }> = [];
   @Input() weekHours: number[] = [];
   @Input() maxTasksPerCell = 3;
@@ -40,6 +40,15 @@ export class TaskCalendarWeekComponent {
     setTimeout(() => this.computeGridMetrics(), 0);
   }
 
+  ngOnChanges(changes: SimpleChanges) {
+    // When weekDays (or layout inputs) change we need to recompute metrics after the
+    // view updates so .day-header elements exist and have layout.
+    if (changes['weekDays'] || changes['weekHours']) {
+      // schedule after microtask so DOM has rendered the new grid
+      requestAnimationFrame(() => this.computeGridMetrics());
+    }
+  }
+
   @HostListener('window:resize')
   onResize() {
     this.computeGridMetrics();
@@ -50,8 +59,37 @@ export class TaskCalendarWeekComponent {
       const gridEl = this.gridRef.nativeElement as HTMLElement;
       const headers = Array.from(gridEl.querySelectorAll('.day-header')) as HTMLElement[];
       const gridRect = gridEl.getBoundingClientRect();
-      this.columnLefts = headers.map((h) => h.getBoundingClientRect().left - gridRect.left);
-      this.columnWidths = headers.map((h) => h.getBoundingClientRect().width);
+
+      // If header nodes match the expected day count, use their exact positions.
+      if (headers.length === this.weekDays.length && headers.length > 0) {
+        this.columnLefts = headers.map((h) => h.getBoundingClientRect().left - gridRect.left);
+        this.columnWidths = headers.map((h) => h.getBoundingClientRect().width);
+        return;
+      }
+
+      // Fallback: compute columns from grid geometry. Use the left "corner" column width
+      // (hour labels) as starting offset and distribute remaining width across day columns.
+  const cornerEl = gridEl.querySelector('.corner') as HTMLElement | null;
+  // ensure we have a sensible left-column width; guard against collapsed .corner
+  const measuredCorner = cornerEl ? cornerEl.getBoundingClientRect().width : 0;
+  const leftCol = Math.max(80, Math.round(measuredCorner)); // px fallback minimum
+  // account for grid padding (if any)
+  const paddingLeft = parseFloat(window.getComputedStyle(gridEl).paddingLeft || '0') || 0;
+      const dayCount = Math.max(1, this.weekDays.length);
+      // Read computed column-gap from CSS if available
+      const computed = window.getComputedStyle(gridEl);
+      const gap = parseFloat(computed.columnGap || computed.getPropertyValue('column-gap') || '') || 12;
+      const totalGap = Math.max(0, (dayCount - 1) * gap);
+      const avail = Math.max(0, gridRect.width - leftCol - totalGap);
+      const colW = Math.floor(avail / dayCount);
+      this.columnLefts = [];
+      this.columnWidths = [];
+      // the left of the first day column is at leftCol pixels from grid left
+      for (let i = 0; i < dayCount; i++) {
+        const left = paddingLeft + leftCol + i * (colW + gap);
+        this.columnLefts.push(left);
+        this.columnWidths.push(colW);
+      }
     } catch (err) {
       // fallback: compute evenly
       const gridEl = this.gridRef?.nativeElement as HTMLElement;

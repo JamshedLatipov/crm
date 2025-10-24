@@ -114,10 +114,10 @@
   left: 4px;
   right: 4px;
   border-radius: 8px;
-  /* make the span visually sit on top of cell text: mostly opaque background + subtle shadow */
-  background: var(--span-bg, rgba(255,255,255,0.98));
-  border: 1px solid rgba(59,130,246,0.12);
-  box-shadow: 0 6px 18px rgba(16,24,40,0.06);
+  /* make the span visually sit on top of cell text but semi-transparent so underlying grid remains readable */
+  background: var(--span-bg, rgba(59,130,246,0.12));
+  border: 1px solid rgba(59,130,246,0.14);
+  box-shadow: 0 6px 18px rgba(16,24,40,0.04);
   padding: 8px 12px 8px 14px; /* extra left padding to not overlap the left border */
   box-sizing: border-box;
   overflow: hidden;
