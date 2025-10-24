@@ -1,0 +1,53 @@
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+}
+.weekday {
+  text-align: center;
+  padding: 6px 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.day {
+  height: var(--calendar-cell-height);
+  background: var(--card-bg, white);
+  border-radius: 8px;
+  padding: 8px;
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.day-number {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: var(--text-secondary);
+}
+.tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: calc(var(--calendar-cell-height) - 28px);
+  overflow: hidden;
+}
+.more {
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: rgba(2, 6, 23, 0.03);
+  align-self: flex-start;
+}
+.add-btn {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: none;
+  background: rgba(59, 130, 246, 0.08);
+  cursor: pointer;
+}

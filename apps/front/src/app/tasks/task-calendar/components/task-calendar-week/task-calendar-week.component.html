@@ -1,0 +1,23 @@
+<div class="week-grid" [style.--day-count]="weekDays.length" [style.--hour-rows]="weekHours.length">
+  <!-- top-left corner -->
+  <div class="corner"></div>
+
+  <!-- day headers -->
+  <ng-container *ngFor="let wd of weekDays">
+    <div class="day-header">{{ wd.date | date:'EEE d' }}</div>
+  </ng-container>
+
+  <!-- rows: for each hour, render label + day cells -->
+  <ng-container *ngFor="let h of weekHours; let hi = index">
+    <div class="hour-label">{{ h }}:00</div>
+    <ng-container *ngFor="let wd of weekDays; trackBy: trackByDate; let di = index">
+      <div class="hour-cell" [class.today]="wd.isToday && weekHours[hi] === currentHour">
+        <button class="small-add" (click)="openCreate.emit({ date: wd.date, hour: weekHours[hi] }); $event.stopPropagation()">+</button>
+        <div class="hour-tasks">
+          <div class="task" *ngFor="let t of (wd.tasksByHour?.[hi] || []) | slice:0:maxTasksPerCell" [attr.title]="t.title" [style.border-left]="t.color ? '4px solid ' + t.color : '4px solid rgba(59,130,246,0.16)'"><span class="task-title">{{ t.title }}</span></div>
+          <div class="more" *ngIf="(wd.tasksByHour?.[hi]?.length || 0) > maxTasksPerCell">+{{ (wd.tasksByHour?.[hi].length || 0) - maxTasksPerCell }}</div>
+        </div>
+      </div>
+    </ng-container>
+  </ng-container>
+</div>

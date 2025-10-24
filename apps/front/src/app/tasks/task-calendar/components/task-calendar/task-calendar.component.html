@@ -1,0 +1,37 @@
+<div class="calendar">
+  <crm-task-calendar-header
+    [active]="active"
+    [viewMode]="viewMode"
+    (prev)="prevMonth()"
+    (next)="nextMonth()"
+    (setView)="setView($event)"
+  ></crm-task-calendar-header>
+
+  <div *ngIf="viewMode==='month'">
+    <crm-task-calendar-month [weeks]="weeks" [maxTasksPerCell]="maxTasksPerCell" (openCreate)="openCreate($event)"></crm-task-calendar-month>
+  </div>
+
+  <div *ngIf="viewMode==='week' || viewMode==='work-week'">
+    <crm-task-calendar-week
+      [weekDays]="weekDays"
+      [weekHours]="weekHours"
+      [maxTasksPerCell]="maxTasksPerCell"
+      [currentHour]="currentHour"
+      (openCreate)="openCreate($event.date, $event.hour)"
+    ></crm-task-calendar-week>
+  </div>
+
+  <div *ngIf="viewMode==='year'">
+    <crm-task-calendar-year [months]="months" (goToMonth)="goToMonth($event)"></crm-task-calendar-year>
+  </div>
+  
+  <crm-task-calendar-create-modal
+    [open]="createModalOpen"
+    [dateStr]="createDateStr"
+    [timeStr]="createTimeStr"
+    [title]="createTitle"
+    [showTime]="createHour !== null"
+    (create)="onCreateFromModal($event)"
+    (cancel)="closeCreate()"
+  ></crm-task-calendar-create-modal>
+</div>

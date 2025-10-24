@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { TaskCalendarComponent } from './task-calendar.component';
+import { TaskCalendarComponent } from './components/task-calendar/task-calendar.component';
 
 @Component({
   selector: 'crm-task-calendar-page',

@@ -1,0 +1,22 @@
+<div *ngIf="open" class="create-modal">
+  <div class="modal-backdrop" (click)="cancel.emit()"></div>
+  <div class="modal-card">
+    <h3>Создать задачу</h3>
+    <div class="field">
+      <label>Заголовок</label>
+      <input type="text" [(ngModel)]="title" />
+    </div>
+    <div class="field">
+      <label>Дата</label>
+      <input type="date" [(ngModel)]="dateStr" />
+    </div>
+    <div class="field" *ngIf="showTime">
+      <label>Время</label>
+      <input type="time" [(ngModel)]="timeStr" />
+    </div>
+    <div class="actions">
+      <button class="btn" (click)="create.emit({ title, dateStr, timeStr })" [disabled]="!title">Создать</button>
+      <button class="btn" (click)="cancel.emit()">Отмена</button>
+    </div>
+  </div>
+</div>

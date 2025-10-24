@@ -70,5 +70,7 @@ export class TaskCalendarService {
   // Allow adding a task (simple in-memory push)
   addTask(task: CalendarTask): void {
     this.sample.push(task);
+    // notify consumers
+    this.sampleUpdated$.next(true);
   }
 }

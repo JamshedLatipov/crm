@@ -1,0 +1,6 @@
+<div class="year-grid">
+  <div class="month-card" *ngFor="let m of months" (click)="goToMonth.emit(m.index)">
+    <div class="month-name">{{ m.name }}</div>
+    <div class="month-count">{{ m.tasksCount }} задач</div>
+  </div>
+</div>

@@ -1,0 +1,19 @@
+<div class="calendar-header">
+  <div class="nav-left">
+    <button class="btn" (click)="onPrev()">‹</button>
+    <div class="month">
+      <ng-container *ngIf="viewMode === 'month'">{{ active | date:'LLL yyyy' }}</ng-container>
+      <ng-container *ngIf="viewMode === 'week'">Неделя {{ active | date:'d MMM' }}</ng-container>
+      <ng-container *ngIf="viewMode === 'work-week'">Рабочая неделя {{ active | date:'d MMM' }}</ng-container>
+      <ng-container *ngIf="viewMode === 'year'">{{ active | date:'yyyy' }}</ng-container>
+    </div>
+    <button class="btn" (click)="onNext()">›</button>
+  </div>
+
+  <div class="view-modes">
+    <button class="mode-btn" [class.active]="viewMode==='month'" (click)="onSet('month')">Месяц</button>
+    <button class="mode-btn" [class.active]="viewMode==='week'" (click)="onSet('week')">Неделя</button>
+    <button class="mode-btn" [class.active]="viewMode==='work-week'" (click)="onSet('work-week')">Раб. неделя</button>
+    <button class="mode-btn" [class.active]="viewMode==='year'" (click)="onSet('year')">Год</button>
+  </div>
+</div>

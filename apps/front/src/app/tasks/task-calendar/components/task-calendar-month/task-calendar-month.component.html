@@ -1,0 +1,23 @@
+<div class="calendar-grid">
+  <div class="weekday" *ngFor="let w of ['Пн','Вт','Ср','Чт','Пт','Сб','Вс']">{{ w }}</div>
+
+  <ng-container *ngFor="let week of weeks">
+    <ng-container *ngFor="let cell of week; trackBy: trackByDate">
+      <div class="day" [class.empty]="!cell?.date" [class.today]="cell?.isToday">
+        <div class="day-number" *ngIf="cell?.date">{{ cell.date.getDate() }}</div>
+        <button class="add-btn" *ngIf="cell?.date" (click)="openCreate.emit(cell.date); $event.stopPropagation()">+</button>
+        <div class="tasks">
+          <div
+            class="task"
+            *ngFor="let t of (cell?.tasks || []) | slice:0:maxTasksPerCell"
+            [attr.title]="t.title"
+            [style.border-left]="t.color ? '4px solid ' + t.color : '4px solid rgba(59,130,246,0.16)'"
+          >
+            <span class="task-title">{{ t.title }}</span>
+          </div>
+          <div class="more" *ngIf="(cell?.tasks?.length || 0) > maxTasksPerCell">+{{ (cell?.tasks.length || 0) - maxTasksPerCell }}</div>
+        </div>
+      </div>
+    </ng-container>
+  </ng-container>
+</div>
