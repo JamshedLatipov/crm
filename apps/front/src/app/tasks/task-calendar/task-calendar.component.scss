@@ -12,6 +12,31 @@
   margin-bottom: 12px;
 }
 
+.calendar-header .nav-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.view-modes {
+  display: flex;
+  gap: 8px;
+}
+
+.mode-btn {
+  background: transparent;
+  border: 1px solid rgba(0,0,0,0.06);
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.mode-btn.active {
+  background: rgba(59,130,246,0.08);
+  border-color: rgba(59,130,246,0.18);
+  font-weight: 700;
+}
+
 .calendar-header .month {
   font-weight: 700;
   font-size: 18px;
@@ -32,12 +57,41 @@
   gap: 10px;
 }
 
+/* ensure all grid cells (weekday headers and day cells) occupy equal width and don't grow */
+.calendar-grid > .weekday,
+.calendar-grid > .day {
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0; /* allow text to truncate instead of expanding the cell */
+}
+
 .weekday {
   font-size: 12px;
   text-align: center;
   color: var(--text-secondary);
   padding: 6px 4px;
 }
+
+.week-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--week-days, 7), 1fr);
+  gap: 10px;
+}
+
+.year-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.month-card {
+  background: var(--card-bg, white);
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid rgba(226,232,240,0.6);
+  cursor: pointer;
+}
+.month-name { font-weight: 700; margin-bottom: 6px; }
+.month-count { font-size: 13px; color: var(--text-secondary); }
 
 .day {
   height: var(--calendar-cell-height);
@@ -54,7 +108,7 @@
 
 .day-number { font-size: 13px; font-weight: 700; margin-bottom: 6px; color: var(--text-secondary); }
 
-.tasks { display: flex; flex-direction: column; gap: 6px; max-height: calc(var(--calendar-cell-height) - 28px); overflow-y: auto; }
+.tasks { display: flex; flex-direction: column; gap: 6px; max-height: calc(var(--calendar-cell-height) - 28px); overflow: hidden; position: relative; }
 .task {
   font-size: 13px;
   padding: 6px 8px;
@@ -75,6 +129,16 @@
 .day.today {
   background: linear-gradient(180deg, rgba(59,130,246,0.04), rgba(59,130,246,0.02));
   border: 1px solid rgba(59,130,246,0.12);
+}
+
+/* +N more badge */
+.more {
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: rgba(2,6,23,0.03);
+  align-self: flex-start;
 }
 
 @media (max-width: 640px) {

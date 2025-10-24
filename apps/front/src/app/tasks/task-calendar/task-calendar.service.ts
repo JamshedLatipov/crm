@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { TaskTypeService, TaskType } from '../../services/task-type.service';
 import { BehaviorSubject } from 'rxjs';
+import { addDays } from 'date-fns';
 
 export interface CalendarTask {
   id: string | number;
@@ -28,19 +29,19 @@ export class TaskCalendarService {
   }
 
   private buildSampleFromTypes(types: TaskType[]) {
-    if (!types || types.length === 0) return this.buildFallbackSample();
-    const now = Date.now();
+    if (!types || types.length === 0) return this.buildFad. llbackSample();
+    const today = new Date();
     this.sample = types.slice(0, 6).map((t, idx) => ({
       id: t.id,
       title: t.name,
-      dueDate: new Date(now + (idx - 1) * 86400000).toISOString(),
+      dueDate: addDays(today, idx - 1).toISOString(),
       status: 'pending',
       color: t.color,
       icon: t.icon,
     }));
     // add one past and one future task for variety
-    this.sample.push({ id: 'past-1', title: `${types[0].name} (старое)`, dueDate: new Date(now - 3 * 86400000).toISOString(), status: 'done', color: types[0].color });
-    this.sample.push({ id: 'future-1', title: `${types[0].name} (в будущем)`, dueDate: new Date(now + 10 * 86400000).toISOString(), status: 'pending', color: types[0].color });
+    this.sample.push({ id: 'past-1', title: `${types[0].name} (старое)`, dueDate: addDays(today, -3).toISOString(), status: 'done', color: types[0].color });
+    this.sample.push({ id: 'future-1', title: `${types[0].name} (в будущем)`, dueDate: addDays(today, 10).toISOString(), status: 'pending', color: types[0].color });
     this.sampleUpdated$.next(true);
   }
 
