@@ -4,6 +4,7 @@ import { Task } from './task.entity';
 import { CreateTaskDto, UpdateTaskDto } from './task.dto';
 import { ApiTags, ApiBody, ApiQuery } from '@nestjs/swagger';
 import { TaskComment } from './task-comment.entity';
+import { TaskHistory } from './task-history.entity';
 import { JwtAuthGuard } from '../user/jwt-auth.guard';
 import { CurrentUser, CurrentUserPayload } from '../user/current-user.decorator';
 
@@ -65,6 +66,11 @@ export class TaskController {
   @Get(':id/comments')
   async getComments(@Param('id') id: number): Promise<TaskComment[]> {
     return this.taskService.getComments(id);
+  }
+
+  @Get(':id/history')
+  async getHistory(@Param('id') id: number): Promise<TaskHistory[]> {
+    return this.taskService.getHistory(id);
   }
 }
 

@@ -16,7 +16,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { TasksService, TaskDto } from '../tasks.service';
+import { TasksService, TaskDto, TaskHistory } from '../tasks.service';
 import { AuthService } from '../../auth/auth.service';
 import { UsersService, User } from '../../users/users.service';
 import { HumanDatePipe } from '../../shared/pipes/human-date.pipe';
@@ -78,6 +78,10 @@ export class TaskDetailComponent implements OnInit {
   managers = signal<User[]>([]);
   isLoadingManagers = signal(false);
 
+  // History
+  taskHistory = signal<TaskHistory[]>([]);
+  isLoadingHistory = signal(false);
+
   // Description expand/collapse
   descExpanded = signal<boolean>(false);
   
@@ -97,6 +101,7 @@ export class TaskDetailComponent implements OnInit {
       this.taskId = Number(id);
       this.loadTask();
       this.loadManagers();
+      this.loadHistory();
     } else {
       this.router.navigate(['/tasks']);
     }
@@ -134,6 +139,23 @@ export class TaskDetailComponent implements OnInit {
         console.error('Error loading managers:', err);
         this.snackBar.open('Ошибка загрузки списка менеджеров', 'OK', { duration: 3000 });
         this.isLoadingManagers.set(false);
+      }
+    });
+  }
+
+  loadHistory() {
+    if (!this.taskId) return;
+
+    this.isLoadingHistory.set(true);
+    this.tasksService.getHistory(this.taskId).subscribe({
+      next: (history) => {
+        this.taskHistory.set(history);
+        this.isLoadingHistory.set(false);
+      },
+      error: (err) => {
+        console.error('Error loading task history:', err);
+        this.snackBar.open('Ошибка загрузки истории задачи', 'OK', { duration: 3000 });
+        this.isLoadingHistory.set(false);
       }
     });
   }
@@ -281,5 +303,128 @@ export class TaskDetailComponent implements OnInit {
     const now = new Date();
     const due = new Date(dueDate);
     return due < now;
+  }
+
+  // History methods
+  getHistoryIcon(action: string): string {
+    const icons: Record<string, string> = {
+      created: 'add_circle_outline',
+      updated: 'edit_note',
+      status_changed: 'swap_horizontal_circle',
+      deleted: 'delete_outline'
+    };
+    return icons[action] || 'info_outline';
+  }
+
+  getHistoryIconClass(action: string): string {
+    const classes: Record<string, string> = {
+      created: 'created',
+      updated: 'updated',
+      status_changed: 'status-changed',
+      deleted: 'deleted'
+    };
+    return classes[action] || 'default';
+  }
+
+  getHistoryCardClass(action: string): string {
+    const classes: Record<string, string> = {
+      created: 'card-created',
+      updated: 'card-updated',
+      status_changed: 'card-status-changed',
+      deleted: 'card-deleted'
+    };
+    return classes[action] || 'card-default';
+  }
+
+  getHistoryActionText(item: TaskHistory): string {
+    const actions: Record<string, string> = {
+      created: 'Задача создана',
+      updated: 'Задача обновлена',
+      status_changed: 'Статус изменён',
+      deleted: 'Задача удалена'
+    };
+    return actions[item.action] || item.action;
+  }
+
+  getDetailKeys(details: any): string[] {
+    return Object.keys(details || {});
+  }
+
+  getFieldDisplayName(key: string): string {
+    const names: Record<string, string> = {
+      title: 'Название',
+      description: 'Описание',
+      status: 'Статус',
+      dueDate: 'Срок выполнения',
+      assignedTo: 'Исполнитель',
+      assignedToId: 'Исполнитель',
+      leadId: 'Лид ID',
+      dealId: 'Сделка ID',
+      taskTypeId: 'Тип задачи ID'
+    };
+    return names[key] || key;
+  }
+
+  getChangeTypeClass(change: any): string {
+    if (!change) return 'change-unknown';
+    if (change.old !== undefined && change.new !== undefined) return 'change-modified';
+    if (change.old !== undefined && change.new === undefined) return 'change-removed';
+    if (change.old === undefined && change.new !== undefined) return 'change-added';
+    return 'change-unknown';
+  }
+
+  formatValue(value: any): string {
+    if (value === null || value === undefined) return 'не указано';
+    if (typeof value === 'boolean') return value ? 'да' : 'нет';
+    
+    // Форматирование статусов
+    if (typeof value === 'string') {
+      const statusLabels: Record<string, string> = {
+        'pending': 'В ожидании',
+        'in_progress': 'В работе',
+        'done': 'Завершено',
+        'overdue': 'Просрочено'
+      };
+      if (statusLabels[value]) {
+        return statusLabels[value];
+      }
+      
+      // Если это дата в ISO формате
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value)) {
+        return new Date(value).toLocaleString('ru-RU', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      }
+    }
+    
+    // Для числовых значений (например, ID менеджера)
+    if (typeof value === 'number') {
+      // Пытаемся найти пользователя по ID (конвертируем в строку для сравнения)
+      const manager = this.managers().find(m => m.id === String(value));
+      if (manager) {
+        return manager.name;
+      }
+      return String(value);
+    }
+    
+    if (typeof value === 'object') {
+      // Если это дата в формате ISO, форматируем её
+      if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value)) {
+        return new Date(value).toLocaleString('ru-RU', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      }
+      return JSON.stringify(value, null, 2);
+    }
+    
+    return String(value);
   }
 }

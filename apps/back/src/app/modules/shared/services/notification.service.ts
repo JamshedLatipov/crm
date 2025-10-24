@@ -306,6 +306,32 @@ export class NotificationService {
     return this.createBulk(notifications);
   }
 
+  async createTaskNotification(
+    type: NotificationType,
+    title: string,
+    message: string,
+    taskData: any,
+    recipientId: string,
+    channels: NotificationChannel[] = [NotificationChannel.IN_APP],
+    priority: NotificationPriority = NotificationPriority.MEDIUM
+  ): Promise<Notification[]> {
+    const notifications = channels.map(channel => ({
+      type,
+      title,
+      message,
+      channel,
+      priority,
+      recipientId,
+      data: {
+        entityType: 'task' as const,
+        actionUrl: `/tasks/${taskData.taskId}`,
+        ...taskData
+      }
+    }));
+
+    return this.createBulk(notifications);
+  }
+
   async createSystemNotification(
     type: NotificationType,
     title: string,

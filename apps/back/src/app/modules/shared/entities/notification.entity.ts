@@ -27,10 +27,16 @@ export enum NotificationType {
   DEAL_STALE = 'deal_stale',
   DEAL_HIGH_VALUE = 'deal_high_value',
   
-  // General system notifications
-  SYSTEM_REMINDER = 'system_reminder',
+  // Task-related notifications
+  TASK_CREATED = 'task_created',
+  TASK_UPDATED = 'task_updated',
+  TASK_STATUS_CHANGED = 'task_status_changed',
+  TASK_DELETED = 'task_deleted',
   TASK_ASSIGNED = 'task_assigned',
   TASK_OVERDUE = 'task_overdue',
+  
+  // General system notifications
+  SYSTEM_REMINDER = 'system_reminder',
   MEETING_REMINDER = 'meeting_reminder'
 }
 
@@ -130,10 +136,17 @@ export class Notification {
     daysToClose?: number;
     dealOwner?: string;
     
-    // Common data
-    actionUrl?: string;
+    // Task-related data
+    taskId?: number;
+    taskTitle?: string;
+    taskStatus?: string;
+    previousTaskStatus?: string;
     assignedTo?: string;
     assignedBy?: string;
+    changes?: Record<string, { old: any; new: any }>;
+    
+    // Common data
+    actionUrl?: string;
     entityType?: 'lead' | 'deal' | 'task' | 'meeting';
     [key: string]: any;
   };

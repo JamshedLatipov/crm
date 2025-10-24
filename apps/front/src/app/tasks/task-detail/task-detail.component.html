@@ -246,9 +246,76 @@
                   </div>
                 </ng-template>
                 <div class="tab-content">
-                  <div class="history-placeholder">
-                    <mat-icon>timeline</mat-icon>
-                    <p>История изменений будет доступна в следующих версиях</p>
+                  <!-- Загрузка -->
+                  <div *ngIf="isLoadingHistory()" class="loading-container">
+                    <mat-spinner diameter="30"></mat-spinner>
+                    <p>Загрузка истории...</p>
+                  </div>
+
+                  <!-- История -->
+                  <div *ngIf="!isLoadingHistory()" class="history-content">
+                    <div *ngIf="taskHistory().length === 0" class="no-history">
+                      <mat-icon>timeline</mat-icon>
+                      <p>История изменений пуста</p>
+                    </div>
+
+                    <div *ngIf="taskHistory().length > 0" class="history-timeline">
+                      <!-- Timeline container -->
+                      <div class="timeline">
+                        <div *ngFor="let item of taskHistory(); let i = index; let isLast = last" class="timeline-item" [class.last-item]="isLast">
+                          <!-- Timeline line -->
+                          <div class="timeline-line" [class.last-line]="isLast">
+                            <div class="timeline-dot" [class]="getHistoryIconClass(item.action)">
+                              <mat-icon>{{ getHistoryIcon(item.action) }}</mat-icon>
+                            </div>
+                          </div>
+
+                          <!-- Timeline content -->
+                          <div class="timeline-content">
+                            <div class="timeline-card" [class]="getHistoryCardClass(item.action)">
+                              <!-- Header -->
+                              <div class="timeline-header">
+                                <div class="action-info">
+                                  <h4 class="action-title">{{ getHistoryActionText(item) }}</h4>
+                                  <div class="action-meta">
+                                    <span class="action-time">{{ item.createdAt | humanDate }}</span>
+                                    <span class="action-user" *ngIf="item.user">
+                                      <mat-icon>person</mat-icon>
+                                      {{ item.user.firstName }} {{ item.user.lastName }}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <!-- Changes details -->
+                              <div class="changes-section" *ngIf="item.details && getDetailKeys(item.details).length > 0">
+                                <div class="changes-header">
+                                  <mat-icon>compare_arrows</mat-icon>
+                                  <span>Изменения</span>
+                                </div>
+                                <div class="changes-list">
+                                  <div *ngFor="let key of getDetailKeys(item.details)" class="change-item" [class]="getChangeTypeClass(item.details[key])">
+                                    <div class="change-field">
+                                      <span class="field-label">{{ getFieldDisplayName(key) }}</span>
+                                    </div>
+                                    <div class="change-values">
+                                      <div class="old-value" *ngIf="item.details[key] && item.details[key].old !== undefined">
+                                        <span class="value-label">Было:</span>
+                                        <span class="value-text">{{ formatValue(item.details[key].old) }}</span>
+                                      </div>
+                                      <div class="new-value" *ngIf="item.details[key] && item.details[key].new !== undefined">
+                                        <span class="value-label">Стало:</span>
+                                        <span class="value-text">{{ formatValue(item.details[key].new) }}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </mat-tab>

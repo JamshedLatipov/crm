@@ -10,6 +10,8 @@ import { Deal } from '../deals/deal.entity';
 import { CreateTaskDto, UpdateTaskDto } from './task.dto';
 import { TaskType } from './entities/task-type.entity';
 import { TaskTypeService } from './services/task-type.service';
+import { NotificationService } from '../shared/services/notification.service';
+import { NotificationType, NotificationChannel, NotificationPriority } from '../shared/entities/notification.entity';
 
 @Injectable()
 export class TaskService {
@@ -21,6 +23,7 @@ export class TaskService {
     @InjectRepository(TaskComment)
     private readonly commentRepo: Repository<TaskComment>,
     private readonly taskTypeService: TaskTypeService,
+    private readonly notificationService: NotificationService,
   ) {}
   async addComment(taskId: number, authorId: number, text: string): Promise<TaskComment> {
     const comment = this.commentRepo.create({
@@ -96,6 +99,25 @@ export class TaskService {
       user: userId ? { id: userId } as User : null,
     });
     
+    // Отправляем уведомление о создании задачи
+    if (task.assignedTo?.id) {
+      await this.notificationService.createTaskNotification(
+        NotificationType.TASK_CREATED,
+        `Новая задача: ${task.title}`,
+        `Вам назначена новая задача: ${task.title}`,
+        {
+          taskId: task.id,
+          taskTitle: task.title,
+          taskStatus: task.status,
+          assignedTo: task.assignedTo?.id.toString(),
+          assignedBy: userId?.toString(),
+        },
+        task.assignedTo.id.toString(),
+        [NotificationChannel.IN_APP],
+        NotificationPriority.MEDIUM
+      );
+    }
+    
     return this.findById(task.id);
   }
 
@@ -127,6 +149,9 @@ export class TaskService {
   }
 
   async update(id: number, data: UpdateTaskDto, userId?: number): Promise<Task> {
+    // Загружаем оригинальную задачу ДО обновления
+    const originalTask = await this.findById(id);
+    
     const updateData: any = {};
     
     // Обновляем только те поля, которые были переданы
@@ -168,12 +193,78 @@ export class TaskService {
     await this.taskRepo.update(id, updateData);
     const updated = await this.findById(id);
     
-    await this.historyRepo.save({
-      task: updated,
-      action: 'updated',
-      details: data,
-      user: userId ? { id: userId } as User : null,
-    });
+    // Формируем детали изменений в формате { field: { old: ..., new: ... } }
+    const changes: Record<string, { old: any; new: any }> = {};
+    
+    if (originalTask) {
+      if (data.title !== undefined && originalTask.title !== data.title) {
+        changes.title = { old: originalTask.title, new: data.title };
+      }
+      if (data.description !== undefined && originalTask.description !== data.description) {
+        changes.description = { old: originalTask.description || '', new: data.description || '' };
+      }
+      if (data.status !== undefined && originalTask.status !== data.status) {
+        changes.status = { old: originalTask.status, new: data.status };
+      }
+      if (data.dueDate !== undefined) {
+        const oldDate = originalTask.dueDate ? originalTask.dueDate.toISOString() : null;
+        const newDate = data.dueDate ? new Date(data.dueDate).toISOString() : null;
+        if (oldDate !== newDate) {
+          changes.dueDate = { old: oldDate, new: newDate };
+        }
+      }
+      if (data.assignedToId !== undefined && originalTask.assignedTo?.id !== data.assignedToId) {
+        changes.assignedToId = { 
+          old: originalTask.assignedTo?.id || null, 
+          new: data.assignedToId || null 
+        };
+      }
+      if (data.leadId !== undefined && originalTask.leadId !== data.leadId) {
+        changes.leadId = { old: originalTask.leadId || null, new: data.leadId || null };
+      }
+      if (data.dealId !== undefined && originalTask.dealId !== data.dealId) {
+        changes.dealId = { old: originalTask.dealId || null, new: data.dealId || null };
+      }
+      if (data.taskTypeId !== undefined && originalTask.taskTypeId !== data.taskTypeId) {
+        changes.taskTypeId = { old: originalTask.taskTypeId || null, new: data.taskTypeId || null };
+      }
+    }
+    
+    // Сохраняем историю только если есть изменения
+    if (Object.keys(changes).length > 0) {
+      await this.historyRepo.save({
+        task: updated,
+        action: 'updated',
+        details: changes,
+        user: userId ? { id: userId } as User : null,
+      });
+    }
+    
+    // Отправляем уведомление об обновлении задачи
+    if (Object.keys(changes).length > 0) {
+      const recipientIds = new Set<string>();
+      if (updated.assignedTo?.id) recipientIds.add(updated.assignedTo.id.toString());
+      if (userId && userId !== updated.assignedTo?.id) recipientIds.add(userId.toString());
+      
+      for (const recipientId of recipientIds) {
+        await this.notificationService.createTaskNotification(
+          NotificationType.TASK_UPDATED,
+          `Задача обновлена: ${updated.title}`,
+          `Задача "${updated.title}" была обновлена`,
+          {
+            taskId: updated.id,
+            taskTitle: updated.title,
+            taskStatus: updated.status,
+            assignedTo: updated.assignedTo?.id?.toString(),
+            assignedBy: userId?.toString(),
+            changes,
+          },
+          recipientId,
+          [NotificationChannel.IN_APP],
+          NotificationPriority.LOW
+        );
+      }
+    }
     
     return updated;
   }
@@ -187,6 +278,29 @@ export class TaskService {
       details: null,
       user: userId ? { id: userId } : null,
     });
+    
+    // Отправляем уведомление об удалении задачи
+    const recipientIds = new Set<string>();
+    if (task.assignedTo?.id) recipientIds.add(task.assignedTo.id.toString());
+    if (userId && userId !== task.assignedTo?.id) recipientIds.add(userId.toString());
+    
+    for (const recipientId of recipientIds) {
+      await this.notificationService.createTaskNotification(
+        NotificationType.TASK_DELETED,
+        `Задача удалена: ${task.title}`,
+        `Задача "${task.title}" была удалена`,
+        {
+          taskId: task.id,
+          taskTitle: task.title,
+          taskStatus: task.status,
+          assignedTo: task.assignedTo?.id?.toString(),
+          assignedBy: userId?.toString(),
+        },
+        recipientId,
+        [NotificationChannel.IN_APP],
+        NotificationPriority.MEDIUM
+      );
+    }
   }
   async addStatusChange(id: number, status: string, userId?: number): Promise<void> {
     const task = await this.findById(id);
@@ -195,6 +309,14 @@ export class TaskService {
       action: 'status_changed',
       details: { status },
       user: userId ? { id: userId } : null,
+    });
+  }
+
+  async getHistory(taskId: number): Promise<TaskHistory[]> {
+    return this.historyRepo.find({
+      where: { task: { id: taskId } },
+      relations: ['user'],
+      order: { createdAt: 'DESC' }
     });
   }
 }

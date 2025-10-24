@@ -165,17 +165,11 @@
       <ng-container matColumnDef="status">
         <th mat-header-cell *matHeaderCellDef mat-sort-header>Статус</th>
         <td mat-cell *matCellDef="let task">
-          <div class="status-container">
-            <div class="status-indicator">
-              <mat-icon [matTooltip]="getStatusConfig(task.status).label">{{ getStatusConfig(task.status).icon }}</mat-icon>
-            </div>
-            <ng-container *ngIf="task.dueDate && task.status === 'overdue'">
-              <div class="availability-badge">
-                <mat-icon>warning</mat-icon>
-                <span>Просрочено</span>
-              </div>
-            </ng-container>
-          </div>
+          <app-task-status 
+            [status]="task.status" 
+            [showIndicators]="true" 
+            size="small">
+          </app-task-status>
         </td>
       </ng-container>
 

@@ -3,6 +3,14 @@ import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { HumanDatePipe } from '../../../shared/pipes/human-date.pipe';
+import { 
+  differenceInMinutes, 
+  differenceInDays, 
+  differenceInHours,
+  differenceInMilliseconds,
+  isAfter,
+  parseISO
+} from 'date-fns';
 
 interface TaskForDueDate {
   status?: string;
@@ -53,23 +61,23 @@ export class TaskDueDateComponent {
   getDueDateClass(): string {
     if (!this.task.dueDate) return 'due-date-normal';
     
+    const now = new Date();
+    const due = parseISO(this.task.dueDate);
+    const diffMinutes = differenceInMinutes(due, now);
+    const diffDays = differenceInDays(due, now);
+    
     // Проверяем, была ли задача просрочена при закрытии
     if (this.task.status === 'done') {
-      if (this.task.updatedAt && this.task.dueDate) {
-        const closedAt = new Date(this.task.updatedAt);
-        const due = new Date(this.task.dueDate);
-        if (closedAt > due) {
-          return 'due-date-done-late'; // Закрыта с опозданием
-        }
+      // Используем updatedAt если есть, иначе текущее время
+      const closedAt = this.task.updatedAt ? parseISO(this.task.updatedAt) : now;
+      
+      // Задача закрыта с опозданием, если время закрытия больше дедлайна
+      if (isAfter(closedAt, due)) {
+        return 'due-date-done-late'; // Закрыта с опозданием
       }
+      
       return 'due-date-done'; // Закрыта вовремя
     }
-    
-    const now = new Date();
-    const due = new Date(this.task.dueDate);
-    const diffMs = due.getTime() - now.getTime();
-    const diffMinutes = Math.ceil(diffMs / (1000 * 60));
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
     
     // Если есть тип задачи с настройками
     if (this.task.taskType?.timeFrameSettings) {
@@ -102,23 +110,22 @@ export class TaskDueDateComponent {
   getDueDateIcon(): string {
     if (!this.task.dueDate) return 'event';
     
+    const now = new Date();
+    const due = parseISO(this.task.dueDate);
+    const diffMinutes = differenceInMinutes(due, now);
+    const diffDays = differenceInDays(due, now);
+    
     // Проверяем, была ли задача просрочена при закрытии
     if (this.task.status === 'done') {
-      if (this.task.updatedAt && this.task.dueDate) {
-        const closedAt = new Date(this.task.updatedAt);
-        const due = new Date(this.task.dueDate);
-        if (closedAt > due) {
-          return 'schedule'; // Иконка часов для закрытых с опозданием
-        }
+      const closedAt = this.task.updatedAt ? parseISO(this.task.updatedAt) : now;
+      
+      // Задача закрыта с опозданием
+      if (isAfter(closedAt, due)) {
+        return 'schedule'; // Иконка часов для закрытых с опозданием
       }
+      
       return 'check_circle'; // Галочка для закрытых вовремя
     }
-    
-    const now = new Date();
-    const due = new Date(this.task.dueDate);
-    const diffMs = due.getTime() - now.getTime();
-    const diffMinutes = Math.ceil(diffMs / (1000 * 60));
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
     
     // Если есть настройки типа задачи
     if (this.task.taskType?.timeFrameSettings) {
@@ -145,13 +152,23 @@ export class TaskDueDateComponent {
   // Возвращает человекочитаемое относительное время с учетом настроек типа
   getRelativeDueDate(): string {
     if (!this.task.dueDate) return '—';
-    if (this.task.status === 'done') return 'Завершено';
     
     const now = new Date();
-    const due = new Date(this.task.dueDate);
-    const diffMs = due.getTime() - now.getTime();
-    const diffMinutes = Math.ceil(diffMs / (1000 * 60));
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    const due = parseISO(this.task.dueDate);
+    const diffMinutes = differenceInMinutes(due, now);
+    const diffDays = differenceInDays(due, now);
+    
+    // Для закрытых задач показываем статус
+    if (this.task.status === 'done') {
+      const closedAt = this.task.updatedAt ? parseISO(this.task.updatedAt) : now;
+      
+      // Проверяем, была ли задача закрыта с опозданием
+      if (isAfter(closedAt, due)) {
+        return 'С опозданием';
+      }
+      
+      return 'Завершено';
+    }
     
     // Если есть настройки типа задачи - показываем более детальную информацию
     if (this.task.taskType?.timeFrameSettings) {
@@ -231,34 +248,33 @@ export class TaskDueDateComponent {
   getDueDateTooltip(): string {
     if (!this.task.dueDate) return 'Дедлайн не указан';
     
+    const now = new Date();
+    const due = parseISO(this.task.dueDate);
+    const diffMinutes = differenceInMinutes(due, now);
+    
     if (this.task.status === 'done') {
+      // Используем updatedAt если есть, иначе текущее время
+      const closedAt = this.task.updatedAt ? parseISO(this.task.updatedAt) : now;
+      
       // Проверяем, была ли задача просрочена при закрытии
-      if (this.task.updatedAt && this.task.dueDate) {
-        const closedAt = new Date(this.task.updatedAt);
-        const due = new Date(this.task.dueDate);
-        if (closedAt > due) {
-          const diffMs = closedAt.getTime() - due.getTime();
-          const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-          const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-          
-          if (diffHours < 24) {
-            const hours = diffHours;
-            const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-            if (hours > 0) {
-              return `⚠️ Задача закрыта с опозданием на ${hours} ${this.getHoursText(hours)} ${minutes} мин`;
-            }
-            return `⚠️ Задача закрыта с опозданием на ${minutes} мин`;
+      if (isAfter(closedAt, due)) {
+        const delayHours = differenceInHours(closedAt, due);
+        const delayDays = differenceInDays(closedAt, due);
+        const delayMinutes = differenceInMinutes(closedAt, due);
+        
+        if (delayHours < 24) {
+          const hours = delayHours;
+          const minutes = delayMinutes % 60;
+          if (hours > 0) {
+            return `⚠️ Задача закрыта с опозданием на ${hours} ${this.getHoursText(hours)} ${minutes} мин`;
           }
-          return `⚠️ Задача закрыта с опозданием на ${diffDays} ${diffDays === 1 ? 'день' : 'дней'}`;
+          return `⚠️ Задача закрыта с опозданием на ${minutes} мин`;
         }
+        return `⚠️ Задача закрыта с опозданием на ${delayDays} ${delayDays === 1 ? 'день' : 'дней'}`;
       }
+      
       return '✅ Задача завершена вовремя';
     }
-
-    const now = new Date();
-    const due = new Date(this.task.dueDate);
-    const diffMs = due.getTime() - now.getTime();
-    const diffMinutes = Math.ceil(diffMs / (1000 * 60));
 
     // Если есть настройки типа задачи
     if (this.task.taskType?.timeFrameSettings) {
@@ -302,8 +318,7 @@ export class TaskDueDateComponent {
 
     // Стандартные подсказки
     if (diffMinutes < 0) {
-      const absDiffMs = Math.abs(diffMs);
-      const totalMinutes = Math.floor(absDiffMs / (1000 * 60));
+      const totalMinutes = Math.abs(diffMinutes);
       
       if (totalMinutes < 60) {
         return `❌ Просрочено на ${totalMinutes} мин`;
@@ -323,7 +338,7 @@ export class TaskDueDateComponent {
       return `❌ Просрочено на ${days} ${days === 1 ? 'день' : days < 5 ? 'дня' : 'дней'}`;
     }
 
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    const diffDays = differenceInDays(due, now);
     if (diffDays === 0) {
       return '🔥 Дедлайн сегодня!';
     }

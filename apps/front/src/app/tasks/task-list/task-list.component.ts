@@ -18,6 +18,7 @@ import { TasksService } from '../tasks.service';
 import { RouterModule, Router } from '@angular/router';
 import { TaskDueDateComponent } from '../components/task-due-date/task-due-date.component';
 import { TaskTypeDisplayComponent } from '../components/task-type-display/task-type-display.component';
+import { TaskStatusComponent } from '../components/task-status/task-status.component';
 
 interface Task {
   id: number;
@@ -58,7 +59,8 @@ interface Task {
     MatPaginatorModule,
     MatSortModule,
     TaskDueDateComponent,
-    TaskTypeDisplayComponent
+    TaskTypeDisplayComponent,
+    TaskStatusComponent
   ],
   templateUrl: './task-list.component.html',
   styleUrls: ['./task-list.component.scss']

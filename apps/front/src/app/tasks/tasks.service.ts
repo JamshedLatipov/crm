@@ -30,6 +30,14 @@ export interface TaskComment {
   createdAt?: string;
 }
 
+export interface TaskHistory {
+  id: number;
+  action: string; // created, updated, status_changed, deleted
+  details?: any;
+  user?: any;
+  createdAt: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class TasksService {
   private base = environment.apiBase + '/tasks';
@@ -75,5 +83,10 @@ export class TasksService {
   
   addComment(taskId: number, authorId: number, text: string): Observable<TaskComment> {
     return this.http.post<TaskComment>(`${this.base}/${taskId}/comment`, { authorId, text });
+  }
+
+  // History
+  getHistory(taskId: number): Observable<TaskHistory[]> {
+    return this.http.get<TaskHistory[]>(`${this.base}/${taskId}/history`);
   }
 }
