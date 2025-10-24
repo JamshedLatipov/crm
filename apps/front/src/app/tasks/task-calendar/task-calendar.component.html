@@ -1,0 +1,29 @@
+<div class="calendar">
+  <div class="calendar-header">
+    <button class="btn" (click)="prevMonth()">‹</button>
+    <div class="month">{{ monthNames[active.getMonth()] }} {{ active.getFullYear() }}</div>
+    <button class="btn" (click)="nextMonth()">›</button>
+  </div>
+
+  <div class="calendar-grid">
+    <div class="weekday" *ngFor="let w of ['Пн','Вт','Ср','Чт','Пт','Сб','Вс']">{{ w }}</div>
+
+    <ng-container *ngFor="let week of weeks">
+      <ng-container *ngFor="let cell of week; trackBy: trackByDate">
+  <div class="day" [class.empty]="!cell?.date" [class.today]="cell?.isToday">
+          <div class="day-number" *ngIf="cell?.date">{{ cell.date.getDate() }}</div>
+          <div class="tasks">
+            <div
+              class="task"
+              *ngFor="let t of (cell?.tasks || [])"
+              [attr.title]="t.title"
+              [style.border-left]="t.color ? '4px solid ' + t.color : '4px solid rgba(59,130,246,0.16)'"
+            >
+              <span class="task-title">{{ t.title }}</span>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+    </ng-container>
+  </div>
+</div>

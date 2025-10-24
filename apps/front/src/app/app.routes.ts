@@ -24,6 +24,7 @@ import { usersRoutes } from './pages/users/users.routes';
 import { AdsCampaignsComponent } from './pages/ads/ads-campaigns.component';
 import { AdsCampaignDetailComponent } from './pages/ads/ads-campaign-detail.component';
 import { AdsAccountsComponent } from './pages/ads/ads-accounts.component';
+import { TaskCalendarPageComponent } from './tasks/task-calendar/task-calendar-page.component';
 
 export const appRoutes: Route[] = [
     { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
@@ -76,6 +77,7 @@ export const appRoutes: Route[] = [
         canActivate: [authGuard],
         children: [
             { path: '', component: TaskListComponent },
+            { path: 'calendar', component: TaskCalendarPageComponent },
             { path: 'types', component: TaskTypesManagerComponent },
             { path: 'new', component: TaskFormComponent },
             { path: 'create', component: TaskFormComponent },

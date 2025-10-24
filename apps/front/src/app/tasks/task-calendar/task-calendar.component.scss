@@ -1,0 +1,84 @@
+.calendar {
+  --calendar-cell-height: 96px; /* standard cell height */
+  font-family: var(--font-sans, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue');
+  color: var(--text-primary);
+  max-width: 820px;
+}
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.calendar-header .month {
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--text-primary);
+}
+
+.btn {
+  background: transparent;
+  border: 1px solid rgba(0,0,0,0.06);
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+}
+
+.weekday {
+  font-size: 12px;
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 6px 4px;
+}
+
+.day {
+  height: var(--calendar-cell-height);
+  background: var(--card-bg, white);
+  border-radius: 8px;
+  padding: 8px;
+  border: 1px solid rgba(226,232,240,0.6);
+  box-shadow: 0 1px 2px rgba(2,6,23,0.04);
+  display: flex;
+  flex-direction: column;
+}
+
+.day.empty { background: transparent; border: none; box-shadow: none; }
+
+.day-number { font-size: 13px; font-weight: 700; margin-bottom: 6px; color: var(--text-secondary); }
+
+.tasks { display: flex; flex-direction: column; gap: 6px; max-height: calc(var(--calendar-cell-height) - 28px); overflow-y: auto; }
+.task {
+  font-size: 13px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+}
+.task .task-title { display: inline-block; overflow: hidden; text-overflow: ellipsis; }
+
+.task:hover { background: rgba(2,6,23,0.04); }
+
+/* subtle highlight for today's date */
+.day.today {
+  background: linear-gradient(180deg, rgba(59,130,246,0.04), rgba(59,130,246,0.02));
+  border: 1px solid rgba(59,130,246,0.12);
+}
+
+@media (max-width: 640px) {
+  .calendar { max-width: 100%; }
+  .calendar { --calendar-cell-height: 72px; }
+  .day { height: var(--calendar-cell-height); padding: 6px; }
+}
