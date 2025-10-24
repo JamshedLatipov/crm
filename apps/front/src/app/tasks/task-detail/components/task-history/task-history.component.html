@@ -1,81 +1,64 @@
-<!-- Loading / Empty / Timeline -->
+<!-- Minimalist: Loading / Empty / Timeline -->
 @if (isLoadingHistory()) {
-  <div class="history-loading">
-    <mat-spinner diameter="40" aria-hidden="false" aria-label="loading history"></mat-spinner>
-    <p class="loading-text">Загрузка истории...</p>
+  <div class="history-loading compact">
+    <mat-spinner diameter="28" aria-hidden="false" aria-label="loading history"></mat-spinner>
+    <span class="loading-text">Загрузка...</span>
   </div>
 } @else {
-  <div class="history-content">
+  <div class="history-content compact">
     @if (taskHistory().length === 0) {
-      <div class="history-empty">
-        <mat-icon class="empty-icon">history_toggle_off</mat-icon>
-        <h3 class="empty-title">История изменений пуста</h3>
-        <p class="empty-sub">Здесь будут отображаться все изменения задачи и действия пользователей.</p>
+      <div class="history-empty compact">
+        <mat-icon class="empty-icon">history</mat-icon>
+        <p class="empty-text">Нет изменений</p>
       </div>
     } @else {
-      <div class="history-timeline" role="list" aria-label="История задачи">
-        <!-- Timeline container -->
+      <div class="history-timeline compact" role="list" aria-label="История задачи">
         <div class="timeline">
           @for (item of taskHistory(); track item.id) {
-            <div class="timeline-item" role="listitem">
-              <!-- Timeline line -->
+            <div class="timeline-item compact" role="listitem">
               <div class="timeline-line">
-                <div class="timeline-dot" [class]="getHistoryIconClass(item.action)" [attr.aria-label]="getHistoryActionText(item)">
+                <div class="timeline-dot" [class]="getHistoryIconClass(item.action)" [attr.title]="getHistoryActionText(item)">
                   @if (item.user && (item.user.firstName || item.user.lastName)) {
-                    <div class="dot-avatar" title="{{ item.user.firstName }} {{ item.user.lastName }}">{{ getUserInitials(item.user) }}</div>
+                    <div class="dot-avatar small">{{ getUserInitials(item.user) }}</div>
                   } @else {
                     <mat-icon aria-hidden="true">{{ getHistoryIcon(item.action) }}</mat-icon>
                   }
                 </div>
               </div>
 
-              <!-- Timeline content -->
-              <div class="timeline-content">
-                <div class="timeline-card" [class]="getHistoryCardClass(item.action)">
-                  <!-- Header -->
-                  <div class="timeline-header">
-                    <div class="action-info">
-                      <h4 class="action-title">{{ getHistoryActionText(item) }}</h4>
-                      <div class="action-meta">
+              <div class="timeline-content compact">
+                <div class="timeline-card compact" [class]="getHistoryCardClass(item.action)">
+                  <div class="timeline-header compact">
+                    <div class="action-info compact">
+                      <div class="action-title">{{ getHistoryActionText(item) }}</div>
+                      <div class="action-meta compact">
                         <span class="action-time">{{ item.createdAt | humanDate }}</span>
-                        <span class="action-user" *ngIf="item.user">
-                          <mat-icon class="user-icon" aria-hidden="true">person</mat-icon>
-                          <span class="user-name">{{ item.user.firstName }} {{ item.user.lastName }}</span>
-                        </span>
+                        <span class="action-user" *ngIf="item.user">{{ item.user.firstName }} {{ item.user.lastName }}</span>
                       </div>
                     </div>
                   </div>
 
-                  <!-- Changes details -->
                   @if (item.details && getDetailKeys(item.details).length > 0) {
-                    <div class="changes-section">
-                      <div class="changes-header">
-                        <mat-icon>compare_arrows</mat-icon>
-                        <span>Изменения</span>
-                      </div>
-                      <div class="changes-list">
-                        @for (key of getDetailKeys(item.details); track key) {
-                          <div class="change-item" [class]="getChangeTypeClass(item.details[key])">
-                            <div class="change-field">
-                              <span class="field-label">{{ getFieldDisplayName(key) }}</span>
-                            </div>
-                            <div class="change-values">
-                              @if (item.details[key] && item.details[key].old !== undefined) {
-                                <div class="change-value old-value">
-                                  <span class="value-label">Было:</span>
-                                  <span class="value-text">{{ formatValue(item.details[key].old) }}</span>
-                                </div>
-                              }
-                              @if (item.details[key] && item.details[key].new !== undefined) {
-                                <div class="change-value new-value">
-                                  <span class="value-label">Стало:</span>
-                                  <span class="value-text">{{ formatValue(item.details[key].new) }}</span>
-                                </div>
-                              }
-                            </div>
+                    <div class="changes-list compact">
+                      @for (key of getDetailKeys(item.details); track key) {
+                        <div class="change-item compact" [class]="getChangeTypeClass(item.details[key])">
+                          <div class="change-field">
+                            <span class="field-label">{{ getFieldDisplayName(key) }}</span>
                           </div>
-                        }
-                      </div>
+                          <div class="change-values compact">
+                            @if (item.details[key] && item.details[key].old !== undefined) {
+                              <div class="change-value old-value">
+                                <span class="value-text">{{ formatValue(item.details[key].old) }}</span>
+                              </div>
+                            }
+                            @if (item.details[key] && item.details[key].new !== undefined) {
+                              <div class="change-value new-value">
+                                <span class="value-text">{{ formatValue(item.details[key].new) }}</span>
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      }
                     </div>
                   }
                 </div>

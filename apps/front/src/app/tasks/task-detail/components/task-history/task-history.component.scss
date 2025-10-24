@@ -1,427 +1,101 @@
 
-// Timeline styles for history tab
+// Minimalist timeline styles for history tab
 .history-timeline {
   .timeline {
     position: relative;
-    padding-left: 0;
+    padding: 0;
 
     .timeline-item {
-      position: relative;
-      margin-bottom: 16px;
       display: flex;
-      align-items: flex-start;
       gap: 12px;
-
-      &.last-item {
-        margin-bottom: 0;
-
-        .timeline-line::after {
-          display: none;
-        }
-      }
+      margin-bottom: 12px;
+      align-items: flex-start;
 
       .timeline-line {
-        position: relative;
-        flex-shrink: 0;
+        width: 28px;
         display: flex;
+        align-items: flex-start;
         flex-direction: column;
-        align-items: center;
+        position: relative;
 
         &::after {
           content: '';
           position: absolute;
-          top: 32px;
+          top: 28px;
           left: 50%;
           transform: translateX(-50%);
           width: 1px;
-          height: calc(100% + 20px);
-          background: linear-gradient(
-            to bottom,
-            rgba(226, 232, 240, 0.5) 0%,
-            rgba(226, 232, 240, 0.2) 80%,
-            transparent 100%
-          );
-          z-index: 0;
+          height: calc(100% + 8px);
+          background: rgba(226, 232, 240, 0.6);
         }
 
         .timeline-dot {
-          position: relative;
-          width: 32px;
-          height: 32px;
+          width: 28px;
+          height: 28px;
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
-          border: 2px solid white;
-          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-          z-index: 1;
-          transition: all 0.2s ease;
+          color: #fff;
+          font-weight: 600;
+          font-size: 12px;
 
-          &:hover {
-            transform: scale(1.05);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-          }
+          mat-icon { font-size: 14px; }
 
-          mat-icon {
-            font-size: 16px;
-            width: 16px;
-            height: 16px;
-            color: white;
-          }
+          .dot-avatar { width: 100%; height: 100%; display:flex; align-items:center; justify-content:center; border-radius:50%; }
 
-          /* Avatar initials inside dot */
-          .dot-avatar {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            font-size: 13px;
-            font-weight: 700;
-            color: #fff;
-            text-transform: uppercase;
-            letter-spacing: 0.6px;
-            background: linear-gradient(135deg, rgba(99,102,241,1) 0%, rgba(79,70,229,1) 100%);
-            box-shadow: 0 6px 14px rgba(79,70,229,0.18);
-          }
-
-          &.created {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
-          }
-
-          &.updated {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-          }
-
-          &.status-changed {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
-          }
-
-          &.deleted {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
-          }
-
-          &.default {
-            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
-            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.4);
-          }
+          &.created { background: #10b981; }
+          &.updated { background: #3b82f6; }
+          &.status-changed { background: #f59e0b; }
+          &.deleted { background: #ef4444; }
+          &.default { background: #6b7280; }
         }
       }
 
       .timeline-content {
         flex: 1;
-        min-width: 0;
 
         .timeline-card {
-          background: white;
-          border-radius: 10px;
-          box-shadow: 0 2px 6px rgba(2, 6, 23, 0.06);
-          border: 1px solid rgba(226, 232, 240, 0.6);
-          overflow: visible; /* allow dot shadow to show */
-          transition: all 0.2s ease;
-          padding-left: 12px; /* give room for left accent */
-          padding-right: 12px;
-          padding-top: 6px;
-          padding-bottom: 6px;
+          background: transparent;
+          border: none;
+          padding: 6px 0;
 
-          &:hover {
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-            border-color: rgba(226, 232, 240, 0.8);
+          &.card-created { border-left: 3px solid rgba(16,185,129,0.12); padding-left: 8px; }
+          &.card-updated { border-left: 3px solid rgba(59,130,246,0.10); padding-left: 8px; }
+          &.card-status-changed { border-left: 3px solid rgba(245,158,11,0.10); padding-left: 8px; }
+          &.card-deleted { border-left: 3px solid rgba(239,68,68,0.10); padding-left: 8px; }
+
+          .timeline-header {
+            .action-info { display:flex; flex-direction:column; }
+            .action-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+            .action-meta { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
           }
 
-          &.card-created {
-            border-left: 2px solid #10b981;
-          }
+          .changes-list {
+            padding-top: 6px;
 
-          &.card-updated {
-            border-left: 2px solid #3b82f6;
-          }
+            .change-item { padding: 6px 0; border-bottom: 1px solid rgba(226,232,240,0.16); }
 
-          &.card-status-changed {
-            border-left: 2px solid #f59e0b;
-          }
+            .change-field .field-label { font-weight: 700; color: var(--text-primary); font-size: 14px; margin-bottom: 6px; }
 
-          &.card-deleted {
-            border-left: 2px solid #ef4444;
-          }
+            .change-values { display:flex; flex-direction:column; gap:6px; }
 
-            .timeline-header {
-              padding: 12px 12px;
-              background: transparent;
-              border-bottom: 1px solid rgba(226, 232, 240, 0.32);
-
-              .action-info {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                gap: 12px;
-
-                .action-title {
-                  margin: 0;
-                  font-size: 14px;
-                  font-weight: 700;
-                  color: var(--text-primary);
-                  line-height: 1.25;
-                }
-
-                .action-meta {
-                  display: flex;
-                  align-items: center;
-                  gap: 12px;
-
-                  .action-time,
-                  .action-user {
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                    font-size: 12px;
-                    color: var(--text-secondary);
-                    font-weight: 500;
-                  }
-
-                  .action-time mat-icon,
-                  .action-user mat-icon {
-                    font-size: 13px;
-                    width: 13px;
-                    height: 13px;
-                    color: var(--text-secondary);
-                    opacity: 0.8;
-                  }
-                }
-              }
-            }
-
-          .changes-section {
-            border-top: 1px solid rgba(226, 232, 240, 0.3);
-            background: transparent;
-
-            .changes-header {
-              display: flex;
-              align-items: center;
-              gap: 6px;
-              padding: 8px 14px 6px;
-              font-size: 10px;
-              font-weight: 600;
-              color: var(--text-secondary);
-              text-transform: uppercase;
-              letter-spacing: 0.8px;
-
-              mat-icon {
-                font-size: 13px;
-                width: 13px;
-                height: 13px;
-                color: var(--text-secondary);
-                opacity: 0.6;
-              }
-            }
-
-            .changes-list {
-              padding: 0 14px 10px;
-
-              .change-item {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-                padding: 10px 0;
-                margin-bottom: 10px;
-                border-radius: 6px;
-                background: transparent;
-                border: none;
-                border-bottom: 1px solid rgba(226, 232, 240, 0.22);
-                transition: all 0.12s ease;
-
-                &:hover {
-                  background: rgba(248, 250, 252, 0.6);
-                  border-bottom-color: rgba(226, 232, 240, 0.5);
-                }
-
-                &:last-child {
-                  margin-bottom: 0;
-                  border-bottom: none;
-                }
-
-                &.change-modified {
-                  border-left: 2px solid #3b82f6;
-                  padding-left: 8px;
-                }
-
-                &.change-added {
-                  border-left: 2px solid #10b981;
-                  padding-left: 8px;
-                }
-
-                &.change-removed {
-                  border-left: 2px solid #ef4444;
-                  padding-left: 8px;
-                }
-
-                .change-field {
-                  .field-label {
-                    font-weight: 700;
-                    color: var(--text-primary);
-                    font-size: 15px;
-                    display: block;
-                    margin-bottom: 8px;
-                    letter-spacing: -0.2px;
-
-                    /* remove tiny decorative dot for cleaner look */
-                    &::before {
-                      display: none;
-                      content: none;
-                    }
-                  }
-                }
-
-                .change-values {
-                  display: flex;
-                  flex-direction: column;
-                  gap: 8px;
-                  padding-left: 8px;
-                  margin-top: 6px;
-
-                  .old-value,
-                  .new-value {
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                    padding: 4px 8px;
-                    border-radius: 4px;
-                    border: none;
-                    flex: 1;
-                    min-width: 0;
-
-                    .value-label {
-                      font-size: 13px;
-                      font-weight: 600;
-                      text-transform: none;
-                      letter-spacing: 0.2px;
-                      flex-shrink: 0;
-                      line-height: 1.2;
-                      opacity: 0.8;
-                      margin-right: 8px;
-                      min-width: 56px;
-                    }
-
-                    .value-text {
-                      font-size: 14px;
-                      line-height: 1.4;
-                      word-break: break-word;
-                      flex: 1;
-                      font-weight: 600;
-                      white-space: normal;
-                      overflow: visible;
-                      text-overflow: initial;
-                      color: var(--text-primary);
-                    }
-                  }
-
-                  .old-value {
-                    background: transparent;
-                    border-left: 4px solid rgba(239, 68, 68, 0.12);
-                    padding-left: 8px;
-
-                    .value-label {
-                      color: #b91c1c;
-                    }
-
-                    .value-text {
-                      color: #991b1b;
-                      text-decoration: line-through;
-                      opacity: 0.9;
-                      font-weight: 600;
-                    }
-                  }
-
-                  .new-value {
-                    background: transparent;
-                    border-left: 4px solid rgba(16, 185, 129, 0.16);
-                    padding-left: 8px;
-
-                    .value-label {
-                      color: #047857;
-                    }
-
-                    .value-text {
-                      color: #065f46;
-                      font-weight: 700;
-                    }
-                  }
-                }
-              }
-            }
+            .old-value .value-text { text-decoration: line-through; color: #991b1b; }
+            .new-value .value-text { font-weight: 700; color: #065f46; }
           }
         }
       }
     }
-  }
 
-  /* Loading and empty states */
-  .history-loading,
-  .history-empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    padding: 22px;
-    color: var(--text-secondary);
-  }
-
-  .history-loading .loading-text {
-    font-weight: 600;
-    color: var(--text-secondary);
-  }
-
-  .history-empty {
-    text-align: center;
-    background: rgba(247, 249, 250, 0.6);
-    border: 1px dashed rgba(226,232,240,0.7);
-    border-radius: 12px;
-    padding: 18px;
-  }
-
-  .history-empty .empty-icon {
-    font-size: 44px;
-    color: rgba(99,102,241,0.95);
-  }
-
-  .history-empty .empty-title {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--text-primary);
-  }
-
-  .history-empty .empty-sub {
-    margin: 0;
-    font-size: 13px;
-    color: var(--text-secondary);
-  }
-
-  /* Responsive: stack timeline on narrow screens */
-  @media (max-width: 640px) {
-    .timeline {
-      padding-left: 0;
-    }
-
-    .timeline-item {
-      flex-direction: row;
-      gap: 10px;
-      align-items: flex-start;
-    }
-
-    .timeline-line::after {
-      left: 20px;
-    }
-
-    .timeline-dot {
-      width: 36px;
-      height: 36px;
+    /* compact spacing on small screens */
+    @media (max-width: 640px) {
+      .timeline-item { gap: 8px; }
+      .timeline-dot { width: 32px; height: 32px; }
     }
   }
+
+  /* Loading and empty states (minimal) */
+  .history-loading.compact, .history-empty.compact { display:flex; align-items:center; gap:8px; padding:8px 0; color: var(--text-secondary); }
+  .history-loading.compact .loading-text { font-size: 13px; }
+  .history-empty.compact .empty-text { font-size: 13px; color: var(--text-secondary); }
 }
