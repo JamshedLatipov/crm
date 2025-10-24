@@ -1,29 +1,34 @@
-<div class="pipeline-root">
-  <div class="pipeline-header">
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-[32px] font-bold leading-tight tracking-tighter">Sales Pipeline</h1>
-        <p class="mt-1 text-base font-normal text-[#9eb7a8]">Drag and drop to customize your sales process.</p>
-      </div>
-      <div class="flex items-center gap-2">
-        <button (click)="openAnalytics()" 
-                [disabled]="isLoadingAnalytics"
-                class="px-3 py-2 rounded-full border border-[#3d5245] flex items-center gap-2"
-                [class.opacity-50]="isLoadingAnalytics">
-          <mat-icon *ngIf="!isLoadingAnalytics">analytics</mat-icon>
-          <mat-icon *ngIf="isLoadingAnalytics" class="animate-spin">refresh</mat-icon>
-          {{ isLoadingAnalytics ? 'Загрузка...' : 'Аналитика' }}
-        </button>
-        <button (click)="triggerAutomation()" class="px-3 py-2 rounded-full  border border-[#3d5245]">Run Automation</button>
-        <button (click)="load()" class="px-3 py-2 rounded-full  border border-[#3d5245]">Refresh</button>
-        <button mat-raised-button color="primary" (click)="createStage()" class="flex items-center gap-2 px-4 py-2 text-sm font-bold">
-          <mat-icon>add</mat-icon>
-          <span>Добавить этап</span>
-        </button>
-      </div>
+<div class="pipeline-page">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1>Pipeline продаж</h1>
+      <p class="subtitle">Управление сделками и процессом продаж</p>
+    </div>
+    <div class="header-actions">
+      <button (click)="openAnalytics()"
+              [disabled]="isLoadingAnalytics"
+              class="action-btn analytics-btn">
+        <mat-icon *ngIf="!isLoadingAnalytics">analytics</mat-icon>
+        <mat-icon *ngIf="isLoadingAnalytics" class="animate-spin">refresh</mat-icon>
+        <span>{{ isLoadingAnalytics ? 'Загрузка...' : 'Аналитика' }}</span>
+      </button>
+      <button (click)="triggerAutomation()" class="action-btn automation-btn">
+        <mat-icon>play_arrow</mat-icon>
+        <span>Автоматизация</span>
+      </button>
+      <button (click)="load()" class="action-btn refresh-btn">
+        <mat-icon>refresh</mat-icon>
+        <span>Обновить</span>
+      </button>
+      <button mat-raised-button color="primary" (click)="createStage()" class="create-btn">
+        <mat-icon>add</mat-icon>
+        <span>Добавить этап</span>
+      </button>
     </div>
   </div>
 
+  <!-- Pipeline Container -->
   <div class="pipeline-container">
     <div class="pipeline-grid" #pipelineGrid>
       <div *ngFor="let s of stages" class="stage" [id]="'stage-' + s.id"

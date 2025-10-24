@@ -250,11 +250,24 @@
   height: 12px;
 }
 
-// Task Type Cell
-.task-type-cell {
+// Status Indicator (to match task type styling)
+.status-indicator {
   display: flex;
   align-items: center;
   gap: 8px;
+
+  mat-icon {
+    color: #475569;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.status-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .type-icon-small {

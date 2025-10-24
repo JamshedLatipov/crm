@@ -1249,7 +1249,7 @@
               margin: 0 auto !important;
               display: block !important;
               text-align: center !important;
-              color: #ef4444 !important;
+              color: #fff !important;
             }
 
             background: rgba(255, 255, 255, 0.15);
@@ -1468,7 +1468,7 @@
               .metric-value {
                 font-size: 18px;
                 font-weight: 700;
-                color: white;
+                color: var(--text-primary);
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
