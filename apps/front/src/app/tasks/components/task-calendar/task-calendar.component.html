@@ -1,0 +1,23 @@
+<div class="calendar-container">
+  <div class="calendar-grid">
+    <div *ngFor="let day of days()" class="calendar-day" (click)="selectDate(day.date)">
+      <span class="date-label">{{ day.date | date:'d MMM' }}</span>
+      <div class="task-list">
+        <div *ngFor="let task of day.tasks" class="task-item">
+          <span class="task-title">{{ task.title }}</span>
+          <span class="task-status status-{{ task.status }}">{{ task.status }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div *ngIf="selectedDate()" class="selected-date-details">
+    <h3>Задачи на {{ selectedDate() | date:'d MMMM' }}</h3>
+    <div *ngFor="let day of days()" >
+      <ng-container *ngIf="day.date.getTime() === selectedDate()?.getTime()">
+        <div *ngFor="let task of day.tasks" class="task-detail-item">
+          <span>{{ task.title }}</span> — <span>{{ task.status }}</span>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+</div>

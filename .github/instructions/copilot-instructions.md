@@ -69,7 +69,7 @@ This guide enables AI coding agents to work productively in the crm_mono Nx mono
 - Shared logic: use injectable service
 - Follow status/style conventions, reuse utility classes
 - Каждый компонент должен создаваться в отдельной папке: `apps/front/src/app/<feature>/<component>/`
-- В папке компонента обязательно должны быть три файла: `<component>.component.ts`, `<component>.component.html`, `<component>.component.css`
+- В папке компонента обязательно должны быть три файла: `<component>.component.ts`, `<component>.component.html`, `<component>.component.scss`
 - Используйте `standalone: true`, импортируйте компонент напрямую
 - Общую логику выносите в сервисы
 - Соблюдайте существующие статусные и стилевые паттерны, используйте утилитные классы

@@ -1,25 +1,30 @@
 <div class="task-detail-page">
   <!-- Загрузка -->
-  <div *ngIf="isLoading()" class="loading-container">
-    <mat-spinner diameter="40"></mat-spinner>
-    <p>Загрузка задачи...</p>
-  </div>
+  @if (isLoading()) {
+    <div class="loading-container">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>Загрузка задачи...</p>
+    </div>
+  }
 
   <!-- Ошибка -->
-  <div *ngIf="!isLoading() && !task()" class="error-container">
-    <div class="error-card">
-      <mat-icon class="error-icon">sentiment_dissatisfied</mat-icon>
-      <h3>Задача не найдена</h3>
-      <p>Запрашиваемая задача не существует или была удалена.</p>
-      <button mat-raised-button color="primary" (click)="goBack()">
-        <mat-icon>arrow_back</mat-icon>
-        Вернуться к списку
-      </button>
+  @if (!isLoading() && !task()) {
+    <div class="error-container">
+      <div class="error-card">
+        <mat-icon class="error-icon">sentiment_dissatisfied</mat-icon>
+        <h3>Задача не найдена</h3>
+        <p>Запрашиваемая задача не существует или была удалена.</p>
+        <button mat-raised-button color="primary" (click)="goBack()">
+          <mat-icon>arrow_back</mat-icon>
+          Вернуться к списку
+        </button>
+      </div>
     </div>
-  </div>
+  }
 
   <!-- Детали задачи -->
-  <div *ngIf="!isLoading() && task()" class="task-content">
+  @if (!isLoading() && task()) {
+    <div class="task-content">
     <!-- Заголовок -->
     <div class="page-header">
       <div class="header-background">
@@ -130,7 +135,8 @@
                 </div>
               </div>
 
-              <div class="metric-card task-type-metric" *ngIf="task()?.taskType">
+              @if (task()?.taskType) {
+                <div class="metric-card task-type-metric">
                 <div class="metric-icon">
                   <mat-icon>category</mat-icon>
                 </div>
@@ -142,7 +148,8 @@
                 </div>
               </div>
 
-              <div class="metric-card" *ngIf="task()?.lead">
+              @if (task()?.lead) {
+                <div class="metric-card">
                 <div class="metric-icon">
                   <mat-icon>person_add</mat-icon>
                 </div>
@@ -157,7 +164,8 @@
                 </div>
               </div>
 
-              <div class="metric-card" *ngIf="task()?.deal">
+              @if (task()?.deal) {
+                <div class="metric-card">
                 <div class="metric-icon">
                   <mat-icon>business_center</mat-icon>
                 </div>
@@ -193,17 +201,17 @@
             </mat-card-header>
             <mat-card-content>
               <div class="description-content">
-                <ng-container *ngIf="task()?.description; else noDesc">
+                @if (task()?.description) {
                   <div class="description-text" [class.expanded]="descExpanded()" [class.collapsed]="!descExpanded()">
                     {{ task()?.description }}
                   </div>
-                  <button *ngIf="task()?.description?.length > 300" mat-button class="desc-toggle" (click)="toggleDesc()">
+                  @if (task()?.description?.length > 300) {
                     {{ descExpanded() ? 'Свернуть' : 'Развернуть' }}
                   </button>
                 </ng-container>
-                <ng-template #noDesc>
+                } @else {
                   <span class="muted">Нет описания</span>
-                </ng-template>
+                }
               </div>
             </mat-card-content>
           </mat-card>
@@ -247,22 +255,25 @@
                 </ng-template>
                 <div class="tab-content">
                   <!-- Загрузка -->
-                  <div *ngIf="isLoadingHistory()" class="loading-container">
+                  @if (isLoadingHistory()) {
                     <mat-spinner diameter="30"></mat-spinner>
                     <p>Загрузка истории...</p>
                   </div>
 
                   <!-- История -->
-                  <div *ngIf="!isLoadingHistory()" class="history-content">
-                    <div *ngIf="taskHistory().length === 0" class="no-history">
+                  } @else {
+                    <div class="history-content">
+                      @if (taskHistory().length === 0) {
                       <mat-icon>timeline</mat-icon>
                       <p>История изменений пуста</p>
                     </div>
 
-                    <div *ngIf="taskHistory().length > 0" class="history-timeline">
+                      } @else {
+                        <div class="history-timeline">
                       <!-- Timeline container -->
                       <div class="timeline">
-                        <div *ngFor="let item of taskHistory(); let i = index; let isLast = last" class="timeline-item" [class.last-item]="isLast">
+                          @for (let item of taskHistory(); let i = index; let isLast = last) {
+                            <div class="timeline-item" [class.last-item]="isLast">
                           <!-- Timeline line -->
                           <div class="timeline-line" [class.last-line]="isLast">
                             <div class="timeline-dot" [class]="getHistoryIconClass(item.action)">
@@ -288,22 +299,24 @@
                               </div>
 
                               <!-- Changes details -->
-                              <div class="changes-section" *ngIf="item.details && getDetailKeys(item.details).length > 0">
+                              @if (item.details && getDetailKeys(item.details).length > 0) {
                                 <div class="changes-header">
                                   <mat-icon>compare_arrows</mat-icon>
                                   <span>Изменения</span>
                                 </div>
                                 <div class="changes-list">
-                                  <div *ngFor="let key of getDetailKeys(item.details)" class="change-item" [class]="getChangeTypeClass(item.details[key])">
+                                  @for (let key of getDetailKeys(item.details)) {
+                                    <div class="change-item" [class]="getChangeTypeClass(item.details[key])">
                                     <div class="change-field">
                                       <span class="field-label">{{ getFieldDisplayName(key) }}</span>
                                     </div>
                                     <div class="change-values">
-                                      <div class="old-value" *ngIf="item.details[key] && item.details[key].old !== undefined">
+                                      @if (item.details[key] && item.details[key].old !== undefined) {
                                         <span class="value-label">Было:</span>
                                         <span class="value-text">{{ formatValue(item.details[key].old) }}</span>
                                       </div>
-                                      <div class="new-value" *ngIf="item.details[key] && item.details[key].new !== undefined">
+                                      }
+                                      @if (item.details[key] && item.details[key].new !== undefined) {
                                         <span class="value-label">Стало:</span>
                                         <span class="value-text">{{ formatValue(item.details[key].new) }}</span>
                                       </div>
@@ -353,7 +366,7 @@
                   </div>
                 </div>
 
-                <div class="detail-item" *ngIf="task()?.createdAt">
+                @if (task()?.createdAt) {
                   <div class="detail-icon">
                     <mat-icon>schedule</mat-icon>
                   </div>
@@ -365,7 +378,7 @@
                   </div>
                 </div>
 
-                <div class="detail-item" *ngIf="task()?.updatedAt">
+                @if (task()?.updatedAt) {
                   <div class="detail-icon">
                     <mat-icon>update</mat-icon>
                   </div>
@@ -377,7 +390,7 @@
                   </div>
                 </div>
 
-                <div class="detail-item" *ngIf="task()?.deal">
+                @if (task()?.deal) {
                   <div class="detail-icon">
                     <mat-icon>business_center</mat-icon>
                   </div>
