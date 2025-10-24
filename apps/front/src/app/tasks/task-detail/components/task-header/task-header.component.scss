@@ -443,6 +443,12 @@
               }
 
               .metric-value {
+                ::ng-deep {
+                    app-task-type-display .type-name {
+                        font-size: 18px;
+                        color: white;
+                    }
+                }
                 font-size: 18px;
                 font-weight: 700;
                 color: var(--text-primary);
@@ -459,7 +465,6 @@
                   color: white;
                   text-transform: uppercase;
                   letter-spacing: 0.5px;
-                  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
                 }
 
                 .link-primary {
