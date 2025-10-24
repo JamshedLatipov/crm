@@ -1,4 +1,10 @@
-<div class="week-grid" [style.--day-count]="weekDays.length" [style.--hour-rows]="weekHours.length">
+<div class="week-grid"
+  #grid
+  [style.--day-count]="weekDays.length"
+  [style.--hour-rows]="weekHours.length"
+  [style.--hour-row-height.px]="hourRowHeight"
+  [style.--header-height.px]="headerHeight"
+  [style.--row-gap.px]="rowGap">
   <!-- top-left corner -->
   <div class="corner"></div>
 
@@ -6,6 +12,24 @@
   <ng-container *ngFor="let wd of weekDays">
     <div class="day-header">{{ wd.date | date:'EEE d' }}</div>
   </ng-container>
+
+  <!-- overlay container per day to render spanning tasks (absolute positioning) -->
+  <!-- Spans layer: absolutely positioned overlays so they don't affect grid layout -->
+  <div class="spans-layer" *ngIf="weekDays?.length">
+    <ng-container *ngFor="let wd of weekDays; let di = index">
+      <ng-container *ngFor="let s of (wd.tasksWithSpan || [])">
+        <div class="span-task"
+          [style.left.px]="computeSpanLeft(di)"
+          [style.width.px]="computeSpanWidth(di)"
+          [style.top.px]="computeTop(s.startIdx)"
+          [style.height.px]="computeHeight(s.span)"
+          [attr.title]="s.task.title"
+          [style.border-left]="s.task.color ? '4px solid ' + s.task.color : '4px solid rgba(59,130,246,0.16)'">
+          <div class="span-title">{{ s.task.title }}</div>
+        </div>
+      </ng-container>
+    </ng-container>
+  </div>
 
   <!-- rows: for each hour, render label + day cells -->
   <ng-container *ngFor="let h of weekHours; let hi = index">

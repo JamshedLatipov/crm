@@ -62,6 +62,7 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
     date: Date;
     tasks: CalendarTask[];
     tasksByHour?: CalendarTask[][];
+    tasksWithSpan?: Array<{ task: CalendarTask; startIdx: number; span: number }>;
     isToday?: boolean;
   }> = [];
   // hours displayed on the left (e.g. 0..23 for full week, or 8..17 for work-week)
@@ -88,15 +89,31 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
 
   constructor(private svc: TaskCalendarService, private tasksApi: TasksService) {}
 
-  private sub: any;
+  private subs: Array<any> = [];
 
   ngOnInit(): void {
     this.activeDate = new Date();
     this.renderView();
-    // re-render when the service populates sample tasks
-    this.sub = this.svc.sampleUpdated$.subscribe(() => {
-      this.renderView();
-    });
+    // re-render when types/sample are ready (only if we don't have server tasks)
+    this.subs.push(
+      this.svc.typesUpdated$.subscribe(() => {
+        if (!this.svc.hasCachedTasks()) this.renderView();
+      })
+    );
+    // when server tasks cache updates, re-render current view WITHOUT triggering a fetch
+    this.subs.push(
+      this.svc.tasksUpdated$.subscribe(() => {
+        if (this.viewMode === 'month') {
+          this.renderMonth(this.activeDate.getFullYear(), this.activeDate.getMonth());
+        } else if (this.viewMode === 'week') {
+          this.renderWeek(this.activeDate, false);
+        } else if (this.viewMode === 'work-week') {
+          this.renderWeek(this.activeDate, true);
+        } else if (this.viewMode === 'year') {
+          this.renderYear(this.activeDate.getFullYear());
+        }
+      })
+    );
   }
 
   setView(mode: 'month' | 'week' | 'work-week' | 'year') {
@@ -171,25 +188,42 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
         .getTasksForMonth(d.getFullYear(), d.getMonth())
         .filter((t) => isSameDay(new Date(t.dueDate), d));
       const isToday = isSameDay(d, new Date());
-      // group tasks by hour according to weekHours
+      // compute span info for tasks: start hour derived from createdAt (or dueDate)
       const tasksByHour: CalendarTask[][] = this.weekHours.map(() => []);
+      const tasksWithSpan: Array<{ task: CalendarTask; startIdx: number; span: number }>= [];
       for (const t of allTasks) {
         try {
-          const hour = new Date(t.dueDate).getHours();
-          const idx = this.weekHours.indexOf(hour);
-          if (idx >= 0) tasksByHour[idx].push(t);
+          const startDate = t.createdAt ? new Date(t.createdAt) : new Date(t.dueDate);
+          const endDate = new Date(t.dueDate);
+          // clamp to this day's 0..23
+          const startHour = startDate.getHours();
+          const endHour = endDate.getHours();
+          // find start index within displayed weekHours
+          let startIdx = this.weekHours.indexOf(startHour);
+          let endIdx = this.weekHours.indexOf(endHour);
+          // if start before visible hours, snap to first
+          if (startIdx === -1) startIdx = 0;
+          if (endIdx === -1) endIdx = this.weekHours.length - 1;
+          const span = Math.max(1, endIdx - startIdx + 1);
+          tasksWithSpan.push({ task: t, startIdx, span });
+          // push into single-hour bucket only when span == 1 so we don't duplicate
+          if (span === 1) {
+            const hour = new Date(t.dueDate).getHours();
+            const idx = this.weekHours.indexOf(hour);
+            if (idx >= 0) tasksByHour[idx].push(t);
+          }
         } catch {
           /* ignore parse errors */
         }
       }
 
-      this.weekDays.push({ date: d, tasks: allTasks, tasksByHour, isToday });
+      this.weekDays.push({ date: d, tasks: allTasks, tasksByHour, tasksWithSpan, isToday });
     }
     this.active = start;
   }
 
   ngOnDestroy(): void {
-    this.sub?.unsubscribe?.();
+    this.subs.forEach((s) => s?.unsubscribe?.());
   }
 
   openCreate(date: Date | null, hour?: number | null) {

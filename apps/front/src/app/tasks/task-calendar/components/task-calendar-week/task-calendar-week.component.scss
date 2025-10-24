@@ -8,6 +8,7 @@
   column-gap: 12px;
   row-gap: 8px;
   box-sizing: border-box;
+  position: relative; /* allow absolute overlays inside */
 }
 
 .corner {
@@ -96,4 +97,53 @@
 .more {
   color: var(--text-secondary);
   font-size: 12px;
+}
+
+/* Overlay container that covers header + hours for a single day. It is a
+   grid child placed over the hour cells and used to absolutely position
+   tasks that span multiple hour rows. */
+.day-overlay {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* allow hour-cell buttons to receive clicks unless span-task enables pointer-events */
+}
+
+.span-task {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  border-radius: 8px;
+  /* make the span visually sit on top of cell text: mostly opaque background + subtle shadow */
+  background: var(--span-bg, rgba(255,255,255,0.98));
+  border: 1px solid rgba(59,130,246,0.12);
+  box-shadow: 0 6px 18px rgba(16,24,40,0.06);
+  padding: 8px 12px 8px 14px; /* extra left padding to not overlap the left border */
+  box-sizing: border-box;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto; /* allow clicks on the task itself */
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* ensure overlays sit above hour-cells and any cell content (text/inputs).
+   Use high z-index to avoid accidental stacking contexts from child elements.
+   Keep the spans-layer itself non-interactive, but allow each .span-task to receive pointer events. */
+.day-overlay { z-index: 100; }
+.span-task { z-index: 101; }
+.hour-cell { z-index: 0; }
+
+.spans-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none; /* allow clicks to pass through except on .span-task */
+}
+
+.span-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

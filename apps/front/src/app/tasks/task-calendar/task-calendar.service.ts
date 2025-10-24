@@ -8,6 +8,7 @@ export interface CalendarTask {
   id: string | number;
   title: string;
   dueDate: string; // ISO date string
+  createdAt?: string;
   status?: string;
   color?: string;
   icon?: string;
@@ -17,11 +18,13 @@ export interface CalendarTask {
 export class TaskCalendarService {
   // In-memory sample data built from task types when available
   private sample: CalendarTask[] = [];
-  // notify consumers when sample data is ready/updated
-  public sampleUpdated$ = new BehaviorSubject<boolean>(false);
+  // signals: typesUpdated$ for sample/type data, tasksUpdated$ for server task cache updates
+  public typesUpdated$ = new BehaviorSubject<boolean>(false);
+  public tasksUpdated$ = new BehaviorSubject<boolean>(false);
 
   // cache of real tasks fetched from backend
   private tasksCache: TaskDto[] = [];
+  private isFetching = false;
 
   constructor(private typeSvc: TaskTypeService, private tasksApi: TasksService) {
     // Populate sample task types for dev/demo use. Calendar rendering will
@@ -35,6 +38,8 @@ export class TaskCalendarService {
   // Fetch tasks from backend for a given inclusive date range and cache them.
   // Uses ISO strings for `from` and `to` parameters.
   async fetchTasksForRange(start: Date, end: Date): Promise<void> {
+    if (this.isFetching) return;
+    this.isFetching = true;
     try {
       const fromIso = new Date(start.getFullYear(), start.getMonth(), start.getDate()).toISOString();
       const toIso = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59, 999).toISOString();
@@ -45,8 +50,12 @@ export class TaskCalendarService {
       } else {
         this.tasksCache = [];
       }
+      // notify that tasks cache changed
+      this.tasksUpdated$.next(true);
     } catch (err) {
       console.warn('TaskCalendarService: failed to fetch tasks for range', err);
+    } finally {
+      this.isFetching = false;
     }
   }
 
@@ -64,7 +73,7 @@ export class TaskCalendarService {
     // add one past and one future task for variety
     this.sample.push({ id: 'past-1', title: `${types[0].name} (старое)`, dueDate: addDays(today, -3).toISOString(), status: 'done', color: types[0].color });
     this.sample.push({ id: 'future-1', title: `${types[0].name} (в будущем)`, dueDate: addDays(today, 10).toISOString(), status: 'pending', color: types[0].color });
-    this.sampleUpdated$.next(true);
+  this.typesUpdated$.next(true);
   }
 
   private buildFallbackSample() {
@@ -74,7 +83,7 @@ export class TaskCalendarService {
       { id: 2, title: 'Сделать отчёт', dueDate: new Date(now + 2 * 86400000).toISOString(), status: 'in_progress', color: '#10b981' },
       { id: 3, title: 'Встреча с командой', dueDate: new Date(now + 7 * 86400000).toISOString(), status: 'pending', color: '#f59e0b' },
     ];
-    this.sampleUpdated$.next(true);
+  this.typesUpdated$.next(true);
   }
 
   // Return tasks for the given year/month (month: 0-11) based on the current cache.
@@ -102,6 +111,7 @@ export class TaskCalendarService {
       id: td.id ?? 't-' + Math.random().toString(36).slice(2, 9),
       title: td.title ?? 'Без названия',
       dueDate: td.dueDate ?? td.createdAt ?? new Date().toISOString(),
+      createdAt: td.createdAt,
       status: td.status,
       color: (td as any).color ?? undefined,
     };
@@ -127,6 +137,14 @@ export class TaskCalendarService {
       this.sample.push(task);
     }
     // notify consumers
-    this.sampleUpdated$.next(true);
+    if (this.tasksCache != null) {
+      this.tasksUpdated$.next(true);
+    } else {
+      this.typesUpdated$.next(true);
+    }
+  }
+
+  hasCachedTasks(): boolean {
+    return Array.isArray(this.tasksCache) && this.tasksCache.length > 0;
   }
 }
