@@ -445,7 +445,8 @@
               .metric-value {
                 ::ng-deep {
                     app-task-type-display .type-name {
-                        font-size: 18px;
+                        font-size: 12px;
+                        text-transform: uppercase;
                         color: white;
                     }
                 }
@@ -455,11 +456,12 @@
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
+                font-size: 12px;
+                text-transform: uppercase;
+                
 
                 .status-badge {
                   display: inline-block;
-                  padding: 4px 12px;
-                  border-radius: 20px;
                   font-size: 12px;
                   font-weight: 600;
                   color: white;

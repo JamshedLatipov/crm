@@ -25,6 +25,7 @@ import { AssignUserDialogComponent } from '../../deals/components/assign-user-di
 import { CommentsComponent } from '../../shared/components/comments/comments.component';
 import { CommentEntityType } from '../../shared/interfaces/comment.interface';
 import { TaskHeaderComponent } from './components/task-header/task-header.component';
+import { TaskHistoryComponent } from './components/task-history/task-history.component';
 
 // Интерфейс данных для модалки назначения исполнителя (адаптирован для задач)
 interface AssignUserDialogData {
@@ -56,13 +57,13 @@ export interface Status {
     MatSelectModule,
     MatTooltipModule,
     MatTabsModule,
-    MatTabsModule,
     MatMenuModule,
     MatDialogModule,
     HumanDatePipe,
     TaskDueDateComponent,
     CommentsComponent,
     TaskHeaderComponent,
+    TaskHistoryComponent,
   ],
   templateUrl: './task-detail.component.html',
   styleUrls: ['./task-detail.component.scss'],
@@ -267,181 +268,5 @@ export class TaskDetailComponent implements OnInit {
         });
       },
     });
-  }
-
-  getStatusColor(status: string): string {
-    const colors: Record<string, string> = {
-      pending: 'warn',
-      in_progress: 'accent',
-      done: 'primary',
-      overdue: 'warn',
-    };
-    return colors[status] || 'default';
-  }
-
-  getStatusLabel(status: string): string {
-    const labels: Record<string, string> = {
-      pending: 'В ожидании',
-      in_progress: 'В работе',
-      done: 'Завершено',
-      overdue: 'Просрочено',
-    };
-    return labels[status] || status;
-  }
-
-  getStatusClass(status: string): string {
-    const classes: Record<string, string> = {
-      pending: 'pending',
-      in_progress: 'in-progress',
-      done: 'success',
-      overdue: 'warning',
-    };
-    return classes[status] || 'pending';
-  }
-
-  getStatusIcon(status: string): string {
-    const icons: Record<string, string> = {
-      pending: 'schedule',
-      in_progress: 'play_arrow',
-      done: 'check_circle',
-      overdue: 'warning',
-    };
-    return icons[status] || 'schedule';
-  }
-
-  isOverdue(dueDate: string | Date | undefined): boolean {
-    if (!dueDate) return false;
-    const now = new Date();
-    const due = new Date(dueDate);
-    return due < now;
-  }
-
-  // History methods
-  getHistoryIcon(action: string): string {
-    const icons: Record<string, string> = {
-      created: 'add_circle_outline',
-      updated: 'edit_note',
-      status_changed: 'swap_horizontal_circle',
-      deleted: 'delete_outline',
-    };
-    return icons[action] || 'info_outline';
-  }
-
-  getHistoryIconClass(action: string): string {
-    const classes: Record<string, string> = {
-      created: 'created',
-      updated: 'updated',
-      status_changed: 'status-changed',
-      deleted: 'deleted',
-    };
-    return classes[action] || 'default';
-  }
-
-  getHistoryCardClass(action: string): string {
-    const classes: Record<string, string> = {
-      created: 'card-created',
-      updated: 'card-updated',
-      status_changed: 'card-status-changed',
-      deleted: 'card-deleted',
-    };
-    return classes[action] || 'card-default';
-  }
-
-  getHistoryActionText(item: TaskHistory): string {
-    const actions: Record<string, string> = {
-      created: 'Задача создана',
-      updated: 'Задача обновлена',
-      status_changed: 'Статус изменён',
-      deleted: 'Задача удалена',
-    };
-    return actions[item.action] || item.action;
-  }
-
-  getDetailKeys(details: any): string[] {
-    return Object.keys(details || {});
-  }
-
-  getFieldDisplayName(key: string): string {
-    const names: Record<string, string> = {
-      title: 'Название',
-      description: 'Описание',
-      status: 'Статус',
-      dueDate: 'Срок выполнения',
-      assignedTo: 'Исполнитель',
-      assignedToId: 'Исполнитель',
-      leadId: 'Лид ID',
-      dealId: 'Сделка ID',
-      taskTypeId: 'Тип задачи ID',
-    };
-    return names[key] || key;
-  }
-
-  getChangeTypeClass(change: any): string {
-    if (!change) return 'change-unknown';
-    if (change.old !== undefined && change.new !== undefined)
-      return 'change-modified';
-    if (change.old !== undefined && change.new === undefined)
-      return 'change-removed';
-    if (change.old === undefined && change.new !== undefined)
-      return 'change-added';
-    return 'change-unknown';
-  }
-
-  formatValue(value: any): string {
-    if (value === null || value === undefined) return 'не указано';
-    if (typeof value === 'boolean') return value ? 'да' : 'нет';
-
-    // Форматирование статусов
-    if (typeof value === 'string') {
-      const statusLabels: Record<string, string> = {
-        pending: 'В ожидании',
-        in_progress: 'В работе',
-        done: 'Завершено',
-        overdue: 'Просрочено',
-      };
-      if (statusLabels[value]) {
-        return statusLabels[value];
-      }
-
-      // Если это дата в ISO формате
-      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value)) {
-        return new Date(value).toLocaleString('ru-RU', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        });
-      }
-    }
-
-    // Для числовых значений (например, ID менеджера)
-    if (typeof value === 'number') {
-      // Пытаемся найти пользователя по ID (конвертируем в строку для сравнения)
-      const manager = this.managers().find((m) => m.id === String(value));
-      if (manager) {
-        return manager.name;
-      }
-      return String(value);
-    }
-
-    if (typeof value === 'object') {
-      // Если это дата в формате ISO, форматируем её
-      if (
-        typeof value === 'string' &&
-        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value)
-      ) {
-        return new Date(value).toLocaleString('ru-RU', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        });
-      }
-      return JSON.stringify(value, null, 2);
-    }
-
-    return String(value);
   }
 }
