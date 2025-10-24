@@ -111,18 +111,30 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
     this.renderView();
   }
 
-  renderView(): void {
+  async renderView(): Promise<void> {
     if (this.viewMode === 'month') {
-      this.renderMonth(
-        this.activeDate.getFullYear(),
-        this.activeDate.getMonth()
-      );
+      const y = this.activeDate.getFullYear();
+      const m = this.activeDate.getMonth();
+      const first = this.startOfMonthDate(y, m);
+      const last = new Date(y, m, this.daysInMonthCount(y, m), 23, 59, 59, 999);
+      await this.svc.fetchTasksForRange(first, last);
+      this.renderMonth(y, m);
     } else if (this.viewMode === 'week') {
+      const start = startOfWeek(this.activeDate, { weekStartsOn: 1 });
+      const end = addDays(start, 6);
+      await this.svc.fetchTasksForRange(start, end);
       this.renderWeek(this.activeDate, false);
     } else if (this.viewMode === 'work-week') {
+      const start = startOfWeek(this.activeDate, { weekStartsOn: 1 });
+      const end = addDays(start, 4);
+      await this.svc.fetchTasksForRange(start, end);
       this.renderWeek(this.activeDate, true);
     } else if (this.viewMode === 'year') {
-      this.renderYear(this.activeDate.getFullYear());
+      const year = this.activeDate.getFullYear();
+      const start = startOfYear(new Date(year, 0, 1));
+      const end = new Date(year, 11, 31, 23, 59, 59, 999);
+      await this.svc.fetchTasksForRange(start, end);
+      this.renderYear(year);
     }
   }
 

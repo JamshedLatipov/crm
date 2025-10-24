@@ -8,15 +8,19 @@
     </div>
     <div class="field">
       <label>Дата</label>
-      <input type="date" [(ngModel)]="dateStr" />
+      <mat-form-field appearance="outline" style="width: 100%;">
+        <input matInput [matDatepicker]="picker" [(ngModel)]="selectedDate" (dateChange)="onDateChange($event)" />
+        <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+        <mat-datepicker #picker></mat-datepicker>
+      </mat-form-field>
     </div>
     <div class="field" *ngIf="showTime">
       <label>Время</label>
       <input type="time" [(ngModel)]="timeStr" />
     </div>
     <div class="actions">
-      <button class="btn" (click)="create.emit({ title, dateStr, timeStr })" [disabled]="!title">Создать</button>
-      <button class="btn" (click)="cancel.emit()">Отмена</button>
+      <button mat-flat-button color="primary" (click)="onCreateClicked()" [disabled]="!title">Создать</button>
+      <button mat-button (click)="cancel.emit()">Отмена</button>
     </div>
   </div>
 </div>

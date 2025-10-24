@@ -52,6 +52,12 @@ export class TasksService {
     return this.http.get<any>(this.base, { params });
   }
 
+  // List tasks in a date range. Backend should support `from` and `to` ISO params.
+  listRange(fromIso: string, toIso: string): Observable<TaskDto[]> {
+    const params: any = { from: fromIso, to: toIso };
+    return this.http.get<TaskDto[]>(this.base, { params });
+  }
+
   listByLead(leadId: number): Observable<TaskDto[]> {
     return this.http.get<TaskDto[]>(this.base, { params: { leadId: leadId.toString() } });
   }

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { TaskTypeService, TaskType } from '../../services/task-type.service';
-import { BehaviorSubject } from 'rxjs';
+import { TasksService, TaskDto } from '../tasks.service';
+import { BehaviorSubject, firstValueFrom } from 'rxjs';
 import { addDays } from 'date-fns';
 
 export interface CalendarTask {
@@ -19,13 +20,34 @@ export class TaskCalendarService {
   // notify consumers when sample data is ready/updated
   public sampleUpdated$ = new BehaviorSubject<boolean>(false);
 
-  constructor(private typeSvc: TaskTypeService) {
-    // Try to populate sample tasks from backend task types. This is asynchronous;
-    // calendar consumers should tolerate initial empty result and re-request later
+  // cache of real tasks fetched from backend
+  private tasksCache: TaskDto[] = [];
+
+  constructor(private typeSvc: TaskTypeService, private tasksApi: TasksService) {
+    // Populate sample task types for dev/demo use. Calendar rendering will
+    // prefer server-side tasks fetched on-demand per-range.
     this.typeSvc.getAll(false).subscribe({
       next: (types) => this.buildSampleFromTypes(types),
       error: () => this.buildFallbackSample(),
     });
+  }
+
+  // Fetch tasks from backend for a given inclusive date range and cache them.
+  // Uses ISO strings for `from` and `to` parameters.
+  async fetchTasksForRange(start: Date, end: Date): Promise<void> {
+    try {
+      const fromIso = new Date(start.getFullYear(), start.getMonth(), start.getDate()).toISOString();
+      const toIso = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59, 999).toISOString();
+      const obs = this.tasksApi.listRange(fromIso, toIso);
+      const res = await firstValueFrom(obs);
+      if (Array.isArray(res)) {
+        this.tasksCache = res as TaskDto[];
+      } else {
+        this.tasksCache = [];
+      }
+    } catch (err) {
+      console.warn('TaskCalendarService: failed to fetch tasks for range', err);
+    }
   }
 
   private buildSampleFromTypes(types: TaskType[]) {
@@ -55,21 +77,55 @@ export class TaskCalendarService {
     this.sampleUpdated$.next(true);
   }
 
-  // Return tasks for the given year/month (month: 0-11)
+  // Return tasks for the given year/month (month: 0-11) based on the current cache.
+  // Note: no fallback to task types — prefer empty state when server has no tasks.
   getTasksForMonth(year: number, month: number): CalendarTask[] {
-    return this.sample.filter((t) => {
-      try {
-        const d = new Date(t.dueDate);
-        return d.getFullYear() === year && d.getMonth() === month;
-      } catch {
-        return false;
+    const results: CalendarTask[] = [];
+    if (this.tasksCache && this.tasksCache.length) {
+      for (const td of this.tasksCache) {
+        try {
+          const dateStr = td.dueDate ?? td.createdAt ?? td.updatedAt;
+          const d = new Date(dateStr);
+          if (d.getFullYear() === year && d.getMonth() === month) {
+            results.push(this.mapDtoToCalendar(td));
+          }
+        } catch {
+          // ignore parse errors
+        }
       }
-    });
+    }
+    return results;
+  }
+
+  private mapDtoToCalendar(td: TaskDto): CalendarTask {
+    return {
+      id: td.id ?? 't-' + Math.random().toString(36).slice(2, 9),
+      title: td.title ?? 'Без названия',
+      dueDate: td.dueDate ?? td.createdAt ?? new Date().toISOString(),
+      status: td.status,
+      color: (td as any).color ?? undefined,
+    };
   }
 
   // Allow adding a task (simple in-memory push)
   addTask(task: CalendarTask): void {
-    this.sample.push(task);
+    // If we have a backend cache array (may be empty), add there as well so future queries reflect new task
+    if (this.tasksCache != null) {
+      try {
+        // best-effort map CalendarTask -> TaskDto shape
+        const dto: any = {
+          id: task.id,
+          title: task.title,
+          dueDate: task.dueDate,
+          status: task.status,
+        };
+        this.tasksCache.push(dto as TaskDto);
+      } catch {
+        // ignore mapping errors
+      }
+    } else {
+      this.sample.push(task);
+    }
     // notify consumers
     this.sampleUpdated$.next(true);
   }
