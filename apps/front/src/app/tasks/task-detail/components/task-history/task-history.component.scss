@@ -128,7 +128,7 @@
             .change-field .field-label {
               font-weight: 700;
               color: var(--text-primary);
-              font-size: 14px;
+              font-size: 12px;
               margin-bottom: 6px;
             }
 
@@ -145,24 +145,22 @@
               padding: 4px 0;
               border-bottom: 1px dashed #e5e7eb;
             }
-            .change-label {
-              font-size: 13px;
-              font-weight: 700;
-              color: #64748b;
-              margin-right: 6px;
-              letter-spacing: 0.02em;
+            .change-arrow {
+              height: 20px;
+              width: 20px;
+              font-size: 16px;
             }
             .old-value .value-text {
               color: #991b1b;
               text-decoration: line-through;
-              font-size: 14px;
-              font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+              font-size: 11px;
+              font-family: 'roboto', 'Segoe UI', Arial, sans-serif;
             }
             .new-value .value-text {
               color: #065f46;
               font-weight: 700;
-              font-size: 15px;
-              font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+              font-size: 11px;
+              font-family: 'roboto', 'Segoe UI', Arial, sans-serif;
             }
 
             .old-value .value-text {

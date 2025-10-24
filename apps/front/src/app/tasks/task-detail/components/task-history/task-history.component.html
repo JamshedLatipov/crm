@@ -1,85 +1,118 @@
 <!-- Minimalist: Loading / Empty / Timeline -->
 @if (isLoadingHistory()) {
-  <div class="history-loading compact">
-    <mat-spinner diameter="28" aria-hidden="false" aria-label="loading history"></mat-spinner>
-    <span class="loading-text">Загрузка...</span>
-  </div>
+<div class="history-loading compact">
+  <mat-spinner
+    diameter="28"
+    aria-hidden="false"
+    aria-label="loading history"
+  ></mat-spinner>
+  <span class="loading-text">Загрузка...</span>
+</div>
 } @else {
-  <div class="history-content compact">
-    @if (taskHistory().length === 0) {
-      <div class="history-empty compact">
-        <mat-icon class="empty-icon">history</mat-icon>
-        <p class="empty-text">Нет изменений</p>
-      </div>
-    } @else {
-      <div class="history-timeline compact" role="list" aria-label="История задачи">
-        <div class="timeline">
-          @for (item of taskHistory(); track item.id) {
-            <div class="timeline-item compact" role="listitem">
-              <div class="timeline-line">
-                <div class="timeline-dot" [class]="getHistoryIconClass(item.action)" [attr.title]="getHistoryActionText(item)">
-                    @if (item.user && (item.user.firstName || item.user.lastName)) {
-                      <mat-icon class="dot-icon" aria-hidden="true">{{ getHistoryIcon(item.action) }}</mat-icon>
-                    } @else {
-                      <!-- no user: show action icon centered in the dot -->
-                      <mat-icon class="dot-icon-center" aria-hidden="true">{{ getHistoryIcon(item.action) }}</mat-icon>
-                    }
-                  </div>
-              </div>
+<div class="history-content compact">
+  @if (taskHistory().length === 0) {
+  <div class="history-empty compact">
+    <mat-icon class="empty-icon">history</mat-icon>
+    <p class="empty-text">Нет изменений</p>
+  </div>
+  } @else {
+  <div class="history-timeline compact" role="list" aria-label="История задачи">
+    <div class="timeline">
+      @for (item of taskHistory(); track item.id) {
+      <div class="timeline-item compact" role="listitem">
+        <div class="timeline-line">
+          <div
+            class="timeline-dot"
+            [class]="getHistoryIconClass(item.action)"
+            [attr.title]="getHistoryActionText(item)"
+          >
+            @if (item.user && (item.user.firstName || item.user.lastName)) {
+            <mat-icon class="dot-icon" aria-hidden="true">{{
+              getHistoryIcon(item.action)
+            }}</mat-icon>
+            } @else {
+            <!-- no user: show action icon centered in the dot -->
+            <mat-icon class="dot-icon-center" aria-hidden="true">{{
+              getHistoryIcon(item.action)
+            }}</mat-icon>
+            }
+          </div>
+        </div>
 
-              <div class="timeline-content compact">
-                <div class="timeline-card compact" [class]="getHistoryCardClass(item.action)">
-                  <div class="timeline-header compact">
-                    <div class="action-info compact">
-                      <div class="action-title">{{ getHistoryActionText(item) }}</div>
-                      <div class="action-meta compact">
-                        <span class="action-time">{{ item.createdAt | humanDate }}</span>
-                        <span class="action-user" *ngIf="item.user">{{ item.user.firstName }} {{ item.user.lastName }}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  @if (item.details && getDetailKeys(item.details).length > 0) {
-                    <div class="changes-list compact">
-                      @for (key of getDetailKeys(item.details); track key) {
-                        <div class="change-item compact" [class]="getChangeTypeClass(item.details[key])">
-                          <div class="change-field">
-                            <span class="field-label">{{ getFieldDisplayName(key) }}</span>
-                          </div>
-                          <div class="change-values compact">
-                            <div class="change-row">
-                              @if (item.details[key] && item.details[key].old !== undefined) {
-                                <div class="change-value old-value">
-                                  <span class="change-label">Было:</span>
-                                  @if (key === 'assignedToId' || key === 'assignedTo') {
-                                    <span class="value-text">{{ getUserDisplay(item.details[key].old) }}</span>
-                                  } @else {
-                                    <span class="value-text">{{ formatValue(item.details[key].old) }}</span>
-                                  }
-                                </div>
-                              }
-                              @if (item.details[key] && item.details[key].new !== undefined) {
-                                <div class="change-value new-value">
-                                  <span class="change-label">Стало:</span>
-                                  @if (key === 'assignedToId' || key === 'assignedTo') {
-                                    <span class="value-text">{{ getUserDisplay(item.details[key].new) }}</span>
-                                  } @else {
-                                    <span class="value-text">{{ formatValue(item.details[key].new) }}</span>
-                                  }
-                                </div>
-                              }
-                            </div>
-                          </div>
-                        </div>
-                      }
-                    </div>
-                  }
+        <div class="timeline-content compact">
+          <div
+            class="timeline-card compact"
+            [class]="getHistoryCardClass(item.action)"
+          >
+            <div class="timeline-header compact">
+              <div class="action-info compact">
+                <div class="action-title">{{ getHistoryActionText(item) }}</div>
+                <div class="action-meta compact">
+                  <span class="action-time">{{
+                    item.createdAt | humanDate
+                  }}</span>
+                  <span class="action-user" *ngIf="item.user"
+                    >{{ item.user.firstName }} {{ item.user.lastName }}</span
+                  >
                 </div>
               </div>
             </div>
-          }
+
+            @if (item.details && getDetailKeys(item.details).length > 0) {
+            <div class="changes-list compact">
+              @for (key of getDetailKeys(item.details); track key) {
+              <div
+                class="change-item compact"
+                [class]="getChangeTypeClass(item.details[key])"
+              >
+                <div class="change-field">
+                  <span class="field-label">{{
+                    getFieldDisplayName(key)
+                  }}</span>
+                </div>
+                <div class="change-values compact">
+                  <div class="change-row">
+                    @if (item.details[key] && item.details[key].old !==
+                    undefined) {
+                    <div class="change-value old-value">
+                      @if (key === 'assignedToId' || key === 'assignedTo') {
+                      <span class="value-text">{{
+                        getUserDisplay(item.details[key].old) || 'Не указан'
+                      }}</span>
+                      } @else {
+                      <span class="value-text">{{
+                        formatValue(item.details[key].old) || 'Не указан'
+                      }}</span>
+                      }
+                    </div>
+                    }
+                    <mat-icon class="change-arrow" aria-hidden="true">arrow_forward</mat-icon>
+                    @if (item.details[key] && item.details[key].new !==
+                    undefined) {
+                    <div class="change-value new-value">
+                      @if (key === 'assignedToId' || key === 'assignedTo') {
+                      <span class="value-text">{{
+                        getUserDisplay(item.details[key].new) || 'Не указан'
+                      }}</span>
+                      } @else {
+                      <span class="value-text">{{
+                        formatValue(item.details[key].new) || 'Не указан'
+                      }}</span>
+                      }
+                    </div>
+                    }
+                  </div>
+                </div>
+              </div>
+              }
+            </div>
+            }
+          </div>
         </div>
       </div>
-    }
+      }
+    </div>
   </div>
+  }
+</div>
 }
