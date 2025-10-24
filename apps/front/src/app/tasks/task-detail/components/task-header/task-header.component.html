@@ -1,0 +1,175 @@
+<div class="page-header">
+  <div class="header-background">
+    <div class="header-top">
+      <div class="breadcrumb">
+        <button mat-button (click)="goBack()" class="breadcrumb-link">
+          <mat-icon>arrow_back</mat-icon>
+          <span>Задачи</span>
+        </button>
+        <mat-icon class="separator">chevron_right</mat-icon>
+        <span class="current">{{ task()?.title }}</span>
+      </div>
+
+      <div class="header-actions-top">
+        <button
+          mat-stroked-button
+          (click)="editTask()"
+          class="action-btn edit-btn"
+          matTooltip="Редактировать задачу"
+        >
+          <mat-icon>edit</mat-icon>
+        </button>
+
+        <button
+          mat-stroked-button
+          (click)="deleteTask()"
+          class="action-btn delete-btn"
+          matTooltip="Удалить задачу"
+        >
+          <mat-icon>delete</mat-icon>
+        </button>
+
+        <button
+          mat-stroked-button
+          (click)="assignTask()"
+          class="action-btn assign-btn"
+          matTooltip="Сменить исполнителя"
+        >
+          <mat-icon>person_add</mat-icon>
+          <span class="btn-text">
+            <ng-container *ngIf="task()?.assignedTo; else noAssigneeBtn">
+              {{ task()?.assignedTo.firstName }}
+              {{ task()?.assignedTo.lastName }}
+            </ng-container>
+            <ng-template #noAssigneeBtn>Назначить</ng-template>
+          </span>
+        </button>
+
+        <div class="complete-button-group">
+          <button
+            mat-stroked-button
+            class="action-btn complete-main-btn"
+            (click)="completeTask()"
+          >
+            <mat-icon>check_circle</mat-icon>
+            <span class="btn-text">Завершить</span>
+          </button>
+
+          <button
+            mat-stroked-button
+            class="action-btn complete-dropdown-btn"
+            [matMenuTriggerFor]="statusMenu"
+          >
+            <mat-icon>keyboard_arrow_down</mat-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dropdown меню для статусов -->
+    <mat-menu #statusMenu="matMenu" class="status-menu">
+      <button mat-menu-item (click)="completeTask()" class="complete-quick">
+        <mat-icon>check_circle</mat-icon>
+        <span>Завершить задачу</span>
+      </button>
+      <mat-divider></mat-divider>
+      <button
+        mat-menu-item
+        *ngFor="let status of statusOptions()"
+        (click)="changeStatus(status.value)"
+        [disabled]="task()?.status === status.value"
+      >
+        <mat-icon [style.color]="status.color">{{
+          getStatusIcon(status.value)
+        }}</mat-icon>
+        <span>{{ status.label }}</span>
+        <mat-icon *ngIf="task()?.status === status.value" class="current-status"
+          >check</mat-icon
+        >
+      </button>
+    </mat-menu>
+
+    <div class="header-main">
+      <div class="task-header-left">
+        <div class="task-title-section">
+          <h1 class="task-title">{{ task()?.title || 'Без названия' }}</h1>
+        </div>
+
+        <div class="task-metrics">
+          <div
+            class="metric-card primary-metric status-card"
+            [class]="getStatusClass(task()?.status)"
+          >
+            <div class="metric-icon">
+              <mat-icon>{{ getStatusIcon(task()?.status) }}</mat-icon>
+            </div>
+            <div class="metric-info">
+              <div class="metric-label">Статус</div>
+              <div class="metric-value status-value">
+                <span
+                  class="status-badge"
+                  [style.background-color]="getStatusColor(task()?.status)"
+                >
+                  {{ getStatusLabel(task()?.status) }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          @if (task()?.taskType) {
+          <div class="metric-card task-type-metric">
+            <div class="metric-icon">
+              <mat-icon>category</mat-icon>
+            </div>
+            <div class="metric-info">
+              <div class="metric-label">Тип задачи</div>
+              <div class="metric-value">
+                <app-task-type-display
+                  [taskType]="task()?.taskType"
+                  [hideIcon]="true"
+                ></app-task-type-display>
+              </div>
+            </div>
+          </div>
+          } @if (task()?.lead) {
+          <div class="metric-card">
+            <div class="metric-icon">
+              <mat-icon>person_add</mat-icon>
+            </div>
+            <div class="metric-info">
+              <div class="metric-label">Связан с лидом</div>
+              <div class="metric-value">
+                <a
+                  [routerLink]="['/leads/view', task()?.lead?.id]"
+                  class="link-primary"
+                >
+                  {{ task()?.lead?.name }}
+                  <mat-icon class="link-icon">open_in_new</mat-icon>
+                </a>
+              </div>
+            </div>
+          </div>
+          } @if (task()?.deal) {
+          <div class="metric-card">
+            <div class="metric-icon">
+              <mat-icon>business_center</mat-icon>
+            </div>
+            <div class="metric-info">
+              <div class="metric-label">Связан со сделкой</div>
+              <div class="metric-value">
+                <a
+                  [routerLink]="['/deals/view', task()?.deal?.id]"
+                  class="link-primary"
+                >
+                  {{ task()?.deal?.title }}
+                  <mat-icon class="link-icon">open_in_new</mat-icon>
+                </a>
+              </div>
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

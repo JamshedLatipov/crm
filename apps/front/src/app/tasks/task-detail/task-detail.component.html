@@ -1,190 +1,40 @@
 <div class="task-detail-page">
   <!-- Загрузка -->
   @if (isLoading()) {
-    <div class="loading-container">
-      <mat-spinner diameter="40"></mat-spinner>
-      <p>Загрузка задачи...</p>
-    </div>
+  <div class="loading-container">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Загрузка задачи...</p>
+  </div>
   }
 
   <!-- Ошибка -->
   @if (!isLoading() && !task()) {
-    <div class="error-container">
-      <div class="error-card">
-        <mat-icon class="error-icon">sentiment_dissatisfied</mat-icon>
-        <h3>Задача не найдена</h3>
-        <p>Запрашиваемая задача не существует или была удалена.</p>
-        <button mat-raised-button color="primary" (click)="goBack()">
-          <mat-icon>arrow_back</mat-icon>
-          Вернуться к списку
-        </button>
-      </div>
+  <div class="error-container">
+    <div class="error-card">
+      <mat-icon class="error-icon">sentiment_dissatisfied</mat-icon>
+      <h3>Задача не найдена</h3>
+      <p>Запрашиваемая задача не существует или была удалена.</p>
+      <button mat-raised-button color="primary" (click)="goBack()">
+        <mat-icon>arrow_back</mat-icon>
+        Вернуться к списку
+      </button>
     </div>
+  </div>
   }
 
   <!-- Детали задачи -->
   @if (!isLoading() && task()) {
-    <div class="task-content">
+  <div class="task-content">
     <!-- Заголовок -->
-    <div class="page-header">
-      <div class="header-background">
-        <div class="header-top">
-          <div class="breadcrumb">
-            <button mat-button (click)="goBack()" class="breadcrumb-link">
-              <mat-icon>arrow_back</mat-icon>
-              <span>Задачи</span>
-            </button>
-            <mat-icon class="separator">chevron_right</mat-icon>
-            <span class="current">{{ task()?.title }}</span>
-          </div>
-
-          <div class="header-actions-top">
-            <button
-              mat-stroked-button
-              (click)="editTask()"
-              class="action-btn edit-btn"
-              matTooltip="Редактировать задачу"
-            >
-              <mat-icon>edit</mat-icon>
-            </button>
-
-            <button
-              mat-stroked-button
-              (click)="deleteTask()"
-              class="action-btn delete-btn"
-              matTooltip="Удалить задачу"
-            >
-              <mat-icon>delete</mat-icon>
-            </button>
-
-            <button
-              mat-stroked-button
-              (click)="assignTask()"
-              class="action-btn assign-btn"
-              matTooltip="Сменить исполнителя"
-            >
-              <mat-icon>person_add</mat-icon>
-              <span class="btn-text">
-                <ng-container *ngIf="task()?.assignedTo; else noAssigneeBtn">
-                  {{ task()?.assignedTo.firstName }} {{ task()?.assignedTo.lastName }}
-                </ng-container>
-                <ng-template #noAssigneeBtn>Назначить</ng-template>
-              </span>
-            </button>
-            
-            <div class="complete-button-group">
-              <button
-                mat-stroked-button
-                class="action-btn complete-main-btn"
-                (click)="completeTask()"
-              >
-                <mat-icon>check_circle</mat-icon>
-                <span class="btn-text">Завершить</span>
-              </button>
-              
-              <button
-                mat-stroked-button
-                class="action-btn complete-dropdown-btn"
-                [matMenuTriggerFor]="statusMenu"
-              >
-                <mat-icon>keyboard_arrow_down</mat-icon>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Dropdown меню для статусов -->
-        <mat-menu #statusMenu="matMenu" class="status-menu">
-          <button mat-menu-item (click)="completeTask()" class="complete-quick">
-            <mat-icon>check_circle</mat-icon>
-            <span>Завершить задачу</span>
-          </button>
-          <mat-divider></mat-divider>
-          <button 
-            mat-menu-item 
-            *ngFor="let status of statusOptions" 
-            (click)="changeStatus(status.value)"
-            [disabled]="task()?.status === status.value"
-          >
-            <mat-icon [style.color]="status.color">{{ getStatusIcon(status.value) }}</mat-icon>
-            <span>{{ status.label }}</span>
-            <mat-icon *ngIf="task()?.status === status.value" class="current-status">check</mat-icon>
-          </button>
-        </mat-menu>
-
-
-
-        <div class="header-main">
-          <div class="task-header-left">
-            <div class="task-title-section">
-              <h1 class="task-title">{{ task()?.title || 'Без названия' }}</h1>
-            </div>
-
-            <div class="task-metrics">
-              <div class="metric-card primary-metric status-card" [class]="getStatusClass(task()?.status)">
-                <div class="metric-icon">
-                  <mat-icon>{{ getStatusIcon(task()?.status) }}</mat-icon>
-                </div>
-                <div class="metric-info">
-                  <div class="metric-label">Статус</div>
-                  <div class="metric-value status-value">
-                    <span class="status-badge" [style.background-color]="getStatusColor(task()?.status)">
-                      {{ getStatusLabel(task()?.status) }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              @if (task()?.taskType) {
-                <div class="metric-card task-type-metric">
-                <div class="metric-icon">
-                  <mat-icon>category</mat-icon>
-                </div>
-                <div class="metric-info">
-                  <div class="metric-label">Тип задачи</div>
-                  <div class="metric-value">
-                    <app-task-type-display [taskType]="task()?.taskType" [hideIcon]="true"></app-task-type-display>
-                  </div>
-                </div>
-              </div>
-
-              @if (task()?.lead) {
-                <div class="metric-card">
-                <div class="metric-icon">
-                  <mat-icon>person_add</mat-icon>
-                </div>
-                <div class="metric-info">
-                  <div class="metric-label">Связан с лидом</div>
-                  <div class="metric-value">
-                    <a [routerLink]="['/leads/view', task()?.lead?.id]" class="link-primary">
-                      {{ task()?.lead?.name }}
-                      <mat-icon class="link-icon">open_in_new</mat-icon>
-                    </a>
-                  </div>
-                </div>
-              </div>
-
-              @if (task()?.deal) {
-                <div class="metric-card">
-                <div class="metric-icon">
-                  <mat-icon>business_center</mat-icon>
-                </div>
-                <div class="metric-info">
-                  <div class="metric-label">Связан со сделкой</div>
-                  <div class="metric-value">
-                    <a [routerLink]="['/deals/view', task()?.deal?.id]" class="link-primary">
-                      {{ task()?.deal?.title }}
-                      <mat-icon class="link-icon">open_in_new</mat-icon>
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
+    <app-task-header
+      [statusOptions]="statusOptions"
+      [task]="task()"
+      (statusChanged)="changeStatus($event.status)"
+      (assign)="assignTask()"
+      (back)="goBack()"
+      (delete)="deleteTask()"
+      (edit)="editTask()"
+    ></app-task-header>
     <!-- Основная информация -->
     <div class="main-content">
       <div class="content-grid">
@@ -202,15 +52,19 @@
             <mat-card-content>
               <div class="description-content">
                 @if (task()?.description) {
-                  <div class="description-text" [class.expanded]="descExpanded()" [class.collapsed]="!descExpanded()">
-                    {{ task()?.description }}
-                  </div>
-                  @if (task()?.description?.length > 300) {
-                    {{ descExpanded() ? 'Свернуть' : 'Развернуть' }}
-                  </button>
-                </ng-container>
-                } @else {
-                  <span class="muted">Нет описания</span>
+                <div
+                  class="description-text"
+                  [class.expanded]="descExpanded()"
+                  [class.collapsed]="!descExpanded()"
+                >
+                  {{ task()?.description }}
+                </div>
+                @if (task()?.description?.length > 300) {
+                <button mat-button (click)="toggleDesc()" class="expand-btn">
+                  {{ descExpanded() ? 'Свернуть' : 'Развернуть' }}
+                </button>
+                } } @else {
+                <span class="muted">Нет описания</span>
                 }
               </div>
             </mat-card-content>
@@ -228,7 +82,11 @@
               </div>
             </div>
 
-            <mat-tab-group mat-stretch-tabs="false" class="history-tabs" animationDuration="300ms">
+            <mat-tab-group
+              mat-stretch-tabs="false"
+              class="history-tabs"
+              animationDuration="300ms"
+            >
               <!-- Комментарии -->
               <mat-tab>
                 <ng-template mat-tab-label>
@@ -238,9 +96,10 @@
                   </div>
                 </ng-template>
                 <div class="tab-content">
-                  <app-comments 
-                    [entityType]="CommentEntityType.TASK" 
-                    [entityId]="task()?.id?.toString()">
+                  <app-comments
+                    [entityType]="CommentEntityType.TASK"
+                    [entityId]="task()?.id?.toString()"
+                  >
                   </app-comments>
                 </div>
               </mat-tab>
@@ -256,80 +115,109 @@
                 <div class="tab-content">
                   <!-- Загрузка -->
                   @if (isLoadingHistory()) {
-                    <mat-spinner diameter="30"></mat-spinner>
-                    <p>Загрузка истории...</p>
-                  </div>
-
-                  <!-- История -->
+                  <mat-spinner diameter="30"></mat-spinner>
+                  <p>Загрузка истории...</p>
                   } @else {
-                    <div class="history-content">
-                      @if (taskHistory().length === 0) {
-                      <mat-icon>timeline</mat-icon>
-                      <p>История изменений пуста</p>
-                    </div>
-
-                      } @else {
-                        <div class="history-timeline">
+                  <div class="history-content">
+                    @if (taskHistory().length === 0) {
+                    <mat-icon>timeline</mat-icon>
+                    <p>История изменений пуста</p>
+                    } @else {
+                    <div class="history-timeline">
                       <!-- Timeline container -->
                       <div class="timeline">
-                          @for (let item of taskHistory(); let i = index; let isLast = last) {
-                            <div class="timeline-item" [class.last-item]="isLast">
+                        @for (item of taskHistory(); track item.id) {
+                        <div class="timeline-item">
                           <!-- Timeline line -->
-                          <div class="timeline-line" [class.last-line]="isLast">
-                            <div class="timeline-dot" [class]="getHistoryIconClass(item.action)">
-                              <mat-icon>{{ getHistoryIcon(item.action) }}</mat-icon>
+                          <div class="timeline-line">
+                            <div
+                              class="timeline-dot"
+                              [class]="getHistoryIconClass(item.action)"
+                            >
+                              <mat-icon>{{
+                                getHistoryIcon(item.action)
+                              }}</mat-icon>
                             </div>
                           </div>
 
                           <!-- Timeline content -->
                           <div class="timeline-content">
-                            <div class="timeline-card" [class]="getHistoryCardClass(item.action)">
+                            <div
+                              class="timeline-card"
+                              [class]="getHistoryCardClass(item.action)"
+                            >
                               <!-- Header -->
                               <div class="timeline-header">
                                 <div class="action-info">
-                                  <h4 class="action-title">{{ getHistoryActionText(item) }}</h4>
+                                  <h4 class="action-title">
+                                    {{ getHistoryActionText(item) }}
+                                  </h4>
                                   <div class="action-meta">
-                                    <span class="action-time">{{ item.createdAt | humanDate }}</span>
+                                    <span class="action-time">{{
+                                      item.createdAt | humanDate
+                                    }}</span>
                                     <span class="action-user" *ngIf="item.user">
                                       <mat-icon>person</mat-icon>
-                                      {{ item.user.firstName }} {{ item.user.lastName }}
+                                      {{ item.user.firstName }}
+                                      {{ item.user.lastName }}
                                     </span>
                                   </div>
                                 </div>
                               </div>
 
                               <!-- Changes details -->
-                              @if (item.details && getDetailKeys(item.details).length > 0) {
-                                <div class="changes-header">
-                                  <mat-icon>compare_arrows</mat-icon>
-                                  <span>Изменения</span>
-                                </div>
-                                <div class="changes-list">
-                                  @for (let key of getDetailKeys(item.details)) {
-                                    <div class="change-item" [class]="getChangeTypeClass(item.details[key])">
-                                    <div class="change-field">
-                                      <span class="field-label">{{ getFieldDisplayName(key) }}</span>
+                              @if (item.details &&
+                              getDetailKeys(item.details).length > 0) {
+                              <div class="changes-header">
+                                <mat-icon>compare_arrows</mat-icon>
+                                <span>Изменения</span>
+                              </div>
+                              <div class="changes-list">
+                                @for (key of getDetailKeys(item.details); track
+                                key) {
+                                <div
+                                  class="change-item"
+                                  [class]="
+                                    getChangeTypeClass(item.details[key])
+                                  "
+                                >
+                                  <div class="change-field">
+                                    <span class="field-label">{{
+                                      getFieldDisplayName(key)
+                                    }}</span>
+                                  </div>
+                                  <div class="change-values">
+                                    @if (item.details[key] &&
+                                    item.details[key].old !== undefined) {
+                                    <div class="change-value">
+                                      <span class="value-label">Было:</span>
+                                      <span class="value-text">{{
+                                        formatValue(item.details[key].old)
+                                      }}</span>
                                     </div>
-                                    <div class="change-values">
-                                      @if (item.details[key] && item.details[key].old !== undefined) {
-                                        <span class="value-label">Было:</span>
-                                        <span class="value-text">{{ formatValue(item.details[key].old) }}</span>
-                                      </div>
-                                      }
-                                      @if (item.details[key] && item.details[key].new !== undefined) {
-                                        <span class="value-label">Стало:</span>
-                                        <span class="value-text">{{ formatValue(item.details[key].new) }}</span>
-                                      </div>
+                                    } @if (item.details[key] &&
+                                    item.details[key].new !== undefined) {
+                                    <div class="change-value">
+                                      <span class="value-label">Стало:</span>
+                                      <span class="value-text">{{
+                                        formatValue(item.details[key].new)
+                                      }}</span>
                                     </div>
+                                    }
                                   </div>
                                 </div>
+                                }
                               </div>
+                              }
                             </div>
                           </div>
                         </div>
+                        }
                       </div>
                     </div>
+                    }
                   </div>
+                  }
                 </div>
               </mat-tab>
             </mat-tab-group>
@@ -357,7 +245,10 @@
                     <span class="label">Срок выполнения</span>
                     <div class="value">
                       <ng-container *ngIf="task()?.dueDate; else noDueDate">
-                        <app-task-due-date [task]="task()!" [showTime]="true"></app-task-due-date>
+                        <app-task-due-date
+                          [task]="task()!"
+                          [showTime]="true"
+                        ></app-task-due-date>
                       </ng-container>
                       <ng-template #noDueDate>
                         <span class="muted">Не указан</span>
@@ -367,6 +258,7 @@
                 </div>
 
                 @if (task()?.createdAt) {
+                <div class="detail-item">
                   <div class="detail-icon">
                     <mat-icon>schedule</mat-icon>
                   </div>
@@ -377,8 +269,8 @@
                     </div>
                   </div>
                 </div>
-
-                @if (task()?.updatedAt) {
+                } @if (task()?.updatedAt) {
+                <div class="detail-item">
                   <div class="detail-icon">
                     <mat-icon>update</mat-icon>
                   </div>
@@ -389,21 +281,25 @@
                     </div>
                   </div>
                 </div>
-
-                @if (task()?.deal) {
+                } @if (task()?.deal) {
+                <div class="detail-item">
                   <div class="detail-icon">
                     <mat-icon>business_center</mat-icon>
                   </div>
                   <div class="detail-info">
                     <span class="label">Связан со сделкой</span>
                     <div class="value">
-                      <a [routerLink]="['/deals/view', task()?.deal?.id]" class="link-primary">
+                      <a
+                        [routerLink]="['/deals/view', task()?.deal?.id]"
+                        class="link-primary"
+                      >
                         {{ task()?.deal?.title }}
                         <mat-icon class="link-icon">open_in_new</mat-icon>
                       </a>
                     </div>
                   </div>
                 </div>
+                }
               </div>
             </mat-card-content>
           </mat-card>
@@ -411,4 +307,100 @@
       </div>
     </div>
   </div>
+  }
+
+  <style>
+    .history-timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .timeline-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .timeline-line {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-right: 1rem;
+    }
+
+    .timeline-dot {
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      background-color: var(--primary-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+    }
+
+    .timeline-content {
+      flex: 1;
+      background: var(--card-bg);
+      border-radius: 0.5rem;
+      padding: 1rem;
+      box-shadow: var(--box-shadow);
+    }
+
+    .timeline-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .action-title {
+      font-weight: bold;
+      font-size: 1.1rem;
+    }
+
+    .action-meta {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .changes-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      font-weight: bold;
+    }
+
+    .changes-list {
+      margin-top: 0.5rem;
+    }
+
+    .change-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--divider-color);
+    }
+
+    .change-field {
+      font-weight: bold;
+    }
+
+    .change-values {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .value-label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .value-text {
+      font-size: 1rem;
+    }
+  </style>
 </div>

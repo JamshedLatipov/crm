@@ -21,15 +21,21 @@ import { AuthService } from '../../auth/auth.service';
 import { UsersService, User } from '../../users/users.service';
 import { HumanDatePipe } from '../../shared/pipes/human-date.pipe';
 import { TaskDueDateComponent } from '../components/task-due-date/task-due-date.component';
-import { TaskTypeDisplayComponent } from '../components/task-type-display/task-type-display.component';
 import { AssignUserDialogComponent } from '../../deals/components/assign-user-dialog.component';
 import { CommentsComponent } from '../../shared/components/comments/comments.component';
 import { CommentEntityType } from '../../shared/interfaces/comment.interface';
+import { TaskHeaderComponent } from './components/task-header/task-header.component';
 
 // Интерфейс данных для модалки назначения исполнителя (адаптирован для задач)
 interface AssignUserDialogData {
   task: TaskDto;
   currentUsers: User[];
+}
+
+export interface Status {
+  value: string;
+  label: string;
+  color: string;
 }
 
 @Component({
@@ -55,11 +61,11 @@ interface AssignUserDialogData {
     MatDialogModule,
     HumanDatePipe,
     TaskDueDateComponent,
-    TaskTypeDisplayComponent,
-    CommentsComponent
+    CommentsComponent,
+    TaskHeaderComponent,
   ],
   templateUrl: './task-detail.component.html',
-  styleUrls: ['./task-detail.component.scss']
+  styleUrls: ['./task-detail.component.scss'],
 })
 export class TaskDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
@@ -69,10 +75,10 @@ export class TaskDetailComponent implements OnInit {
   private auth = inject(AuthService);
   private usersService = inject(UsersService);
   private dialog = inject(MatDialog);
-  
+
   // Enum для использования в шаблоне
   readonly CommentEntityType = CommentEntityType;
-  
+
   task = signal<TaskDto | null>(null);
   isLoading = signal(true);
   managers = signal<User[]>([]);
@@ -84,15 +90,15 @@ export class TaskDetailComponent implements OnInit {
 
   // Description expand/collapse
   descExpanded = signal<boolean>(false);
-  
+
   taskId?: number;
 
   // Статусы для выбора
-  statusOptions = [
+  statusOptions: Status[] = [
     { value: 'pending', label: 'В ожидании', color: '#f59e0b' },
     { value: 'in_progress', label: 'В работе', color: '#3b82f6' },
     { value: 'done', label: 'Завершено', color: '#10b981' },
-    { value: 'overdue', label: 'Просрочено', color: '#ef4444' }
+    { value: 'overdue', label: 'Просрочено', color: '#ef4444' },
   ];
 
   ngOnInit() {
@@ -108,12 +114,12 @@ export class TaskDetailComponent implements OnInit {
   }
 
   toggleDesc() {
-    this.descExpanded.update(v => !v);
+    this.descExpanded.update((v) => !v);
   }
-  
+
   loadTask() {
     if (!this.taskId) return;
-    
+
     this.isLoading.set(true);
     this.tasksService.get(this.taskId).subscribe({
       next: (task) => {
@@ -124,10 +130,10 @@ export class TaskDetailComponent implements OnInit {
         console.error('Error loading task:', err);
         this.snackBar.open('Ошибка загрузки задачи', 'OK', { duration: 3000 });
         this.isLoading.set(false);
-      }
+      },
     });
   }
-  
+
   loadManagers() {
     this.isLoadingManagers.set(true);
     this.usersService.getAllManagers().subscribe({
@@ -137,9 +143,11 @@ export class TaskDetailComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error loading managers:', err);
-        this.snackBar.open('Ошибка загрузки списка менеджеров', 'OK', { duration: 3000 });
+        this.snackBar.open('Ошибка загрузки списка менеджеров', 'OK', {
+          duration: 3000,
+        });
         this.isLoadingManagers.set(false);
-      }
+      },
     });
   }
 
@@ -154,21 +162,23 @@ export class TaskDetailComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error loading task history:', err);
-        this.snackBar.open('Ошибка загрузки истории задачи', 'OK', { duration: 3000 });
+        this.snackBar.open('Ошибка загрузки истории задачи', 'OK', {
+          duration: 3000,
+        });
         this.isLoadingHistory.set(false);
-      }
+      },
     });
   }
-  
+
   editTask() {
     if (this.taskId) {
       this.router.navigate([`/tasks/edit/${this.taskId}`]);
     }
   }
-  
+
   deleteTask() {
     if (!this.taskId) return;
-    
+
     if (confirm('Вы уверены, что хотите удалить эту задачу?')) {
       this.tasksService.delete(this.taskId).subscribe({
         next: () => {
@@ -177,43 +187,40 @@ export class TaskDetailComponent implements OnInit {
         },
         error: (err) => {
           console.error('Error deleting task:', err);
-          this.snackBar.open('Ошибка удаления задачи', 'OK', { duration: 3000 });
-        }
+          this.snackBar.open('Ошибка удаления задачи', 'OK', {
+            duration: 3000,
+          });
+        },
       });
     }
   }
-  
+
   goBack() {
     this.router.navigate(['/tasks']);
   }
 
-  assignTask(managerId?: string) {
+  assignTask() {
     if (!this.task()) return;
 
-    if (managerId) {
-      // Прямое назначение (для обратной совместимости)
-      this.doAssignTask(managerId);
-    } else {
-      // Открываем модалку для выбора исполнителя
-      const dialogData: AssignUserDialogData = {
-        task: this.task()!,
-        currentUsers: this.managers()
-      };
+    // Открываем модалку для выбора исполнителя
+    const dialogData: AssignUserDialogData = {
+      task: this.task()!,
+      currentUsers: this.managers(),
+    };
 
-      const dialogRef = this.dialog.open(AssignUserDialogComponent, {
-        data: dialogData,
-        width: '600px',
-        maxWidth: '95vw',
-        maxHeight: '85vh',
-        disableClose: false
-      });
+    const dialogRef = this.dialog.open(AssignUserDialogComponent, {
+      data: dialogData,
+      width: '600px',
+      maxWidth: '95vw',
+      maxHeight: '85vh',
+      disableClose: false,
+    });
 
-      dialogRef.afterClosed().subscribe(result => {
-        if (result && result.userId) {
-          this.doAssignTask(result.userId);
-        }
-      });
-    }
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result && result.userId) {
+        this.doAssignTask(result.userId);
+      }
+    });
   }
 
   private doAssignTask(managerId: string) {
@@ -234,8 +241,10 @@ export class TaskDetailComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error assigning task:', err);
-        this.snackBar.open('Ошибка изменения исполнителя', 'OK', { duration: 3000 });
-      }
+        this.snackBar.open('Ошибка изменения исполнителя', 'OK', {
+          duration: 3000,
+        });
+      },
     });
   }
 
@@ -245,7 +254,7 @@ export class TaskDetailComponent implements OnInit {
 
   changeStatus(newStatus: string) {
     if (!this.taskId || !this.task()) return;
-    
+
     this.tasksService.update(this.taskId, { status: newStatus }).subscribe({
       next: (updatedTask) => {
         this.task.set(updatedTask);
@@ -253,27 +262,29 @@ export class TaskDetailComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error updating status:', err);
-        this.snackBar.open('Ошибка обновления статуса', 'OK', { duration: 3000 });
-      }
+        this.snackBar.open('Ошибка обновления статуса', 'OK', {
+          duration: 3000,
+        });
+      },
     });
   }
-  
+
   getStatusColor(status: string): string {
     const colors: Record<string, string> = {
       pending: 'warn',
       in_progress: 'accent',
       done: 'primary',
-      overdue: 'warn'
+      overdue: 'warn',
     };
     return colors[status] || 'default';
   }
-  
+
   getStatusLabel(status: string): string {
     const labels: Record<string, string> = {
       pending: 'В ожидании',
       in_progress: 'В работе',
       done: 'Завершено',
-      overdue: 'Просрочено'
+      overdue: 'Просрочено',
     };
     return labels[status] || status;
   }
@@ -283,7 +294,7 @@ export class TaskDetailComponent implements OnInit {
       pending: 'pending',
       in_progress: 'in-progress',
       done: 'success',
-      overdue: 'warning'
+      overdue: 'warning',
     };
     return classes[status] || 'pending';
   }
@@ -293,7 +304,7 @@ export class TaskDetailComponent implements OnInit {
       pending: 'schedule',
       in_progress: 'play_arrow',
       done: 'check_circle',
-      overdue: 'warning'
+      overdue: 'warning',
     };
     return icons[status] || 'schedule';
   }
@@ -311,7 +322,7 @@ export class TaskDetailComponent implements OnInit {
       created: 'add_circle_outline',
       updated: 'edit_note',
       status_changed: 'swap_horizontal_circle',
-      deleted: 'delete_outline'
+      deleted: 'delete_outline',
     };
     return icons[action] || 'info_outline';
   }
@@ -321,7 +332,7 @@ export class TaskDetailComponent implements OnInit {
       created: 'created',
       updated: 'updated',
       status_changed: 'status-changed',
-      deleted: 'deleted'
+      deleted: 'deleted',
     };
     return classes[action] || 'default';
   }
@@ -331,7 +342,7 @@ export class TaskDetailComponent implements OnInit {
       created: 'card-created',
       updated: 'card-updated',
       status_changed: 'card-status-changed',
-      deleted: 'card-deleted'
+      deleted: 'card-deleted',
     };
     return classes[action] || 'card-default';
   }
@@ -341,7 +352,7 @@ export class TaskDetailComponent implements OnInit {
       created: 'Задача создана',
       updated: 'Задача обновлена',
       status_changed: 'Статус изменён',
-      deleted: 'Задача удалена'
+      deleted: 'Задача удалена',
     };
     return actions[item.action] || item.action;
   }
@@ -360,35 +371,38 @@ export class TaskDetailComponent implements OnInit {
       assignedToId: 'Исполнитель',
       leadId: 'Лид ID',
       dealId: 'Сделка ID',
-      taskTypeId: 'Тип задачи ID'
+      taskTypeId: 'Тип задачи ID',
     };
     return names[key] || key;
   }
 
   getChangeTypeClass(change: any): string {
     if (!change) return 'change-unknown';
-    if (change.old !== undefined && change.new !== undefined) return 'change-modified';
-    if (change.old !== undefined && change.new === undefined) return 'change-removed';
-    if (change.old === undefined && change.new !== undefined) return 'change-added';
+    if (change.old !== undefined && change.new !== undefined)
+      return 'change-modified';
+    if (change.old !== undefined && change.new === undefined)
+      return 'change-removed';
+    if (change.old === undefined && change.new !== undefined)
+      return 'change-added';
     return 'change-unknown';
   }
 
   formatValue(value: any): string {
     if (value === null || value === undefined) return 'не указано';
     if (typeof value === 'boolean') return value ? 'да' : 'нет';
-    
+
     // Форматирование статусов
     if (typeof value === 'string') {
       const statusLabels: Record<string, string> = {
-        'pending': 'В ожидании',
-        'in_progress': 'В работе',
-        'done': 'Завершено',
-        'overdue': 'Просрочено'
+        pending: 'В ожидании',
+        in_progress: 'В работе',
+        done: 'Завершено',
+        overdue: 'Просрочено',
       };
       if (statusLabels[value]) {
         return statusLabels[value];
       }
-      
+
       // Если это дата в ISO формате
       if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value)) {
         return new Date(value).toLocaleString('ru-RU', {
@@ -396,35 +410,38 @@ export class TaskDetailComponent implements OnInit {
           month: '2-digit',
           year: 'numeric',
           hour: '2-digit',
-          minute: '2-digit'
+          minute: '2-digit',
         });
       }
     }
-    
+
     // Для числовых значений (например, ID менеджера)
     if (typeof value === 'number') {
       // Пытаемся найти пользователя по ID (конвертируем в строку для сравнения)
-      const manager = this.managers().find(m => m.id === String(value));
+      const manager = this.managers().find((m) => m.id === String(value));
       if (manager) {
         return manager.name;
       }
       return String(value);
     }
-    
+
     if (typeof value === 'object') {
       // Если это дата в формате ISO, форматируем её
-      if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value)) {
+      if (
+        typeof value === 'string' &&
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value)
+      ) {
         return new Date(value).toLocaleString('ru-RU', {
           day: '2-digit',
           month: '2-digit',
           year: 'numeric',
           hour: '2-digit',
-          minute: '2-digit'
+          minute: '2-digit',
         });
       }
       return JSON.stringify(value, null, 2);
     }
-    
+
     return String(value);
   }
 }

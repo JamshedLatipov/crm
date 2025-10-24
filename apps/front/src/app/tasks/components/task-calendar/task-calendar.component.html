@@ -1,6 +1,6 @@
 <div class="calendar-container">
   <div class="calendar-grid">
-    <div *ngFor="let day of days()" class="calendar-day" (click)="selectDate(day.date)">
+    <div *ngFor="let day of days()" class="calendar-day" (click)="setSelectedDate(day.date)">
       <span class="date-label">{{ day.date | date:'d MMM' }}</span>
       <div class="task-list">
         <div *ngFor="let task of day.tasks" class="task-item">
