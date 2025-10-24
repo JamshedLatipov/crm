@@ -46,16 +46,28 @@
                             <span class="field-label">{{ getFieldDisplayName(key) }}</span>
                           </div>
                           <div class="change-values compact">
-                            @if (item.details[key] && item.details[key].old !== undefined) {
-                              <div class="change-value old-value">
-                                <span class="value-text">{{ formatValue(item.details[key].old) }}</span>
-                              </div>
-                            }
-                            @if (item.details[key] && item.details[key].new !== undefined) {
-                              <div class="change-value new-value">
-                                <span class="value-text">{{ formatValue(item.details[key].new) }}</span>
-                              </div>
-                            }
+                            <div class="change-row">
+                              @if (item.details[key] && item.details[key].old !== undefined) {
+                                <div class="change-value old-value">
+                                  <span class="change-label">Было:</span>
+                                  @if (key === 'assignedToId' || key === 'assignedTo') {
+                                    <span class="value-text">{{ getUserDisplay(item.details[key].old) }}</span>
+                                  } @else {
+                                    <span class="value-text">{{ formatValue(item.details[key].old) }}</span>
+                                  }
+                                </div>
+                              }
+                              @if (item.details[key] && item.details[key].new !== undefined) {
+                                <div class="change-value new-value">
+                                  <span class="change-label">Стало:</span>
+                                  @if (key === 'assignedToId' || key === 'assignedTo') {
+                                    <span class="value-text">{{ getUserDisplay(item.details[key].new) }}</span>
+                                  } @else {
+                                    <span class="value-text">{{ formatValue(item.details[key].new) }}</span>
+                                  }
+                                </div>
+                              }
+                            </div>
                           </div>
                         </div>
                       }

@@ -4,6 +4,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { HumanDatePipe } from '../../../../shared/pipes/human-date.pipe';
+import { User } from '../../../../users/users.service';
 import { TaskHistory } from '../../../tasks.service';
 
 type ID = string | number;
@@ -23,6 +24,7 @@ export class TaskHistoryComponent {
     @Input() taskId?: ID;
     @Input() initialHistory: TaskHistory[] | null = [];
     @Input() history: TaskHistory[] = [];
+    @Input() managers: User[] = [];
     @Input() loading = false;
     @Input() page = 1;
     @Input() pageSize = 20;
@@ -195,13 +197,37 @@ export class TaskHistoryComponent {
     /**
      * Return user initials for avatar dot (e.g. "ИВ" for Иван Васильев).
      */
-    getUserInitials(user: any): string {
+    getUserInitials(user?: User): string {
         if (!user) return '';
-        const fn = (user.firstName || '').trim();
-        const ln = (user.lastName || '').trim();
+        const fn = (user.name?.split(' ')[0] || '').trim();
+        const ln = (user.name?.split(' ')[1] || '').trim();
         if (fn && ln) return (fn[0] + ln[0]).toUpperCase();
         if (fn) return fn.slice(0, 2).toUpperCase();
         if (ln) return ln.slice(0, 2).toUpperCase();
         return '';
+    }
+
+    /**
+     * Find user by id in provided managers input and return full name or id as fallback
+     */
+    getUserNameById(id: string | number | undefined): string {
+        if (id === null || id === undefined || id === '') return 'не указано';
+        const found = (this.managers || []).find(m => String(m.id) === String(id));
+    if (found) return found.name || String(found.id);
+        return String(id);
+    }
+
+    getUserDisplay(value: unknown): string {
+        if (value === null || value === undefined || value === '') return 'не указано';
+        if (typeof value === 'object') {
+            const v = value as Record<string, unknown>;
+            const fn = (v['firstName'] || v['first_name'] || '') as string;
+            const ln = (v['lastName'] || v['last_name'] || '') as string;
+            const name = ((v['name'] as string) || '').trim();
+            const full = (name || (fn + ' ' + ln).trim()).trim();
+            return full || JSON.stringify(v);
+        }
+        // primitive (id)
+        return this.getUserNameById(value as string | number);
     }
 }
