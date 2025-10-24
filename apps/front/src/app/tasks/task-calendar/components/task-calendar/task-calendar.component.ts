@@ -7,6 +7,7 @@ import { TaskCalendarWeekComponent } from '../task-calendar-week/task-calendar-w
 import { TaskCalendarYearComponent } from '../task-calendar-year/task-calendar-year.component';
 import { TaskCalendarCreateModalComponent } from '../task-calendar-create-modal/task-calendar-create-modal.component';
 import { TaskCalendarService, CalendarTask } from '../../task-calendar.service';
+import { TasksService, TaskDto } from '../../../tasks.service';
 import {
   startOfMonth,
   getDaysInMonth,
@@ -85,7 +86,7 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
   public createDateStr = '';
   public createTimeStr = '';
 
-  constructor(private svc: TaskCalendarService) {}
+  constructor(private svc: TaskCalendarService, private tasksApi: TasksService) {}
 
   private sub: any;
 
@@ -223,16 +224,37 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
       hour = this.createHour;
     }
     const d = new Date(y, m - 1, day, hour, minute, 0, 0);
-    const task: CalendarTask = {
-      id: 't-' + Date.now(),
+    // prepare minimal DTO for backend
+    const dto: TaskDto = {
       title: this.createTitle,
       dueDate: d.toISOString(),
-      color: this.createColor,
       status: 'pending',
     };
-    this.svc.addTask(task);
-    this.closeCreate();
-    this.renderView();
+
+    // call backend API to create the task; on success add to calendar service
+    this.tasksApi.create(dto).subscribe({
+      next: (created) => {
+        try {
+          const cal: CalendarTask = {
+            id: created.id ?? 't-' + Date.now(),
+            title: created.title,
+            dueDate: created.dueDate ?? (created.createdAt || d.toISOString()),
+            status: created.status ?? 'pending',
+            color: this.createColor,
+          };
+          this.svc.addTask(cal);
+        } catch (err) {
+          // if mapping fails, still add a fallback entry so UI updates
+          this.svc.addTask({ id: 't-' + Date.now(), title: this.createTitle, dueDate: d.toISOString(), status: 'pending', color: this.createColor });
+        }
+        this.closeCreate();
+        this.renderView();
+      },
+      error: (err) => {
+        console.error('Failed to create task', err);
+        // keep modal open so user can retry or fix fields; optionally show toast (not implemented)
+      },
+    });
   }
 
   onCreateFromModal(payload: {
