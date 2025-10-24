@@ -18,12 +18,13 @@
             <div class="timeline-item compact" role="listitem">
               <div class="timeline-line">
                 <div class="timeline-dot" [class]="getHistoryIconClass(item.action)" [attr.title]="getHistoryActionText(item)">
-                  @if (item.user && (item.user.firstName || item.user.lastName)) {
-                    <div class="dot-avatar small">{{ getUserInitials(item.user) }}</div>
-                  } @else {
-                    <mat-icon aria-hidden="true">{{ getHistoryIcon(item.action) }}</mat-icon>
-                  }
-                </div>
+                    @if (item.user && (item.user.firstName || item.user.lastName)) {
+                      <mat-icon class="dot-icon" aria-hidden="true">{{ getHistoryIcon(item.action) }}</mat-icon>
+                    } @else {
+                      <!-- no user: show action icon centered in the dot -->
+                      <mat-icon class="dot-icon-center" aria-hidden="true">{{ getHistoryIcon(item.action) }}</mat-icon>
+                    }
+                  </div>
               </div>
 
               <div class="timeline-content compact">
