@@ -29,7 +29,7 @@ export class TaskCalendarService {
   }
 
   private buildSampleFromTypes(types: TaskType[]) {
-    if (!types || types.length === 0) return this.buildFad. llbackSample();
+    if (!types || types.length === 0) return this.buildFallbackSample();
     const today = new Date();
     this.sample = types.slice(0, 6).map((t, idx) => ({
       id: t.id,
