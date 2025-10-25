@@ -1,0 +1,26 @@
+<mat-card class="chart-card">
+  <mat-card-content>
+    <div class="chart-wrapper">
+      <ng-container *ngIf="stages && stages.length; else noTimeData">
+        <canvas #timelineCanvas></canvas>
+      </ng-container>
+      <ng-template #noTimeData>
+        <div class="no-data">Нет данных для отображения</div>
+      </ng-template>
+    </div>
+  </mat-card-content>
+</mat-card>
+
+<div class="time-summary">
+  <mat-card>
+    <mat-card-content>
+      <div class="summary-row">
+        <mat-icon>timeline</mat-icon>
+        <div class="summary-info">
+          <span class="summary-label">Общий цикл продажи</span>
+          <span class="summary-value">{{ averageTime() | number:'1.0-0' }} дней</span>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

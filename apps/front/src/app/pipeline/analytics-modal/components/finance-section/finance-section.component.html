@@ -1,0 +1,34 @@
+<mat-card class="chart-card">
+  <mat-card-content>
+    <div class="chart-wrapper">
+      <ng-container *ngIf="analytics?.byStage && analytics.byStage.length; else noData">
+        <canvas #amountCanvas></canvas>
+      </ng-container>
+      <ng-template #noData>
+        <div class="no-data">Нет данных для отображения</div>
+      </ng-template>
+    </div>
+  </mat-card-content>
+</mat-card>
+
+<div class="financial-summary">
+  <mat-card class="finance-card">
+    <mat-card-content>
+      <mat-icon class="finance-icon">account_balance_wallet</mat-icon>
+      <div class="finance-info">
+        <div class="finance-label">Общая сумма в pipeline</div>
+        <div class="finance-value">{{ analytics?.totalAmount | currency:'RUB':'symbol':'1.0-0' }}</div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="finance-card">
+    <mat-card-content>
+      <mat-icon class="finance-icon">receipt</mat-icon>
+      <div class="finance-info">
+        <div class="finance-label">Средний размер сделки</div>
+        <div class="finance-value">{{ analytics?.averageDealSize | currency:'RUB':'symbol':'1.0-0' }}</div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

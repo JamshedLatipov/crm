@@ -1,0 +1,7 @@
+.chart-card { margin-bottom: 24px; border: 2px solid #e5e7eb; border-radius:12px; box-shadow: 0 2px 8px rgba(16,24,40,0.06); }
+.chart-wrapper { position:relative; height:400px; padding: 20px }
+.no-data { height:100%; display:flex; align-items:center; justify-content:center; color:#6b7280; font-weight:600 }
+.financial-summary { display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 20px }
+.finance-card { border:2px solid #e5e7eb; border-radius:12px; background:white }
+.finance-icon { font-size:48px; color:#667eea }
+.finance-value { font-size:26px; font-weight:800; color:#1a1a1a }

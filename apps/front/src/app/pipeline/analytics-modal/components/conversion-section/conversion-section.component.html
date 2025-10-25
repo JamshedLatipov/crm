@@ -1,0 +1,31 @@
+<mat-card class="chart-card">
+  <mat-card-content>
+    <div class="chart-wrapper">
+      <canvas #conversionCanvas></canvas>
+    </div>
+  </mat-card-content>
+</mat-card>
+
+<div class="insights-grid">
+  <mat-card class="insight-card">
+    <mat-card-content>
+      <mat-icon class="insight-icon success">check_circle</mat-icon>
+      <div class="insight-content">
+        <div class="insight-label">Лучший этап</div>
+        <div class="insight-value" *ngIf="getBestStage() as best">{{ best.name }} ({{ best.conversion }}%)</div>
+        <div class="insight-value" *ngIf="!getBestStage()">Нет данных</div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="insight-card">
+    <mat-card-content>
+      <mat-icon class="insight-icon warning">warning</mat-icon>
+      <div class="insight-content">
+        <div class="insight-label">Требует внимания</div>
+        <div class="insight-value" *ngIf="getWorstStage() as worst">{{ worst.name }} ({{ worst.conversion }}%)</div>
+        <div class="insight-value" *ngIf="!getWorstStage()">Все хорошо</div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

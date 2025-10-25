@@ -1,0 +1,130 @@
+<div class="analytics-modal">
+  <div class="modal-header">
+    <h2 mat-dialog-title>
+      <mat-icon>analytics</mat-icon>
+      Sales Pipeline Analytics
+    </h2>
+    <button mat-icon-button [mat-dialog-close]="false" class="close-button">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div mat-dialog-content class="modal-content">
+    <div *ngIf="!data.analytics" class="no-data">
+      <mat-icon class="large-icon">bar_chart</mat-icon>
+      <p>Аналитика недоступна</p>
+      <p class="subtitle">Загрузите данные и попробуйте снова</p>
+    </div>
+
+    <div *ngIf="data.analytics" class="analytics-content">
+      <mat-tab-group
+        [(selectedIndex)]="selectedTabIndex"
+        class="analytics-tabs"
+        (selectedTabChange)="initCharts()"
+      >
+        <!-- Таб с воронкой -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon>filter_list</mat-icon>
+            Воронка
+          </ng-template>
+          <div class="tab-content chart-tab">
+            <!-- Общая статистика -->
+            <app-analytics-summary [analytics]="data.analytics"></app-analytics-summary>
+
+            <!-- Funnel Chart -->
+            <app-funnel-chart [stages]="data.analytics?.byStage"></app-funnel-chart>
+
+            <!-- Дополнительная метрика -->
+            <div class="additional-metrics" *ngIf="data.analytics.averageSalesCycle">
+              <mat-card>
+                <mat-card-content>
+                  <div class="metric-row">
+                    <mat-icon>schedule</mat-icon>
+                    <div class="metric-info">
+                      <div class="metric-value">{{ data.analytics.averageSalesCycle }} дней</div>
+                      <div class="metric-label">Средний цикл продажи</div>
+                    </div>
+                  </div>
+                </mat-card-content>
+              </mat-card>
+            </div>
+
+            <!-- Таб с деталями этапов (перенесена в отдельный таб) -->
+            <!-- stages table moved to dedicated tab -->
+          </div>
+        </mat-tab>
+
+        <!-- Таб с таблицей (отдельный таб) -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon>table_chart</mat-icon>
+            Таблица
+          </ng-template>
+          <div class="tab-content table-tab">
+            <div class="table-header">
+              <h3>Детальная аналитика по этапам</h3>
+              <p class="table-subtitle">Подробные метрики для каждого этапа sales pipeline</p>
+            </div>
+
+            <app-stages-table [stages]="data.analytics?.byStage"></app-stages-table>
+          </div>
+        </mat-tab>
+
+        <!-- Таб с графиком конверсии -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon>trending_up</mat-icon>
+            Конверсия
+          </ng-template>
+          <div class="tab-content chart-tab">
+            <app-conversion-section [stages]="data.analytics?.byStage"></app-conversion-section>
+          </div>
+        </mat-tab>
+
+        <!-- Таб с временной диаграммой -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon>schedule</mat-icon>
+            Время
+          </ng-template>
+          <div class="tab-content chart-tab">
+            <app-timeline-chart [stages]="data.analytics?.byStage"></app-timeline-chart>
+          </div>
+        </mat-tab>
+
+        <!-- Таб с финансовой аналитикой -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon>attach_money</mat-icon>
+            Финансы
+          </ng-template>
+          <div class="tab-content chart-tab">
+            <app-finance-section [analytics]="data.analytics"></app-finance-section>
+          </div>
+        </mat-tab>
+      </mat-tab-group>
+    </div>
+  </div>
+
+  <div mat-dialog-actions class="modal-actions">
+    <div class="left-actions">
+      <button mat-button [mat-dialog-close]="false">Закрыть</button>
+    </div>
+    <div class="right-actions">
+      <button mat-button (click)="refreshData()" [disabled]="!data.analytics">
+        <mat-icon>refresh</mat-icon>
+        Обновить
+      </button>
+      <button
+        mat-raised-button
+        color="primary"
+        (click)="exportData()"
+        [disabled]="!data.analytics"
+      >
+        <mat-icon>download</mat-icon>
+        Экспорт
+      </button>
+    </div>
+  </div>
+</div>

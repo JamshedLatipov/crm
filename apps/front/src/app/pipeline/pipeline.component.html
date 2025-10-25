@@ -72,7 +72,7 @@
   <!-- Pipeline Container -->
   <div class="pipeline-container">
     <div class="pipeline-grid" #pipelineGrid>
-      <div *ngFor="let s of stages()" class="stage" [id]="'stage-' + s.id"
+      <div *ngFor="let s of stages(); trackBy: trackByStageId" class="stage" [id]="'stage-' + s.id"
            [class.won-stage]="s.type === 'won_stage'"
            [class.lost-stage]="s.type === 'lost_stage'">
         <div class="stage-header">
@@ -97,7 +97,7 @@
           (cdkDropListDropped)="dropToStage($event, s.id)" 
           (cdkDropListEntered)="onDropListEntered($event, s.id)" 
           (cdkDropListExited)="onDropListExited($event, s.id)">
-          <div *cdkVirtualFor="let deal of getDealsForStage(s.id)" 
+          <div *cdkVirtualFor="let deal of getDealsForStage(s.id); trackBy: trackByDealId; templateCacheSize: 0" 
                class="deal" 
                cdkDrag 
                [cdkDragData]="deal"
@@ -152,7 +152,7 @@
              (cdkDropListDropped)="dropToStage($event, s.id)" 
              (cdkDropListEntered)="onDropListEntered($event, s.id)" 
              (cdkDropListExited)="onDropListExited($event, s.id)">
-          <ng-container *ngFor="let deal of getDealsForStage(s.id)">
+          <ng-container *ngFor="let deal of getDealsForStage(s.id); trackBy: trackByDealId">
             <div class="deal" 
                  cdkDrag 
                  [cdkDragData]="deal"

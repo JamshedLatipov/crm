@@ -1,0 +1,35 @@
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.summary-card {
+  text-align: center;
+  border: 2px solid #e5e7eb;
+  background: #fff;
+  border-radius: 12px;
+  padding: 12px;
+  transition: all 0.18s ease;
+}
+
+.summary-card:hover { box-shadow: 0 6px 18px rgba(16,24,40,0.06); transform: translateY(-2px); }
+
+.metric-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 6px;
+}
+
+.metric-label {
+  font-size: 12px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-weight: 600;
+}
+
+.no-data { text-align: center; padding: 32px 12px; color: #666 }

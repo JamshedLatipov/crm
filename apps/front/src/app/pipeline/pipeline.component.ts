@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, ElementRef, viewChild, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ElementRef, viewChild, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -11,7 +11,7 @@ import { DealsService } from './deals.service';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { Deal, Stage, PipelineAnalytics, StageType, DealStatus } from './dtos';
-import { AnalyticsModalComponent } from './analytics-modal.component';
+import { AnalyticsModalComponent } from './analytics-modal/analytics-modal.component';
 import { DealContactSelectorComponent } from './deal-contact-selector.component';
 import { DealStatusComponent, DealStatus as DealStatusType } from '../shared/components/deal-status/deal-status.component';
 import { forkJoin } from 'rxjs';
@@ -31,6 +31,7 @@ import { forkJoin } from 'rxjs';
   ],
   templateUrl: './pipeline.component.html',
   styleUrls: ['./pipeline.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush, // Оптимизация производительности
 })
 export class PipelineComponent implements OnInit, OnDestroy {
   // Современный подход с viewChild signal
@@ -108,8 +109,9 @@ export class PipelineComponent implements OnInit, OnDestroy {
   private mouseX = 0;
   
   // Виртуальный скроллинг - публичные константы для шаблона
-  readonly VIRTUAL_SCROLL_ITEM_SIZE = 160; // Высота одной карточки сделки в px
-  readonly VIRTUAL_SCROLL_THRESHOLD = 20; // Минимум сделок для включения виртуального скроллинга
+  readonly VIRTUAL_SCROLL_ITEM_SIZE = 110; // Уменьшено вдвое со 200px для компактных карточек
+  readonly VIRTUAL_SCROLL_THRESHOLD = 50; // Увеличен порог - используем только для очень больших списков
+  readonly VIRTUAL_SCROLL_BUFFER = 400; // Буфер в пикселях сверху/снизу для предзагрузки
   
   // Computed для определения использования виртуального скроллинга
   useVirtualScroll = computed(() => {
@@ -489,5 +491,14 @@ export class PipelineComponent implements OnInit, OnDestroy {
   isHighValue(deal: Deal): boolean {
     const threshold = 100000; // Порог для крупных сделок
     return deal.amount >= threshold;
+  }
+
+  // TrackBy функции для оптимизации виртуального скроллинга
+  trackByDealId(index: number, deal: Deal): string | number {
+    return deal.id;
+  }
+
+  trackByStageId(index: number, stage: Stage): string | number {
+    return stage.id;
   }
 }

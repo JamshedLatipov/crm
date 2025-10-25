@@ -435,6 +435,7 @@
     }
 
     .stage-header {
+      display: flex;
       background: linear-gradient(
         135deg,
         rgba(16, 185, 129, 0.1) 0%,
@@ -448,7 +449,7 @@
       }
 
       .stage-count {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        background:  #10b981;
         box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
       }
     }
@@ -510,6 +511,8 @@
 
 // Stage Header
 .stage-header {
+  display: flex;
+  justify-content: space-between;
   padding: 20px;
   border-bottom: 2px solid #f1f5f9;
   background: linear-gradient(180deg, #f8fafc 0%, white 100%);
@@ -541,7 +544,7 @@
   }
 
   .stage-count {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background:  #667eea 0%;
     color: white;
     padding: 6px 12px;
     border-radius: 10px;
@@ -562,16 +565,16 @@
 // Deal Styles
 .deal {
   background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
-  padding: 20px;
-  margin: 10px 10px 0 10px;
-  border-radius: 16px;
+  padding: 10px 12px; // Уменьшено с 20px
+  margin: 6px 8px 0 8px; // Уменьшено с 10px
+  border-radius: 12px; // Уменьшено с 16px
   box-shadow: 
-    0 4px 12px rgba(0, 0, 0, 0.05),
-    0 2px 4px rgba(0, 0, 0, 0.08),
+    0 2px 8px rgba(0, 0, 0, 0.05),
+    0 1px 3px rgba(0, 0, 0, 0.08),
     0 0 0 1px rgba(0, 0, 0, 0.02);
   cursor: move;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  border-left: 5px solid transparent;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); // Быстрее анимация
+  border-left: 3px solid transparent; // Уменьшено с 5px
   position: relative;
   overflow: hidden;
   backdrop-filter: blur(10px);
@@ -583,7 +586,7 @@
     position: absolute;
     top: 0;
     left: 0;
-    width: 5px;
+    width: 3px; // Уменьшено с 5px
     height: 100%;
     background: linear-gradient(180deg, 
       #667eea 0%, 
@@ -591,7 +594,7 @@
       #f093fb 100%
     );
     opacity: 0;
-    transition: all 0.4s ease;
+    transition: all 0.3s ease; // Быстрее
   }
   
   // Subtle shine effect on hover
@@ -615,15 +618,15 @@
   &:hover {
     background: white;
     box-shadow: 
-      0 12px 32px rgba(102, 126, 234, 0.15),
-      0 4px 12px rgba(0, 0, 0, 0.1),
+      0 8px 20px rgba(102, 126, 234, 0.12),
+      0 3px 8px rgba(0, 0, 0, 0.1),
       0 0 0 1px rgba(102, 126, 234, 0.1);
-    transform: translateY(-6px) scale(1.03);
+    transform: translateY(-3px) scale(1.02); // Меньше подъем
     
     &::before {
       opacity: 1;
-      width: 6px;
-      box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+      width: 4px; // Уменьшено с 6px
+      box-shadow: 0 0 15px rgba(102, 126, 234, 0.5);
     }
     
     &::after {
@@ -632,7 +635,7 @@
   }
 
   &:active {
-    transform: translateY(-3px) scale(1.01);
+    transform: translateY(-2px) scale(1.01);
   }
 }
 
@@ -667,20 +670,20 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 14px;
+  margin-bottom: 8px; // Уменьшено с 14px
   position: relative;
   
   // Decorative corner accent
   &::before {
     content: '';
     position: absolute;
-    top: -20px;
-    right: -20px;
-    width: 40px;
-    height: 40px;
+    top: -10px; // Уменьшено с -20px
+    right: -12px; // Уменьшено с -20px
+    width: 24px; // Уменьшено с 40px
+    height: 24px; // Уменьшено с 40px
     background: linear-gradient(135deg, #667eea 0%, transparent 70%);
     opacity: 0.1;
-    border-radius: 0 16px 0 16px;
+    border-radius: 0 12px 0 12px;
     transition: opacity 0.3s ease;
   }
   
@@ -690,17 +693,17 @@
 }
 
 .deal-status-row {
-  margin-bottom: 14px;
+  margin-bottom: 8px; // Уменьшено с 14px
   animation: slideInLeft 0.3s ease;
 }
 
 .deal-title {
-  font-weight: 800;
-  font-size: 16px;
+  font-weight: 700; // Уменьшено с 800
+  font-size: 13px; // Уменьшено с 16px
   margin-bottom: 0;
   color: #1e293b;
   flex: 1;
-  line-height: 1.5;
+  line-height: 1.4; // Уменьшено с 1.5
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
@@ -719,27 +722,27 @@
 
 .deal-actions {
   display: flex;
-  gap: 6px;
-  margin-left: 14px;
+  gap: 4px; // Уменьшено с 6px
+  margin-left: 8px; // Уменьшено с 14px
   opacity: 0;
   transform: translateX(10px);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   
   .contact-action-btn {
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
+    width: 28px; // Уменьшено с 36px
+    height: 28px; // Уменьшено с 36px
+    min-width: 28px;
     padding: 0;
-    border-radius: 10px;
+    border-radius: 8px; // Уменьшено с 10px
     background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border: 1px solid #e2e8f0;
     
     mat-icon {
-      width: 20px;
-      height: 20px;
-      font-size: 20px;
-      line-height: 20px;
+      width: 16px; // Уменьшено с 20px
+      height: 16px; // Уменьшено с 20px
+      font-size: 16px; // Уменьшено с 20px
+      line-height: 16px;
       color: #667eea;
       transition: all 0.3s ease;
     }
@@ -747,7 +750,7 @@
     &:hover {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       transform: scale(1.15) rotate(5deg);
-      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); // Меньше тень
       border-color: transparent;
       
       mat-icon {
@@ -772,21 +775,21 @@
 .deal-lead {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 13px;
+  gap: 6px; // Уменьшено с 10px
+  font-size: 11px; // Уменьшено с 13px
   color: #64748b;
-  margin-bottom: 10px;
-  padding: 8px 12px;
+  margin-bottom: 5px; // Уменьшено с 10px
+  padding: 4px 8px; // Уменьшено с 8px 12px
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border-radius: 8px;
+  border-radius: 6px; // Уменьшено с 8px
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: 1px solid transparent;
   font-weight: 500;
   
   mat-icon {
-    width: 18px;
-    height: 18px;
-    font-size: 18px;
+    width: 14px; // Уменьшено с 18px
+    height: 14px; // Уменьшено с 18px
+    font-size: 14px; // Уменьшено с 18px
     color: #667eea;
     transition: all 0.3s ease;
   }
@@ -795,55 +798,55 @@
     background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
     color: #475569;
     border-color: #c7d2fe;
-    transform: translateX(4px);
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+    transform: translateX(2px); // Уменьшено с 4px
+    box-shadow: 0 1px 4px rgba(102, 126, 234, 0.1);
     
     mat-icon {
-      transform: scale(1.2);
+      transform: scale(1.1); // Уменьшено с 1.2
       color: #764ba2;
     }
   }
 }
 
 .deal-amount {
-  font-size: 20px;
-  font-weight: 900;
+  font-size: 15px; // Уменьшено с 20px
+  font-weight: 800; // Уменьшено с 900
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  margin-bottom: 10px;
+  margin-bottom: 5px; // Уменьшено с 10px
   letter-spacing: -0.03em;
-  padding: 6px 12px;
+  padding: 3px 8px; // Уменьшено с 6px 12px
   background-color: rgba(16, 185, 129, 0.08);
-  border-radius: 8px;
+  border-radius: 6px; // Уменьшено с 8px
   display: inline-block;
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
+  box-shadow: 0 1px 4px rgba(16, 185, 129, 0.15);
   transition: all 0.3s ease;
   
   &:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+    transform: scale(1.03); // Уменьшено с 1.05
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
   }
 }
 
 .deal-probability {
-  font-size: 13px;
+  font-size: 11px; // Уменьшено с 13px
   color: #475569;
-  margin-bottom: 8px;
-  font-weight: 700;
-  padding: 6px 14px;
+  margin-bottom: 5px; // Уменьшено с 8px
+  font-weight: 600; // Уменьшено с 700
+  padding: 3px 8px; // Уменьшено с 6px 14px
   background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-  border-radius: 8px;
+  border-radius: 6px; // Уменьшено с 8px
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px; // Уменьшено с 6px
   border: 1px solid #cbd5e1;
   transition: all 0.3s ease;
   
   &::before {
     content: '📊';
-    font-size: 14px;
+    font-size: 11px; // Уменьшено с 14px
   }
   
   &:hover {
@@ -854,28 +857,28 @@
 }
 
 .deal-date {
-  font-size: 13px;
+  font-size: 11px; // Уменьшено с 13px
   color: #64748b;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: 4px; // Уменьшено с 6px
+  padding: 3px 8px; // Уменьшено с 6px 12px
   background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  border-radius: 8px;
+  border-radius: 6px; // Уменьшено с 8px
   border: 1px solid #fcd34d;
   transition: all 0.3s ease;
   
   &::before {
     content: '📅';
-    font-size: 15px;
+    font-size: 12px; // Уменьшено с 15px
     animation: dateIconBounce 2s ease-in-out infinite;
   }
   
   &:hover {
     background: linear-gradient(135deg, #fde047 0%, #facc15 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(250, 204, 21, 0.3);
+    transform: translateY(-1px); // Уменьшено с -2px
+    box-shadow: 0 2px 8px rgba(250, 204, 21, 0.3);
   }
 }
 
@@ -909,6 +912,12 @@
   position: relative;
   overflow-y: auto; // Добавляем вертикальный скролл
   overflow-x: hidden; // Скрываем горизонтальный скролл
+  scroll-behavior: smooth; // Плавный скроллинг
+  -webkit-overflow-scrolling: touch; // Плавный скроллинг на iOS
+  
+  // Оптимизация производительности скроллинга
+  will-change: scroll-position;
+  transform: translateZ(0); // GPU ускорение
 
   // Стили для скроллбара
   &::-webkit-scrollbar {
@@ -957,6 +966,8 @@
 .deals-virtual {
   min-height: 0 !important; // Позволяем flex-элементу сжиматься
   flex: 1 1 auto !important; // Занимаем оставшееся пространство
+  contain: strict; // CSS containment для производительности
+  will-change: scroll-position; // Оптимизация для скроллинга
 
   // Контейнер виртуального скроллинга
   ::ng-deep .cdk-virtual-scroll-content-wrapper {
@@ -964,11 +975,29 @@
     flex-direction: column;
     gap: 0.5rem;
     padding: 0.5rem;
+    contain: layout style paint; // Ограничиваем перерисовку
   }
 
   // Spacer элементы виртуального скроллинга
   ::ng-deep .cdk-virtual-scroll-spacer {
     flex-shrink: 0; // Spacer тоже не должен сжиматься
+  }
+
+  // Упрощенные стили для карточек в виртуальном скролле (для производительности)
+  .deal {
+    // Отключаем сложные анимации при виртуальном скроллинге
+    &::before,
+    &::after {
+      display: none; // Убираем декоративные элементы
+    }
+
+    transition: box-shadow 0.2s ease, transform 0.2s ease; // Упрощенные transitions
+
+    &:hover {
+      &::after {
+        display: none; // Убираем shine эффект
+      }
+    }
   }
 }
 
@@ -1049,15 +1078,15 @@
 
 .cdk-drag-placeholder {
   background: linear-gradient(135deg, #fafbfc 0%, #f0f2f5 100%);
-  border: 3px dashed rgba(102, 126, 234, 0.4);
-  border-radius: 16px;
+  border: 2px dashed rgba(102, 126, 234, 0.4); // Уменьшено с 3px
+  border-radius: 12px; // Уменьшено с 16px
   opacity: 0.7;
-  margin: 10px 10px 0 10px;
-  padding: 20px;
-  min-height: 150px;
+  margin: 6px 8px 0 8px; // Уменьшено с 10px
+  padding: 10px 12px; // Уменьшено с 20px
+  min-height: 80px; // Уменьшено вдвое со 150px
   box-shadow: 
-    0 4px 12px rgba(102, 126, 234, 0.1),
-    inset 0 0 30px rgba(102, 126, 234, 0.05);
+    0 2px 8px rgba(102, 126, 234, 0.1),
+    inset 0 0 20px rgba(102, 126, 234, 0.05);
   position: relative;
   overflow: hidden;
   
@@ -1069,8 +1098,8 @@
     left: 0;
     right: 0;
     bottom: 0;
-    border: 3px dashed rgba(102, 126, 234, 0.6);
-    border-radius: 16px;
+    border: 2px dashed rgba(102, 126, 234, 0.6); // Уменьшено с 3px
+    border-radius: 12px; // Уменьшено с 16px
     animation: dashAnimation 1s linear infinite;
   }
   
@@ -1081,7 +1110,7 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 48px;
+    font-size: 32px; // Уменьшено с 48px
     color: rgba(102, 126, 234, 0.3);
     animation: pulse 1s ease-in-out infinite;
   }

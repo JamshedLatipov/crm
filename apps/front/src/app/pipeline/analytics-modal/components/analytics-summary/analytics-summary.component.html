@@ -1,0 +1,35 @@
+<div class="summary-cards" *ngIf="analytics">
+  <mat-card class="summary-card">
+    <mat-card-content>
+      <div class="metric-value">{{ analytics.totalDeals }}</div>
+      <div class="metric-label">Всего сделок</div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="summary-card">
+    <mat-card-content>
+      <div class="metric-value">{{ analytics.totalAmount | currency : 'RUB' : 'symbol' : '1.0-0' }}</div>
+      <div class="metric-label">Общая сумма</div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="summary-card">
+    <mat-card-content>
+      <div class="metric-value">{{ analytics.averageDealSize | currency : 'RUB' : 'symbol' : '1.0-0' }}</div>
+      <div class="metric-label">Средний чек</div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="summary-card">
+    <mat-card-content>
+      <div class="metric-value">{{ analytics.overallConversion }}%</div>
+      <div class="metric-label">Общая конверсия</div>
+    </mat-card-content>
+  </mat-card>
+</div>
+
+<div *ngIf="!analytics" class="no-data">
+  <mat-icon class="large-icon">bar_chart</mat-icon>
+  <p>Аналитика недоступна</p>
+  <p class="subtitle">Загрузите данные и попробуйте снова</p>
+</div>

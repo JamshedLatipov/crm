@@ -1,0 +1,585 @@
+/* Global styles */
+.analytics-modal-panel .mdc-dialog__surface {
+  border-radius: 12px !important;
+}
+
+.analytics-modal-panel .mat-mdc-dialog-container {
+  --mdc-dialog-container-color: #ffffff;
+  box-shadow: 0 11px 15px -7px rgba(0, 0, 0, 0.2);
+}
+
+.analytics-modal {
+  width: 100%;
+  max-width: 900px;
+}
+
+.analytics-modal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 0;
+}
+
+.analytics-modal .modal-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #333;
+}
+
+.analytics-modal .close-button {
+  margin-left: auto;
+}
+
+.analytics-modal .modal-content {
+  padding: 24px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.analytics-modal .summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.analytics-modal .summary-card {
+  text-align: center;
+  border: 2px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.analytics-modal .summary-card:hover {
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.analytics-modal .summary-card .metric-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #667eea;
+  margin-bottom: 8px;
+}
+
+.analytics-modal .summary-card .metric-label {
+  font-size: 12px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.analytics-modal .funnel-chart {
+  padding: 20px;
+  background: #f9fafb;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+.analytics-modal .funnel-canvas-wrapper {
+  position: relative;
+  height: 400px;
+  margin-bottom: 24px;
+}
+
+.analytics-modal .funnel-canvas-wrapper canvas {
+  max-height: 100%;
+}
+
+.analytics-modal .funnel-metrics-summary {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+  padding-top: 16px;
+  border-top: 1px solid #e0e0e0;
+  flex-wrap: wrap;
+}
+
+.analytics-modal .metric-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: white;
+  border-radius: 12px;
+  border: 2px solid #e5e7eb;
+  min-width: 140px;
+  transition: all 0.2s ease;
+}
+
+.analytics-modal .metric-summary:hover {
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.analytics-modal .metric-summary mat-icon {
+  color: #667eea;
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
+}
+
+.analytics-modal .metric-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.analytics-modal .metric-info .metric-label {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.analytics-modal .metric-info .metric-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.analytics-modal .funnel-card {
+  margin-bottom: 24px;
+  border: 2px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.analytics-modal .funnel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+.analytics-modal .funnel-title mat-icon {
+  color: #667eea;
+}
+
+.analytics-modal .funnel-subtitle {
+  color: #6b7280;
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.analytics-modal .table-container {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.analytics-modal .analytics-table {
+  width: 100%;
+}
+
+.analytics-modal .analytics-table .mat-mdc-header-row {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e1e4e8;
+}
+
+.analytics-modal .analytics-table .mat-mdc-header-cell {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 16px 12px;
+  border-bottom: none;
+}
+
+.analytics-modal .analytics-table .mat-mdc-cell {
+  padding: 16px 12px;
+  border-bottom: 1px solid #f1f3f4;
+  font-size: 14px;
+  color: #1a1a1a;
+}
+
+.analytics-modal .analytics-table .mat-mdc-row {
+  cursor: default;
+  transition: background-color 0.2s ease;
+}
+
+.analytics-modal .analytics-table .mat-mdc-row:hover {
+  background-color: #f8f9fa;
+}
+
+.analytics-modal .stage-name-cell {
+  font-weight: 500;
+}
+
+.analytics-modal .stage-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.analytics-modal .stage-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.analytics-modal .stage-name {
+  color: #1a1a1a;
+}
+
+.analytics-modal .count-cell {
+  text-align: center;
+}
+
+.analytics-modal .count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 24px;
+  padding: 0 8px;
+  background-color: #e3f2fd;
+  color: #1976d2;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.analytics-modal .amount-cell {
+  text-align: right;
+  font-weight: 500;
+  color: #2e7d32;
+}
+
+.analytics-modal .conversion-cell {
+  text-align: center;
+}
+
+.analytics-modal .time-cell {
+  color: #5f6368;
+  font-size: 13px;
+}
+
+.analytics-modal .conversion-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: white;
+}
+
+.analytics-modal .conversion-badge.high {
+  background-color: #34a853;
+}
+
+.analytics-modal .conversion-badge.medium-high {
+  background-color: #fbbc04;
+}
+
+.analytics-modal .conversion-badge.medium {
+  background-color: #ff9800;
+}
+
+.analytics-modal .conversion-badge.low {
+  background-color: #ea4335;
+}
+
+.analytics-modal .table-header {
+  margin-bottom: 24px;
+}
+
+.analytics-modal .table-header h3 {
+  margin: 0 0 4px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.analytics-modal .table-subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: #5f6368;
+}
+
+.analytics-modal .additional-metrics {
+  margin-bottom: 16px;
+}
+
+.analytics-modal .additional-metrics mat-card {
+  border: 2px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.analytics-modal .additional-metrics mat-card:hover {
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.analytics-modal .metric-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.analytics-modal .metric-row mat-icon {
+  color: #667eea;
+  font-size: 32px;
+  width: 32px;
+  height: 32px;
+}
+
+.analytics-modal .metric-row .metric-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.analytics-modal .metric-row .metric-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.analytics-modal .metric-row .metric-label {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.analytics-modal .modal-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.analytics-modal .left-actions,
+.analytics-modal .right-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.analytics-modal .no-data {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+.analytics-modal .no-data .large-icon {
+  font-size: 64px;
+  width: 64px;
+  height: 64px;
+  color: #ccc;
+  margin-bottom: 16px;
+}
+
+.analytics-modal .no-data .subtitle {
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+.chart-card {
+  margin-bottom: 24px;
+  border: 2px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
+}
+
+.chart-card:hover {
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.chart-card .chart-wrapper {
+  position: relative;
+  height: 400px;
+  padding: 20px;
+}
+
+.chart-card .chart-wrapper canvas {
+  max-height: 100%;
+}
+
+.insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.insight-card {
+  background: white;
+  border-radius: 12px;
+  border: 2px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.insight-card:hover {
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
+}
+
+.insight-card mat-card-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px !important;
+}
+
+.insight-card .insight-icon {
+  font-size: 42px;
+  width: 42px;
+  height: 42px;
+}
+
+.insight-card .insight-icon.success {
+  color: #10b981;
+}
+
+.insight-card .insight-icon.warning {
+  color: #f59e0b;
+}
+
+.insight-card .insight-content {
+  flex: 1;
+}
+
+.insight-card .insight-label {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.insight-card .insight-value {
+  font-size: 16px;
+  color: #1e293b;
+  font-weight: 700;
+}
+
+.time-summary {
+  margin-top: 24px;
+}
+
+.time-summary mat-card {
+  border: 2px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.time-summary mat-card:hover {
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.time-summary .summary-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+}
+
+.time-summary .summary-row mat-icon {
+  font-size: 32px;
+  width: 32px;
+  height: 32px;
+  color: #667eea;
+}
+
+.time-summary .summary-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.time-summary .summary-label {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.time-summary .summary-value {
+  font-size: 24px;
+  color: #1e293b;
+  font-weight: 700;
+}
+
+.financial-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.finance-card {
+  background: white;
+  border-radius: 12px;
+  border: 2px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.finance-card:hover {
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
+}
+
+.finance-card mat-card-content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 24px !important;
+}
+
+.finance-card .finance-icon {
+  font-size: 48px;
+  width: 48px;
+  height: 48px;
+  color: #667eea;
+}
+
+.finance-card .finance-info {
+  flex: 1;
+}
+
+.finance-card .finance-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  color: #6b7280;
+}
+
+.finance-card .finance-value {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #1a1a1a;
+}
+
+@media (max-width: 768px) {
+  .analytics-modal {
+    max-width: 95vw;
+  }
+
+  .analytics-modal .summary-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .chart-wrapper {
+    height: 300px !important;
+    padding: 10px !important;
+  }
+
+  .insights-grid,
+  .financial-summary {
+    grid-template-columns: 1fr;
+  }
+}

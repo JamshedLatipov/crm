@@ -1,0 +1,32 @@
+<mat-card class="funnel-card">
+  <mat-card-header>
+    <mat-card-title class="funnel-title">
+      <mat-icon>filter_list</mat-icon>
+      Воронка продаж
+    </mat-card-title>
+    <div class="funnel-subtitle">Визуализация движения сделок через этапы</div>
+  </mat-card-header>
+  <mat-card-content>
+    <div class="funnel-chart">
+      <div class="funnel-canvas-wrapper">
+        <canvas #funnelCanvas></canvas>
+      </div>
+      <div class="funnel-metrics-summary">
+        <div class="metric-summary-card">
+          <mat-icon>trending_down</mat-icon>
+          <div class="metric-info">
+            <span class="metric-label">Общая конверсия</span>
+            <span class="metric-value">{{ averageConversion() | number:'1.0-1' }}%</span>
+          </div>
+        </div>
+        <div class="metric-summary">
+          <mat-icon>access_time</mat-icon>
+          <div class="metric-info">
+            <span class="metric-label">Средний цикл</span>
+            <span class="metric-value">{{ averageTime() | number:'1.0-0' }} дней</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </mat-card-content>
+</mat-card>
