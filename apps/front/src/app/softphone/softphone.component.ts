@@ -577,11 +577,28 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   // Clipboard paste support
   @HostListener('window:paste', ['$event'])
   onPaste(e: ClipboardEvent) {
+    // If a call is active we don't change the dialer
     if (this.callActive) return;
+
+    // If user has focus inside an editable element (input/textarea/contenteditable)
+    // let the native paste happen so app-wide text fields still accept paste.
+    const active = document.activeElement as HTMLElement | null;
+    const inEditable = !!(
+      active &&
+      (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)
+    );
+
     const text = e.clipboardData?.getData('text') || '';
     if (!text) return;
-    this.applyClipboardNumber(text);
+
+    if (inEditable) {
+      // Allow normal paste into focused editable fields
+      return;
+    }
+
+    // Otherwise intercept the paste and try to extract a phone number
     e.preventDefault();
+    this.applyClipboardNumber(text);
   }
 
 

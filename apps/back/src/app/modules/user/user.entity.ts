@@ -1,4 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Exclude } from 'class-transformer';
 import { PsEndpoint } from '../calls/entities/ps-endpoint.entity';
 
 export enum UserRole {
@@ -19,6 +20,7 @@ export class User {
   username: string;
 
   @Column()
+  @Exclude()
   password: string;
 
   @Column('simple-array')

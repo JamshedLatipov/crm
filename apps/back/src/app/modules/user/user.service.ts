@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { User } from './user.entity';
 import { AutoAssignCriteriaDto, ManagerStatsResponseDto, CreateUserDto, UpdateUserDto } from './dto/user.dto';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UserService {
@@ -409,7 +410,9 @@ export class UserService {
     }
 
     // In a real implementation, you would hash the password
-    user.password = newPassword; // This should be hashed
+    // Hash the new password before saving so login (bcrypt.compare) works
+    const hash = await bcrypt.hash(newPassword, 10);
+    user.password = hash;
     await this.userRepository.save(user);
   }
 
@@ -421,11 +424,12 @@ export class UserService {
 
     // Generate temporary password
     const temporaryPassword = Math.random().toString(36).slice(-8);
-    
-    // In a real implementation, you would hash the password
-    user.password = temporaryPassword; // This should be hashed
+    // Hash the temporary password before saving so the user can log in using it
+    const hash = await bcrypt.hash(temporaryPassword, 10);
+    user.password = hash;
     await this.userRepository.save(user);
 
+    // Return the plaintext temporary password to the caller (for display/copy)
     return temporaryPassword;
   }
 
