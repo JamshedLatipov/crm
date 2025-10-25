@@ -22,7 +22,7 @@ export class TaskCalendarWeekComponent implements OnChanges {
   public rowGap = 8; // px
 
   computeTop(startIdx: number) {
-    return this.headerHeight + startIdx * (this.hourRowHeight + this.rowGap);
+    return this.headerHeight + startIdx * (this.hourRowHeight + this.rowGap + 1);
   }
 
   computeHeight(span: number) {
