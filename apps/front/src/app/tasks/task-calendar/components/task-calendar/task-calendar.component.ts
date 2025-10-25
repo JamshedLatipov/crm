@@ -289,23 +289,56 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
         const startDate = t.createdAt ? new Date(t.createdAt) : new Date(t.dueDate);
         const endDate = new Date(t.dueDate);
         if (endDate < start || startDate > addDays(start, days - 1)) continue;
+        
         const clippedStart = startDate < start ? start : startDate;
         const clippedEnd = endDate > addDays(start, days - 1) ? addDays(start, days - 1) : endDate;
         const startDayIdx = Math.max(0, Math.floor((clippedStart.getTime() - start.getTime()) / 86400000));
         const endDayIdx = Math.max(0, Math.floor((clippedEnd.getTime() - start.getTime()) / 86400000));
         const daySpan = endDayIdx - startDayIdx + 1;
-        // compute hour indexes within displayed weekHours
-        const sHour = clippedStart.getHours();
-        const eHour = clippedEnd.getHours();
-        let sIdx = this.weekHours.indexOf(sHour);
-        let eIdx = this.weekHours.indexOf(eHour);
-        if (sIdx === -1) sIdx = 0;
-        if (eIdx === -1) eIdx = this.weekHours.length - 1;
-        const spanHours = Math.max(1, eIdx - sIdx + 1);
-        // attach multi-day span to the start day's multiDaySpans
-        if (this.weekDays[startDayIdx]) {
-          this.weekDays[startDayIdx].multiDaySpans = this.weekDays[startDayIdx].multiDaySpans || [];
-          this.weekDays[startDayIdx].multiDaySpans.push({ task: t, startDay: startDayIdx, daySpan, startIdx: sIdx, spanHours });
+        
+        if (daySpan === 1) {
+          // Single day task spanning multiple hours - already handled in single-day logic
+          continue;
+        }
+        
+        // Multi-day task: create a separate span block for each day it covers
+        for (let dayOffset = 0; dayOffset < daySpan; dayOffset++) {
+          const currentDayIdx = startDayIdx + dayOffset;
+          if (currentDayIdx >= this.weekDays.length) break;
+          
+          let startIdx: number;
+          let spanHours: number;
+          
+          if (dayOffset === 0) {
+            // First day: from start hour to end of displayed hours
+            const sHour = clippedStart.getHours();
+            startIdx = this.weekHours.indexOf(sHour);
+            if (startIdx === -1) startIdx = 0;
+            spanHours = this.weekHours.length - startIdx;
+          } else if (dayOffset === daySpan - 1) {
+            // Last day: from start of displayed hours to end hour
+            const eHour = clippedEnd.getHours();
+            let eIdx = this.weekHours.indexOf(eHour);
+            if (eIdx === -1) eIdx = this.weekHours.length - 1;
+            startIdx = 0;
+            spanHours = eIdx + 1;
+          } else {
+            // Middle day: all displayed hours
+            startIdx = 0;
+            spanHours = this.weekHours.length;
+          }
+          
+          // Create a span that covers only this day (daySpan = 1)
+          if (this.weekDays[currentDayIdx]) {
+            this.weekDays[currentDayIdx].multiDaySpans = this.weekDays[currentDayIdx].multiDaySpans || [];
+            this.weekDays[currentDayIdx].multiDaySpans.push({ 
+              task: t, 
+              startDay: currentDayIdx, 
+              daySpan: 1,  // Each block spans only one day
+              startIdx, 
+              spanHours 
+            });
+          }
         }
       } catch {
         /* ignore parse errors */
