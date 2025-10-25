@@ -10,7 +10,7 @@ import { CalendarTask } from '../../task-calendar.service';
   styleUrls: ['./task-calendar-week.component.scss'],
 })
 export class TaskCalendarWeekComponent implements OnChanges {
-  @Input() weekDays: Array<{ date: Date; tasks: CalendarTask[]; tasksByHour?: CalendarTask[][]; tasksWithSpan?: Array<{ task: CalendarTask; startIdx: number; span: number }>; isToday?: boolean }> = [];
+  @Input() weekDays: Array<{ date: Date; tasks: CalendarTask[]; tasksByHour?: CalendarTask[][]; tasksWithSpan?: Array<{ task: CalendarTask; startIdx: number; span: number }>; multiDaySpans?: Array<{ task: CalendarTask; startDay: number; daySpan: number; startIdx: number; spanHours: number }>; isToday?: boolean }> = [];
   @Input() weekHours: number[] = [];
   @Input() maxTasksPerCell = 3;
   @Input() currentHour = -1;
@@ -34,6 +34,9 @@ export class TaskCalendarWeekComponent implements OnChanges {
   @ViewChild('grid', { read: ElementRef, static: true }) gridRef!: ElementRef<HTMLElement>;
   private columnLefts: number[] = [];
   private columnWidths: number[] = [];
+  // layout cache for overlapping span tasks
+  private spanLayouts = new WeakMap<object, { left: number; width: number }>();
+  private laneGap = 6; // px between lanes inside a day column
 
   ngAfterViewInit(): void {
     // compute initial metrics after a tick
@@ -56,7 +59,9 @@ export class TaskCalendarWeekComponent implements OnChanges {
 
   private computeGridMetrics() {
     try {
-      const gridEl = this.gridRef.nativeElement as HTMLElement;
+      const gridEl = this.gridRef?.nativeElement as HTMLElement;
+      if (!gridEl) return;
+      
       const headers = Array.from(gridEl.querySelectorAll('.day-header')) as HTMLElement[];
       const gridRect = gridEl.getBoundingClientRect();
 
@@ -64,48 +69,74 @@ export class TaskCalendarWeekComponent implements OnChanges {
       if (headers.length === this.weekDays.length && headers.length > 0) {
         this.columnLefts = headers.map((h) => h.getBoundingClientRect().left - gridRect.left);
         this.columnWidths = headers.map((h) => h.getBoundingClientRect().width);
+        this.computeSpanLayouts();
         return;
       }
 
-      // Fallback: compute columns from grid geometry. Use the left "corner" column width
-      // (hour labels) as starting offset and distribute remaining width across day columns.
-  const cornerEl = gridEl.querySelector('.corner') as HTMLElement | null;
-  // ensure we have a sensible left-column width; guard against collapsed .corner
-  const measuredCorner = cornerEl ? cornerEl.getBoundingClientRect().width : 0;
-  const leftCol = Math.max(80, Math.round(measuredCorner)); // px fallback minimum
-  // account for grid padding (if any)
-  const paddingLeft = parseFloat(window.getComputedStyle(gridEl).paddingLeft || '0') || 0;
+      // Fallback: compute columns from grid geometry
+      const cornerEl = gridEl.querySelector('.corner') as HTMLElement | null;
+      const measuredCorner = cornerEl ? cornerEl.getBoundingClientRect().width : 0;
+      const leftCol = Math.max(80, Math.round(measuredCorner) || 80);
+      const paddingLeft = parseFloat(window.getComputedStyle(gridEl).paddingLeft || '0') || 0;
       const dayCount = Math.max(1, this.weekDays.length);
-      // Read computed column-gap from CSS if available
       const computed = window.getComputedStyle(gridEl);
-      const gap = parseFloat(computed.columnGap || computed.getPropertyValue('column-gap') || '') || 12;
+      const gap = parseFloat(computed.columnGap || computed.getPropertyValue('column-gap') || '12') || 12;
       const totalGap = Math.max(0, (dayCount - 1) * gap);
-      const avail = Math.max(0, gridRect.width - leftCol - totalGap);
+      const avail = Math.max(0, gridRect.width - leftCol - totalGap - paddingLeft);
       const colW = Math.floor(avail / dayCount);
+      
       this.columnLefts = [];
       this.columnWidths = [];
-      // the left of the first day column is at leftCol pixels from grid left
       for (let i = 0; i < dayCount; i++) {
         const left = paddingLeft + leftCol + i * (colW + gap);
         this.columnLefts.push(left);
         this.columnWidths.push(colW);
       }
+      this.computeSpanLayouts();
     } catch (err) {
-      // fallback: compute evenly
-      const gridEl = this.gridRef?.nativeElement as HTMLElement;
-      if (!gridEl) return;
-      const gridRect = gridEl.getBoundingClientRect();
-      const leftCol = 80; // left label column
-      const dayCount = Math.max(1, this.weekDays.length);
-      const totalGap = (dayCount - 1) * 12; // column-gap default
-      const avail = Math.max(0, gridRect.width - leftCol - totalGap);
-      const colW = Math.floor(avail / dayCount);
-      this.columnLefts = [];
-      this.columnWidths = [];
-      for (let i = 0; i < dayCount; i++) {
-        const left = leftCol + i * (colW + 12);
-        this.columnLefts.push(left);
-        this.columnWidths.push(colW);
+      console.warn('Failed to compute grid metrics:', err);
+    }
+  }
+
+  private computeSpanLayouts() {
+    // reset
+    this.spanLayouts = new WeakMap<object, { left: number; width: number }>();
+    for (let di = 0; di < this.weekDays.length; di++) {
+      const day = this.weekDays[di];
+      const spans = (day && day.tasksWithSpan) ? [...day.tasksWithSpan] : [];
+      if (!spans.length) continue;
+      spans.sort((a, b) => a.startIdx - b.startIdx || b.span - a.span);
+      const lanes: Array<{ end: number; items: any[] }> = [];
+      for (const s of spans) {
+        const sStart = s.startIdx;
+        const sEnd = s.startIdx + s.span; // exclusive
+        let placed = false;
+        for (let li = 0; li < lanes.length; li++) {
+          if (lanes[li].end <= sStart) {
+            lanes[li].items.push(s);
+            lanes[li].end = sEnd;
+            (s as any).__lane = li;
+            placed = true;
+            break;
+          }
+        }
+        if (!placed) {
+          const li = lanes.length;
+          lanes.push({ end: sEnd, items: [s] });
+          (s as any).__lane = li;
+        }
+      }
+      const laneCount = lanes.length;
+      const colLeft = this.columnLefts[di] ?? 0;
+      const colWidth = this.columnWidths[di] ?? 0;
+      const totalGap = Math.max(0, (laneCount - 1) * this.laneGap);
+      const innerPadding = 8;
+      const laneWidth = Math.max(40, (colWidth - innerPadding * 2 - totalGap) / Math.max(1, laneCount));
+      for (const s of spans) {
+        const li = (s as any).__lane || 0;
+        const left = colLeft + innerPadding + li * (laneWidth + this.laneGap);
+        const width = Math.min(laneWidth, Math.max(40, colLeft + colWidth - left - innerPadding));
+        this.spanLayouts.set(s as object, { left, width });
       }
     }
   }
@@ -114,11 +145,32 @@ export class TaskCalendarWeekComponent implements OnChanges {
     return this.columnLefts[dayIndex] ?? 0;
   }
 
-  computeSpanWidth(dayIndex: number) {
-    return this.columnWidths[dayIndex] ?? 0;
+  computeSpanWidth(dayIndex: number, spanDays = 1) {
+    // sum column widths for spanDays starting at dayIndex, include gaps
+    let w = 0;
+    for (let i = 0; i < spanDays; i++) {
+      w += this.columnWidths[dayIndex + i] ?? 0;
+    }
+    // include internal gaps between columns
+    const gridEl = this.gridRef?.nativeElement as HTMLElement | null;
+    const gap = gridEl ? parseFloat(window.getComputedStyle(gridEl).getPropertyValue('column-gap') || '0') || 12 : 12;
+    w += Math.max(0, spanDays - 1) * gap;
+    return w;
   }
 
-  trackByDate(_i: number, cell: { date: Date; tasks?: CalendarTask[] }) {
-    return cell?.date ? cell.date.toDateString() : 'empty-' + _i;
+  computeSpanLayoutLeft(dayIndex: number, spanObj: any) {
+    const layout = this.spanLayouts.get(spanObj as object);
+    if (layout) return layout.left;
+    return this.computeSpanLeft(dayIndex) + 8;
+  }
+
+  computeSpanLayoutWidth(dayIndex: number, spanObj: any) {
+    const layout = this.spanLayouts.get(spanObj as object);
+    if (layout) return layout.width;
+    return (this.columnWidths[dayIndex] ?? 0) - 16;
+  }
+
+  trackByDate(i: number, cell: { date: Date; tasks?: CalendarTask[] }) {
+    return cell?.date ? cell.date.toDateString() : 'empty-' + i;
   }
 }

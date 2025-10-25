@@ -2,52 +2,237 @@
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 10px;
+  position: relative;
 }
+
 .weekday {
   text-align: center;
-  padding: 6px 4px;
+  padding: 8px 4px;
   font-size: 12px;
-  color: var(--text-secondary);
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
+
 .day {
-  height: var(--calendar-cell-height);
-  background: var(--card-bg, white);
+  height: var(--calendar-cell-height, 120px);
+  background: #ffffff;
   border-radius: 8px;
-  padding: 8px;
-  border: 1px solid rgba(226, 232, 240, 0.6);
+  padding: 10px;
+  border: 1px solid #e2e8f0;
   display: flex;
   flex-direction: column;
   position: relative;
+  transition: all 0.2s ease;
+  cursor: pointer;
 }
+
+.day:hover {
+  border-color: #bfdbfe;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+  transform: translateY(-1px);
+}
+
+.day.empty {
+  background: transparent;
+  border: 1px dashed #cbd5e1;
+  cursor: default;
+}
+
+.day.empty:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: #cbd5e1;
+}
+
+.day.today {
+  background: linear-gradient(180deg, #dbeafe, #eff6ff);
+  border: 2px solid #93c5fd;
+  box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.2);
+}
+
 .day-number {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
-  margin-bottom: 6px;
-  color: var(--text-secondary);
+  margin-bottom: 8px;
+  color: #334155;
+  transition: color 0.2s ease;
 }
+
+.day.today .day-number {
+  color: #2563eb;
+}
+
 .tasks {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  max-height: calc(var(--calendar-cell-height) - 28px);
+  max-height: calc(var(--calendar-cell-height, 120px) - 38px);
   overflow: hidden;
 }
-.more {
+
+.task {
   font-size: 12px;
-  color: var(--text-secondary);
-  padding: 4px 6px;
+  padding: 6px 8px;
   border-radius: 6px;
-  background: rgba(2, 6, 23, 0.03);
-  align-self: flex-start;
+  background: #f8fafc;
+  color: #334155;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
 }
+
+.task:hover {
+  background: #dbeafe;
+  transform: translateX(2px);
+}
+
+.task .task-title {
+  display: inline-block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+.more {
+  font-size: 11px;
+  color: #64748b;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  align-self: flex-start;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.more:hover {
+  background: #e2e8f0;
+}
+
 .add-btn {
   position: absolute;
   right: 8px;
   top: 8px;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: 6px;
   border: none;
-  background: rgba(59, 130, 246, 0.08);
+  background: #dbeafe;
+  color: #2563eb;
+  font-size: 18px;
+  font-weight: 600;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 0.2s ease;
+}
+
+.day:hover .add-btn {
+  opacity: 1;
+}
+
+.add-btn:hover {
+  background: #bfdbfe;
+  transform: scale(1.1);
+}
+
+.add-btn:active {
+  transform: scale(0.95);
+}
+
+/* Overlays layer for multi-day spans */
+.spans-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.span-task {
+  position: absolute;
+  border-radius: 8px;
+  background: #dbeafe;
+  border: 1px solid #93c5fd;
+  padding: 8px 12px;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+  pointer-events: auto;
+  z-index: 101;
+  overflow: hidden;
+  max-height: var(--calendar-cell-height, 120px);
+  display: flex;
+  align-items: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.span-task:hover {
+  background: #bfdbfe;
+  border-color: #60a5fa;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+  transform: translateY(-1px);
+  z-index: 110;
+}
+
+.span-title {
+  white-space: normal;
+  word-break: break-word;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e40af;
+  line-height: 1.4;
+}
+
+/* Visual stitching for multi-row spans */
+.span-task.continues-to-next {
+  border-bottom-left-radius: 2px;
+  border-bottom-right-radius: 2px;
+  border-bottom-style: dashed;
+}
+
+.span-task.continues-from-prev {
+  border-top-left-radius: 2px;
+  border-top-right-radius: 2px;
+  border-top-style: dashed;
+}
+
+.span-task.continues-from-prev,
+.span-task.continues-to-next {
+  z-index: 105;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .calendar-grid {
+    gap: 6px;
+  }
+  
+  .day {
+    padding: 6px;
+  }
+  
+  .day-number {
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+  
+  .task {
+    font-size: 11px;
+    padding: 4px 6px;
+  }
+  
+  .add-btn {
+    width: 24px;
+    height: 24px;
+    font-size: 16px;
+  }
 }

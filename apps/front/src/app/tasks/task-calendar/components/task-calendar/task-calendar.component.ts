@@ -16,6 +16,7 @@ import {
   getDay,
   startOfWeek,
   startOfYear,
+  differenceInCalendarDays,
   addMonths,
   format,
 } from 'date-fns';
@@ -63,6 +64,7 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
     tasks: CalendarTask[];
     tasksByHour?: CalendarTask[][];
     tasksWithSpan?: Array<{ task: CalendarTask; startIdx: number; span: number }>;
+    multiDaySpans?: Array<{ task: CalendarTask; startDay: number; daySpan: number; startIdx: number; spanHours: number }>;
     isToday?: boolean;
   }> = [];
   // hours displayed on the left (e.g. 0..23 for full week, or 8..17 for work-week)
@@ -190,7 +192,8 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
       const isToday = isSameDay(d, new Date());
       // compute span info for tasks: start hour derived from createdAt (or dueDate)
       const tasksByHour: CalendarTask[][] = this.weekHours.map(() => []);
-      const tasksWithSpan: Array<{ task: CalendarTask; startIdx: number; span: number }>= [];
+  const tasksWithSpan: Array<{ task: CalendarTask; startIdx: number; span: number }>= [];
+  const multiDaySpans: Array<{ task: CalendarTask; startDay: number; daySpan: number; startIdx: number; spanHours: number }>= [];
       for (const t of allTasks) {
         try {
           const startDate = t.createdAt ? new Date(t.createdAt) : new Date(t.dueDate);
@@ -217,9 +220,52 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
         }
       }
 
-      this.weekDays.push({ date: d, tasks: allTasks, tasksByHour, tasksWithSpan, isToday });
+      this.weekDays.push({ date: d, tasks: allTasks, tasksByHour, tasksWithSpan, multiDaySpans, isToday });
     }
     this.active = start;
+    // Now compute multi-day spans across the whole week using tasks in the months intersecting this week
+    const months = new Set<string>();
+    for (let i = 0; i < days; i++) {
+      const dd = addDays(start, i);
+      months.add(`${dd.getFullYear()}-${dd.getMonth()}`);
+    }
+    const tasksPool: CalendarTask[] = [];
+    months.forEach((mkey) => {
+      const [y, m] = mkey.split('-').map((v) => parseInt(v, 10));
+      const arr = this.svc.getTasksForMonth(y, m);
+      for (const a of arr) tasksPool.push(a);
+    });
+    // dedupe by id
+    const byId = new Map<string | number, CalendarTask>();
+    for (const t of tasksPool) byId.set(t.id, t);
+    const uniqueTasks = Array.from(byId.values());
+    for (const t of uniqueTasks) {
+      try {
+        const startDate = t.createdAt ? new Date(t.createdAt) : new Date(t.dueDate);
+        const endDate = new Date(t.dueDate);
+        if (endDate < start || startDate > addDays(start, days - 1)) continue;
+        const clippedStart = startDate < start ? start : startDate;
+        const clippedEnd = endDate > addDays(start, days - 1) ? addDays(start, days - 1) : endDate;
+        const startDayIdx = Math.max(0, Math.floor((clippedStart.getTime() - start.getTime()) / 86400000));
+        const endDayIdx = Math.max(0, Math.floor((clippedEnd.getTime() - start.getTime()) / 86400000));
+        const daySpan = endDayIdx - startDayIdx + 1;
+        // compute hour indexes within displayed weekHours
+        const sHour = clippedStart.getHours();
+        const eHour = clippedEnd.getHours();
+        let sIdx = this.weekHours.indexOf(sHour);
+        let eIdx = this.weekHours.indexOf(eHour);
+        if (sIdx === -1) sIdx = 0;
+        if (eIdx === -1) eIdx = this.weekHours.length - 1;
+        const spanHours = Math.max(1, eIdx - sIdx + 1);
+        // attach multi-day span to the start day's multiDaySpans
+        if (this.weekDays[startDayIdx]) {
+          this.weekDays[startDayIdx].multiDaySpans = this.weekDays[startDayIdx].multiDaySpans || [];
+          this.weekDays[startDayIdx].multiDaySpans.push({ task: t, startDay: startDayIdx, daySpan, startIdx: sIdx, spanHours });
+        }
+      } catch {
+        /* ignore parse errors */
+      }
+    }
   }
 
   ngOnDestroy(): void {
@@ -358,13 +404,68 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
     }
     // pad to full weeks (7*rows)
     while (cells.length % 7 !== 0) cells.push(null);
+    // compute calendar grid bounds
+    const gridStart = addDays(first, -startWeekday);
+    const gridEnd = addDays(gridStart, cells.length - 1);
 
-    const weeks: Array<Array<{ date: Date; tasks: CalendarTask[] }>> = [];
-    for (let i = 0; i < cells.length; i += 7) {
-      const slice = cells
-        .slice(i, i + 7)
-        .map((c) => c ?? { date: null as any, tasks: [], isToday: false });
-      weeks.push(slice as any);
+    // augment cells with optional tasksWithSpan arrays so month overlay can render multi-day spans
+    const augmented = cells.map((c) => {
+      if (c && c.date) {
+        return { 
+          ...c, 
+          tasksWithSpan: [] as Array<{ task: CalendarTask; spanDays?: number; continuesFromPrev?: boolean; continuesToNext?: boolean }> 
+        };
+      } else {
+        return { 
+          date: null as any, 
+          tasks: [], 
+          isToday: false, 
+          tasksWithSpan: [] as Array<{ task: CalendarTask; spanDays?: number; continuesFromPrev?: boolean; continuesToNext?: boolean }> 
+        };
+      }
+    });
+
+    // for each task in this month range, compute its clipped span relative to gridStart/gridEnd
+    // and split it across week rows so long spans wrap to the next line.
+    for (const t of this.tasks) {
+      try {
+        const startDate = t.createdAt ? new Date(t.createdAt) : new Date(t.dueDate);
+        const endDate = new Date(t.dueDate);
+        // skip tasks outside the visible grid
+        if (endDate < gridStart || startDate > gridEnd) continue;
+        const clippedStart = startDate < gridStart ? gridStart : startDate;
+        const clippedEnd = endDate > gridEnd ? gridEnd : endDate;
+        let startIdx = differenceInCalendarDays(clippedStart, gridStart);
+        let remainingDays = Math.max(1, differenceInCalendarDays(clippedEnd, clippedStart) + 1);
+
+        // split across calendar rows (weeks)
+        const eventStartIdx = differenceInCalendarDays(startDate, gridStart);
+        const eventEndIdx = differenceInCalendarDays(endDate, gridStart);
+        while (remainingDays > 0 && startIdx >= 0 && startIdx < augmented.length) {
+          const row = Math.floor(startIdx / 7);
+          const rowEndIdx = row * 7 + 6;
+          const availableInRow = Math.min(remainingDays, rowEndIdx - startIdx + 1);
+          // determine whether this segment continues from a previous row or continues to the next
+          const segStartIdx = startIdx;
+          const segEndIdx = startIdx + availableInRow - 1;
+          const continuesFromPrev = segStartIdx > eventStartIdx;
+          const continuesToNext = segEndIdx < eventEndIdx;
+          // attach a span segment starting at startIdx that covers availableInRow days
+          if (augmented[startIdx] && augmented[startIdx].tasksWithSpan) {
+            augmented[startIdx].tasksWithSpan.push({ task: t, spanDays: availableInRow, continuesFromPrev, continuesToNext });
+          }
+          remainingDays -= availableInRow;
+          startIdx += availableInRow; // move to next day's index (may be start of next row)
+        }
+      } catch {
+        // ignore parse errors
+      }
+    }
+
+    const weeks: Array<Array<{ date: Date; tasks: CalendarTask[]; isToday?: boolean; tasksWithSpan?: Array<{ task: CalendarTask; spanDays?: number; continuesFromPrev?: boolean; continuesToNext?: boolean }> }>> = [];
+    for (let i = 0; i < augmented.length; i += 7) {
+      const slice = augmented.slice(i, i + 7);
+      weeks.push(slice);
     }
 
     this.weeks = weeks;
@@ -411,9 +512,9 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
   }
 
   trackByDate(
-    _i: number,
+    i: number,
     cell: { date: Date; tasks: CalendarTask[]; isToday?: boolean }
   ) {
-    return cell?.date ? cell.date.toDateString() : 'empty-' + Math.random();
+    return cell?.date ? cell.date.toDateString() : 'empty-' + i;
   }
 }

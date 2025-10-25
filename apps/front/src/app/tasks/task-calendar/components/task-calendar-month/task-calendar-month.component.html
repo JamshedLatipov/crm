@@ -1,4 +1,4 @@
-<div class="calendar-grid">
+<div class="calendar-grid" #grid>
   <div class="weekday" *ngFor="let w of ['Пн','Вт','Ср','Чт','Пт','Сб','Вс']">{{ w }}</div>
 
   <ng-container *ngFor="let week of weeks">
@@ -20,4 +20,25 @@
       </div>
     </ng-container>
   </ng-container>
+  
+  <!-- absolute overlays for multi-day spans (optional: render when cell.tasksWithSpan exists) -->
+  <div class="spans-layer" *ngIf="weeks?.length">
+    <ng-container *ngFor="let week of weeks; let wi = index">
+      <ng-container *ngFor="let cell of week; let di = index">
+        <ng-container *ngFor="let s of (cell?.tasksWithSpan || [])">
+          <div class="span-task"
+              [class.continues-from-prev]="s.continuesFromPrev"
+              [class.continues-to-next]="s.continuesToNext"
+              [style.left.px]="computeSpanLeft(wi, di)"
+              [style.top.px]="computeSpanTop(wi, di, s.continuesFromPrev)"
+              [style.width.px]="computeSpanWidth(wi, di, s.spanDays || 1)"
+              [style.height.px]="computeSpanHeight(s.continuesFromPrev, s.continuesToNext)"
+              [attr.title]="s.task.title"
+              [style.border-left]="s.task.color ? '4px solid ' + s.task.color : '4px solid rgba(59,130,246,0.16)'">
+              <div class="span-title">{{ s.task.title }}</div>
+            </div>
+        </ng-container>
+      </ng-container>
+    </ng-container>
+  </div>
 </div>

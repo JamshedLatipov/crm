@@ -1,80 +1,118 @@
-/* Week grid styles matching the template structure (.week-grid) */
+/* Week grid styles */
 .week-grid {
   display: grid;
-  /* left column for hour labels + N day columns */
   grid-template-columns: 80px repeat(var(--day-count, 7), 1fr);
-  /* header row + hour rows */
   grid-template-rows: var(--header-height, 40px) repeat(var(--hour-rows, 24), var(--hour-row-height, 48px));
   column-gap: 12px;
   row-gap: 8px;
   box-sizing: border-box;
-  position: relative; /* allow absolute overlays inside */
+  position: relative;
 }
 
 .corner {
   grid-column: 1 / 2;
   grid-row: 1 / 2;
+  background: transparent;
 }
 
 .day-header {
-  /* headers will auto-place into the top row across day columns */
   height: var(--header-height, 40px);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
+  font-size: 14px;
   padding: 0 8px;
   text-align: center;
+  color: #334155;
+  background: #f8fafc;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.day-header:hover {
+  background: #eff6ff;
 }
 
 .hour-label {
-  /* hour labels sit in the first column of each hour row */
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding-right: 8px;
+  padding-right: 12px;
   font-size: 12px;
-  color: var(--text-secondary);
+  font-weight: 600;
+  color: #64748b;
   height: var(--hour-row-height, 48px);
 }
 
 .hour-cell {
   height: var(--hour-row-height, 48px);
-  border-radius: 6px;
-  padding: 6px 8px;
-  background: var(--card-bg, white);
-  border: 1px solid rgba(226, 232, 240, 0.5);
+  border-radius: 8px;
+  padding: 8px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   overflow: hidden;
   position: relative;
   display: flex;
   align-items: flex-start;
   box-sizing: border-box;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.hour-cell:hover {
+  border-color: #bfdbfe;
+  background: #f0f9ff;
+}
+
+.hour-cell.today {
+  background: linear-gradient(180deg, #dbeafe, #eff6ff);
+  border: 2px solid #93c5fd;
+  box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.2);
 }
 
 .small-add {
   position: absolute;
   right: 6px;
   top: 6px;
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   border-radius: 6px;
   border: none;
-  background: rgba(59, 130, 246, 0.06);
+  background: #dbeafe;
+  color: #2563eb;
+  font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 0.2s ease;
+  z-index: 10;
 }
 
-.hour-cell.today {
-  box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.06);
+.hour-cell:hover .small-add {
+  opacity: 1;
+}
+
+.small-add:hover {
+  background: #bfdbfe;
+  transform: scale(1.1);
+}
+
+.small-add:active {
+  transform: scale(0.95);
 }
 
 .hour-tasks {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  /* ensure tasks area cannot push the row taller than the fixed height */
-  max-height: calc(var(--hour-row-height, 48px) - 8px);
+  max-height: calc(var(--hour-row-height, 48px) - 12px);
   overflow: hidden;
   align-items: stretch;
+  width: 100%;
 }
 
 .hour-tasks .task {
@@ -83,7 +121,19 @@
   text-overflow: ellipsis;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #334155;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.hour-tasks .task:hover {
+  background: #dbeafe;
+  transform: translateX(2px);
 }
 
 .hour-tasks .task .task-title {
@@ -92,58 +142,103 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: 500;
 }
 
 .more {
-  color: var(--text-secondary);
-  font-size: 12px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #f1f5f9;
 }
 
-/* Overlay container that covers header + hours for a single day. It is a
-   grid child placed over the hour cells and used to absolutely position
-   tasks that span multiple hour rows. */
-.day-overlay {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  pointer-events: none; /* allow hour-cell buttons to receive clicks unless span-task enables pointer-events */
+/* Overlay spans layer */
+.spans-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
 }
 
 .span-task {
   position: absolute;
-  left: 4px;
-  right: 4px;
   border-radius: 8px;
-  /* make the span visually sit on top of cell text but semi-transparent so underlying grid remains readable */
-  background: var(--span-bg, rgba(59,130,246,0.12));
-  border: 1px solid rgba(59,130,246,0.14);
-  box-shadow: 0 6px 18px rgba(16,24,40,0.04);
-  padding: 8px 12px 8px 14px; /* extra left padding to not overlap the left border */
+  background: #dbeafe;
+  border: 1px solid #93c5fd;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+  padding: 8px 12px 8px 14px;
   box-sizing: border-box;
   overflow: hidden;
   display: flex;
   align-items: center;
   gap: 8px;
-  pointer-events: auto; /* allow clicks on the task itself */
+  pointer-events: auto;
   white-space: normal;
   word-break: break-word;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  z-index: 101;
 }
 
-/* ensure overlays sit above hour-cells and any cell content (text/inputs).
-   Use high z-index to avoid accidental stacking contexts from child elements.
-   Keep the spans-layer itself non-interactive, but allow each .span-task to receive pointer events. */
-.day-overlay { z-index: 100; }
-.span-task { z-index: 101; }
-.hour-cell { z-index: 0; }
+.span-task:hover {
+  background: #bfdbfe;
+  border-color: #60a5fa;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+  transform: translateY(-1px);
+  z-index: 110;
+}
 
-.spans-layer {
-  position: absolute;
-  inset: 0;
-  pointer-events: none; /* allow clicks to pass through except on .span-task */
+.span-task.multi-day {
+  background: #d1fae5;
+  border-color: #6ee7b7;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
+}
+
+.span-task.multi-day:hover {
+  background: #a7f3d0;
+  border-color: #34d399;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
 }
 
 .span-title {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e40af;
+  line-height: 1.4;
+}
+
+/* Mobile responsive */
+@media (max-width: 1024px) {
+  .week-grid {
+    grid-template-columns: 60px repeat(var(--day-count, 7), 1fr);
+    column-gap: 8px;
+    row-gap: 6px;
+  }
+  
+  .hour-label {
+    font-size: 11px;
+    padding-right: 6px;
+  }
+  
+  .day-header {
+    font-size: 12px;
+    padding: 0 4px;
+  }
+  
+  .hour-cell {
+    padding: 6px;
+  }
+  
+  .span-task {
+    padding: 6px 8px;
+  }
+  
+  .span-title {
+    font-size: 12px;
+  }
 }

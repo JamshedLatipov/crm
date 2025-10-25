@@ -1,1 +1,124 @@
-.calendar-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.nav-left{display:flex;align-items:center;gap:12px}.month{font-weight:700;font-size:18px}.view-modes{display:flex;gap:8px}.mode-btn{background:transparent;border:1px solid rgba(0,0,0,0.06);padding:6px 8px;border-radius:6px;cursor:pointer}.mode-btn.active{background:rgba(59,130,246,0.08);border-color:rgba(59,130,246,0.18);font-weight:700}
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.month {
+  font-weight: 700;
+  font-size: 20px;
+  color: #334155;
+  min-width: 200px;
+  text-transform: capitalize;
+}
+
+.view-modes {
+  display: flex;
+  gap: 8px;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.mode-btn {
+  background: transparent;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  transition: all 0.2s ease;
+}
+
+.mode-btn:hover {
+  background: #e0e7ff;
+  color: #3b82f6;
+}
+
+.mode-btn.active {
+  background: #3b82f6;
+  color: white;
+  font-weight: 700;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+
+.btn {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 700;
+  color: #334155;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 44px;
+}
+
+.btn:hover {
+  border-color: #3b82f6;
+  background: #eff6ff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .calendar-header {
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .nav-left {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .month {
+    font-size: 18px;
+    min-width: auto;
+    flex: 1;
+    text-align: center;
+  }
+
+  .view-modes {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .mode-btn {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .btn {
+    min-width: 40px;
+    height: 40px;
+    padding: 6px 12px;
+  }
+}
+

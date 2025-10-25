@@ -1,1 +1,189 @@
-.create-modal{position:fixed;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:center;z-index:60}.create-modal .modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.3)}.create-modal .modal-card{position:relative;background:var(--card-bg,white);padding:16px;border-radius:8px;min-width:320px;z-index:61;box-shadow:0 8px 20px rgba(2,6,23,0.12)}.field{margin-bottom:8px;display:flex;flex-direction:column}.field label{font-size:12px;color:var(--text-secondary);margin-bottom:4px}.field input{padding:8px;border:1px solid rgba(2,6,23,0.06);border-radius:6px}.actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.create-modal {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(2px);
+  animation: backdropFadeIn 0.2s ease;
+}
+
+@keyframes backdropFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-card {
+  position: relative;
+  background: #ffffff;
+  padding: 24px;
+  border-radius: 12px;
+  min-width: 400px;
+  max-width: 500px;
+  width: 90%;
+  z-index: 1001;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.3);
+  animation: slideUp 0.3s ease;
+  border: 1px solid #e2e8f0;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-card h3 {
+  margin: 0 0 20px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.field {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.field input[type="text"],
+.field input[type="time"] {
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #334155;
+  background: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.field input[type="text"]:focus,
+.field input[type="time"]:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.field input[type="text"]:hover,
+.field input[type="time"]:hover {
+  border-color: #93c5fd;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+.actions button {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.actions button[mat-flat-button] {
+  background: #3b82f6;
+  color: white;
+}
+
+.actions button[mat-flat-button]:hover:not(:disabled) {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.actions button[mat-flat-button]:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.actions button[mat-flat-button]:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.actions button[mat-button] {
+  background: transparent;
+  color: #64748b;
+}
+
+.actions button[mat-button]:hover {
+  background: #f1f5f9;
+}
+
+/* Material form field customization */
+::ng-deep .create-modal .mat-mdc-form-field {
+  width: 100%;
+}
+
+::ng-deep .create-modal .mat-mdc-text-field-wrapper {
+  background: #ffffff;
+}
+
+::ng-deep .create-modal .mat-mdc-form-field-focus-overlay {
+  background-color: transparent;
+}
+
+/* Mobile responsive */
+@media (max-width: 640px) {
+  .modal-card {
+    min-width: auto;
+    width: 95%;
+    padding: 20px;
+  }
+  
+  .modal-card h3 {
+    font-size: 18px;
+    margin-bottom: 16px;
+  }
+  
+  .actions {
+    flex-direction: column-reverse;
+  }
+  
+  .actions button {
+    width: 100%;
+  }
+}
+

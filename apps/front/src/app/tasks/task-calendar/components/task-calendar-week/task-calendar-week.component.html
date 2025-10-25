@@ -16,16 +16,28 @@
   <!-- overlay container per day to render spanning tasks (absolute positioning) -->
   <!-- Spans layer: absolutely positioned overlays so they don't affect grid layout -->
   <div class="spans-layer" *ngIf="weekDays?.length">
-    <ng-container *ngFor="let wd of weekDays; let di = index">
+      <ng-container *ngFor="let wd of weekDays; let di = index">
       <ng-container *ngFor="let s of (wd.tasksWithSpan || [])">
         <div class="span-task"
-          [style.left.px]="computeSpanLeft(di)"
-          [style.width.px]="computeSpanWidth(di)"
+          [style.left.px]="computeSpanLayoutLeft(di, s)"
+          [style.width.px]="computeSpanLayoutWidth(di, s)"
           [style.top.px]="computeTop(s.startIdx)"
           [style.height.px]="computeHeight(s.span)"
           [attr.title]="s.task.title"
           [style.border-left]="s.task.color ? '4px solid ' + s.task.color : '4px solid rgba(59,130,246,0.16)'">
           <div class="span-title">{{ s.task.title }}</div>
+        </div>
+      </ng-container>
+      <!-- multi-day spans that cover several day columns (may also have hour ranges) -->
+      <ng-container *ngFor="let m of (wd.multiDaySpans || [])">
+        <div class="span-task multi-day"
+          [style.left.px]="computeSpanLeft(m.startDay)"
+          [style.width.px]="computeSpanWidth(m.startDay, m.daySpan)"
+          [style.top.px]="computeTop(m.startIdx)"
+          [style.height.px]="computeHeight(m.spanHours)"
+          [attr.title]="m.task.title"
+          [style.border-left]="m.task.color ? '4px solid ' + m.task.color : '4px solid rgba(59,130,246,0.16)'">
+          <div class="span-title">{{ m.task.title }}</div>
         </div>
       </ng-container>
     </ng-container>
