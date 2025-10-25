@@ -54,6 +54,7 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
 
   public active = new Date();
   public activeDate = new Date(); // used for week/year navigation
+  private savedWeekDate: Date | null = null; // preserve week date when switching to month view
   public weeks: Array<
     Array<{ date: Date; tasks: CalendarTask[]; isToday?: boolean }>
   > = [];
@@ -92,9 +93,11 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
   constructor(private svc: TaskCalendarService, private tasksApi: TasksService) {}
 
   private subs: Array<any> = [];
+  private isRendering = false;
 
   ngOnInit(): void {
     this.activeDate = new Date();
+    this.savedWeekDate = new Date(); // initialize with current date
     this.renderView();
     // re-render when types/sample are ready (only if we don't have server tasks)
     this.subs.push(
@@ -105,6 +108,7 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
     // when server tasks cache updates, re-render current view WITHOUT triggering a fetch
     this.subs.push(
       this.svc.tasksUpdated$.subscribe(() => {
+        if (this.isRendering) return; // prevent re-render loop
         if (this.viewMode === 'month') {
           this.renderMonth(this.activeDate.getFullYear(), this.activeDate.getMonth());
         } else if (this.viewMode === 'week') {
@@ -119,6 +123,20 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
   }
 
   setView(mode: 'month' | 'week' | 'work-week' | 'year') {
+    console.log('[TaskCalendar] setView called', { mode, currentMode: this.viewMode });
+    
+    // Save current week date when switching from week to another view
+    if ((this.viewMode === 'week' || this.viewMode === 'work-week') && mode !== 'week' && mode !== 'work-week') {
+      this.savedWeekDate = new Date(this.activeDate);
+      console.log('[TaskCalendar] Saved week date:', this.savedWeekDate);
+    }
+    
+    // Restore week date when switching back to week from month
+    if ((mode === 'week' || mode === 'work-week') && this.viewMode === 'month' && this.savedWeekDate) {
+      this.activeDate = new Date(this.savedWeekDate);
+      console.log('[TaskCalendar] Restored week date:', this.activeDate);
+    }
+    
     this.viewMode = mode;
     // reset activeDate for certain modes
     if (mode === 'month')
@@ -131,29 +149,42 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
   }
 
   async renderView(): Promise<void> {
-    if (this.viewMode === 'month') {
-      const y = this.activeDate.getFullYear();
-      const m = this.activeDate.getMonth();
-      const first = this.startOfMonthDate(y, m);
-      const last = new Date(y, m, this.daysInMonthCount(y, m), 23, 59, 59, 999);
-      await this.svc.fetchTasksForRange(first, last);
-      this.renderMonth(y, m);
-    } else if (this.viewMode === 'week') {
-      const start = startOfWeek(this.activeDate, { weekStartsOn: 1 });
-      const end = addDays(start, 6);
-      await this.svc.fetchTasksForRange(start, end);
-      this.renderWeek(this.activeDate, false);
-    } else if (this.viewMode === 'work-week') {
-      const start = startOfWeek(this.activeDate, { weekStartsOn: 1 });
-      const end = addDays(start, 4);
-      await this.svc.fetchTasksForRange(start, end);
-      this.renderWeek(this.activeDate, true);
-    } else if (this.viewMode === 'year') {
-      const year = this.activeDate.getFullYear();
-      const start = startOfYear(new Date(year, 0, 1));
-      const end = new Date(year, 11, 31, 23, 59, 59, 999);
-      await this.svc.fetchTasksForRange(start, end);
-      this.renderYear(year);
+    console.log('[TaskCalendar] renderView called', { viewMode: this.viewMode, isRendering: this.isRendering });
+    if (this.isRendering) return; // prevent concurrent renders
+    this.isRendering = true;
+    
+    try {
+      if (this.viewMode === 'month') {
+        const y = this.activeDate.getFullYear();
+        const m = this.activeDate.getMonth();
+        console.log('[TaskCalendar] Rendering month', { year: y, month: m });
+        const first = this.startOfMonthDate(y, m);
+        const last = new Date(y, m, this.daysInMonthCount(y, m), 23, 59, 59, 999);
+        await this.svc.fetchTasksForRange(first, last);
+        this.renderMonth(y, m);
+      } else if (this.viewMode === 'week') {
+        const start = startOfWeek(this.activeDate, { weekStartsOn: 1 });
+        const end = addDays(start, 6);
+        console.log('[TaskCalendar] Rendering week', { start, end });
+        await this.svc.fetchTasksForRange(start, end);
+        this.renderWeek(this.activeDate, false);
+      } else if (this.viewMode === 'work-week') {
+        const start = startOfWeek(this.activeDate, { weekStartsOn: 1 });
+        const end = addDays(start, 4);
+        console.log('[TaskCalendar] Rendering work-week', { start, end });
+        await this.svc.fetchTasksForRange(start, end);
+        this.renderWeek(this.activeDate, true);
+      } else if (this.viewMode === 'year') {
+        const year = this.activeDate.getFullYear();
+        const start = startOfYear(new Date(year, 0, 1));
+        const end = new Date(year, 11, 31, 23, 59, 59, 999);
+        console.log('[TaskCalendar] Rendering year', { year, start, end });
+        await this.svc.fetchTasksForRange(start, end);
+        this.renderYear(year);
+      }
+    } finally {
+      this.isRendering = false;
+      console.log('[TaskCalendar] renderView completed');
     }
   }
 
@@ -394,7 +425,9 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
   }
 
   renderMonth(year: number, month: number): void {
+    console.log('[TaskCalendar] renderMonth called', { year, month });
     this.tasks = this.svc.getTasksForMonth(year, month);
+    console.log('[TaskCalendar] renderMonth got tasks', { tasksCount: this.tasks.length });
 
     const first = this.startOfMonthDate(year, month);
     const startWeekday = (getDay(first) + 6) % 7; // make Monday=0

@@ -25,6 +25,8 @@ export class TaskCalendarService {
   // cache of real tasks fetched from backend
   private tasksCache: TaskDto[] = [];
   private isFetching = false;
+  private lastFetchKey = ''; // track last fetched range to avoid redundant fetches
+  private pendingFetch: Promise<void> | null = null; // allow awaiting an in-progress fetch
 
   constructor(private typeSvc: TaskTypeService, private tasksApi: TasksService) {
     // Populate sample task types for dev/demo use. Calendar rendering will
@@ -37,25 +39,51 @@ export class TaskCalendarService {
 
   // Fetch tasks from backend for a given inclusive date range and cache them.
   // Uses ISO strings for `from` and `to` parameters.
+  // If a fetch is already in progress for the same range, awaits it instead of starting a new one.
   async fetchTasksForRange(start: Date, end: Date): Promise<void> {
-    if (this.isFetching) return;
+    const fromIso = new Date(start.getFullYear(), start.getMonth(), start.getDate()).toISOString();
+    const toIso = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59, 999).toISOString();
+    const fetchKey = `${fromIso}|${toIso}`;
+    
+    // If same range is already fetched, skip
+    if (this.lastFetchKey === fetchKey && this.tasksCache.length > 0) {
+      return;
+    }
+    
+    // If a fetch is in progress, wait for it to complete
+    if (this.isFetching && this.pendingFetch) {
+      await this.pendingFetch;
+      return;
+    }
+    
     this.isFetching = true;
+    this.pendingFetch = this.performFetch(fromIso, toIso, fetchKey);
+    
     try {
-      const fromIso = new Date(start.getFullYear(), start.getMonth(), start.getDate()).toISOString();
-      const toIso = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59, 999).toISOString();
+      await this.pendingFetch;
+    } finally {
+      this.isFetching = false;
+      this.pendingFetch = null;
+    }
+  }
+
+  private async performFetch(fromIso: string, toIso: string, fetchKey: string): Promise<void> {
+    console.log('[TaskCalendarService] performFetch started', { fromIso, toIso, fetchKey });
+    try {
       const obs = this.tasksApi.listRange(fromIso, toIso);
       const res = await firstValueFrom(obs);
       if (Array.isArray(res)) {
         this.tasksCache = res as TaskDto[];
+        this.lastFetchKey = fetchKey;
       } else {
         this.tasksCache = [];
+        this.lastFetchKey = '';
       }
       // notify that tasks cache changed
       this.tasksUpdated$.next(true);
     } catch (err) {
       console.warn('TaskCalendarService: failed to fetch tasks for range', err);
-    } finally {
-      this.isFetching = false;
+      this.lastFetchKey = '';
     }
   }
 
@@ -84,6 +112,12 @@ export class TaskCalendarService {
       { id: 3, title: 'Встреча с командой', dueDate: new Date(now + 7 * 86400000).toISOString(), status: 'pending', color: '#f59e0b' },
     ];
   this.typesUpdated$.next(true);
+  }
+
+  // Clear cache and force re-fetch (useful when switching views rapidly)
+  clearCache(): void {
+    this.tasksCache = [];
+    this.lastFetchKey = '';
   }
 
   // Return tasks for the given year/month (month: 0-11) based on the current cache.
