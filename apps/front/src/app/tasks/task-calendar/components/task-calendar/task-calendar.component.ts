@@ -198,20 +198,34 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
         try {
           const startDate = t.createdAt ? new Date(t.createdAt) : new Date(t.dueDate);
           const endDate = new Date(t.dueDate);
-          // clamp to this day's 0..23
+          
+          // Check if task spans multiple days
+          const daysDiff = differenceInCalendarDays(endDate, startDate);
+          if (daysDiff > 0) {
+            // Multi-day task - will be handled separately
+            continue;
+          }
+          
+          // Single day task - calculate hour span
           const startHour = startDate.getHours();
           const endHour = endDate.getHours();
+          
           // find start index within displayed weekHours
           let startIdx = this.weekHours.indexOf(startHour);
           let endIdx = this.weekHours.indexOf(endHour);
+          
           // if start before visible hours, snap to first
           if (startIdx === -1) startIdx = 0;
           if (endIdx === -1) endIdx = this.weekHours.length - 1;
+          
           const span = Math.max(1, endIdx - startIdx + 1);
-          tasksWithSpan.push({ task: t, startIdx, span });
-          // push into single-hour bucket only when span == 1 so we don't duplicate
-          if (span === 1) {
-            const hour = new Date(t.dueDate).getHours();
+          
+          // Only add to tasksWithSpan if it spans multiple hours
+          if (span > 1) {
+            tasksWithSpan.push({ task: t, startIdx, span });
+          } else {
+            // Single hour task - add to tasksByHour for compact display
+            const hour = startDate.getHours();
             const idx = this.weekHours.indexOf(hour);
             if (idx >= 0) tasksByHour[idx].push(t);
           }
