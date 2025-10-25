@@ -1,9 +1,11 @@
-import { Component, OnInit, OnDestroy, inject, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ElementRef, viewChild, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { DragDropModule, CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
+import { ScrollingModule } from '@angular/cdk/scrolling';
 import { MatDialog } from '@angular/material/dialog';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { PipelineService } from './pipeline.service';
 import { DealsService } from './deals.service';
 import { MatIconModule } from '@angular/material/icon';
@@ -12,32 +14,111 @@ import { Deal, Stage, PipelineAnalytics, StageType, DealStatus } from './dtos';
 import { AnalyticsModalComponent } from './analytics-modal.component';
 import { DealContactSelectorComponent } from './deal-contact-selector.component';
 import { DealStatusComponent, DealStatus as DealStatusType } from '../shared/components/deal-status/deal-status.component';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-pipeline',
   standalone: true,
-  imports: [CommonModule, FormsModule, DragDropModule, MatIconModule, MatButtonModule, DealStatusComponent],
+  imports: [
+    CommonModule, 
+    FormsModule, 
+    DragDropModule, 
+    ScrollingModule,
+    MatIconModule, 
+    MatButtonModule, 
+    MatTooltipModule, 
+    DealStatusComponent
+  ],
   templateUrl: './pipeline.component.html',
   styleUrls: ['./pipeline.component.scss'],
 })
 export class PipelineComponent implements OnInit, OnDestroy {
-  @ViewChild('pipelineGrid', { static: false }) pipelineGrid!: ElementRef<HTMLElement>;
+  // Современный подход с viewChild signal
+  pipelineGrid = viewChild<ElementRef<HTMLElement>>('pipelineGrid');
   
-  stages: Stage[] = [];
-  deals: Deal[] = [];
-  // stable grouped deals by stage id for CDK lists
-  dealsByStage: Record<string, Deal[]> = {};
-  activeDropListId: string | null = null;
-  analytics: PipelineAnalytics | null = null;
-  // simple form models
-  newStageName = '';
+  // Signals для состояния
+  stages = signal<Stage[]>([]);
+  deals = signal<Deal[]>([]);
+  activeDropListId = signal<string | null>(null);
+  analytics = signal<PipelineAnalytics | null>(null);
+  isLoadingAnalytics = signal(false);
+  isLoadingData = signal(false);
+  
+  // Фильтры
+  searchQuery = signal('');
+  statusFilter = signal<DealStatus | 'all'>('all');
+  assignedToFilter = signal<string | 'all'>('all');
+  
+  // Computed - автоматически пересчитывается при изменении зависимостей
+  filteredDeals = computed(() => {
+    const allDeals = this.deals();
+    const query = this.searchQuery().toLowerCase();
+    const status = this.statusFilter();
+    const assignedTo = this.assignedToFilter();
+    
+    return allDeals.filter(deal => {
+      // Поиск по названию
+      if (query && !deal.title.toLowerCase().includes(query)) {
+        return false;
+      }
+      
+      // Фильтр по статусу
+      if (status !== 'all' && deal.status !== status) {
+        return false;
+      }
+      
+      // Фильтр по менеджеру
+      if (assignedTo !== 'all' && deal.assignedTo !== assignedTo) {
+        return false;
+      }
+      
+      return true;
+    });
+  });
+  
+  // Сгруппированные сделки по этапам
+  dealsByStage = computed(() => {
+    const map: Record<string, Deal[]> = {};
+    const stageList = this.stages();
+    const filteredDealsList = this.filteredDeals();
+    
+    // Инициализируем пустые массивы для каждого этапа
+    for (const stage of stageList) {
+      map[stage.id] = [];
+    }
+    
+    // Группируем сделки
+    for (const deal of filteredDealsList) {
+      const stageId = deal.stageId || '';
+      if (!map[stageId]) map[stageId] = [];
+      map[stageId].push(deal);
+    }
+    
+    return map;
+  });
+  
+  // Connected list IDs для CDK Drag & Drop
+  connectedListIds = computed(() => {
+    return this.stages().map((stage: Stage) => 'stage-' + stage.id);
+  });
   
   // Переменные для автоскролла
   private scrollInterval: number | null = null;
   private isDragging = false;
+  private mouseX = 0;
   
-  // Состояние загрузки
-  isLoadingAnalytics = false;
+  // Виртуальный скроллинг - публичные константы для шаблона
+  readonly VIRTUAL_SCROLL_ITEM_SIZE = 160; // Высота одной карточки сделки в px
+  readonly VIRTUAL_SCROLL_THRESHOLD = 20; // Минимум сделок для включения виртуального скроллинга
+  
+  // Computed для определения использования виртуального скроллинга
+  useVirtualScroll = computed(() => {
+    const maxDealsInStage = Math.max(
+      ...this.stages().map(s => this.getDealsForStage(s.id).length),
+      0
+    );
+    return maxDealsInStage > this.VIRTUAL_SCROLL_THRESHOLD;
+  });
   
   private readonly pipelineService = inject(PipelineService);
   private readonly dealsService = inject(DealsService);
@@ -53,46 +134,40 @@ export class PipelineComponent implements OnInit, OnDestroy {
   }
 
   load() {
-    // Загружаем все этапы (включая специальные won/lost этапы)
-    this.pipelineService.listAllStages().subscribe((stages: Stage[]) => {
-      this.stages = stages || [];
-      this.rebuildDealsByStage();
-    });
+    this.isLoadingData.set(true);
     
-    // Загружаем сделки
-    this.dealsService.listDeals().subscribe((res: Deal[] | { items: Deal[]; total: number }) => {
-      this.deals = Array.isArray(res) ? res : (res as any).items || [];
-      this.rebuildDealsByStage();
-    });
-    
-    // Загружаем аналитику
-    this.pipelineService.analytics(StageType.DEAL_PROGRESSION).subscribe((analytics) => {
-      this.analytics = analytics;
+    // Оптимизация: загружаем все данные параллельно
+    forkJoin({
+      stages: this.pipelineService.listAllStages(),
+      deals: this.dealsService.listDeals(),
+      analytics: this.pipelineService.analytics(StageType.DEAL_PROGRESSION)
+    }).subscribe({
+      next: ({ stages, deals, analytics }) => {
+        this.stages.set(stages || []);
+        
+        const dealsArray = Array.isArray(deals) ? deals : (deals as any).items || [];
+        this.deals.set(dealsArray);
+        
+        this.analytics.set(analytics);
+        this.isLoadingData.set(false);
+      },
+      error: (error) => {
+        console.error('Error loading pipeline data:', error);
+        this.isLoadingData.set(false);
+      }
     });
   }
 
   getDealsForStage(stageId: string): Deal[] {
-    return this.dealsByStage[stageId] || [];
+    return this.dealsByStage()[stageId] || [];
   }
 
   getConnectedListIds() {
-    return this.stages.map((stage: Stage) => 'stage-' + stage.id);
+    return this.connectedListIds();
   }
 
   triggerAutomation() {
     this.pipelineService.runAutomation().subscribe(() => this.load());
-  }
-
-  // rebuild grouped arrays for CDK lists
-  rebuildDealsByStage() {
-    const map: Record<string, Deal[]> = {};
-    for (const stage of this.stages) map[stage.id] = [];
-    for (const deal of this.deals) {
-      const stageId = deal.stageId || '';
-      if (!map[stageId]) map[stageId] = [];
-      map[stageId].push(deal);
-    }
-    this.dealsByStage = map;
   }
 
   // Handle drop event when moving a deal to another stage
@@ -117,40 +192,50 @@ export class PipelineComponent implements OnInit, OnDestroy {
     // Update the deal's stageId in the backend
     if (movedDeal && movedDeal.id) {
       // Find the target stage to check its type for optimistic updates
-      const targetStage = this.stages.find(s => s.id === targetStageId);
+      const targetStage = this.stages().find(s => s.id === targetStageId);
       
       console.log('Moving deal:', movedDeal.title, 'to stage:', targetStage?.name, 'type:', targetStage?.type);
       
       // Optimistic update: predict the new status based on stage type
-      const dealIndex = this.deals.findIndex(d => d.id === movedDeal.id);
-      if (dealIndex !== -1) {
-        this.deals[dealIndex].stageId = targetStageId;
-        
-        // Optimistically update status if it's a special stage
-        if (targetStage?.type === 'won_stage') {
-          console.log('Optimistically setting deal status to WON');
-          this.deals[dealIndex].status = DealStatus.WON;
-          this.deals[dealIndex].actualCloseDate = new Date();
-        } else if (targetStage?.type === 'lost_stage') {
-          console.log('Optimistically setting deal status to LOST');
-          this.deals[dealIndex].status = DealStatus.LOST;
-          this.deals[dealIndex].actualCloseDate = new Date();
+      this.deals.update(currentDeals => {
+        const dealIndex = currentDeals.findIndex(d => d.id === movedDeal.id);
+        if (dealIndex !== -1) {
+          const updatedDeals = [...currentDeals];
+          updatedDeals[dealIndex] = {
+            ...updatedDeals[dealIndex],
+            stageId: targetStageId
+          };
+          
+          // Optimistically update status if it's a special stage
+          if (targetStage?.type === 'won_stage') {
+            console.log('Optimistically setting deal status to WON');
+            updatedDeals[dealIndex].status = DealStatus.WON;
+            updatedDeals[dealIndex].actualCloseDate = new Date();
+          } else if (targetStage?.type === 'lost_stage') {
+            console.log('Optimistically setting deal status to LOST');
+            updatedDeals[dealIndex].status = DealStatus.LOST;
+            updatedDeals[dealIndex].actualCloseDate = new Date();
+          }
+          
+          return updatedDeals;
         }
-        
-        this.rebuildDealsByStage();
-      }
+        return currentDeals;
+      });
 
       this.dealsService.moveToStage(movedDeal.id, targetStageId).subscribe({
         next: (updatedDeal) => {
           console.log('Deal updated successfully:', updatedDeal);
           // Update the deal in our local array with the updated deal data from backend
-          const dealIndex = this.deals.findIndex(d => d.id === movedDeal.id);
-          if (dealIndex !== -1) {
-            this.deals[dealIndex] = updatedDeal; // Replace with updated deal from backend
-            console.log('Local deal updated:', this.deals[dealIndex]);
-            // Rebuild the grouped deals to reflect the change
-            this.rebuildDealsByStage();
-          }
+          this.deals.update(currentDeals => {
+            const dealIndex = currentDeals.findIndex(d => d.id === movedDeal.id);
+            if (dealIndex !== -1) {
+              const updatedDeals = [...currentDeals];
+              updatedDeals[dealIndex] = updatedDeal;
+              console.log('Local deal updated:', updatedDeals[dealIndex]);
+              return updatedDeals;
+            }
+            return currentDeals;
+          });
         },
         error: (error) => {
           console.error('Error moving deal:', error);
@@ -162,7 +247,7 @@ export class PipelineComponent implements OnInit, OnDestroy {
   }
 
   onDropListEntered(event: unknown, stageId: string) {
-    this.activeDropListId = 'stage-' + stageId;
+    this.activeDropListId.set('stage-' + stageId);
     // Auto-scroll to the entered stage
     this.scrollToStage(stageId);
     // Auto-scroll within the stage column if needed
@@ -170,7 +255,7 @@ export class PipelineComponent implements OnInit, OnDestroy {
   }
 
   onDropListExited(event: unknown, stageId: string) {
-    if (this.activeDropListId === 'stage-' + stageId) this.activeDropListId = null;
+    if (this.activeDropListId() === 'stage-' + stageId) this.activeDropListId.set(null);
   }
 
   onDragStarted() {
@@ -183,8 +268,6 @@ export class PipelineComponent implements OnInit, OnDestroy {
     this.stopAutoScroll();
     this.removeMouseTracking();
   }
-
-  private mouseX = 0;
 
   private setupMouseTracking() {
     const handleMouseMove = (event: MouseEvent) => {
@@ -207,9 +290,12 @@ export class PipelineComponent implements OnInit, OnDestroy {
   }
 
   private checkAutoScroll() {
-    if (!this.isDragging || !this.pipelineGrid) return;
+    if (!this.isDragging) return;
     
-    const container = this.pipelineGrid.nativeElement;
+    const gridElement = this.pipelineGrid();
+    if (!gridElement) return;
+    
+    const container = gridElement.nativeElement;
     const rect = container.getBoundingClientRect();
     const scrollZoneWidth = 100;
     const scrollSpeed = 8;
@@ -233,12 +319,13 @@ export class PipelineComponent implements OnInit, OnDestroy {
   }
 
   private scrollToStage(stageId: string) {
-    if (!this.pipelineGrid) return;
+    const gridElement = this.pipelineGrid();
+    if (!gridElement) return;
     
     const stageElement = document.getElementById('stage-' + stageId);
     if (!stageElement) return;
     
-    const container = this.pipelineGrid.nativeElement;
+    const container = gridElement.nativeElement;
     const stageRect = stageElement.getBoundingClientRect();
     const containerRect = container.getBoundingClientRect();
     
@@ -274,9 +361,10 @@ export class PipelineComponent implements OnInit, OnDestroy {
   private startAutoScroll() {
     this.stopAutoScroll(); // Останавливаем предыдущий интервал
     
-    if (!this.pipelineGrid) return;
+    const gridElement = this.pipelineGrid();
+    if (!gridElement) return;
     
-    const container = this.pipelineGrid.nativeElement;
+    const container = gridElement.nativeElement;
     container.classList.add('auto-scrolling');
     
     this.scrollInterval = window.setInterval(() => {
@@ -290,8 +378,9 @@ export class PipelineComponent implements OnInit, OnDestroy {
       this.scrollInterval = null;
     }
     
-    if (this.pipelineGrid) {
-      const container = this.pipelineGrid.nativeElement;
+    const gridElement = this.pipelineGrid();
+    if (gridElement) {
+      const container = gridElement.nativeElement;
       container.classList.remove('auto-scrolling', 'scroll-left', 'scroll-right');
     }
   }
@@ -301,18 +390,24 @@ export class PipelineComponent implements OnInit, OnDestroy {
   this.router.navigate(['/pipeline/create-stage']);
   }
 
+  resetFilters() {
+    this.searchQuery.set('');
+    this.statusFilter.set('all');
+    this.assignedToFilter.set('all');
+  }
+
   openAnalytics() {
     // Если нет данных аналитики, попробуем загрузить их
-    if (!this.analytics) {
-      this.isLoadingAnalytics = true;
+    if (!this.analytics()) {
+      this.isLoadingAnalytics.set(true);
       this.pipelineService.analytics(StageType.DEAL_PROGRESSION).subscribe({
         next: (analytics) => {
-          this.analytics = analytics;
-          this.isLoadingAnalytics = false;
+          this.analytics.set(analytics);
+          this.isLoadingAnalytics.set(false);
           this.showAnalyticsModal();
         },
         error: () => {
-          this.isLoadingAnalytics = false;
+          this.isLoadingAnalytics.set(false);
           this.showAnalyticsModal(); // Показываем модал даже при ошибке
         }
       });
@@ -326,7 +421,7 @@ export class PipelineComponent implements OnInit, OnDestroy {
       width: '900px',
       maxWidth: '95vw',
       maxHeight: '90vh',
-      data: { analytics: this.analytics },
+      data: { analytics: this.analytics() },
       panelClass: 'analytics-modal-panel',
       disableClose: false,
       autoFocus: true
@@ -358,11 +453,15 @@ export class PipelineComponent implements OnInit, OnDestroy {
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
         // Если пришел обновленный deal, обновляем его в массиве
-        const dealIndex = this.deals.findIndex(d => d.id === deal.id);
-        if (dealIndex !== -1) {
-          this.deals[dealIndex] = result;
-          this.rebuildDealsByStage();
-        }
+        this.deals.update(currentDeals => {
+          const dealIndex = currentDeals.findIndex(d => d.id === deal.id);
+          if (dealIndex !== -1) {
+            const updatedDeals = [...currentDeals];
+            updatedDeals[dealIndex] = result;
+            return updatedDeals;
+          }
+          return currentDeals;
+        });
       }
     });
   }

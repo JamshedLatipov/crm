@@ -91,6 +91,120 @@
   }
 }
 
+// Filters Panel
+.filters-panel {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+
+  .filter-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 200px;
+
+    mat-icon {
+      color: #64748b;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+
+    .search-input,
+    .filter-select {
+      flex: 1;
+      padding: 10px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: all 0.2s ease;
+
+      &:focus {
+        outline: none;
+        border-color: var(--primary-color, #4285f4);
+        box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.1);
+      }
+
+      &::placeholder {
+        color: #94a3b8;
+      }
+    }
+
+    .filter-select {
+      cursor: pointer;
+      background: white;
+    }
+  }
+
+  .filter-results {
+    padding: 8px 16px;
+    background: #f1f5f9;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #475569;
+    font-weight: 500;
+  }
+  
+  .virtual-scroll-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 8px;
+    font-size: 13px;
+    color: white;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    animation: fadeInScale 0.3s ease;
+    
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+  }
+
+  .clear-filters-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: white;
+    color: #64748b;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    &:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+      color: #475569;
+    }
+
+    &:active {
+      transform: scale(0.98);
+    }
+  }
+}
+
 // Pipeline Container
 .pipeline-container {
   background: white;
@@ -390,6 +504,65 @@
     color: #4caf50;
     font-weight: 600;
     opacity: 1;
+  }
+}
+
+// Virtual Scroll Viewport стили
+.deals-virtual {
+  min-height: calc(100% - 80px) !important;
+  max-height: calc(100% - 80px) !important;
+  
+  // Контейнер виртуального скроллинга
+  ::ng-deep .cdk-virtual-scroll-content-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.5rem;
+  }
+  
+  // Spacer элементы виртуального скроллинга
+  ::ng-deep .cdk-virtual-scroll-spacer {
+    display: none; // Скрываем spacer для лучшего вида
+  }
+}
+
+// Индикатор виртуального скроллинга
+.stage {
+  &:has(.deals-virtual) {
+    .stage-header {
+      position: relative;
+      
+      &::after {
+        content: '⚡';
+        position: absolute;
+        right: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 16px;
+        opacity: 0.6;
+        animation: pulse 2s ease-in-out infinite;
+      }
+    }
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
