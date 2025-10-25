@@ -6,6 +6,8 @@ import { TaskCalendarMonthComponent } from '../task-calendar-month/task-calendar
 import { TaskCalendarWeekComponent } from '../task-calendar-week/task-calendar-week.component';
 import { TaskCalendarYearComponent } from '../task-calendar-year/task-calendar-year.component';
 import { TaskCalendarCreateModalComponent } from '../task-calendar-create-modal/task-calendar-create-modal.component';
+import { TaskModalComponent } from '../../../components/task-modal/task-modal.component';
+import { TaskModalService } from '../../../services/task-modal.service';
 import { TaskCalendarService, CalendarTask } from '../../task-calendar.service';
 import { TasksService, TaskDto } from '../../../tasks.service';
 import {
@@ -32,6 +34,7 @@ import {
     TaskCalendarWeekComponent,
     TaskCalendarYearComponent,
     TaskCalendarCreateModalComponent,
+    TaskModalComponent,
   ],
   templateUrl: './task-calendar.component.html',
   styleUrls: ['./task-calendar.component.scss'],
@@ -90,7 +93,7 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
   public createDateStr = '';
   public createTimeStr = '';
 
-  constructor(private svc: TaskCalendarService, private tasksApi: TasksService) {}
+  constructor(private svc: TaskCalendarService, private tasksApi: TasksService, private taskModalService: TaskModalService) {}
 
   private subs: Array<any> = [];
   private isRendering = false;
@@ -352,22 +355,8 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
 
   openCreate(date: Date | null, hour?: number | null) {
     if (!date) return;
-    this.createModalOpen = true;
-    this.createDate = new Date(date);
-    this.createHour = typeof hour === 'number' ? hour : null;
-    // default title
-    this.createTitle = '';
-    // prepare string bindings for inputs
-    try {
-      this.createDateStr = format(this.createDate!, 'yyyy-MM-dd');
-    } catch {
-      this.createDateStr = '';
-    }
-    if (this.createHour !== null) {
-      this.createTimeStr = String(this.createHour).padStart(2, '0') + ':00';
-    } else {
-      this.createTimeStr = '09:00';
-    }
+    // Use the new modal service
+    this.taskModalService.openCreateModal(date, hour !== null ? hour : undefined);
   }
 
   closeCreate() {

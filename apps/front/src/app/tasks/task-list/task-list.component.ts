@@ -19,6 +19,8 @@ import { RouterModule, Router } from '@angular/router';
 import { TaskDueDateComponent } from '../components/task-due-date/task-due-date.component';
 import { TaskTypeDisplayComponent } from '../components/task-type-display/task-type-display.component';
 import { TaskStatusComponent } from '../components/task-status/task-status.component';
+import { TaskModalService } from '../services/task-modal.service';
+import { TaskModalComponent } from '../components/task-modal/task-modal.component';
 
 interface Task {
   id: number;
@@ -60,7 +62,8 @@ interface Task {
     MatSortModule,
     TaskDueDateComponent,
     TaskTypeDisplayComponent,
-    TaskStatusComponent
+    TaskStatusComponent,
+    TaskModalComponent
   ],
   templateUrl: './task-list.component.html',
   styleUrls: ['./task-list.component.scss']
@@ -90,10 +93,19 @@ export class TaskListComponent implements OnInit {
   
   displayedColumns: string[] = ['title', 'taskType', 'status', 'assignedTo', 'dueDate', 'actions'];
   
-  constructor(private tasksService: TasksService, private router: Router) {}
+  constructor(
+    private tasksService: TasksService, 
+    private router: Router,
+    private taskModalService: TaskModalService
+  ) {}
 
   ngOnInit() {
     this.loadTasks();
+    
+    // Subscribe to task saved events to reload the list
+    this.taskModalService.taskSaved$.subscribe(() => {
+      this.loadTasks();
+    });
   }
 
   loadTasks() {
@@ -234,7 +246,8 @@ export class TaskListComponent implements OnInit {
   }
 
   createTask() {
-    this.router.navigate(['/tasks/create']);
+    // Open the unified task modal instead of navigating
+    this.taskModalService.openCreateModal();
   }
   
   goToTaskTypes() {
