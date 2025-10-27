@@ -111,6 +111,7 @@ export function priorityDisplay(priority?: string | null): string {
 export function getCurrencySymbol(currency: string): string {
   const currencyMap: Record<string, string> = {
     RUB: '₽',
+    TJS: 'SM',
     USD: '$',
     EUR: '€',
     GBP: '£',
@@ -132,6 +133,7 @@ export function getCurrencySymbol(currency: string): string {
 export function getCurrencyName(currency: string): string {
   const currencyMap: Record<string, string> = {
     RUB: 'Рубль',
+    TJS: 'Сомони',
     USD: 'Доллар',
     EUR: 'Евро',
     GBP: 'Фунт стерлингов',

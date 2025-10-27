@@ -22,6 +22,39 @@
         class="analytics-tabs"
         (selectedTabChange)="initCharts()"
       >
+        <!-- Таб с графиком трендов -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon>show_chart</mat-icon>
+            Тренды
+          </ng-template>
+          <div class="tab-content chart-tab">
+            <app-trends-chart [stages]="data.analytics?.byStage"></app-trends-chart>
+          </div>
+        </mat-tab>
+
+        <!-- Таб с анализом по менеджерам -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon>people</mat-icon>
+            Менеджеры
+          </ng-template>
+          <div class="tab-content chart-tab">
+            <app-managers-analysis [stages]="data.analytics?.byStage"></app-managers-analysis>
+          </div>
+        </mat-tab>
+
+        <!-- Таб с прогнозом -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon>crystal_ball</mat-icon>
+            Прогноз
+          </ng-template>
+          <div class="tab-content chart-tab">
+            <app-forecast-component [analytics]="data.analytics"></app-forecast-component>
+          </div>
+        </mat-tab>
+
         <!-- Таб с воронкой -->
         <mat-tab>
           <ng-template mat-tab-label>

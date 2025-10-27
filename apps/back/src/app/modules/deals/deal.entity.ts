@@ -52,7 +52,7 @@ export class Deal {
   @Column('decimal', { precision: 15, scale: 2 })
   amount: number;
 
-  @Column({ default: 'RUB' })
+  @Column({ default: 'TJS' })
   currency: string;
 
   @Column('int', { default: 50 })

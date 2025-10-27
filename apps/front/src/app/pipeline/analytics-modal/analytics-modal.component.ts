@@ -13,6 +13,9 @@ import { StagesTableComponent } from './components/stages-table/stages-table.com
 import { ConversionSectionComponent } from './components/conversion-section/conversion-section.component';
 import { TimelineChartComponent } from './components/timeline-chart/timeline-chart.component';
 import { FinanceSectionComponent } from './components/finance-section/finance-section.component';
+import { TrendsChartComponent } from './components/trends-chart/trends-chart.component';
+import { ManagersAnalysisComponent } from './components/managers-analysis/managers-analysis.component';
+import { ForecastComponent } from './components/forecast-component/forecast-component.component';
 
 @Component({
   selector: 'app-analytics-modal',
@@ -31,7 +34,10 @@ import { FinanceSectionComponent } from './components/finance-section/finance-se
     ConversionSectionComponent
     ,
     TimelineChartComponent,
-    FinanceSectionComponent
+    FinanceSectionComponent,
+    TrendsChartComponent,
+    ManagersAnalysisComponent,
+    ForecastComponent
   ],
   templateUrl: './analytics-modal.component.html',
   styleUrl: './analytics-modal.component.scss',

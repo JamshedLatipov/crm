@@ -15,7 +15,7 @@ import { ContactDetailComponent } from './contacts/components/contact-detail.com
 import { DealsComponent } from './deals/deals.component';
 import { DealDetailComponent } from './deals/components/deal-detail.component/deal-detail.component';
 import { PipelineComponent } from './pipeline/pipeline.component';
-import { CreateStageComponent } from './pipeline/create-stage.component';
+import { CreateStageComponent } from './pipeline/create-stage/create-stage.component';
 import { TaskListComponent } from './tasks/task-list/task-list.component';
 import { TaskFormComponent } from './tasks/task-form/task-form.component';
 import { TaskDetailComponent } from './tasks/task-detail/task-detail.component';

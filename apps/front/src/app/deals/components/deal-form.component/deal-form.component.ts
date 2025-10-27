@@ -108,7 +108,7 @@ export class DealFormComponent implements OnInit {
     this.dealForm = this.fb.group({
       title: ['', [Validators.required]],
       amount: [0, [Validators.required, Validators.min(0.01)]],
-      currency: ['RUB'],
+      currency: ['TJS'],
       probability: [50],
       expectedCloseDate: [new Date(), [Validators.required]],
       stageId: ['', [Validators.required]],

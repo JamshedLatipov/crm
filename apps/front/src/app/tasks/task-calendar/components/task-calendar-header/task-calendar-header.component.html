@@ -2,9 +2,9 @@
   <div class="nav-left">
     <button class="btn" (click)="onPrev()">‹</button>
     <div class="month">
-      <ng-container *ngIf="viewMode === 'month'">{{ active | date:'LLL yyyy' }}</ng-container>
-      <ng-container *ngIf="viewMode === 'week'">Неделя {{ active | date:'d MMM' }}</ng-container>
-      <ng-container *ngIf="viewMode === 'work-week'">Рабочая неделя {{ active | date:'d MMM' }}</ng-container>
+      <ng-container *ngIf="viewMode === 'month'">{{ active | date:'LLLL yyyy':'':'ru' }}</ng-container>
+      <ng-container *ngIf="viewMode === 'week'">Неделя {{ active | date:'d LLLL':'':'ru' }}</ng-container>
+      <ng-container *ngIf="viewMode === 'work-week'">Рабочая неделя {{ active | date:'d LLLL':'':'ru' }}</ng-container>
       <ng-container *ngIf="viewMode === 'year'">{{ active | date:'yyyy' }}</ng-container>
     </div>
     <button class="btn" (click)="onNext()">›</button>

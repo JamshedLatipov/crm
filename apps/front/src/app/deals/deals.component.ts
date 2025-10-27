@@ -97,7 +97,7 @@ import { User } from '../users/users.service';
               <mat-icon>monetization_on</mat-icon>
             </div>
             <div class="stat-content">
-              <div class="stat-value">{{ (stats.totalValue || 0) | currency:'RUB':'symbol':'1.0-0' }}</div>
+              <div class="stat-value">{{ (stats.totalValue || 0) | currency:'TJS':'symbol':'1.0-0' }}</div>
               <div class="stat-label">Общая сумма</div>
             </div>
           </div>

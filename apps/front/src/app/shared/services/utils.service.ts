@@ -21,7 +21,7 @@ export class UtilsService {
   /**
    * Форматирует валюту
    */
-  formatCurrency(value: number, currency = 'RUB'): string {
+  formatCurrency(value: number, currency = 'TJS'): string {
     if (isNaN(value)) return '0 ₽';
     return new Intl.NumberFormat('ru-RU', {
       style: 'currency',

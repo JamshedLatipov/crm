@@ -1,0 +1,161 @@
+.forecast-component {
+  padding: 24px;
+
+  .forecast-header {
+    margin-bottom: 24px;
+
+    h3 {
+      margin: 0 0 8px 0;
+      color: #333;
+      font-size: 1.5rem;
+      font-weight: 500;
+    }
+
+    .forecast-subtitle {
+      color: #666;
+      margin: 0;
+      font-size: 0.9rem;
+    }
+  }
+
+  .forecast-controls {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+
+    .period-select,
+    .target-input {
+      min-width: 200px;
+    }
+  }
+
+  .forecast-chart-container {
+    height: 400px;
+    position: relative;
+    margin-bottom: 24px;
+
+    canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
+  }
+
+  .forecast-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+
+    .summary-card {
+      mat-card-content {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        padding: 20px !important;
+
+        .summary-icon {
+          width: 48px;
+          height: 48px;
+          border-radius: 12px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+
+          mat-icon {
+            color: white;
+            font-size: 24px;
+            width: 24px;
+            height: 24px;
+          }
+        }
+
+        .summary-content {
+          flex: 1;
+
+          .summary-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+          }
+
+          .summary-value {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: #28a745;
+            margin-bottom: 4px;
+          }
+
+          .summary-details {
+            font-size: 0.9rem;
+            color: #666;
+          }
+
+          .summary-text {
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.4;
+          }
+        }
+      }
+    }
+  }
+
+  .forecast-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    border: 1px solid #f0c674;
+    border-radius: 8px;
+    margin-top: 24px;
+
+    mat-icon {
+      color: #856404;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    .warning-content {
+      color: #856404;
+      font-size: 0.9rem;
+      line-height: 1.4;
+
+      strong {
+        display: block;
+        margin-bottom: 4px;
+      }
+    }
+  }
+}
+
+// Адаптивность
+@media (max-width: 768px) {
+  .forecast-component {
+    padding: 16px;
+
+    .forecast-controls {
+      flex-direction: column;
+
+      .period-select,
+      .target-input {
+        min-width: unset;
+        width: 100%;
+      }
+    }
+
+    .forecast-summary {
+      grid-template-columns: 1fr;
+    }
+
+    .forecast-chart-container {
+      height: 300px;
+    }
+  }
+}

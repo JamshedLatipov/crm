@@ -91,7 +91,7 @@ import { Stage, StageType } from '../../../pipeline/dtos';
               </div>
               <div class="info-content">
                 <div class="info-label">Оценочная стоимость</div>
-                <div class="info-value">{{ data.lead.estimatedValue ? (data.lead.estimatedValue | currency:'RUB':'symbol':'1.0-0') : 'Не указана' }}</div>
+                <div class="info-value">{{ data.lead.estimatedValue ? (data.lead.estimatedValue | currency:'TJS':'symbol':'1.0-0') : 'Не указана' }}</div>
               </div>
             </div>
             
@@ -139,7 +139,7 @@ import { Stage, StageType } from '../../../pipeline/dtos';
             <mat-form-field appearance="outline">
               <mat-label>Валюта</mat-label>
               <mat-select formControlName="currency">
-                <mat-option value="RUB">RUB (Российский рубль)</mat-option>
+                <mat-option value="TJS">TJS (Таджикский сомони)</mat-option>
                 <mat-option value="USD">USD (Доллар США)</mat-option>
                 <mat-option value="EUR">EUR (Евро)</mat-option>
               </mat-select>
@@ -531,7 +531,7 @@ export class ConvertToDealDialogComponent implements OnInit {
     this.convertForm = this.fb.group({
       title: [`Сделка от ${this.data.lead.name}`, [Validators.required]],
       amount: [this.data.lead.estimatedValue || 0, [Validators.required, Validators.min(1)]],
-      currency: ['RUB'],
+      currency: ['TJS'],
       probability: [this.probabilityControl.value, [Validators.min(0), Validators.max(100)]],
       stageId: ['', [Validators.required]],
       expectedCloseDate: [this.getDefaultCloseDate(), [Validators.required]],

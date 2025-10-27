@@ -1,0 +1,63 @@
+<div class="trends-chart-container">
+  <div class="chart-header">
+    <h3>Тренды воронки продаж</h3>
+    <div class="controls">
+      <mat-form-field appearance="outline" class="metric-select">
+        <mat-label>Метрика</mat-label>
+        <mat-select [(ngModel)]="selectedMetric" (selectionChange)="onMetricChange()">
+          <mat-option *ngFor="let metric of metrics" [value]="metric.value">
+            {{ metric.label }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="period-select">
+        <mat-label>Период</mat-label>
+        <mat-select [(ngModel)]="selectedPeriod" (selectionChange)="onPeriodChange()">
+          <mat-option *ngFor="let period of periods" [value]="period.value">
+            {{ period.label }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+  </div>
+
+  <div class="chart-wrapper">
+    <canvas #trendsCanvas></canvas>
+  </div>
+
+  <div class="metrics-summary" *ngIf="stages && stages.length > 0">
+    <div class="metric-cards">
+      <mat-card class="metric-card" *ngFor="let stage of stages.slice(0, 4)">
+        <mat-card-content>
+          <div class="metric-header">
+            <span class="stage-name">{{ stage.name }}</span>
+            <div class="stage-indicator" [style.background-color]="getStageColor(stages.indexOf(stage))"></div>
+          </div>
+          <div class="metric-value">
+            <span class="value">
+              {{ selectedMetric === 'amount' ? formatCurrency(getBaseValue(stage)) :
+                 selectedMetric === 'conversion' ? (getBaseValue(stage) | number:'1.0-0') + '%' :
+                 selectedMetric === 'time' ? (getBaseValue(stage) | number:'1.0-0') + ' дней' :
+                 formatNumber(getBaseValue(stage)) }}
+            </span>
+            <span class="metric-label">{{ getMetricLabel() }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+
+  <div class="chart-insights" *ngIf="stages && stages.length > 0">
+    <div class="insight-card">
+      <mat-icon>insights</mat-icon>
+      <div class="insight-content">
+        <div class="insight-title">Анализ трендов</div>
+        <div class="insight-text">
+          График показывает динамику выбранной метрики по этапам воронки за выбранный период.
+          Используйте фильтры для анализа различных аспектов продаж.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

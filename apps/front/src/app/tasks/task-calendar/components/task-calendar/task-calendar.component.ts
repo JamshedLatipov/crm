@@ -41,18 +41,18 @@ import {
 })
 export class TaskCalendarComponent implements OnInit, OnDestroy {
   public monthNames = [
-    'Янв',
-    'Фев',
-    'Мар',
-    'Апр',
+    'Январь',
+    'Февраль',
+    'Март',
+    'Апрель',
     'Май',
-    'Июн',
-    'Июл',
-    'Авг',
-    'Сен',
-    'Окт',
-    'Ноя',
-    'Дек',
+    'Июнь',
+    'Июль',
+    'Август',
+    'Сентябрь',
+    'Октябрь',
+    'Ноябрь',
+    'Декабрь',
   ];
 
   public active = new Date();
@@ -197,7 +197,7 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
       const count = this.svc.getTasksForMonth(year, m).length;
       this.months.push({
         index: m,
-        name: format(new Date(year, m, 1), 'LLL'),
+        name: this.monthNames[m],
         tasksCount: count,
       });
     }

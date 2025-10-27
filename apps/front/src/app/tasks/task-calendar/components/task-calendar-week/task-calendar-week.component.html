@@ -10,7 +10,7 @@
 
   <!-- day headers -->
   <ng-container *ngFor="let wd of weekDays">
-    <div class="day-header">{{ wd.date | date:'EEE d' }}</div>
+    <div class="day-header">{{ wd.date | date:'EEEE d':'':'ru' }}</div>
   </ng-container>
 
   <!-- overlay container per day to render spanning tasks (absolute positioning) -->

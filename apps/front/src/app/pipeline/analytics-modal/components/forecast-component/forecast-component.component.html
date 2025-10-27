@@ -1,0 +1,76 @@
+<div class="forecast-component">
+  <div class="forecast-header">
+    <h3>Прогноз продаж</h3>
+    <p class="forecast-subtitle">Прогнозирование будущих продаж на основе текущих трендов</p>
+  </div>
+
+  <div class="forecast-controls">
+    <mat-form-field appearance="outline" class="period-select">
+      <mat-label>Период прогноза</mat-label>
+      <mat-select [(ngModel)]="forecastPeriod" (selectionChange)="onPeriodChange()">
+        <mat-option *ngFor="let period of periods" [value]="period.value">
+          {{ period.label }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="target-input">
+      <mat-label>Целевая выручка (₽)</mat-label>
+      <input matInput
+             type="number"
+             [(ngModel)]="targetRevenue"
+             (input)="onTargetChange()"
+             placeholder="10000000">
+    </mat-form-field>
+  </div>
+
+  <div class="forecast-chart-container">
+    <canvas #forecastCanvas></canvas>
+  </div>
+
+  <!-- Карточки с прогнозом -->
+  <div class="forecast-summary" *ngIf="getForecastSummary() as summary">
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <div class="summary-icon">
+          <mat-icon>{{ summary.targetMet ? 'trending_up' : 'trending_down' }}</mat-icon>
+        </div>
+        <div class="summary-content">
+          <div class="summary-title">
+            {{ summary.targetMet ? 'Цель будет достигнута' : 'Цель не будет достигнута' }}
+          </div>
+          <div class="summary-value">
+            Прогноз: {{ formatCurrency(summary.finalRevenue) }}
+          </div>
+          <div class="summary-details">
+            {{ summary.finalDeals }} сделок • Уверенность: {{ (summary.confidence * 100).toFixed(0) }}%
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="summary-card">
+      <mat-card-content>
+        <div class="summary-icon">
+          <mat-icon>insights</mat-icon>
+        </div>
+        <div class="summary-content">
+          <div class="summary-title">Анализ прогноза</div>
+          <div class="summary-text">
+            Прогноз основан на текущих показателях конверсии и средней величине сделки.
+            Реальные результаты могут отличаться в зависимости от рыночных условий.
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Предупреждение -->
+  <div class="forecast-warning">
+    <mat-icon>info</mat-icon>
+    <div class="warning-content">
+      <strong>Важно:</strong> Этот прогноз является приблизительным и основан на исторических данных.
+      Для более точных прогнозов рекомендуется использовать специализированные инструменты анализа.
+    </div>
+  </div>
+</div>
