@@ -1,37 +1,23 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatCardModule } from '@angular/material/card';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatDividerModule } from '@angular/material/divider';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { PipelineService } from '../pipeline.service';
 import { Stage, AutomationRule, AutomationTrigger, AutomationAction } from '../dtos';
+import { AutomationRulesListComponent } from './components/automation-rules-list.component';
+import { AutomationRuleEditorComponent } from './components/automation-rule-editor.component';
 
 @Component({
   selector: 'app-automation-settings',
   standalone: true,
   imports: [
     CommonModule,
-    FormsModule,
     MatDialogModule,
     MatButtonModule,
     MatIconModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
-    MatCardModule,
-    MatSlideToggleModule,
-    MatDividerModule,
-    MatChipsModule,
-    MatTooltipModule
+    AutomationRulesListComponent,
+    AutomationRuleEditorComponent
   ],
   templateUrl: './automation-settings.component.html',
   styleUrls: ['./automation-settings.component.scss']
@@ -58,7 +44,7 @@ export class AutomationSettingsComponent implements OnInit {
     priority: 0
   };
 
-  // Опции для форм
+    // Опции для форм
   triggerTypes = [
     { value: AutomationTrigger.DEAL_CREATED, label: 'Сделка создана' },
     { value: AutomationTrigger.DEAL_UPDATED, label: 'Сделка обновлена' },
@@ -118,10 +104,10 @@ export class AutomationSettingsComponent implements OnInit {
     });
   }
 
-  createRule() {
-    if (!this.newRule.name.trim()) return;
+  createRule(ruleData: any) {
+    if (!ruleData.name.trim()) return;
 
-    this.pipelineService.createAutomationRule(this.newRule).subscribe({
+    this.pipelineService.createAutomationRule(ruleData).subscribe({
       next: (rule) => {
         this.rules.update(rules => [...rules, rule]);
         this.resetNewRule();
@@ -424,14 +410,14 @@ export class AutomationSettingsComponent implements OnInit {
     return field === 'AMOUNT_BETWEEN';
   }
 
-  onConditionFieldChange(index: number): void {
+  onConditionFieldChange(data: { index: number; field: string }): void {
     // Можно добавить логику для сброса значений при изменении типа условия
     const target = this.selectedRule() || this.newRule;
-    if (target && target.conditions[index]) {
+    if (target && target.conditions[data.index]) {
       // Сбросить значения при изменении типа
-      target.conditions[index].value = '';
-      if (target.conditions[index].value2 !== undefined) {
-        target.conditions[index].value2 = undefined;
+      target.conditions[data.index].value = '';
+      if (target.conditions[data.index].value2 !== undefined) {
+        target.conditions[data.index].value2 = undefined;
       }
     }
   }
@@ -445,90 +431,5 @@ export class AutomationSettingsComponent implements OnInit {
   createNewRule() {
     this.selectedRule.set(null);
     this.isEditingNew.set(true);
-  }
-
-  // Новые методы для улучшенного дизайна действий
-  getActionIcon(type: string): string {
-    switch (type) {
-      case AutomationAction.CHANGE_STAGE:
-        return 'timeline';
-      case AutomationAction.CHANGE_STATUS:
-        return 'flag';
-      case AutomationAction.ASSIGN_TO_USER:
-        return 'person_add';
-      case AutomationAction.SEND_NOTIFICATION:
-        return 'notifications';
-      case AutomationAction.CREATE_TASK:
-        return 'task';
-      case AutomationAction.UPDATE_AMOUNT:
-        return 'attach_money';
-      case AutomationAction.ADD_TAGS:
-        return 'label';
-      case AutomationAction.SEND_EMAIL:
-        return 'email';
-      case AutomationAction.SET_REMINDER:
-        return 'alarm';
-      default:
-        return 'play_arrow';
-    }
-  }
-
-  getActionLabel(type: string): string {
-    const actionType = this.actionTypes.find(a => a.value === type);
-    return actionType?.label || type;
-  }
-
-  getActionDescription(type: string): string {
-    switch (type) {
-      case AutomationAction.CHANGE_STAGE:
-        return 'Автоматически перемещает сделку на выбранный этап воронки';
-      case AutomationAction.CHANGE_STATUS:
-        return 'Изменяет статус сделки на указанный';
-      case AutomationAction.ASSIGN_TO_USER:
-        return 'Назначает сделку конкретному менеджеру';
-      case AutomationAction.SEND_NOTIFICATION:
-        return 'Отправляет уведомление по email или SMS';
-      case AutomationAction.CREATE_TASK:
-        return 'Создает новую задачу для менеджера';
-      case AutomationAction.UPDATE_AMOUNT:
-        return 'Изменяет сумму сделки на указанную';
-      case AutomationAction.ADD_TAGS:
-        return 'Добавляет теги к сделке для категоризации';
-      case AutomationAction.SEND_EMAIL:
-        return 'Отправляет персонализированное email-сообщение';
-      case AutomationAction.SET_REMINDER:
-        return 'Устанавливает напоминание для менеджера';
-      default:
-        return 'Выполняет автоматическое действие';
-    }
-  }
-
-  getActionHint(type: string): string {
-    switch (type) {
-      case AutomationAction.CHANGE_STAGE:
-        return 'Выберите этап из списка доступных';
-      case AutomationAction.ASSIGN_TO_USER:
-        return 'Укажите ID пользователя-менеджера';
-      case AutomationAction.SEND_NOTIFICATION:
-        return 'Настройте тип и текст уведомления';
-      case AutomationAction.CREATE_TASK:
-        return 'Заполните название, описание и дедлайн';
-      case AutomationAction.UPDATE_AMOUNT:
-        return 'Новая сумма в TJS';
-      case AutomationAction.ADD_TAGS:
-        return 'Теги через запятую, без пробелов';
-      case AutomationAction.SEND_EMAIL:
-        return 'Укажите получателей и текст письма';
-      case AutomationAction.SET_REMINDER:
-        return 'Время и текст напоминания';
-      default:
-        return '';
-    }
-  }
-
-  getActionsWord(count: number): string {
-    if (count === 1) return 'е';
-    if (count >= 2 && count <= 4) return 'я';
-    return 'й';
   }
 }

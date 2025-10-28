@@ -1,0 +1,118 @@
+.rules-list {
+  border-right: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+
+  .section-header {
+    padding: 20px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    h3 {
+      margin: 0;
+      color: #333;
+      font-size: 1.2rem;
+      font-weight: 500;
+    }
+  }
+
+  .rules-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+
+    .rule-card {
+      margin-bottom: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      &.active {
+        border-left: 4px solid #667eea;
+        background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+      }
+
+      mat-card-content {
+        padding: 16px !important;
+
+        .rule-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 12px;
+
+          .rule-info {
+            flex: 1;
+
+            h4 {
+              margin: 0 0 4px 0;
+              color: #333;
+              font-size: 1rem;
+              font-weight: 500;
+            }
+
+            p {
+              margin: 0;
+              color: #666;
+              font-size: 0.85rem;
+              line-height: 1.4;
+            }
+          }
+        }
+
+        .rule-details {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+
+          > div {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            color: #666;
+
+            mat-icon {
+              font-size: 16px;
+              width: 16px;
+              height: 16px;
+            }
+          }
+        }
+      }
+    }
+
+    .no-rules, .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 300px;
+      text-align: center;
+      color: #666;
+
+      mat-icon {
+        font-size: 48px;
+        width: 48px;
+        height: 48px;
+        margin-bottom: 16px;
+        opacity: 0.5;
+      }
+
+      p {
+        margin: 4px 0;
+        font-size: 0.9rem;
+
+        &.subtitle {
+          color: #999;
+          font-size: 0.8rem;
+        }
+      }
+    }
+  }
+}
