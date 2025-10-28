@@ -16,6 +16,7 @@ import { COMMENTS_MIGRATIONS } from './modules/comments/migrations';
 import { SHARED_MIGRATIONS } from './modules/shared/migrations';
 import { TASKS_MIGRATIONS } from './modules/tasks/migrations';
 import { ADS_INTEGRATION_MIGRATIONS } from './modules/ads-integration/migrations';
+import { PROMO_COMPANIES_MIGRATIONS } from './modules/promo-companies/migrations';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { ADS_INTEGRATION_MIGRATIONS } from './modules/ads-integration/migrations
         ...SHARED_MIGRATIONS,
         ...TASKS_MIGRATIONS,
         ...ADS_INTEGRATION_MIGRATIONS,
+        ...PROMO_COMPANIES_MIGRATIONS,
       ],
       migrationsRun: false,
     }),

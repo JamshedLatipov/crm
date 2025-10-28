@@ -25,6 +25,7 @@ import { AdsCampaignsComponent } from './pages/ads/ads-campaigns.component';
 import { AdsCampaignDetailComponent } from './pages/ads/ads-campaign-detail.component';
 import { AdsAccountsComponent } from './pages/ads/ads-accounts.component';
 import { TaskCalendarPageComponent } from './tasks/task-calendar/task-calendar-page.component';
+import { PromoCompaniesComponent } from './promo-companies/promo-companies.component';
 
 export const appRoutes: Route[] = [
     { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
@@ -89,5 +90,6 @@ export const appRoutes: Route[] = [
     ,
     { path: 'ads', component: AdsCampaignsComponent, canActivate: [authGuard] },
     { path: 'ads/:id', component: AdsCampaignDetailComponent, canActivate: [authGuard] },
-    { path: 'ads/accounts', component: AdsAccountsComponent, canActivate: [authGuard] }
+    { path: 'ads/accounts', component: AdsAccountsComponent, canActivate: [authGuard] },
+    { path: 'promo-companies', component: PromoCompaniesComponent, canActivate: [authGuard] }
 ];

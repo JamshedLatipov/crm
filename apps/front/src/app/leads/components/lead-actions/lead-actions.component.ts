@@ -25,6 +25,7 @@ export class LeadActionsComponent {
   @Output() assignLead = new EventEmitter<void>();
   @Output() changeStatus = new EventEmitter<void>();
   @Output() contactLead = new EventEmitter<void>();
+  @Output() createPromo = new EventEmitter<void>();
 
   onEditLead(): void {
     this.editLead.emit();
@@ -48,6 +49,10 @@ export class LeadActionsComponent {
 
   onContactLead(): void {
     this.contactLead.emit();
+  }
+
+  onCreatePromo(): void {
+    this.createPromo.emit();
   }
 
   getButtonClass(): string {

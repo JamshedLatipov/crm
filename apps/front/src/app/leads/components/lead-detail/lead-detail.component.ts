@@ -11,6 +11,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 
 import { LeadService } from '../../services/lead.service';
 import { UserService, Manager } from '../../../shared/services/user.service';
@@ -32,6 +33,8 @@ import { LeadStatusComponent } from '../lead-status/lead-status.component';
 import { LeadPriorityComponent } from '../lead-priority/lead-priority.component';
 import { LeadActionsComponent } from '../lead-actions/lead-actions.component';
 import { TaskListWidgetComponent } from '../../../tasks/components/task-list-widget.component';
+import { PromoCompaniesService } from '../../../promo-companies/services/promo-companies.service';
+import { CreatePromoCompanyDialogComponent } from '../../../promo-companies/components/create-promo-company-dialog/create-promo-company-dialog.component';
 
 interface HistoryEntry {
   field: string;
@@ -59,6 +62,7 @@ interface HistoryEntry {
     MatDividerModule,
     MatMenuModule,
     MatTooltipModule,
+    MatSnackBarModule,
     CommentsComponent,
     LeadStatusComponent,
     LeadPriorityComponent,
@@ -74,6 +78,7 @@ export class LeadDetailComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly snackBar = inject(MatSnackBar);
 
   lead: Lead = {} as Lead;
   activities: LeadActivity[] = [];
@@ -437,6 +442,30 @@ export class LeadDetailComponent implements OnInit {
         console.log('Lead converted to deal:', result);
         // Перенаправляем на страницу созданной сделки
         this.router.navigate(['/deals/view', result.id]);
+      }
+    });
+  }
+
+  createPromo(): void {
+    const dialogRef = this.dialog.open(CreatePromoCompanyDialogComponent, {
+      width: '600px',
+      data: {}
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        // Add the current lead to the created promo company
+        const promoCompaniesService = inject(PromoCompaniesService);
+        promoCompaniesService.addLeads(result.id, { leadIds: [+this.lead.id] }).subscribe({
+          next: () => {
+            console.log('Lead added to promo company:', result);
+            this.snackBar.open('Лид добавлен в промо-компанию', 'Закрыть', { duration: 3000 });
+          },
+          error: (error) => {
+            console.error('Error adding lead to promo company:', error);
+            this.snackBar.open('Ошибка добавления лида в промо-компанию', 'Закрыть', { duration: 3000 });
+          }
+        });
       }
     });
   }

@@ -1,7 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToOne, ManyToMany, JoinTable } from 'typeorm';
 import { Deal } from '../deals/deal.entity';
 import { Company } from '../companies/entities/company.entity';
 import { Assignment } from '../shared/entities/assignment.entity';
+import { PromoCompany } from '../promo-companies/entities/promo-company.entity';
 
 export enum LeadStatus {
   NEW = 'new',
@@ -180,4 +181,8 @@ export class Lead {
 
   @OneToMany(() => Deal, deal => deal.lead)
   deals?: Deal[];
+
+  // Промо-компании, в которых участвует этот лид
+  @ManyToMany(() => PromoCompany, promoCompany => promoCompany.leads)
+  promoCompanies?: PromoCompany[];
 }
