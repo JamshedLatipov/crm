@@ -9,6 +9,7 @@ import { DealHistoryService } from './services/deal-history.service';
 import { DealChangeType } from './entities/deal-history.entity';
 import { AssignmentService } from '../shared/services/assignment.service';
 import { UserService } from '../user/user.service';
+import { AutomationService } from '../pipeline/automation.service';
 
 @Injectable()
 export class DealsService {
@@ -20,6 +21,8 @@ export class DealsService {
     private readonly historyService: DealHistoryService,
     private readonly assignmentService: AssignmentService,
     private readonly userService: UserService,
+    @Inject(forwardRef(() => AutomationService))
+    private readonly automationService: AutomationService,
   ) {}
 
   /**
@@ -131,6 +134,13 @@ export class DealsService {
       await this.linkDealToLead(savedDeal.id, dto.leadId, userId, userName);
     }
 
+    // Вызываем автоматизацию для новой сделки
+    try {
+      await this.automationService.onDealCreated(savedDeal, userId, userName);
+    } catch (error) {
+      console.warn('Failed to trigger automation on deal creation:', error);
+    }
+
     // Возвращаем сделку со всеми связями
     return this.getDealById(savedDeal.id);
   }
@@ -197,6 +207,24 @@ export class DealsService {
         }
       } catch (err) {
         console.warn('Failed to auto-move deal after status change:', err?.message || err);
+      }
+    }
+
+    // Вызываем автоматизацию для обработки изменений
+    if (Object.keys(dealData).length > 0) {
+      try {
+        const changes: Record<string, { old: any; new: any }> = {};
+        for (const [fieldName, newValue] of Object.entries(dealData)) {
+          const oldValue = existingDeal[fieldName as keyof Deal];
+          if (oldValue !== newValue) {
+            changes[fieldName] = { old: oldValue, new: newValue };
+          }
+        }
+        if (Object.keys(changes).length > 0) {
+          await this.automationService.onDealUpdated(updatedDeal, changes, userId, userName);
+        }
+      } catch (error) {
+        console.warn('Failed to trigger automation on deal update:', error);
       }
     }
     

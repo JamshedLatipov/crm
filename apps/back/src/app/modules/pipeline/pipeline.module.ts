@@ -11,6 +11,7 @@ import { LeadModule } from '../leads/lead.module';
 import { CompaniesModule } from '../companies/companies.module';
 import { SharedModule } from '../shared/shared.module';
 import { DealsModule } from '../deals/deals.module';
+import { TaskModule } from '../tasks/task.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { DealsModule } from '../deals/deals.module';
     forwardRef(() => DealsModule),
     CompaniesModule,
     SharedModule,
+    forwardRef(() => TaskModule),
   ],
   providers: [PipelineService, AutomationService],
   controllers: [PipelineController, AutomationController],

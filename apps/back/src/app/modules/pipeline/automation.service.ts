@@ -7,6 +7,7 @@ import { Deal } from '../deals/deal.entity';
 import { Lead } from '../leads/lead.entity';
 import { DealsService } from '../deals/deals.service';
 import { LeadService } from '../leads/lead.service';
+import { TaskService } from '../tasks/task.service';
 
 interface AutomationContext {
   entityType: 'deal' | 'lead';
@@ -31,6 +32,8 @@ export class AutomationService implements OnModuleInit, OnModuleDestroy {
     private dealsService: DealsService,
     @Inject(forwardRef(() => LeadService))
     private leadService: LeadService,
+    @Inject(forwardRef(() => TaskService))
+    private taskService: TaskService,
   ) {}
 
   onModuleInit() {
@@ -433,15 +436,37 @@ export class AutomationService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    // For now, just log the task creation
-    // TODO: Implement actual task creation via TaskService
-    this.logger.log(`Automation: Create task "${config.title}" for ${context.entityType} ${context.entityId}`);
+    try {
+      const taskData: any = {
+        title: config.title,
+        description: config.description || '',
+        status: 'pending',
+      };
 
-    // Log activity for the entity
-    if (context.entityType === 'deal') {
-      // TODO: Add activity logging for deals
-    } else if (context.entityType === 'lead') {
-      await this.leadService.addNote(Number(context.entityId), `Автоматическая задача: ${config.title}`, context.userId);
+      // Устанавливаем дедлайн
+      if (config.dueInDays) {
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + config.dueInDays);
+        taskData.dueDate = dueDate;
+      }
+
+      // Назначаем задачу пользователю
+      if (config.assignedTo) {
+        taskData.assignedToId = Number(config.assignedTo);
+      }
+
+      // Привязываем к сущности
+      if (context.entityType === 'deal') {
+        taskData.dealId = context.entityId;
+      } else if (context.entityType === 'lead') {
+        taskData.leadId = Number(context.entityId);
+      }
+
+      const task = await this.taskService.create(taskData, context.userId ? Number(context.userId) : undefined);
+      this.logger.log(`Automation: Created task "${task.title}" (ID: ${task.id}) for ${context.entityType} ${context.entityId}`);
+
+    } catch (error) {
+      this.logger.error(`Failed to create task for automation:`, error);
     }
   }
 
