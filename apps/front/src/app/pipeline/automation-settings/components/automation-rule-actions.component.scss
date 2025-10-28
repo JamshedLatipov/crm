@@ -1,0 +1,227 @@
+.actions-logic {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background: #f5f5f5;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #666;
+
+  .logic-label {
+    font-weight: 500;
+  }
+}
+
+.action-item {
+  margin-bottom: 16px;
+
+  .action-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+
+    &:hover {
+      border-color: #1976d2;
+      box-shadow: 0 2px 8px rgba(25, 118, 210, 0.1);
+    }
+
+    .action-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 16px;
+
+      .action-icon {
+        flex-shrink: 0;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f5f5f5;
+        border-radius: 8px;
+        color: #666;
+
+        mat-icon {
+          font-size: 24px;
+        }
+      }
+
+      .action-content {
+        flex: 1;
+        min-width: 0;
+
+        .action-row {
+          display: flex;
+          gap: 12px;
+          margin-bottom: 12px;
+
+          .action-field {
+            flex: 1;
+            min-width: 200px;
+          }
+        }
+
+        .action-info {
+          margin-bottom: 12px;
+
+          small {
+            color: #666;
+            line-height: 1.4;
+
+            &.action-description {
+              display: block;
+              margin-bottom: 4px;
+              font-weight: 500;
+            }
+
+            &.action-hint {
+              color: #999;
+              font-style: italic;
+            }
+          }
+        }
+
+        .action-config {
+          .config-field {
+            margin-bottom: 12px;
+            width: 100%;
+
+            &.full-width {
+              width: 100%;
+            }
+          }
+
+          .config-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+
+            .config-field {
+              flex: 1;
+            }
+          }
+
+          .notification-section,
+          .task-section,
+          .email-section,
+          .reminder-section {
+            padding: 12px;
+            background: #fafafa;
+            border-radius: 4px;
+            border-left: 3px solid #1976d2;
+          }
+        }
+      }
+
+      .action-actions {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+
+        .action-number {
+          width: 24px;
+          height: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #e3f2fd;
+          color: #1976d2;
+          border-radius: 50%;
+          font-size: 12px;
+          font-weight: 500;
+        }
+      }
+    }
+  }
+}
+
+.no-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  color: #999;
+
+  mat-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+
+  .no-actions-content {
+    h4 {
+      margin: 0 0 8px 0;
+      color: #666;
+      font-weight: 500;
+    }
+
+    p {
+      margin: 0 0 8px 0;
+      font-size: 14px;
+
+      &.hint {
+        color: #999;
+        font-style: italic;
+      }
+    }
+  }
+}
+
+.actions-summary {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
+
+  mat-chip-listbox {
+    mat-chip {
+      background: #e3f2fd;
+      color: #1976d2;
+    }
+  }
+}
+
+// Адаптивность
+@media (max-width: 768px) {
+  .action-item {
+    .action-card {
+      .action-header {
+        flex-direction: column;
+        gap: 12px;
+
+        .action-content {
+          .action-row {
+            flex-direction: column;
+            gap: 8px;
+
+            .action-field {
+              min-width: unset;
+            }
+          }
+
+          .action-config {
+            .config-row {
+              flex-direction: column;
+              gap: 8px;
+            }
+          }
+        }
+
+        .action-actions {
+          flex-direction: row;
+          justify-content: space-between;
+          width: 100%;
+
+          .action-number {
+            order: -1;
+          }
+        }
+      }
+    }
+  }
+}

@@ -106,7 +106,8 @@
                cdkDrag 
                [cdkDragData]="deal"
                (cdkDragStarted)="onDragStarted()"
-               (cdkDragEnded)="onDragEnded()">
+               (cdkDragEnded)="onDragEnded()"
+               (click)="navigateToDeal(deal, $event)">
             <div class="deal-header">
               <div class="deal-title">{{ deal.title }}</div>
               <div class="deal-actions">
@@ -161,7 +162,8 @@
                  cdkDrag 
                  [cdkDragData]="deal"
                  (cdkDragStarted)="onDragStarted()"
-                 (cdkDragEnded)="onDragEnded()">
+                 (cdkDragEnded)="onDragEnded()"
+                 (click)="navigateToDeal(deal, $event)">
               <div class="deal-header">
                 <div class="deal-title">{{ deal.title }}</div>
                 <div class="deal-actions">

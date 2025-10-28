@@ -488,6 +488,14 @@ export class PipelineComponent implements OnInit, OnDestroy {
     });
   }
 
+  navigateToDeal(deal: Deal, event: Event) {
+    // Предотвращаем перетаскивание при клике на карточку
+    event.stopPropagation();
+    
+    // Навигация к деталям сделки
+    this.router.navigate(['/deals/view', deal.id]);
+  }
+
   // Утилиты для работы со статусами сделок
   getDealStatus(deal: Deal): DealStatusType {
     // Конвертируем enum значение в строку для компонента deal-status

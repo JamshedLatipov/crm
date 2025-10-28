@@ -10,6 +10,9 @@ import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { AutomationRule, AutomationTrigger, AutomationAction, Stage } from '../../dtos';
+import { Manager, LeadSource, LeadPriority, LeadStatus } from '../../../shared/types/common.types';
+import { AutomationRuleConditionsComponent } from './automation-rule-conditions.component';
+import { AutomationRuleActionsComponent } from './automation-rule-actions.component';
 
 @Component({
   selector: 'app-automation-rule-editor',
@@ -24,7 +27,9 @@ import { AutomationRule, AutomationTrigger, AutomationAction, Stage } from '../.
     MatSelectModule,
     MatCardModule,
     MatChipsModule,
-    MatTooltipModule
+    MatTooltipModule,
+    AutomationRuleConditionsComponent,
+    AutomationRuleActionsComponent
   ],
   template: `
     <div class="rule-editor" *ngIf="selectedRule() || isEditingNew()">
@@ -107,106 +112,16 @@ import { AutomationRule, AutomationTrigger, AutomationAction, Stage } from '../.
               <span class="logic-label">Все условия должны выполняться (И)</span>
             </div>
 
-            <div *ngFor="let condition of (selectedRule() || newRule()).conditions; let i = index" class="condition-item">
-              <div class="condition-card">
-                <div class="condition-header">
-                  <div class="condition-icon">
-                    <mat-icon>{{ getConditionIcon(condition.field) }}</mat-icon>
-                  </div>
-                  <div class="condition-content">
-                    <div class="condition-row">
-                      <mat-form-field appearance="outline" class="condition-field">
-                        <mat-label>Тип условия</mat-label>
-                        <mat-select [(ngModel)]="condition.field" (ngModelChange)="onConditionFieldChange.emit({ index: i, field: condition.field })">
-                          <mat-option value="STAGE_EQUALS">
-                            <mat-icon>timeline</mat-icon>
-                            Этап равен
-                          </mat-option>
-                          <mat-option value="STAGE_NOT_EQUALS">
-                            <mat-icon>timeline</mat-icon>
-                            Этап не равен
-                          </mat-option>
-                          <mat-option value="STATUS_EQUALS">
-                            <mat-icon>flag</mat-icon>
-                            Статус равен
-                          </mat-option>
-                          <mat-option value="AMOUNT_GREATER_THAN">
-                            <mat-icon>trending_up</mat-icon>
-                            Сумма больше
-                          </mat-option>
-                          <mat-option value="AMOUNT_LESS_THAN">
-                            <mat-icon>trending_down</mat-icon>
-                            Сумма меньше
-                          </mat-option>
-                          <mat-option value="AMOUNT_BETWEEN">
-                            <mat-icon>compare_arrows</mat-icon>
-                            Сумма между
-                          </mat-option>
-                          <mat-option value="ASSIGNED_TO_EQUALS">
-                            <mat-icon>person</mat-icon>
-                            Назначен менеджеру
-                          </mat-option>
-                          <mat-option value="TAGS_CONTAIN">
-                            <mat-icon>label</mat-icon>
-                            Содержит теги
-                          </mat-option>
-                          <mat-option value="TAGS_NOT_CONTAIN">
-                            <mat-icon>label_off</mat-icon>
-                            Не содержит теги
-                          </mat-option>
-                          <mat-option value="SOURCE_EQUALS">
-                            <mat-icon>link</mat-icon>
-                            Источник равен
-                          </mat-option>
-                          <mat-option value="PRIORITY_EQUALS">
-                            <mat-icon>priority_high</mat-icon>
-                            Приоритет равен
-                          </mat-option>
-                          <mat-option value="SCORE_GREATER_THAN">
-                            <mat-icon>star</mat-icon>
-                            Скор больше
-                          </mat-option>
-                          <mat-option value="CREATED_WITHIN_DAYS">
-                            <mat-icon>schedule</mat-icon>
-                            Создан за последние дни
-                          </mat-option>
-                        </mat-select>
-                      </mat-form-field>
-
-                      <mat-form-field appearance="outline" class="condition-value" *ngIf="!isBetweenCondition(condition.field)">
-                        <mat-label>{{ getConditionValueLabel(condition.field) }}</mat-label>
-                        <input matInput [(ngModel)]="condition.value" [placeholder]="getConditionPlaceholder(condition.field)">
-                        <mat-hint>{{ getConditionHint(condition.field) }}</mat-hint>
-                      </mat-form-field>
-
-                      <!-- Для условий "между" -->
-                      <div class="between-values" *ngIf="isBetweenCondition(condition.field)">
-                        <mat-form-field appearance="outline" class="condition-value">
-                          <mat-label>От</mat-label>
-                          <input matInput [(ngModel)]="condition.value" [placeholder]="getConditionPlaceholder(condition.field)">
-                        </mat-form-field>
-                        <mat-form-field appearance="outline" class="condition-value">
-                          <mat-label>До</mat-label>
-                          <input matInput [(ngModel)]="condition.value2" placeholder="Максимальное значение">
-                        </mat-form-field>
-                      </div>
-                    </div>
-
-                    <!-- Дополнительная информация -->
-                    <div class="condition-info" *ngIf="condition.field">
-                      <small class="condition-description">{{ getConditionDescription(condition.field) }}</small>
-                    </div>
-                  </div>
-
-                  <div class="condition-actions">
-                    <button mat-icon-button color="warn" (click)="removeCondition.emit(i)" matTooltip="Удалить условие">
-                      <mat-icon>delete</mat-icon>
-                    </button>
-                    <div class="condition-number">{{ i + 1 }}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <app-automation-rule-conditions
+              [conditions]="(selectedRule() || newRule()).conditions"
+              [stages]="stages()"
+              [managers]="managers()"
+              [sourcesInput]="getSourcesOptions()"
+              [prioritiesInput]="getPrioritiesOptions()"
+              [statusesInput]="getStatusesOptions()"
+              (onConditionFieldChange)="onConditionFieldChange.emit($event)"
+              (removeCondition)="removeCondition.emit($event)">
+            </app-automation-rule-conditions>
 
             <div *ngIf="!(selectedRule() || newRule()).conditions?.length" class="no-conditions">
               <mat-icon>filter_alt_off</mat-icon>
@@ -241,210 +156,12 @@ import { AutomationRule, AutomationTrigger, AutomationAction, Stage } from '../.
             </div>
           </mat-card-header>
           <mat-card-content>
-            <div class="actions-logic">
-              <span class="logic-label">Действия выполняются последовательно</span>
-            </div>
-
-            <div *ngFor="let action of (selectedRule() || newRule()).actions; let i = index" class="action-item">
-              <div class="action-card">
-                <div class="action-header">
-                  <div class="action-icon">
-                    <mat-icon>{{ getActionIcon(action.type) }}</mat-icon>
-                  </div>
-                  <div class="action-content">
-                    <div class="action-row">
-                      <mat-form-field appearance="outline" class="action-field">
-                        <mat-label>Тип действия</mat-label>
-                        <mat-select [(ngModel)]="action.type">
-                          <mat-option *ngFor="let type of actionTypes" [value]="type.value">
-                            <mat-icon>{{ getActionIcon(type.value) }}</mat-icon>
-                            {{ type.label }}
-                          </mat-option>
-                        </mat-select>
-                      </mat-form-field>
-                    </div>
-
-                    <!-- Дополнительная информация -->
-                    <div class="action-info" *ngIf="action.type">
-                      <small class="action-description">{{ getActionDescription(action.type) }}</small>
-                      <small class="action-hint" *ngIf="getActionHint(action.type)">{{ getActionHint(action.type) }}</small>
-                    </div>
-
-                    <!-- Конфигурация действия в зависимости от типа -->
-                    <div class="action-config" [ngSwitch]="action.type">
-                      <!-- Изменить этап -->
-                      <mat-form-field appearance="outline" *ngSwitchCase="'change_stage'" class="config-field">
-                        <mat-label>Выберите этап</mat-label>
-                        <mat-select [(ngModel)]="action.config['stageId']">
-                          <mat-option *ngFor="let stage of stages()" [value]="stage.id">
-                            {{ stage.name }}
-                          </mat-option>
-                        </mat-select>
-                      </mat-form-field>
-
-                      <!-- Изменить статус -->
-                      <mat-form-field appearance="outline" *ngSwitchCase="'change_status'" class="config-field">
-                        <mat-label>Новый статус</mat-label>
-                        <input matInput [(ngModel)]="action.config['status']" placeholder="Например: won, lost, pending">
-                      </mat-form-field>
-
-                      <!-- Назначить пользователю -->
-                      <mat-form-field appearance="outline" *ngSwitchCase="'assign_to_user'" class="config-field">
-                        <mat-label>ID пользователя</mat-label>
-                        <input matInput [(ngModel)]="action.config['userId']" placeholder="ID менеджера">
-                        <mat-hint>Пользователь, которому будет назначена сделка</mat-hint>
-                      </mat-form-field>
-
-                      <!-- Отправить уведомление -->
-                      <div class="notification-section" *ngSwitchCase="'send_notification'">
-                        <mat-form-field appearance="outline" class="config-field">
-                          <mat-label>Тип уведомления</mat-label>
-                          <mat-select [(ngModel)]="action.config['type']">
-                            <mat-option *ngFor="let type of notificationTypes" [value]="type.value">
-                              {{ type.label }}
-                            </mat-option>
-                          </mat-select>
-                        </mat-form-field>
-
-                        <mat-form-field appearance="outline" class="config-field full-width">
-                          <mat-label>Текст сообщения</mat-label>
-                          <textarea
-                            matInput
-                            [(ngModel)]="action.config['message']"
-                            rows="3"
-                            placeholder="Введите текст уведомления. Используйте переменные: &#123;deal.title&#125;, &#123;deal.amount&#125;, &#123;manager.name&#125;"
-                          ></textarea>
-                          <mat-hint>Поддерживаются переменные: &#123;deal.title&#125;, &#123;deal.amount&#125;, &#123;manager.name&#125;</mat-hint>
-                        </mat-form-field>
-
-                        <mat-form-field appearance="outline" class="config-field full-width">
-                          <mat-label>Получатели (email)</mat-label>
-                          <input matInput [(ngModel)]="action.config['recipients']" placeholder="email1@example.com, email2@example.com">
-                          <mat-hint>Несколько email через запятую</mat-hint>
-                        </mat-form-field>
-                      </div>
-
-                      <!-- Создать задачу -->
-                      <div class="task-section" *ngSwitchCase="'create_task'">
-                        <div class="config-row">
-                          <mat-form-field appearance="outline" class="config-field">
-                            <mat-label>Название задачи</mat-label>
-                            <input matInput [(ngModel)]="action.config['title']" placeholder="Краткое название">
-                          </mat-form-field>
-
-                          <mat-form-field appearance="outline" class="config-field">
-                            <mat-label>Дедлайн (дни)</mat-label>
-                            <input matInput type="number" [(ngModel)]="action.config['dueInDays']" min="1" placeholder="7">
-                          </mat-form-field>
-                        </div>
-
-                        <mat-form-field appearance="outline" class="config-field full-width">
-                          <mat-label>Описание</mat-label>
-                          <textarea
-                            matInput
-                            [(ngModel)]="action.config['description']"
-                            rows="2"
-                            placeholder="Подробное описание задачи"
-                          ></textarea>
-                        </mat-form-field>
-
-                        <mat-form-field appearance="outline" class="config-field">
-                          <mat-label>Назначить</mat-label>
-                          <input matInput [(ngModel)]="action.config['assignedTo']" placeholder="ID пользователя">
-                          <mat-hint>ID менеджера, ответственного за задачу</mat-hint>
-                        </mat-form-field>
-                      </div>
-
-                      <!-- Обновить сумму -->
-                      <mat-form-field appearance="outline" *ngSwitchCase="'update_amount'" class="config-field">
-                        <mat-label>Новая сумма (TJS)</mat-label>
-                        <input matInput type="number" [(ngModel)]="action.config['amount']" min="0" placeholder="100000">
-                        <mat-hint>Сумма в сомони без разделителей</mat-hint>
-                      </mat-form-field>
-
-                      <!-- Добавить теги -->
-                      <mat-form-field appearance="outline" *ngSwitchCase="'add_tags'" class="config-field">
-                        <mat-label>Теги (через запятую)</mat-label>
-                        <input matInput [(ngModel)]="action.config['tags']" placeholder="vip, срочный, повторный">
-                        <mat-hint>Теги для категоризации сделки</mat-hint>
-                      </mat-form-field>
-
-                      <!-- Отправить email -->
-                      <div class="email-section" *ngSwitchCase="'send_email'">
-                        <mat-form-field appearance="outline" class="config-field full-width">
-                          <mat-label>Тема письма</mat-label>
-                          <input matInput [(ngModel)]="action.config['subject']" placeholder="Тема email">
-                        </mat-form-field>
-
-                        <mat-form-field appearance="outline" class="config-field full-width">
-                          <mat-label>Текст письма</mat-label>
-                          <textarea
-                            matInput
-                            [(ngModel)]="action.config['body']"
-                            rows="4"
-                            placeholder="Текст email-сообщения"
-                          ></textarea>
-                        </mat-form-field>
-
-                        <mat-form-field appearance="outline" class="config-field full-width">
-                          <mat-label>Получатели</mat-label>
-                          <input matInput [(ngModel)]="action.config['recipients']" placeholder="email@example.com">
-                          <mat-hint>Один или несколько email через запятую</mat-hint>
-                        </mat-form-field>
-                      </div>
-
-                      <!-- Установить напоминание -->
-                      <div class="reminder-section" *ngSwitchCase="'set_reminder'">
-                        <div class="config-row">
-                          <mat-form-field appearance="outline" class="config-field">
-                            <mat-label>Через (часы)</mat-label>
-                            <input matInput type="number" [(ngModel)]="action.config['hoursFromNow']" min="1" placeholder="24">
-                          </mat-form-field>
-
-                          <mat-form-field appearance="outline" class="config-field">
-                            <mat-label>Назначить</mat-label>
-                            <input matInput [(ngModel)]="action.config['assignedTo']" placeholder="ID пользователя">
-                          </mat-form-field>
-                        </div>
-
-                        <mat-form-field appearance="outline" class="config-field full-width">
-                          <mat-label>Текст напоминания</mat-label>
-                          <textarea
-                            matInput
-                            [(ngModel)]="action.config['message']"
-                            rows="2"
-                            placeholder="Текст напоминания для менеджера"
-                          ></textarea>
-                        </mat-form-field>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="action-actions">
-                    <button mat-icon-button color="warn" (click)="removeAction.emit(i)" matTooltip="Удалить действие">
-                      <mat-icon>delete</mat-icon>
-                    </button>
-                    <div class="action-number">{{ i + 1 }}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div *ngIf="!(selectedRule() || newRule()).actions?.length" class="no-actions">
-              <mat-icon>play_circle_outline</mat-icon>
-              <div class="no-actions-content">
-                <h4>Действий нет</h4>
-                <p>Добавьте хотя бы одно действие, которое будет выполняться при срабатывании правила.</p>
-                <p class="hint">Используйте кнопку "+" выше, чтобы добавить автоматические действия.</p>
-              </div>
-            </div>
-
-            <!-- Статистика действий -->
-            <div class="actions-summary" *ngIf="(selectedRule() || newRule()).actions?.length > 0">
-              <mat-chip-listbox>
-                <mat-chip>{{ (selectedRule() || newRule()).actions.length }} действи{{ getActionsWord((selectedRule() || newRule()).actions.length) }}</mat-chip>
-              </mat-chip-listbox>
-            </div>
+            <app-automation-rule-actions
+              [actions]="(selectedRule() || newRule()).actions"
+              [stages]="stages()"
+              [managers]="managers()"
+              (removeAction)="removeAction.emit($event)">
+            </app-automation-rule-actions>
           </mat-card-content>
         </mat-card>
       </div>
@@ -475,6 +192,10 @@ export class AutomationRuleEditorComponent {
   selectedRule = input<AutomationRule | null>(null);
   isEditingNew = input(false);
   stages = input<Stage[]>([]);
+  managers = input<Manager[]>([]);
+  leadSources = input<LeadSource[]>([]);
+  leadPriorities = input<LeadPriority[]>([]);
+  leadStatuses = input<LeadStatus[]>([]);
   newRule = input<Omit<AutomationRule, 'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'lastTriggeredAt' | 'triggerCount'>>({
     name: '',
     description: '',
@@ -744,5 +465,65 @@ export class AutomationRuleEditorComponent {
     if (count === 1) return 'е';
     if (count >= 2 && count <= 4) return 'я';
     return 'й';
+  }
+
+  // Методы для получения опций справочников
+  getSourcesOptions() {
+    return Object.values(LeadSource).map(source => ({
+      value: source,
+      label: this.getSourceLabel(source)
+    }));
+  }
+
+  getPrioritiesOptions() {
+    return Object.values(LeadPriority).map(priority => ({
+      value: priority,
+      label: this.getPriorityLabel(priority)
+    }));
+  }
+
+  getStatusesOptions() {
+    return Object.values(LeadStatus).map(status => ({
+      value: status,
+      label: this.getStatusLabel(status)
+    }));
+  }
+
+  private getSourceLabel(source: LeadSource): string {
+    const labels: Record<LeadSource, string> = {
+      [LeadSource.WEBSITE]: 'Веб-сайт',
+      [LeadSource.FACEBOOK]: 'Facebook',
+      [LeadSource.GOOGLE_ADS]: 'Google Ads',
+      [LeadSource.LINKEDIN]: 'LinkedIn',
+      [LeadSource.EMAIL]: 'Email',
+      [LeadSource.PHONE]: 'Телефон',
+      [LeadSource.REFERRAL]: 'Рекомендация',
+      [LeadSource.OTHER]: 'Другое'
+    };
+    return labels[source] || source;
+  }
+
+  private getPriorityLabel(priority: LeadPriority): string {
+    const labels: Record<LeadPriority, string> = {
+      [LeadPriority.LOW]: 'Низкий',
+      [LeadPriority.MEDIUM]: 'Средний',
+      [LeadPriority.HIGH]: 'Высокий',
+      [LeadPriority.URGENT]: 'Срочный'
+    };
+    return labels[priority] || priority;
+  }
+
+  private getStatusLabel(status: LeadStatus): string {
+    const labels: Record<LeadStatus, string> = {
+      [LeadStatus.NEW]: 'Новый',
+      [LeadStatus.CONTACTED]: 'Контактирован',
+      [LeadStatus.QUALIFIED]: 'Квалифицирован',
+      [LeadStatus.PROPOSAL_SENT]: 'Предложение отправлено',
+      [LeadStatus.NEGOTIATING]: 'Переговоры',
+      [LeadStatus.CONVERTED]: 'Конвертирован',
+      [LeadStatus.REJECTED]: 'Отклонен',
+      [LeadStatus.LOST]: 'Потерян'
+    };
+    return labels[status] || status;
   }
 }

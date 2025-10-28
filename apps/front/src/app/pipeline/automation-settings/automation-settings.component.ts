@@ -5,6 +5,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { PipelineService } from '../pipeline.service';
 import { Stage, AutomationRule, AutomationTrigger, AutomationAction } from '../dtos';
+import { User, Manager, LeadSource, LeadPriority, LeadStatus } from '../../shared/types/common.types';
+import { UserManagementService } from '../../services/user-management.service';
 import { AutomationRulesListComponent } from './components/automation-rules-list.component';
 import { AutomationRuleEditorComponent } from './components/automation-rule-editor.component';
 
@@ -24,11 +26,16 @@ import { AutomationRuleEditorComponent } from './components/automation-rule-edit
 })
 export class AutomationSettingsComponent implements OnInit {
   private readonly pipelineService = inject(PipelineService);
+  private readonly userManagementService = inject(UserManagementService);
   public readonly dialogRef = inject(MatDialogRef<AutomationSettingsComponent>);
 
   // Состояние
   rules = signal<AutomationRule[]>([]);
   stages = signal<Stage[]>([]);
+  managers = signal<Manager[]>([]);
+  leadSources = signal<LeadSource[]>([]);
+  leadPriorities = signal<LeadPriority[]>([]);
+  leadStatuses = signal<LeadStatus[]>([]);
   isLoading = signal(false);
   selectedRule = signal<AutomationRule | null>(null);
   isEditingNew = signal(false);
@@ -84,11 +91,13 @@ export class AutomationSettingsComponent implements OnInit {
   private loadData() {
     this.isLoading.set(true);
 
-    // Загружаем правила и этапы параллельно
+    // Загружаем правила, этапы и справочники параллельно
     Promise.all([
       this.pipelineService.getAutomationRules().toPromise(),
-      this.pipelineService.listAllStages().toPromise()
-    ]).then(([rules, stages]) => {
+      this.pipelineService.listAllStages().toPromise(),
+      this.userManagementService.loadUsers().toPromise(),
+      this.loadReferenceData()
+    ]).then(([rules, stages, users, referenceData]) => {
       // Инициализируем массивы по умолчанию для каждого правила
       const processedRules = (rules as AutomationRule[] || []).map(rule => ({
         ...rule,
@@ -97,11 +106,39 @@ export class AutomationSettingsComponent implements OnInit {
       }));
       this.rules.set(processedRules);
       this.stages.set(stages || []);
+      // Фильтруем менеджеров (пользователей с ролями менеджера)
+      const managers = (users || []).filter(user =>
+        user.roles.includes('sales_manager') ||
+        user.roles.includes('account_manager') ||
+        user.roles.includes('senior_manager')
+      ).map(user => ({
+        ...user,
+        fullName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username,
+        workloadPercentage: Math.round((user.currentLeadsCount / user.maxLeadsCapacity) * 100),
+        isOverloaded: user.currentLeadsCount > user.maxLeadsCapacity
+      } as Manager));
+      this.managers.set(managers);
+      this.leadSources.set(referenceData.sources);
+      this.leadPriorities.set(referenceData.priorities);
+      this.leadStatuses.set(referenceData.statuses);
       this.isLoading.set(false);
     }).catch(error => {
       console.error('Error loading automation data:', error);
       this.isLoading.set(false);
     });
+  }
+
+  private async loadReferenceData() {
+    // Загружаем справочники из enum'ов
+    const sources = Object.values(LeadSource);
+    const priorities = Object.values(LeadPriority);
+    const statuses = Object.values(LeadStatus);
+
+    return {
+      sources,
+      priorities,
+      statuses
+    };
   }
 
   createRule(ruleData: any) {
