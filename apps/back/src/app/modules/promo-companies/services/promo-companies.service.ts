@@ -51,12 +51,14 @@ export class PromoCompaniesService {
     const promoCompany = await this.findOne(id);
     const leads = await this.leadRepository.findByIds(addLeadsDto.leadIds);
     promoCompany.leads = [...(promoCompany.leads || []), ...leads];
+    promoCompany.leadsReached = promoCompany.leads.length;
     return this.promoCompanyRepository.save(promoCompany);
   }
 
   async removeLeads(id: number, removeLeadsDto: RemoveLeadsFromPromoCompanyDto): Promise<PromoCompany> {
     const promoCompany = await this.findOne(id);
     promoCompany.leads = promoCompany.leads.filter(lead => !removeLeadsDto.leadIds.includes(lead.id));
+    promoCompany.leadsReached = promoCompany.leads.length;
     return this.promoCompanyRepository.save(promoCompany);
   }
 

@@ -182,7 +182,14 @@ export class Lead {
   @OneToMany(() => Deal, deal => deal.lead)
   deals?: Deal[];
 
-  // Промо-компании, в которых участвует этот лид
+  // Промо-компания, к которой привязан лид
+  @ManyToOne(() => PromoCompany, promoCompany => promoCompany.leads, { nullable: true })
+  promoCompany?: PromoCompany;
+
+  @Column({ nullable: true })
+  promoCompanyId?: number;
+
+  // Промо-компании, в которых участвует этот лид (для обратной совместимости)
   @ManyToMany(() => PromoCompany, promoCompany => promoCompany.leads)
   promoCompanies?: PromoCompany[];
 }

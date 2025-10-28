@@ -17,6 +17,8 @@ import { LeadPriority, CreateLeadRequest } from '../../models/lead.model';
 import { CompanySelectorComponent } from '../../../shared/components/company-selector/company-selector.component';
 import { ContactSelectorComponent } from '../../../contacts/components/contact-selector.component';
 import { Contact } from '../../../contacts/contact.interfaces';
+import { PromoCompaniesService } from '../../../promo-companies/services/promo-companies.service';
+import { PromoCompany } from '../../../promo-companies/models/promo-company.model';
 
 @Component({
   selector: 'app-create-lead-dialog',
@@ -28,10 +30,12 @@ import { Contact } from '../../../contacts/contact.interfaces';
 export class CreateLeadDialogComponent {
   private readonly fb = inject(FormBuilder);
   private readonly leadService = inject(LeadService);
+  private readonly promoCompaniesService = inject(PromoCompaniesService);
   private readonly dialogRef = inject(MatDialogRef<CreateLeadDialogComponent>);
 
   leadForm: FormGroup;
   saving = false;
+  promoCompanies: PromoCompany[] = [];
 
   constructor() {
     this.leadForm = this.fb.group({
@@ -48,12 +52,16 @@ export class CreateLeadDialogComponent {
       city: [''],
       source: ['', [Validators.required]],
       priority: [LeadPriority.MEDIUM],
+      promoCompanyId: [null], // ID промо-компании
       estimatedValue: [''],
       budget: [''],
       decisionTimeframe: [''],
       notes: [''],
       tagsInput: [''],
     });
+
+    // Загружаем список промо-компаний
+    this.loadPromoCompanies();
 
     // company autocomplete is provided by CompanyAutocompleteComponent
     
@@ -75,6 +83,18 @@ export class CreateLeadDialogComponent {
       website: contact.website || '',
       company: contact.companyName || '',
       companyId: contact.companyId || ''
+    });
+  }
+
+  loadPromoCompanies(): void {
+    this.promoCompaniesService.getAll().subscribe({
+      next: (companies) => {
+        // Фильтруем только активные промо-компании
+        this.promoCompanies = companies.filter(company => company.status === 'active');
+      },
+      error: (error) => {
+        console.error('Error loading promo companies:', error);
+      }
     });
   }
 
@@ -104,6 +124,7 @@ export class CreateLeadDialogComponent {
       city: formValue.city || undefined,
       source: formValue.source,
       priority: formValue.priority || undefined,
+      promoCompanyId: formValue.promoCompanyId || undefined, // ID промо-компании
       estimatedValue: formValue.estimatedValue ? Number(formValue.estimatedValue) : undefined,
       budget: formValue.budget ? Number(formValue.budget) : undefined,
       decisionTimeframe: formValue.decisionTimeframe || undefined,

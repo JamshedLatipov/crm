@@ -32,6 +32,8 @@ import {
   LeadPriority,
   LeadFilters,
 } from '../../models/lead.model';
+import { PromoCompaniesService } from '../../../promo-companies/services/promo-companies.service';
+import { PromoCompany } from '../../../promo-companies/models/promo-company.model';
 import { CreateLeadDialogComponent } from '../create-lead-dialog.component';
 import { EditLeadDialogComponent } from '../edit-lead-dialog.component';
 // LeadDetailComponent is now routed; don't import here
@@ -72,6 +74,7 @@ import { leadStatusDisplay, leadSourceDisplay, leadPriorityDisplay } from '../..
 export class LeadsListComponent implements OnInit {
   private leadService = inject(LeadService);
   private userService = inject(UserService);
+  private promoCompaniesService = inject(PromoCompaniesService);
   private router = inject(Router);
   private dialog = inject(MatDialog);
 
@@ -81,11 +84,15 @@ export class LeadsListComponent implements OnInit {
   selectedLeads = signal<Lead[]>([]);
   loading = signal(true);
 
+  // Promo companies for display
+  promoCompanies: PromoCompany[] = [];
+
   // Table configuration
   displayedColumns: string[] = [
     'select',
     'leadName',
     'company',
+    'promoCompany',
     'leadScore',
     'status',
     'assignedManager',
@@ -125,6 +132,7 @@ export class LeadsListComponent implements OnInit {
   ngOnInit(): void {
     this.loadLeads();
     this.loadManagers();
+    this.loadPromoCompanies();
   }
 
   // Selection helpers
@@ -173,6 +181,13 @@ export class LeadsListComponent implements OnInit {
     this.userService.getManagers().subscribe({
       next: (managers) => (this.managers = managers),
       error: (err) => console.error('Error loading managers for list:', err),
+    });
+  }
+
+  private loadPromoCompanies(): void {
+    this.promoCompaniesService.getAll().subscribe({
+      next: (companies) => (this.promoCompanies = companies),
+      error: (err) => console.error('Error loading promo companies:', err),
     });
   }
 
@@ -486,5 +501,10 @@ export class LeadsListComponent implements OnInit {
 
   getPriorityLabel(priority: LeadPriority): string {
     return leadPriorityDisplay(priority);
+  }
+
+  getPromoCompanyName(promoCompanyId: number): string {
+    const company = this.promoCompanies.find(c => c.id === promoCompanyId);
+    return company?.name || `ID: ${promoCompanyId}`;
   }
 }

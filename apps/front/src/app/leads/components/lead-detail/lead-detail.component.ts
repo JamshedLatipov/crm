@@ -35,6 +35,7 @@ import { LeadActionsComponent } from '../lead-actions/lead-actions.component';
 import { TaskListWidgetComponent } from '../../../tasks/components/task-list-widget.component';
 import { PromoCompaniesService } from '../../../promo-companies/services/promo-companies.service';
 import { CreatePromoCompanyDialogComponent } from '../../../promo-companies/components/create-promo-company-dialog/create-promo-company-dialog.component';
+import { AssignPromoCompanyDialogComponent } from '../../../promo-companies/components/assign-promo-company-dialog/assign-promo-company-dialog.component';
 
 interface HistoryEntry {
   field: string;
@@ -79,6 +80,7 @@ export class LeadDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly promoCompaniesService = inject(PromoCompaniesService);
 
   lead: Lead = {} as Lead;
   activities: LeadActivity[] = [];
@@ -88,7 +90,7 @@ export class LeadDetailComponent implements OnInit {
   error = '';
   managers: Manager[] = [];
   currentAssignments: Assignment[] = [];
-
+  promoCompanies: any[] = [];
   // Для компонента комментариев
   readonly CommentEntityType = CommentEntityType;
 
@@ -117,6 +119,7 @@ export class LeadDetailComponent implements OnInit {
   ngOnInit(): void {
     // load managers once
     this.loadManagers();
+    this.loadPromoCompanies();
 
     // listen to route params and load lead by id
     this.route.paramMap.subscribe((params) => {
@@ -134,6 +137,13 @@ export class LeadDetailComponent implements OnInit {
       next: (managers) => (this.managers = managers),
       error: (err) =>
         console.error('Error loading managers for activity resolution:', err),
+    });
+  }
+
+  private loadPromoCompanies(): void {
+    this.promoCompaniesService.getAll().subscribe({
+      next: (companies) => (this.promoCompanies = companies),
+      error: (err) => console.error('Error loading promo companies:', err),
     });
   }
 
@@ -455,15 +465,60 @@ export class LeadDetailComponent implements OnInit {
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
         // Add the current lead to the created promo company
-        const promoCompaniesService = inject(PromoCompaniesService);
-        promoCompaniesService.addLeads(result.id, { leadIds: [+this.lead.id] }).subscribe({
+        this.promoCompaniesService.addLeads(result.id, { leadIds: [+this.lead.id] }).subscribe({
           next: () => {
             console.log('Lead added to promo company:', result);
             this.snackBar.open('Лид добавлен в промо-компанию', 'Закрыть', { duration: 3000 });
+            // Reload lead to show updated promo company
+            this.loadLead(this.lead.id);
           },
           error: (error) => {
             console.error('Error adding lead to promo company:', error);
             this.snackBar.open('Ошибка добавления лида в промо-компанию', 'Закрыть', { duration: 3000 });
+          }
+        });
+      }
+    });
+  }
+
+  getPromoCompanyName(promoCompanyId: number): string {
+    const company = this.promoCompanies.find(c => c.id === promoCompanyId);
+    return company?.name || `ID: ${promoCompanyId}`;
+  }
+
+  removePromoCompany(): void {
+    if (!this.lead.promoCompanyId) return;
+    
+    if (confirm('Вы уверены, что хотите отвязать лид от промо-компании?')) {
+      this.leadService.removeLeadFromPromoCompany(this.lead.id).subscribe({
+        next: () => {
+          this.snackBar.open('Лид отвязан от промо-компании', 'Закрыть', { duration: 3000 });
+          this.lead.promoCompanyId = undefined;
+        },
+        error: (error) => {
+          console.error('Error removing lead from promo company:', error);
+          this.snackBar.open('Ошибка отвязки лида от промо-компании', 'Закрыть', { duration: 3000 });
+        }
+      });
+    }
+  }
+
+  assignPromoCompany(): void {
+    const dialogRef = this.dialog.open(AssignPromoCompanyDialogComponent, {
+      width: '500px',
+      data: { currentPromoCompanyId: this.lead.promoCompanyId }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.leadService.assignLeadToPromoCompany(this.lead.id, result).subscribe({
+          next: () => {
+            this.snackBar.open('Промо-компания присвоена лиду', 'Закрыть', { duration: 3000 });
+            this.lead.promoCompanyId = result;
+          },
+          error: (error) => {
+            console.error('Error assigning promo company to lead:', error);
+            this.snackBar.open('Ошибка присвоения промо-компании', 'Закрыть', { duration: 3000 });
           }
         });
       }

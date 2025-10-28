@@ -181,7 +181,7 @@ import { CreatePromoCompanyDialogComponent } from '../create-promo-company-dialo
                 </button>
               </th>
               <td mat-cell *matCellDef="let promoCompany">
-                <div class="leads-count">{{ promoCompany.leads?.length || 0 }}</div>
+                <div class="leads-count">{{ promoCompany.leadsReached || 0 }}</div>
               </td>
             </ng-container>
 
@@ -777,8 +777,8 @@ export class PromoCompaniesListComponent implements OnInit {
           bValue = (b.name || '').toLowerCase();
           break;
         case 'leadsCount':
-          aValue = a.leads?.length || 0;
-          bValue = b.leads?.length || 0;
+          aValue = a.leadsReached || 0;
+          bValue = b.leadsReached || 0;
           break;
         case 'budget':
           aValue = a.budget || 0;
@@ -809,7 +809,7 @@ export class PromoCompaniesListComponent implements OnInit {
     const total = this.promoCompanies.length;
     const active = this.promoCompanies.filter(p => p.status === 'active').length;
     const paused = this.promoCompanies.filter(p => p.status === 'paused').length;
-    const totalLeads = this.promoCompanies.reduce((sum, p) => sum + (p.leads?.length || 0), 0);
+    const totalLeads = this.promoCompanies.reduce((sum, p) => sum + (p.leadsReached || 0), 0);
 
     this.stats = { total, active, paused, totalLeads };
   }

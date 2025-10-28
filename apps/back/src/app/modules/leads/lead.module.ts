@@ -24,6 +24,7 @@ import { DealsModule } from '../deals/deals.module';
 import { NotificationModule } from '../notifications/notification.module';
 import { SharedModule } from '../shared/shared.module';
 import { CompaniesModule } from '../companies/companies.module';
+import { PromoCompaniesModule } from '../promo-companies/promo-companies.module';
 
 @Module({
   imports: [
@@ -45,7 +46,8 @@ import { CompaniesModule } from '../companies/companies.module';
     UserModule,
     DealsModule,
     NotificationModule,
-    SharedModule
+    SharedModule,
+    PromoCompaniesModule
   ],
   providers: [
     LeadService,

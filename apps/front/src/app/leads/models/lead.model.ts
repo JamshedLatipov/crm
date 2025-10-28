@@ -83,6 +83,7 @@ export interface Lead {
   source: LeadSource;
   priority: LeadPriority;
   assignedTo?: string;
+  promoCompanyId?: number; // ID промо-компании
   
   // Scoring
   score: number;
@@ -179,6 +180,7 @@ export interface CreateLeadRequest {
   city?: string;
   source: LeadSource;
   priority?: LeadPriority;
+  promoCompanyId?: number; // ID промо-компании
   estimatedValue?: number;
   budget?: number;
   decisionTimeframe?: string;
@@ -203,6 +205,7 @@ export interface UpdateLeadRequest {
   country?: string;
   city?: string;
   priority?: LeadPriority;
+  promoCompanyId?: number; // ID промо-компании
   estimatedValue?: number;
   budget?: number;
   decisionTimeframe?: string;

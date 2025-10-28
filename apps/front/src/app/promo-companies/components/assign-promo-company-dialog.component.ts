@@ -1,0 +1,1 @@
+export * from './assign-promo-company-dialog.component';

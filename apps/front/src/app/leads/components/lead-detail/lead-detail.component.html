@@ -62,6 +62,7 @@
                 (assignLead)="assignLead()"
                 (changeStatus)="quickChangeStatus()"
                 (createPromo)="createPromo()"
+                (assignPromo)="assignPromoCompany()"
                 (deleteLead)="deleteLead()"
                 *ngIf="!isConverted"
               >
@@ -302,6 +303,40 @@
                     <span class="label">Ответственный</span>
                     <div class="value">
                       {{ getAssigneeName }}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="timeline-item" *ngIf="lead.promoCompanyId">
+                  <div class="timeline-icon promo">
+                    <mat-icon>campaign</mat-icon>
+                  </div>
+                  <div class="timeline-content">
+                    <span class="label">Промо-компания</span>
+                    <div class="value promo-company-value">
+                      <div class="promo-company-badge">
+                        <mat-icon class="promo-icon">campaign</mat-icon>
+                        <span>{{ getPromoCompanyName(lead.promoCompanyId) }}</span>
+                        <button mat-icon-button class="remove-promo-btn" (click)="removePromoCompany()" 
+                                matTooltip="Отвязать от промо-компании" *ngIf="!isConverted">
+                          <mat-icon>close</mat-icon>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="timeline-item" *ngIf="!lead.promoCompanyId && !isConverted">
+                  <div class="timeline-icon promo">
+                    <mat-icon>campaign</mat-icon>
+                  </div>
+                  <div class="timeline-content">
+                    <span class="label">Промо-компания</span>
+                    <div class="value">
+                      <button mat-stroked-button color="primary" (click)="assignPromoCompany()" class="assign-promo-btn">
+                        <mat-icon>add</mat-icon>
+                        Присвоить промо-компанию
+                      </button>
                     </div>
                   </div>
                 </div>

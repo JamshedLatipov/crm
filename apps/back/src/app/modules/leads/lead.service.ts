@@ -23,6 +23,7 @@ import { Deal } from '../deals/deal.entity';
 import { CreateDealDto } from '../deals/dto/create-deal.dto';
 import { DealsService } from '../deals/deals.service';
 import { AssignmentService } from '../shared/services/assignment.service';
+import { PromoCompaniesService } from '../promo-companies/services/promo-companies.service';
 
 // Интерфейс для создания лида с дополнительными полями
 interface CreateLeadData extends Partial<Lead> {
@@ -76,7 +77,8 @@ export class LeadService {
     private readonly userService: UserService,
     private readonly dealsService: DealsService,
     private readonly assignmentService: AssignmentService,
-    private readonly pipelineService: PipelineService
+    private readonly pipelineService: PipelineService,
+    private readonly promoCompaniesService: PromoCompaniesService
   ) {}
 
   async create(data: CreateLeadData, userId?: string, userName?: string): Promise<Lead> {
@@ -1127,5 +1129,125 @@ export class LeadService {
     });
     
     return dealWithRelations || savedDeal;
+  }
+
+  /**
+   * Присвоить промо-компанию лиду
+   */
+  async assignPromoCompany(leadId: number, promoCompanyId: number, userId?: string, userName?: string): Promise<Lead> {
+    const lead = await this.findById(leadId);
+    if (!lead) {
+      throw new Error('Lead not found');
+    }
+
+    const oldPromoCompanyId = lead.promoCompanyId;
+
+    // Если лид уже привязан к другой промо-компании, сначала отвяжем его
+    if (oldPromoCompanyId && oldPromoCompanyId !== promoCompanyId) {
+      try {
+        await this.promoCompaniesService.removeLeads(oldPromoCompanyId, { leadIds: [leadId] });
+      } catch (error) {
+        console.warn('Failed to remove lead from old promo company:', error.message);
+      }
+    }
+
+    // Обновляем лид
+    const updated = await this.update(leadId, { promoCompanyId }, userId, userName);
+
+    // Добавляем лид в новую промо-компанию
+    try {
+      await this.promoCompaniesService.addLeads(promoCompanyId, { leadIds: [leadId] });
+    } catch (error) {
+      console.warn('Failed to add lead to promo company:', error.message);
+      // Если не удалось добавить в промо-компанию, откатываем изменение лида
+      await this.update(leadId, { promoCompanyId: oldPromoCompanyId }, userId, userName);
+      throw error;
+    }
+
+    // Записываем изменение в историю
+    await this.historyService.createHistoryEntry({
+      leadId: leadId,
+      fieldName: 'promoCompanyId',
+      oldValue: oldPromoCompanyId ? String(oldPromoCompanyId) : null,
+      newValue: String(promoCompanyId),
+      changeType: ChangeType.UPDATED,
+      userId,
+      userName,
+      description: `Лид привязан к промо-компании #${promoCompanyId}`,
+      metadata: {
+        'ID промо-компании': promoCompanyId,
+        'Предыдущая промо-компания': oldPromoCompanyId ? String(oldPromoCompanyId) : 'Не указана',
+        'Дата привязки': new Date().toLocaleDateString('ru-RU')
+      }
+    });
+
+    // Записываем активность
+    await this.activityRepo.save({
+      leadId: leadId,
+      type: ActivityType.NOTE_ADDED,
+      title: 'Промо-компания присвоена',
+      description: `Лид привязан к промо-компании #${promoCompanyId}`,
+      metadata: {
+        'ID промо-компании': promoCompanyId,
+        'Дата привязки': new Date().toLocaleDateString('ru-RU')
+      }
+    });
+
+    return updated;
+  }
+
+  /**
+   * Удалить промо-компанию у лида
+   */
+  async removePromoCompany(leadId: number, userId?: string, userName?: string): Promise<Lead> {
+    const lead = await this.findById(leadId);
+    if (!lead) {
+      throw new Error('Lead not found');
+    }
+
+    const oldPromoCompanyId = lead.promoCompanyId;
+    if (!oldPromoCompanyId) {
+      return lead; // Лид уже не привязан к промо-компании
+    }
+
+    // Удаляем лид из промо-компании
+    try {
+      await this.promoCompaniesService.removeLeads(oldPromoCompanyId, { leadIds: [leadId] });
+    } catch (error) {
+      console.warn('Failed to remove lead from promo company:', error.message);
+      // Продолжаем, так как основная цель - отвязать лид от промо-компании
+    }
+
+    // Обновляем лид
+    const updated = await this.update(leadId, { promoCompanyId: null }, userId, userName);
+
+    // Записываем изменение в историю
+    await this.historyService.createHistoryEntry({
+      leadId: leadId,
+      fieldName: 'promoCompanyId',
+      oldValue: oldPromoCompanyId ? String(oldPromoCompanyId) : null,
+      newValue: null,
+      changeType: ChangeType.UPDATED,
+      userId,
+      userName,
+      description: `Промо-компания отвязана от лида`,
+      metadata: {
+        'Предыдущая промо-компания': oldPromoCompanyId ? String(oldPromoCompanyId) : 'Не указана',
+        'Дата отвязки': new Date().toLocaleDateString('ru-RU')
+      }
+    });
+
+    // Записываем активность
+    await this.activityRepo.save({
+      leadId: leadId,
+      type: ActivityType.NOTE_ADDED,
+      title: 'Промо-компания отвязана',
+      description: `Промо-компания отвязана от лида`,
+      metadata: {
+        'Дата отвязки': new Date().toLocaleDateString('ru-RU')
+      }
+    });
+
+    return updated;
   }
 }

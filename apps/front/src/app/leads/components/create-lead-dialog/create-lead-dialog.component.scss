@@ -92,10 +92,22 @@
   }
 }
 
-/* Required Field Indicator */
-.required-field .mat-mdc-form-field-label::after {
-  content: ' *';
-  color: #f44336;
+/* Select Options */
+.option-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  .option-subtitle {
+    color: #666;
+    font-size: 12px;
+  }
 }
 
 /* Buttons */

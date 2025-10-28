@@ -145,6 +145,31 @@
       </div>
     </div>
 
+    <!-- Promo Company -->
+    <div class="form-section">
+      <div class="section-header">
+        <mat-icon class="section-icon">campaign</mat-icon>
+        <h3>Промо-компания</h3>
+      </div>
+      <div class="form-field-container">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Промо-компания</mat-label>
+          <mat-select formControlName="promoCompanyId">
+            <mat-option [value]="null">Не выбрана</mat-option>
+            <mat-option *ngFor="let company of promoCompanies" [value]="company.id">
+              <div class="option-content">
+                <mat-icon>{{ company.type === 'promoter' ? 'person' : company.type === 'affiliate' ? 'handshake' : 'business' }}</mat-icon>
+                <span>{{ company.name }}</span>
+                <span class="option-subtitle">({{ company.type === 'promoter' ? 'Промоутер' : company.type === 'affiliate' ? 'Партнер' : 'Партнер' }})</span>
+              </div>
+            </mat-option>
+          </mat-select>
+          <mat-icon matSuffix>campaign</mat-icon>
+          <mat-hint>Привяжите лид к активной промо-кампании для отслеживания эффективности</mat-hint>
+        </mat-form-field>
+      </div>
+    </div>
+
     <!-- Business Information -->
     <div class="form-section">
       <div class="section-header">

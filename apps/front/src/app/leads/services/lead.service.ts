@@ -23,6 +23,7 @@ import { CreateLeadActivityDto, UpdateLeadActivityDto } from '../models';
 import { CreateDistributionRuleDto, UpdateDistributionRuleDto, CreateScoringRuleDto, UpdateScoringRuleDto } from '../models';
 import { environment } from '../../../environments/environment';
 import { UserService, Manager, AutoAssignCriteria } from '../../shared/services/user.service';
+import { PromoCompaniesService } from '../../promo-companies/services/promo-companies.service';
 
 @Injectable({
   providedIn: 'root',
@@ -30,6 +31,7 @@ import { UserService, Manager, AutoAssignCriteria } from '../../shared/services/
 export class LeadService {
   private http = inject(HttpClient);
   private userService = inject(UserService);
+  private promoCompaniesService = inject(PromoCompaniesService);
   private readonly apiUrl = environment.apiBase + '/leads';
 
   // Basic CRUD operations
@@ -337,5 +339,19 @@ export class LeadService {
       ...dealData,
       expectedCloseDate: dealData.expectedCloseDate.toISOString()
     });
+  }
+
+  // Promo company methods
+  assignLeadToPromoCompany(leadId: string, promoCompanyId: number): Observable<Lead> {
+    return this.http.patch<Lead>(`${this.apiUrl}/${leadId}/promo-company`, { promoCompanyId });
+  }
+
+  removeLeadFromPromoCompany(leadId: string): Observable<Lead> {
+    return this.http.delete<Lead>(`${this.apiUrl}/${leadId}/promo-company`);
+  }
+
+  getLeadsByPromoCompany(promoCompanyId: number): Observable<Lead[]> {
+    const params = new HttpParams().set('promoCompanyId', promoCompanyId.toString());
+    return this.http.get<Lead[]>(this.apiUrl, { params });
   }
 }

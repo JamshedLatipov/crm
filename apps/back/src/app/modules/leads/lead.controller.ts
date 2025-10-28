@@ -369,6 +369,28 @@ export class LeadController {
     });
   }
 
+  @Patch(':id/promo-company')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        promoCompanyId: { type: 'number', description: 'ID промо-компании' }
+      },
+      required: ['promoCompanyId']
+    }
+  })
+  async assignPromoCompany(
+    @Param('id') id: number,
+    @Body() body: { promoCompanyId: number }
+  ): Promise<Lead> {
+    return this.leadService.assignPromoCompany(id, body.promoCompanyId);
+  }
+
+  @Delete(':id/promo-company')
+  async removePromoCompany(@Param('id') id: number): Promise<Lead> {
+    return this.leadService.removePromoCompany(id);
+  }
+
   /**
    * Получить историю изменений лида
    */

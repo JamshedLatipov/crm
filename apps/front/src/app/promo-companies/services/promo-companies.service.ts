@@ -62,4 +62,18 @@ export class PromoCompaniesService {
   getLeads(id: number): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/${id}/leads`);
   }
+
+  getLeadsStats(id: number): Observable<{
+    totalLeads: number;
+    convertedLeads: number;
+    conversionRate: number;
+    averageValue: number;
+  }> {
+    return this.http.get<{
+      totalLeads: number;
+      convertedLeads: number;
+      conversionRate: number;
+      averageValue: number;
+    }>(`${this.apiUrl}/${id}/leads/stats`);
+  }
 }
