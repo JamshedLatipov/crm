@@ -43,24 +43,25 @@ export class SidebarComponent {
   });
 
   menuItems: MenuItem[] = [
-    { icon: 'dashboard', label: 'Dashboard', route: '/dashboard' },
-    { icon: 'people', label: 'Contacts', route: '/contacts' },
-    { icon: 'trending_up', label: 'Leads', route: '/leads' },
-    { icon: 'account_tree', label: 'Pipeline', route: '/pipeline' },
-    { icon: 'handshake', label: 'Deals', route: '/deals' },
-    { icon: 'task', label: 'Tasks', route: '/tasks' },
+    { icon: 'dashboard', label: 'Дашборд', route: '/dashboard' },
+    { icon: 'people', label: 'Контакты', route: '/contacts' },
+    { icon: 'trending_up', label: 'Лиды', route: '/leads' },
+    { icon: 'account_tree', label: 'Воронка', route: '/pipeline' },
+    { icon: 'handshake', label: 'Сделки', route: '/deals' },
+    { icon: 'business', label: 'Промо-компании', route: '/promo-companies' },
+    { icon: 'task', label: 'Задачи', route: '/tasks' },
     {
       icon: 'contact_support',
       label: 'Контакт центр',
       expanded: false,
       children: [
-        { icon: 'visibility', label: 'онлайн мониторинг', route: '/contact-center/monitoring' },
-        { icon: 'dialpad', label: 'ivr', route: '/contact-center/ivr' },
+        { icon: 'visibility', label: 'Онлайн мониторинг', route: '/contact-center/monitoring' },
+        { icon: 'dialpad', label: 'IVR', route: '/contact-center/ivr' },
       ],
     },
-    { icon: 'group', label: 'Users', route: '/users' },
-    { icon: 'assessment', label: 'Reports', route: '/reports' },
-    { icon: 'help_outline', label: 'Help', route: '/help' },
+    { icon: 'group', label: 'Пользователи', route: '/users' },
+    { icon: 'assessment', label: 'Отчеты', route: '/reports' },
+    { icon: 'help_outline', label: 'Помощь', route: '/help' },
   ];
 
   toggleExpand(item: MenuItem) {
