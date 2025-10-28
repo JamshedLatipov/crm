@@ -7,6 +7,7 @@ import {
   LessThan,
   SelectQueryBuilder,
   In,
+  Not,
 } from 'typeorm';
 import { Lead, LeadStatus, LeadSource, LeadPriority } from './lead.entity';
 import { Contact } from '../contacts/contact.entity';
@@ -1018,7 +1019,7 @@ export class LeadService {
       leadId: lead.id,
       amount: typeof dealData.amount === 'string' ? Number(dealData.amount) : dealData.amount,
       currency: dealData.currency || 'RUB',
-      probability: typeof dealData.probability === 'string' ? Number(dealData.probability) : (dealData.probability ?? lead.conversionProbability ?? 50),
+      probability: typeof dealData.probability === 'string' ? Number(dealData.probability) : (dealData.probability ?? (typeof lead.conversionProbability === 'string' ? Number(lead.conversionProbability) : lead.conversionProbability) ?? 50),
       expectedCloseDate: (dealData.expectedCloseDate instanceof Date ? dealData.expectedCloseDate : new Date(dealData.expectedCloseDate)).toISOString(),
       stageId: dealData.stageId,
       assignedTo: assignedTo,
@@ -1087,6 +1088,34 @@ export class LeadService {
       isQualified: true 
     }, userId, userName);
 
+    // Если лид был привязан к промо-компании, отвязываем его при конвертации
+    if (lead.promoCompanyId) {
+      try {
+        // Устанавливаем promoCompanyId в null
+        await this.leadRepo.update(leadId, { promoCompanyId: null });
+        
+        // Обновляем leadsReached в промо-компании
+        const currentLeadsCount = await this.leadRepo.count({ 
+          where: { 
+            promoCompanyId: lead.promoCompanyId,
+            status: Not(LeadStatus.CONVERTED) // Считаем только активные лиды
+          } 
+        });
+        
+        // Получаем текущую промо-компанию для обновления leadsConverted
+        const promoCompany = await this.promoCompaniesService.findOne(lead.promoCompanyId);
+        await this.promoCompaniesService.update(lead.promoCompanyId, {
+          leadsReached: currentLeadsCount,
+          leadsConverted: promoCompany.leadsConverted + 1 // Увеличиваем количество конвертированных лидов
+        });
+        
+        console.log(`Lead ${leadId} removed from promo company ${lead.promoCompanyId} during conversion to deal`);
+      } catch (error) {
+        console.warn('Failed to remove lead from promo company during conversion:', error.message);
+        // Не прерываем конвертацию из-за этой ошибки
+      }
+    }
+
     // Записываем конвертацию в историю
     await this.historyService.createHistoryEntry({
       leadId: leadId,
@@ -1145,23 +1174,38 @@ export class LeadService {
     // Если лид уже привязан к другой промо-компании, сначала отвяжем его
     if (oldPromoCompanyId && oldPromoCompanyId !== promoCompanyId) {
       try {
-        await this.promoCompaniesService.removeLeads(oldPromoCompanyId, { leadIds: [leadId] });
+        // Обновляем leadsReached для старой промо-компании
+        const oldLeadsCount = await this.leadRepo.count({ 
+          where: { 
+            promoCompanyId: oldPromoCompanyId,
+            status: Not(LeadStatus.CONVERTED) // Считаем только активные лиды
+          } 
+        });
+        await this.promoCompaniesService.update(oldPromoCompanyId, {
+          leadsReached: oldLeadsCount
+        });
       } catch (error) {
-        console.warn('Failed to remove lead from old promo company:', error.message);
+        console.warn('Failed to update old promo company leads count:', error.message);
       }
     }
 
     // Обновляем лид
     const updated = await this.update(leadId, { promoCompanyId }, userId, userName);
 
-    // Добавляем лид в новую промо-компанию
+    // Обновляем leadsReached для новой промо-компании
     try {
-      await this.promoCompaniesService.addLeads(promoCompanyId, { leadIds: [leadId] });
+      const newLeadsCount = await this.leadRepo.count({ 
+        where: { 
+          promoCompanyId,
+          status: Not(LeadStatus.CONVERTED) // Считаем только активные лиды
+        } 
+      });
+      await this.promoCompaniesService.update(promoCompanyId, {
+        leadsReached: newLeadsCount
+      });
     } catch (error) {
-      console.warn('Failed to add lead to promo company:', error.message);
-      // Если не удалось добавить в промо-компанию, откатываем изменение лида
-      await this.update(leadId, { promoCompanyId: oldPromoCompanyId }, userId, userName);
-      throw error;
+      console.warn('Failed to update new promo company leads count:', error.message);
+      // Не откатываем изменение лида, так как основная цель достигнута
     }
 
     // Записываем изменение в историю
@@ -1212,9 +1256,18 @@ export class LeadService {
 
     // Удаляем лид из промо-компании
     try {
-      await this.promoCompaniesService.removeLeads(oldPromoCompanyId, { leadIds: [leadId] });
+      // Обновляем leadsReached для промо-компании
+      const currentLeadsCount = await this.leadRepo.count({ 
+        where: { 
+          promoCompanyId: oldPromoCompanyId,
+          status: Not(LeadStatus.CONVERTED) // Считаем только активные лиды
+        } 
+      });
+      await this.promoCompaniesService.update(oldPromoCompanyId, {
+        leadsReached: currentLeadsCount - 1 // Уменьшаем на 1, так как лид еще не отвязан
+      });
     } catch (error) {
-      console.warn('Failed to remove lead from promo company:', error.message);
+      console.warn('Failed to update promo company leads count:', error.message);
       // Продолжаем, так как основная цель - отвязать лид от промо-компании
     }
 

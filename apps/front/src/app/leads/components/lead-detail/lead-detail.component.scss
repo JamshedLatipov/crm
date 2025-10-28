@@ -698,6 +698,9 @@
             width: 20px;
             height: 20px;
             line-height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
 
             mat-icon {
               font-size: 14px;

@@ -17,6 +17,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { PromoCompaniesService } from '../../services/promo-companies.service';
 import { PromoCompany } from '../../models/promo-company.model';
 import { CreatePromoCompanyDialogComponent } from '../create-promo-company-dialog/create-promo-company-dialog.component';
+import { EditPromoCompanyDialogComponent } from '../edit-promo-company-dialog/edit-promo-company-dialog.component';
 
 @Component({
   selector: 'app-promo-companies-list',
@@ -856,8 +857,18 @@ export class PromoCompaniesListComponent implements OnInit {
   }
 
   editPromoCompany(promoCompany: PromoCompany): void {
-    // TODO: Implement edit dialog
-    this.snackBar.open('Редактирование пока не реализовано', 'Закрыть', { duration: 3000 });
+    const dialogRef = this.dialog.open(EditPromoCompanyDialogComponent, {
+      width: '700px',
+      maxWidth: '90vw',
+      data: { promoCompany }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.loadPromoCompanies();
+        this.snackBar.open('Промо-компания обновлена', 'Закрыть', { duration: 3000 });
+      }
+    });
   }
 
   duplicatePromoCompany(promoCompany: PromoCompany): void {

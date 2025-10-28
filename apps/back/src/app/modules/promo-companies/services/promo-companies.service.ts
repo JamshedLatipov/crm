@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Not } from 'typeorm';
 import { PromoCompany } from '../entities/promo-company.entity';
 import { CreatePromoCompanyDto, UpdatePromoCompanyDto, AddLeadsToPromoCompanyDto, RemoveLeadsFromPromoCompanyDto } from '../dto/promo-company.dto';
-import { Lead } from '../../leads/lead.entity';
+import { Lead, LeadStatus } from '../../leads/lead.entity';
 
 @Injectable()
 export class PromoCompaniesService {
@@ -20,8 +20,16 @@ export class PromoCompaniesService {
   }
 
   async findAll(): Promise<PromoCompany[]> {
-    return this.promoCompanyRepository.find({
+    const promoCompanies = await this.promoCompanyRepository.find({
       relations: ['leads'],
+    });
+    
+    // Фильтруем конвертированные лиды для каждой промо-компании
+    return promoCompanies.map(promoCompany => {
+      promoCompany.leads = promoCompany.leads.filter(lead => 
+        lead.promoCompanyId === promoCompany.id && lead.status !== 'converted'
+      );
+      return promoCompany;
     });
   }
 
@@ -33,6 +41,8 @@ export class PromoCompaniesService {
     if (!promoCompany) {
       throw new NotFoundException(`PromoCompany with ID ${id} not found`);
     }
+    // Фильтруем лиды, у которых promoCompanyId соответствует и статус не "converted"
+    promoCompany.leads = promoCompany.leads.filter(lead => lead.promoCompanyId === id && lead.status !== 'converted');
     return promoCompany;
   }
 
@@ -50,15 +60,42 @@ export class PromoCompaniesService {
   async addLeads(id: number, addLeadsDto: AddLeadsToPromoCompanyDto): Promise<PromoCompany> {
     const promoCompany = await this.findOne(id);
     const leads = await this.leadRepository.findByIds(addLeadsDto.leadIds);
-    promoCompany.leads = [...(promoCompany.leads || []), ...leads];
-    promoCompany.leadsReached = promoCompany.leads.length;
+    
+    // Обновляем promoCompanyId для лидов
+    for (const lead of leads) {
+      await this.leadRepository.update(lead.id, { promoCompanyId: id });
+    }
+    
+    // Обновляем leadsReached на основе количества активных лидов с promoCompanyId
+    const leadsCount = await this.leadRepository.count({ 
+      where: { 
+        promoCompanyId: id,
+        status: Not(LeadStatus.CONVERTED)
+      } 
+    });
+    promoCompany.leadsReached = leadsCount;
+    
     return this.promoCompanyRepository.save(promoCompany);
   }
 
   async removeLeads(id: number, removeLeadsDto: RemoveLeadsFromPromoCompanyDto): Promise<PromoCompany> {
     const promoCompany = await this.findOne(id);
-    promoCompany.leads = promoCompany.leads.filter(lead => !removeLeadsDto.leadIds.includes(lead.id));
-    promoCompany.leadsReached = promoCompany.leads.length;
+    const leads = await this.leadRepository.findByIds(removeLeadsDto.leadIds);
+    
+    // Убираем promoCompanyId у лидов
+    for (const lead of leads) {
+      await this.leadRepository.update(lead.id, { promoCompanyId: null });
+    }
+    
+    // Обновляем leadsReached на основе количества активных лидов с promoCompanyId
+    const leadsCount = await this.leadRepository.count({ 
+      where: { 
+        promoCompanyId: id,
+        status: Not(LeadStatus.CONVERTED)
+      } 
+    });
+    promoCompany.leadsReached = leadsCount;
+    
     return this.promoCompanyRepository.save(promoCompany);
   }
 
