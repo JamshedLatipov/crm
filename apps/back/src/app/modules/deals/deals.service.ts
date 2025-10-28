@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Deal, DealStatus } from './deal.entity';
@@ -132,20 +132,6 @@ export class DealsService {
     }
 
     // Возвращаем сделку со всеми связями
-    // Применяем данные этапа (централизованная логика): например, вероятность этапа
-    try {
-      // Только если вероятность не была явно передана в DTO
-      if (dto.probability === undefined || dto.probability === null) {
-        // Получаем этап и применяем его дефолтную вероятность к сделке
-        const stage = dto.stageId ? await this.stageRepository.findOne({ where: { id: dto.stageId } }) : null;
-        if (stage && Number(stage.probability) !== undefined) {
-          await this.setProbabilityFromStageIfMissing(savedDeal.id, stage);
-        }
-      }
-    } catch (err) {
-      console.warn('Failed to apply stage defaults to new deal:', err?.message || err);
-    }
-
     return this.getDealById(savedDeal.id);
   }
 

@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { PipelineStage, PipelineLead, StageType } from './pipeline.entity';
+import { PipelineStage, PipelineLead, StageType, AutomationRule } from './pipeline.entity';
 import { LeadService } from '../leads/lead.service';
 import { Lead } from '../leads/lead.entity';
 import { Deal } from '../deals/deal.entity';
@@ -15,6 +15,7 @@ import { DataSource } from 'typeorm';
 import { CreateContactDto } from '../contacts/dto/create-contact.dto';
 import { CompaniesService } from '../companies/services/companies.service';
 import { AssignmentService } from '../shared/services/assignment.service';
+import { CreateAutomationRuleDto, UpdateAutomationRuleDto } from './dto/automation.dto';
 
 @Injectable()
 export class PipelineService {
@@ -27,6 +28,8 @@ export class PipelineService {
     private leadsRepo: Repository<PipelineLead>,
     @InjectRepository(Deal)
     private dealsRepo: Repository<Deal>,
+    @InjectRepository(AutomationRule)
+    private automationRulesRepo: Repository<AutomationRule>,
     private dataSource: DataSource,
   private contactsService: ContactsService,
   @Inject(forwardRef(() => LeadService))
@@ -77,13 +80,15 @@ export class PipelineService {
     const stages = await this.stagesRepo.find({ order: { position: 'ASC' } });
     const stageIndexById = new Map(stages.map((s, i) => [s.id, i]));
 
+    let processedCount = 0;
+
     for (const lead of leads) {
       try {
         interface LeadMeta {
           triggerNext?: boolean;
           [key: string]: unknown;
         }
-        
+
         if (lead.meta && (lead.meta as LeadMeta).triggerNext) {
           const idx = lead.stageId
             ? stageIndexById.get(lead.stageId) ?? -1
@@ -95,12 +100,19 @@ export class PipelineService {
             if (lead.meta) delete (lead.meta as LeadMeta).triggerNext;
             await this.leadsRepo.save(lead);
             this.logger.log(`Moved lead ${lead.id} to stage ${next.name}`);
+            processedCount++;
           }
         }
       } catch (err) {
         this.logger.error('Automation error', err);
       }
     }
+
+    return {
+      success: true,
+      message: `Automation completed. Processed ${processedCount} leads.`,
+      processedCount
+    };
   }
 
   // Simple analytics: conversion rates per stage (counts only)
@@ -199,5 +211,46 @@ export class PipelineService {
     };
 
     return await this.contactsService.createContact(contactDto);
+  }
+
+  // Automation Rules
+  async createAutomationRule(dto: CreateAutomationRuleDto): Promise<AutomationRule> {
+    const rule = this.automationRulesRepo.create({
+      ...dto,
+      priority: dto.priority ?? 0,
+    });
+    return this.automationRulesRepo.save(rule);
+  }
+
+  async listAutomationRules(): Promise<AutomationRule[]> {
+    return this.automationRulesRepo.find({
+      order: { priority: 'ASC', createdAt: 'DESC' }
+    });
+  }
+
+  async getAutomationRule(id: string): Promise<AutomationRule> {
+    const rule = await this.automationRulesRepo.findOneBy({ id });
+    if (!rule) {
+      throw new NotFoundException(`Automation rule ${id} not found`);
+    }
+    return rule;
+  }
+
+  async updateAutomationRule(id: string, dto: UpdateAutomationRuleDto): Promise<AutomationRule> {
+    await this.automationRulesRepo.update(id, dto);
+    return this.getAutomationRule(id);
+  }
+
+  async deleteAutomationRule(id: string): Promise<void> {
+    const result = await this.automationRulesRepo.delete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException(`Automation rule ${id} not found`);
+    }
+  }
+
+  async toggleAutomationRule(id: string): Promise<AutomationRule> {
+    const rule = await this.getAutomationRule(id);
+    rule.isActive = !rule.isActive;
+    return this.automationRulesRepo.save(rule);
   }
 }

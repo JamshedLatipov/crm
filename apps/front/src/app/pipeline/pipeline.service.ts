@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Stage, CreateStageDto, UpdateStageDto, StageType, PipelineAnalytics } from './dtos';
+import { Stage, CreateStageDto, UpdateStageDto, StageType, PipelineAnalytics, AutomationRule, CreateAutomationRuleDto, UpdateAutomationRuleDto } from './dtos';
 import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
@@ -71,11 +71,19 @@ export class PipelineService {
   }
 
   // Настройка правил автоматизации
-  getAutomationRules(): Observable<unknown> {
-    return this.http.get(`${this.apiUrl}/automation/rules`);
+  getAutomationRules(): Observable<AutomationRule[]> {
+    return this.http.get<AutomationRule[]>(`${this.apiUrl}/automation/rules`);
   }
 
-  createAutomationRule(rule: unknown): Observable<unknown> {
-    return this.http.post(`${this.apiUrl}/automation/rules`, rule);
+  createAutomationRule(rule: CreateAutomationRuleDto): Observable<AutomationRule> {
+    return this.http.post<AutomationRule>(`${this.apiUrl}/automation/rules`, rule);
+  }
+
+  updateAutomationRule(id: string, rule: UpdateAutomationRuleDto): Observable<AutomationRule> {
+    return this.http.patch<AutomationRule>(`${this.apiUrl}/automation/rules/${id}`, rule);
+  }
+
+  deleteAutomationRule(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/automation/rules/${id}`);
   }
 }

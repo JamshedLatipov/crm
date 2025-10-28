@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PassportModule } from '@nestjs/passport';
 import { DealsService } from './deals.service';
@@ -10,13 +10,15 @@ import { DealHistoryController } from './controllers/deal-history.controller';
 import { PipelineStage } from '../pipeline/pipeline.entity';
 import { UserModule } from '../user/user.module';
 import { SharedModule } from '../shared/shared.module';
+import { PipelineModule } from '../pipeline/pipeline.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Deal, DealHistory, PipelineStage]),
     PassportModule,
     UserModule,
-    SharedModule
+    SharedModule,
+    forwardRef(() => PipelineModule),
   ],
   providers: [DealsService, DealHistoryService],
   controllers: [DealsController, DealHistoryController],

@@ -1,24 +1,14 @@
-import { Controller, Get, Post, Body, Param, Patch, Delete, Query, BadRequestException, Req, UseGuards, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Req, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { ApiTags, ApiQuery, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { LeadService } from './lead.service';
-import { Lead, LeadStatus, LeadSource, LeadPriority } from './lead.entity';
-import { ChangeType } from './entities/lead-history.entity';
-import { ApiTags, ApiBody, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
-import { 
-  CreateLeadDto, 
-  UpdateLeadDto, 
-  AssignLeadDto, 
-  ScoreLeadDto, 
-  StatusLeadDto,
-  QualifyLeadDto,
-  AddNoteDto,
-  AddTagsDto,
-  RemoveTagsDto,
-  ScheduleFollowUpDto,
-  LeadFiltersDto
-} from './lead.dto';
+import { Lead } from './lead.entity';
+import { CreateLeadDto, UpdateLeadDto, AssignLeadDto, ScoreLeadDto, QualifyLeadDto, AddNoteDto, AddTagsDto, RemoveTagsDto, ScheduleFollowUpDto, LeadFiltersDto } from './lead.dto';
+import { LeadStatus, LeadSource, LeadPriority } from './lead.entity';
 import { LeadActivity } from './entities/lead-activity.entity';
+import { ChangeType } from './entities/lead-history.entity';
 import { JwtAuthGuard } from '../user/jwt-auth.guard';
 import { CurrentUser, CurrentUserPayload } from '../user/current-user.decorator';
+import { AutomationService } from '../pipeline/automation.service';
 
 // Helper function to parse array parameters
 function parseArrayParam(param: string | string[] | undefined): string[] | undefined {
@@ -53,7 +43,10 @@ function parseChangeTypeArray(param: string | string[] | undefined): ChangeType[
 // @UseGuards(JwtAuthGuard)
 @Controller('leads')
 export class LeadController {
-  constructor(private readonly leadService: LeadService) {}
+  constructor(
+    private readonly leadService: LeadService,
+    private readonly automationService: AutomationService
+  ) {}
 
   @Post()
   @ApiBody({ type: CreateLeadDto })
@@ -70,7 +63,16 @@ export class LeadController {
       const xff = (headers['x-forwarded-for'] || headers['X-Forwarded-For']) as string | undefined;
       console.log('Creating lead — headers:', { contentType, contentLength, transferEncoding, xForwardedFor: xff });
     }
-    return this.leadService.create(data);
+    const lead = await this.leadService.create(data);
+    
+    // Trigger automation asynchronously
+    setImmediate(() => {
+      this.automationService.onLeadCreated(lead).catch(error => {
+        console.error('Error in lead creation automation:', error);
+      });
+    });
+    
+    return lead;
   }
 
   @Get()
@@ -186,7 +188,29 @@ export class LeadController {
   @Patch(':id')
   @ApiBody({ type: UpdateLeadDto })
   async update(@Param('id') id: number, @Body() data: UpdateLeadDto): Promise<Lead> {
-    return this.leadService.update(id, data);
+    const existingLead = await this.leadService.findById(id);
+    const updatedLead = await this.leadService.update(id, data);
+    
+    // Trigger automation asynchronously
+    const changes: Record<string, { old: any; new: any }> = {};
+    Object.keys(data).forEach(key => {
+      if (existingLead && existingLead[key as keyof Lead] !== updatedLead[key as keyof Lead]) {
+        changes[key] = {
+          old: existingLead[key as keyof Lead],
+          new: updatedLead[key as keyof Lead]
+        };
+      }
+    });
+    
+    if (Object.keys(changes).length > 0) {
+      setImmediate(() => {
+        this.automationService.onLeadUpdated(updatedLead, changes).catch(error => {
+          console.error('Error in lead update automation:', error);
+        });
+      });
+    }
+    
+    return updatedLead;
   }
 
   @Patch(':id/assign')

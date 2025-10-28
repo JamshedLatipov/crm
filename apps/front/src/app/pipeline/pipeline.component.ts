@@ -13,6 +13,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { Deal, Stage, PipelineAnalytics, StageType, DealStatus } from './dtos';
 import { AnalyticsModalComponent } from './analytics-modal/analytics-modal.component';
 import { DealContactSelectorComponent } from './deal-contact-selector.component';
+import { AutomationSettingsComponent } from './automation-settings/automation-settings.component';
 import { DealStatusComponent, DealStatus as DealStatusType } from '../shared/components/deal-status/deal-status.component';
 import { forkJoin } from 'rxjs';
 
@@ -433,6 +434,25 @@ export class PipelineComponent implements OnInit, OnDestroy {
     dialogRef.afterClosed().subscribe(result => {
       if (result === 'refresh') {
         // Обновляем данные аналитики
+        this.load();
+      }
+    });
+  }
+
+  openAutomationSettings() {
+    const dialogRef = this.dialog.open(AutomationSettingsComponent, {
+      width: '1200px',
+      maxWidth: '95vw',
+      maxHeight: '90vh',
+      panelClass: 'automation-settings-modal',
+      disableClose: false,
+      autoFocus: true
+    });
+
+    // Обработка результата закрытия модального окна
+    dialogRef.afterClosed().subscribe(result => {
+      if (result === 'refresh') {
+        // Обновляем данные после изменения настроек автоматизации
         this.load();
       }
     });

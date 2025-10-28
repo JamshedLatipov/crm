@@ -17,6 +17,7 @@ import { DealStatus } from './deal.entity';
 import { DealChangeType } from './entities/deal-history.entity';
 import { JwtAuthGuard } from '../user/jwt-auth.guard';
 import { CurrentUser, CurrentUserPayload } from '../user/current-user.decorator';
+import { AutomationService } from '../pipeline/automation.service';
 
 // Helper function to parse array parameters
 function parseArrayParam(param: string | string[]): string[] | undefined {
@@ -35,7 +36,10 @@ function parseDealChangeTypeArray(param: string | string[]): DealChangeType[] | 
 @UseGuards(JwtAuthGuard)
 @Controller('deals')
 export class DealsController {
-  constructor(private readonly dealsService: DealsService) {}
+  constructor(
+    private readonly dealsService: DealsService,
+    private readonly automationService: AutomationService
+  ) {}
 
   @Get()
   async listDeals(
@@ -99,7 +103,16 @@ export class DealsController {
     @Body() dto: CreateDealDto,
     @CurrentUser() user: CurrentUserPayload
   ) {
-    return this.dealsService.createDeal(dto, user.sub, user.username);
+    const deal = await this.dealsService.createDeal(dto, user.sub, user.username);
+    
+    // Trigger automation asynchronously
+    setImmediate(() => {
+      this.automationService.onDealCreated(deal, user.sub, user.username).catch(error => {
+        console.error('Error in deal creation automation:', error);
+      });
+    });
+    
+    return deal;
   }
 
   @Patch(':id')
@@ -108,7 +121,29 @@ export class DealsController {
     @Body() dto: UpdateDealDto,
     @CurrentUser() user: CurrentUserPayload
   ) {
-    return this.dealsService.updateDeal(id, dto, user.sub, user.username);
+    const existingDeal = await this.dealsService.getDealById(id);
+    const updatedDeal = await this.dealsService.updateDeal(id, dto, user.sub, user.username);
+    
+    // Trigger automation asynchronously
+    const changes: Record<string, { old: any; new: any }> = {};
+    Object.keys(dto).forEach(key => {
+      if (existingDeal[key as keyof typeof existingDeal] !== updatedDeal[key as keyof typeof updatedDeal]) {
+        changes[key] = {
+          old: existingDeal[key as keyof typeof existingDeal],
+          new: updatedDeal[key as keyof typeof updatedDeal]
+        };
+      }
+    });
+    
+    if (Object.keys(changes).length > 0) {
+      setImmediate(() => {
+        this.automationService.onDealUpdated(updatedDeal, changes, user.sub, user.username).catch(error => {
+          console.error('Error in deal update automation:', error);
+        });
+      });
+    }
+    
+    return updatedDeal;
   }
 
   @Delete(':id')
