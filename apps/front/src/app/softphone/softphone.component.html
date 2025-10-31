@@ -5,296 +5,248 @@
     *ngIf="!expanded"
     (click)="toggleExpand()"
     title="Open softphone"
-    class="relative w-14 h-14 rounded-full bg-[var(--primary-color)] text-white shadow-lg flex items-center justify-center"
+    class="floating-button"
   >
     <span class="material-icons">call</span>
     <!-- Active call indicator -->
     <span
-      *ngIf="callActive"
-      class="absolute top-0 right-0 inline-block w-3 h-3 rounded-full bg-green-500 ring-2 ring-white"
+      *ngIf="callActive()"
+      class="active-call-indicator"
     ></span>
     <!-- Missed call badge -->
     <span
       *ngIf="missedCallCount"
-      class="absolute -top-2 -right-2 inline-flex items-center justify-center px-1.5 py-0.5 text-xs rounded-full bg-red-600 text-white"
-      >{{ missedCallCount > 99 ? '99+' : missedCallCount }}</span
-    >
+      class="missed-call-badge"
+    >{{ missedCallCount > 99 ? '99+' : missedCallCount }}</span>
   </button>
 
   <!-- Expanded panel -->
   <div
     *ngIf="expanded"
-    class="w-[420px] max-h-[90vh] overflow-auto bg-[var(--background-color)] rounded-lg shadow-xl"
+    class="expanded-panel"
   >
-    <div class="p-4">
-      <div class="flex items-center justify-between mb-3">
-        <div class="text-lg font-bold">
+    <div class="panel-header">
+      <div class="header-content">
+        <div class="status-bar">
           <app-softphone-status-bar
-            [status]="status"
-            [callActive]="callActive"
+            [status]="status()"
+            [callActive]="callActive()"
           ></app-softphone-status-bar>
         </div>
-        <div class="flex items-center gap-2">
+        <button
+          (click)="toggleExpand()"
+          title="Minimize"
+          class="minimize-button"
+        >
+          <span class="material-icons">remove</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="panel-content">
+      <!-- Tab Navigation -->
+      <div class="tab-navigation">
+        <div class="tab-buttons">
           <button
-            (click)="toggleExpand()"
-            title="Minimize"
-            class="px-2 py-1 rounded bg-[var(--muted-color)]"
+            (click)="activeTab = 'dial'"
+            [class.active]="activeTab === 'dial'"
+            class="tab-button"
           >
-            _
+            <span class="material-icons">call</span>
+            <span>Звонок</span>
+          </button>
+          <button
+            (click)="activeTab = 'history'"
+            [class.active]="activeTab === 'history'"
+            class="tab-button"
+          >
+            <span class="material-icons">history</span>
+            <span>История</span>
           </button>
         </div>
       </div>
 
-      <!-- Embedded original softphone UI -->
-      <section class="grid grid-cols-1 gap-4">
-        <div class="bg-[var(--surface-color)] rounded-lg p-4">
-          <div class="border-b border-[var(--border-color)] mb-4">
-            <div class="flex items-center -mx-4">
-              <button
-                (click)="activeTab = 'dial'"
-                [class]="
-                  activeTab === 'dial'
-                    ? 'px-4 py-2 text-sm font-medium text-[var(--primary-color)] border-b-2 border-[var(--primary-color)] flex items-center gap-2'
-                    : 'px-4 py-2 text-sm font-medium text-[var(--text-secondary)] border-b-2 border-transparent flex items-center gap-2 hover:text-[var(--text-primary)]'
-                "
-              >
-                <span class="material-icons text-lg">call</span>
-                <span>Звонок</span>
-              </button>
-              <button
-                (click)="activeTab = 'history'"
-                [class]="
-                  activeTab === 'history'
-                    ? 'px-4 py-2 text-sm font-medium text-[var(--primary-color)] border-b-2 border-[var(--primary-color)] flex items-center gap-2'
-                    : 'px-4 py-2 text-sm font-medium text-[var(--text-secondary)] border-b-2 border-transparent flex items-center gap-2 hover:text-[var(--text-primary)]'
-                "
-              >
-                <span class="material-icons text-lg">history</span>
-                <span>История</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="flex-1 flex flex-col gap-4 pt-2">
-            <div
-              *ngIf="incoming"
-              class="mb-4 p-4 rounded border border-yellow-300 bg-yellow-50 flex items-center justify-between"
-            >
-              <div>
-                <div class="text-sm font-medium">Incoming call</div>
-                <div class="text-xs text-[var(--text-secondary)]">
-                  {{ incomingFrom || 'Unknown caller' }}
-                </div>
-              </div>
-              <div class="flex gap-2">
-                <button
-                  (click)="answerIncoming()"
-                  class="px-3 py-2 bg-green-500 text-white rounded"
-                >
-                  Answer
-                </button>
-                <button
-                  (click)="rejectIncoming()"
-                  class="px-3 py-2 bg-red-500 text-white rounded"
-                >
-                  Reject
-                </button>
-              </div>
-            </div>
-
-            <div *ngIf="activeTab === 'dial' && !callActive" class="space-y-4">
-              <div class="space-y-2">
-                <div
-                  class="flex items-center justify-between bg-[var(--muted-color)]/40 border border-[var(--border-color)] rounded-md px-4 py-3 text-lg font-medium tracking-wider"
-                >
-                  <input
-                    [(ngModel)]="callee"
-                    [title]="callee"
-                    placeholder="(Введите номер)"
-                    class="truncate bg-transparent w-full text-lg font-medium outline-none"
-                  />
-                  <div class="flex items-center gap-2 ml-4">
-                    <button
-                      *ngIf="callee"
-                      (click)="removeLast()"
-                      class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition"
-                      title="Удалить последний символ"
-                    >
-                      <span class="material-icons text-base leading-none"
-                        >backspace</span
-                      >
-                    </button>
-                    <button
-                      *ngIf="callee"
-                      (click)="clearNumber()"
-                      class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition"
-                      title="Очистить номер"
-                    >
-                      <span class="material-icons text-base leading-none"
-                        >close</span
-                      >
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div class="grid grid-cols-3 gap-2">
-                <button
-                  *ngFor="
-                    let key of [
-                      '1',
-                      '2',
-                      '3',
-                      '4',
-                      '5',
-                      '6',
-                      '7',
-                      '8',
-                      '9',
-                      '*',
-                      '0',
-                      '#'
-                    ]
-                  "
-                  (click)="pressKey(key)"
-                  class="h-10 rounded-md text-base font-medium bg-[var(--muted-color)]/40 hover:bg-[var(--muted-color)] border border-[var(--border-color)] flex items-center justify-center active:scale-[0.97] transition select-none"
-                >
-                  {{ key }}
-                </button>
-              </div>
-
-              <div class="pt-2">
-                <button
-                  (click)="call()"
-                  [disabled]="!callee"
-                  class="w-full flex items-center justify-center gap-2 h-10 rounded-md text-white font-medium disabled:opacity-60 disabled:cursor-not-allowed bg-green-500 hover:bg-green-600 active:scale-[0.99] transition"
-                >
-                  <span class="material-icons text-base">call</span>
-                  Call
-                </button>
-              </div>
-            </div>
-
-            <app-softphone-call-info
-              *ngIf="callActive && activeTab === 'dial'"
-              [callee]="callee"
-              [callDuration]="callDuration"
-            ></app-softphone-call-info>
-
-            <div *ngIf="callActive && activeTab === 'dial'" class="space-y-3">
-              <div
-                class="text-xs text-[var(--text-secondary)] flex items-center justify-between"
-              >
-                <span>Send DTMF</span>
-                <span
-                  *ngIf="dtmfSequence"
-                  class="font-mono text-[var(--text-primary)]"
-                  >{{ dtmfSequence }}
-                  <button
-                    (click)="clearDtmf()"
-                    class="ml-1 text-[10px] px-1 py-0.5 border border-[var(--border-color)] rounded hover:bg-[var(--muted-color)]"
-                  >
-                    x
-                  </button>
-                </span>
-              </div>
-              <div class="grid grid-cols-3 gap-2">
-                <button
-                  *ngFor="
-                    let key of [
-                      '1',
-                      '2',
-                      '3',
-                      '4',
-                      '5',
-                      '6',
-                      '7',
-                      '8',
-                      '9',
-                      '*',
-                      '0',
-                      '#'
-                    ]
-                  "
-                  (click)="pressKey(key)"
-                  class="h-10 rounded-md text-base font-medium bg-[var(--muted-color)]/30 hover:bg-[var(--muted-color)] border border-[var(--border-color)] flex items-center justify-center active:scale-[0.97] transition select-none"
-                >
-                  {{ key }}
-                </button>
-              </div>
-            </div>
-
-            <app-softphone-call-history
-              *ngIf="activeTab === 'history'"
-              class="h-full"
-              [operatorId]="sipUser"
-            />
-
-            <app-softphone-call-actions
-              [status]="status"
-              [callActive]="callActive"
-              [muted]="muted"
-              [onHold]="onHold"
-              [holdInProgress]="holdInProgress"
-              (connect)="connect()"
-              (call)="call()"
-              (hangup)="hangup()"
-              (muteToggle)="toggleMute()"
-              (holdToggle)="toggleHold()"
-            ></app-softphone-call-actions>
-
-            <div *ngIf="callActive" class="space-y-4">
-              <div>
-                <label
-                  class="block text-sm font-medium text-[var(--text-secondary)] mb-2"
-                  for="call-note"
-                  >Добавить заметку</label
-                >
-                <textarea
-                  id="call-note"
-                  rows="4"
-                  class="w-full bg-[var(--surface-color)] border border-[var(--border-color)] rounded-md p-2 text-sm focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)]"
-                  placeholder="Добавьте заметку о звонке..."
-                ></textarea>
-              </div>
-              <div>
-                <label
-                  for="transfer-target"
-                  class="block text-sm font-medium text-[var(--text-secondary)] mb-2"
-                  >Transfer Call</label
-                >
-                <div class="flex gap-2">
-                  <input
-                    id="transfer-target"
-                    [(ngModel)]="transferTarget"
-                    placeholder="SIP/1000 or 1000"
-                    class="flex-1 p-2 border border-[var(--border-color)] rounded bg-[var(--surface-color)] text-sm"
-                  />
-                  <button
-                    (click)="transfer('blind')"
-                    class="px-3 py-2 bg-yellow-500 text-white rounded"
-                  >
-                    Blind
-                  </button>
-                  <button
-                    (click)="transfer('attended')"
-                    class="px-3 py-2 bg-blue-500 text-white rounded"
-                  >
-                    Attended
-                  </button>
-                </div>
-              </div>
+      <!-- Incoming call alert -->
+      <div
+        *ngIf="incoming()"
+        class="incoming-call-alert"
+      >
+        <div class="incoming-call-header">
+          <div class="incoming-call-info">
+            <span class="material-icons call-type-icon">call</span>
+            <div>
+              <div class="caller-name">Входящий звонок</div>
+              <div class="caller-number">{{ incomingFrom() || 'Неизвестный абонент' }}</div>
             </div>
           </div>
         </div>
-        <app-softphone-scripts-panel
-          [callActive]="callActive"
-        ></app-softphone-scripts-panel>
-      </section>
+        <div class="incoming-call-actions">
+          <button
+            (click)="answerIncoming()"
+            class="answer-button"
+          >
+            <span class="material-icons">call</span>
+            Принять
+          </button>
+          <button
+            (click)="rejectIncoming()"
+            class="reject-button"
+          >
+            <span class="material-icons">call_end</span>
+            Отклонить
+          </button>
+        </div>
+      </div>
+
+      <!-- Dial Tab Content -->
+      <div *ngIf="activeTab === 'dial' && !callActive()" class="dialer-section">
+        <div class="number-input">
+          <input
+            [(ngModel)]="callee"
+            [title]="callee"
+            placeholder="Введите номер"
+            class="number-display"
+          />
+          <div class="input-actions">
+            <button
+              *ngIf="callee"
+              (click)="removeLast()"
+              class="action-button"
+              title="Удалить последний символ"
+            >
+              <span class="material-icons">backspace</span>
+            </button>
+            <button
+              *ngIf="callee"
+              (click)="clearNumber()"
+              class="action-button"
+              title="Очистить номер"
+            >
+              <span class="material-icons">close</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="dialpad">
+          <button
+            *ngFor="let key of ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#']"
+            (click)="pressKey(key)"
+            class="dial-button"
+          >
+            {{ key }}
+          </button>
+        </div>
+
+        <button
+          (click)="call()"
+          [disabled]="!callee"
+          class="call-button"
+        >
+          <span class="material-icons">call</span>
+          Позвонить
+        </button>
+      </div>
+
+      <!-- Call Info (when active call) -->
+      <app-softphone-call-info
+        *ngIf="callActive() && activeTab === 'dial'"
+        [callee]="callee"
+        [callDuration]="callDuration()"
+      ></app-softphone-call-info>
+
+      <!-- DTMF Section (during active call) -->
+      <div *ngIf="callActive() && activeTab === 'dial'" class="dtmf-section">
+        <div class="dtmf-header">
+          <span class="dtmf-label">Отправить DTMF</span>
+          <span *ngIf="dtmfSequence" class="dtmf-sequence">
+            {{ dtmfSequence }}
+            <button
+              (click)="clearDtmf()"
+              class="action-button"
+              style="margin-left: 0.5rem; width: 1.5rem; height: 1.5rem;"
+              title="Очистить"
+            >
+              <span class="material-icons" style="font-size: 1rem;">close</span>
+            </button>
+          </span>
+        </div>
+        <div class="dtmf-pad">
+          <button
+            *ngFor="let key of ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#']"
+            (click)="pressKey(key)"
+            class="dtmf-button"
+          >
+            {{ key }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Call History Tab -->
+                  <app-softphone-call-history
+              *ngIf="activeTab === 'history'"
+              [operatorId]="sipUser"
+            />
+
+      <!-- Call Actions -->
+      <app-softphone-call-actions
+        [status]="status()"
+        [callActive]="callActive()"
+        [muted]="muted()"
+        [onHold]="onHold()"
+        [holdInProgress]="holdInProgress()"
+        (connect)="connect()"
+        (call)="call()"
+        (hangup)="hangup()"
+        (muteToggle)="toggleMute()"
+        (holdToggle)="toggleHold()"
+      ></app-softphone-call-actions>
+
+      <!-- Call Notes (during active call) -->
+      <div *ngIf="callActive()" class="call-notes-section">
+        <label class="notes-label" for="call-note">Добавить заметку</label>
+        <textarea
+          id="call-note"
+          rows="4"
+          class="notes-textarea"
+          placeholder="Добавьте заметку о звонке..."
+        ></textarea>
+      </div>
+
+      <!-- Transfer Section (during active call) -->
+      <div *ngIf="callActive()" class="transfer-section">
+        <label class="transfer-label" for="transfer-target">Перевод звонка</label>
+        <div class="transfer-controls">
+          <input
+            id="transfer-target"
+            [(ngModel)]="transferTarget"
+            placeholder="SIP/1000 или 1000"
+            class="transfer-input"
+          />
+          <div class="transfer-buttons">
+            <button
+              (click)="transfer('blind')"
+              class="transfer-button blind"
+            >
+              Слепой
+            </button>
+            <button
+              (click)="transfer('attended')"
+              class="transfer-button attended"
+            >
+              Консультационный
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scripts Panel -->
+      <app-softphone-scripts-panel
+        [callActive]="callActive()"
+      />
     </div>
   </div>
 </div>
 
-<audio id="remoteAudio" autoplay class="hidden"></audio>
-<!-- Ringtone element used for incoming/outgoing playback; source is managed by component -->
-<audio id="ringtoneAudio" loop class="hidden"></audio>
+<!-- Audio elements -->
+<audio id="remoteAudio" autoplay class="audio-element"></audio>
+<audio id="ringtoneAudio" loop class="audio-element"></audio>

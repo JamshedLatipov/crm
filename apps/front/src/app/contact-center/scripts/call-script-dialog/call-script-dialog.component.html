@@ -1,0 +1,273 @@
+<div class="dialog-container">
+  <div class="dialog-header">
+    <h2 class="dialog-title">
+      {{ isEditMode ? 'Редактирование скрипта' : 'Создание скрипта' }}
+    </h2>
+    <p class="dialog-subtitle">
+      {{
+        isEditMode
+          ? 'Обновите информацию о скрипте звонка'
+          : 'Создайте новый скрипт для операторов контакт-центра'
+      }}
+    </p>
+  </div>
+
+  <mat-dialog-content class="dialog-content">
+    <form class="script-form" #form="ngForm">
+      <!-- Basic Information Section -->
+      <div class="form-section">
+        <h3 class="section-title">
+          <mat-icon>info</mat-icon>
+          Основная информация
+        </h3>
+
+        <div class="form-grid">
+          <mat-form-field appearance="outline" class="modern-field">
+            <mat-label
+              >Название скрипта
+              <span class="required-indicator">*</span></mat-label
+            >
+            <input
+              matInput
+              [(ngModel)]="script.title"
+              name="title"
+              required
+              placeholder="Введите название скрипта"
+            />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="modern-field">
+            <mat-label
+              >Категория <span class="required-indicator">*</span></mat-label
+            >
+            <mat-select
+              [(ngModel)]="script.categoryId"
+              name="categoryId"
+              required
+            >
+              <mat-option
+                *ngFor="let category of categories()"
+                [value]="category.id"
+              >
+                {{ category.name }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="modern-field">
+          <mat-label>Описание</mat-label>
+          <textarea
+            matInput
+            [(ngModel)]="script.description"
+            name="description"
+            rows="3"
+            placeholder="Краткое описание скрипта"
+          ></textarea>
+        </mat-form-field>
+
+        <mat-checkbox
+          [(ngModel)]="script.isActive"
+          name="isActive"
+          class="modern-checkbox"
+        >
+          Активный скрипт
+        </mat-checkbox>
+      </div>
+
+      <!-- Steps Section -->
+      <div class="form-section">
+        <div class="section-header">
+          <h3 class="section-title">
+            <mat-icon>list_alt</mat-icon>
+            Шаги скрипта
+          </h3>
+          <button
+            mat-stroked-button
+            color="primary"
+            type="button"
+            (click)="addStep()"
+            class="add-button"
+          >
+            <mat-icon>add</mat-icon>
+            Добавить шаг
+          </button>
+        </div>
+
+        <div class="items-container">
+          <div
+            class="item-card"
+            *ngFor="
+              let step of script.steps;
+              let i = index;
+              trackBy: trackByIndex
+            "
+          >
+            <mat-form-field
+              appearance="outline"
+              class="modern-field item-field"
+            >
+              <mat-label>Шаг {{ i + 1 }}</mat-label>
+              <input
+                matInput
+                [(ngModel)]="script.steps[i]"
+                [name]="'step-' + i"
+                placeholder="Описание шага разговора"
+              />
+            </mat-form-field>
+            <button
+              mat-icon-button
+              color="warn"
+              type="button"
+              (click)="removeStep(i)"
+              class="remove-button"
+              matTooltip="Удалить шаг"
+            >
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+
+          <div *ngIf="script.steps.length === 0" class="empty-state">
+            <mat-icon>description</mat-icon>
+            <p>Добавьте шаги для скрипта разговора</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Questions Section -->
+      <div class="form-section">
+        <div class="section-header">
+          <h3 class="section-title">
+            <mat-icon>help</mat-icon>
+            Вопросы
+          </h3>
+          <button
+            mat-stroked-button
+            color="primary"
+            type="button"
+            (click)="addQuestion()"
+            class="add-button"
+          >
+            <mat-icon>add</mat-icon>
+            Добавить вопрос
+          </button>
+        </div>
+
+        <div class="items-container">
+          <div
+            class="item-card"
+            *ngFor="
+              let question of script.questions;
+              let i = index;
+              trackBy: trackByIndex
+            "
+          >
+            <mat-form-field
+              appearance="outline"
+              class="modern-field item-field"
+            >
+              <mat-label>Вопрос {{ i + 1 }}</mat-label>
+              <input
+                matInput
+                [(ngModel)]="script.questions[i]"
+                [name]="'question-' + i"
+                placeholder="Текст вопроса для уточнения"
+              />
+            </mat-form-field>
+            <button
+              mat-icon-button
+              color="warn"
+              type="button"
+              (click)="removeQuestion(i)"
+              class="remove-button"
+              matTooltip="Удалить вопрос"
+            >
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+
+          <div *ngIf="script.questions.length === 0" class="empty-state">
+            <mat-icon>help_outline</mat-icon>
+            <p>Добавьте вопросы для уточнения деталей</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tips Section -->
+      <div class="form-section">
+        <div class="section-header">
+          <h3 class="section-title">
+            <mat-icon>lightbulb</mat-icon>
+            Полезные советы
+          </h3>
+          <button
+            mat-stroked-button
+            color="primary"
+            type="button"
+            (click)="addTip()"
+            class="add-button"
+          >
+            <mat-icon>add</mat-icon>
+            Добавить совет
+          </button>
+        </div>
+
+        <div class="items-container">
+          <div
+            class="item-card"
+            *ngFor="
+              let tip of script.tips;
+              let i = index;
+              trackBy: trackByIndex
+            "
+          >
+            <mat-form-field
+              appearance="outline"
+              class="modern-field item-field"
+            >
+              <mat-label>Совет {{ i + 1 }}</mat-label>
+              <input
+                matInput
+                [(ngModel)]="script.tips[i]"
+                [name]="'tip-' + i"
+                placeholder="Текст полезного совета"
+              />
+            </mat-form-field>
+            <button
+              mat-icon-button
+              color="warn"
+              type="button"
+              (click)="removeTip(i)"
+              class="remove-button"
+              matTooltip="Удалить совет"
+            >
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+
+          <div *ngIf="script.tips.length === 0" class="empty-state">
+            <mat-icon>lightbulb_outline</mat-icon>
+            <p>Добавьте полезные советы для операторов</p>
+          </div>
+        </div>
+      </div>
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions class="dialog-actions">
+    <button mat-stroked-button (click)="onCancel()" class="cancel-btn">
+      <mat-icon>close</mat-icon>
+      Отмена
+    </button>
+    <button
+      mat-raised-button
+      color="primary"
+      (click)="onSave()"
+      [disabled]="!form.valid || !script.title?.trim() || !script.categoryId"
+      class="save-btn"
+    >
+      <mat-icon>{{ isEditMode ? 'save' : 'add' }}</mat-icon>
+      {{ isEditMode ? 'Сохранить изменения' : 'Создать скрипт' }}
+    </button>
+  </mat-dialog-actions>
+</div>

@@ -39,9 +39,9 @@ export class CdrService {
       else where.disposition = filter.disposition;
     }
     const qb = this.repo.createQueryBuilder('c').where(where);
-    // operatorId filtering (derive from channel or direct src/dst match)
+    // operatorId filtering (derive from channel, accountcode, or direct src/dst match)
     if (filter.operatorId) {
-      qb.andWhere('(c.channel ILIKE :chanPat OR c.src = :opId OR c.dst = :opId)', {
+      qb.andWhere('(c.channel ILIKE :chanPat OR c.accountcode = :opId OR c.src = :opId OR c.dst = :opId)', {
         chanPat: `%/${filter.operatorId}-%`,
         opId: filter.operatorId,
       });

@@ -1,0 +1,206 @@
+<div class="call-scripts-manager-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="title-section">
+        <h1>Справочник скриптов для звонков</h1>
+        <p class="subtitle">
+          Всего: {{ totalScriptsCount() }} |
+          Активных: {{ activeScriptsCount() }} |
+          Категорий: {{ categories().length }}
+        </p>
+      </div>
+      <div class="header-actions">
+        <button
+          mat-raised-button
+          color="accent"
+          (click)="openCategoriesDialog()"
+        >
+          <mat-icon>category</mat-icon>
+          Управление категориями
+        </button>
+
+        <button
+          mat-raised-button
+          color="primary"
+          (click)="createNewScript()"
+        >
+          <mat-icon>add</mat-icon>
+          Создать скрипт
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters Section -->
+  <div class="filters-section">
+    <div class="filters-grid">
+      <!-- Search -->
+      <mat-form-field appearance="outline">
+        <mat-label>Поиск скриптов</mat-label>
+        <input
+          matInput
+          [(ngModel)]="searchQuery"
+          placeholder="Название или описание..."
+        >
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+
+      <!-- Category filter -->
+      <mat-form-field appearance="outline">
+        <mat-label>Категория</mat-label>
+        <mat-select [(ngModel)]="selectedCategoryId" (selectionChange)="filterByCategory()">
+          <mat-option value="">Все категории</mat-option>
+          <mat-option *ngFor="let category of categories()" [value]="category.id">
+            {{ category.name }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <!-- Status filter -->
+      <mat-form-field appearance="outline">
+        <mat-label>Статус</mat-label>
+        <mat-select [(ngModel)]="selectedStatus" (selectionChange)="filterByStatus()">
+          <mat-option value="">Все статусы</mat-option>
+          <mat-option value="active">Активные</mat-option>
+          <mat-option value="inactive">Неактивные</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content-section">
+    <!-- Scripts List -->
+    <div class="scripts-list-section">
+      <div class="scripts-grid">
+        <mat-card
+          *ngFor="let script of filteredScripts; trackBy: trackByScriptId"
+          class="script-card"
+          [class.selected]="selectedScript()?.id === script.id"
+          (click)="selectScript(script)"
+        >
+          <mat-card-header>
+            <mat-card-title>{{ script.title }}</mat-card-title>
+            <mat-card-subtitle>
+              <mat-chip
+                [color]="script.category?.color ? 'primary' : 'accent'"
+                [style.background-color]="script.category?.color || '#2196F3'"
+                selected
+              >
+                {{ script.category?.name || 'Без категории' }}
+              </mat-chip>
+            </mat-card-subtitle>
+          </mat-card-header>
+
+          <mat-card-content>
+            <p class="script-description">{{ script.description || 'Без описания' }}</p>
+          </mat-card-content>
+
+          <mat-card-actions>
+            <div class="script-meta">
+              <mat-chip
+                [color]="script.isActive ? 'primary' : 'warn'"
+                selected
+              >
+                {{ script.isActive ? 'Активен' : 'Неактивен' }}
+              </mat-chip>
+              <span class="script-date">
+                {{ script.updatedAt | date:'dd.MM.yyyy' }}
+              </span>
+            </div>
+            <button
+              mat-icon-button
+              color="primary"
+              (click)="editScript(script); $event.stopPropagation()"
+              matTooltip="Редактировать скрипт"
+            >
+              <mat-icon>edit</mat-icon>
+            </button>
+          </mat-card-actions>
+        </mat-card>
+      </div>
+
+      <!-- Empty state -->
+      <div *ngIf="filteredScripts.length === 0 && !loading()" class="empty-state">
+        <mat-icon>description</mat-icon>
+        <h3>Скрипты не найдены</h3>
+        <p>Попробуйте изменить параметры поиска или создайте новый скрипт</p>
+      </div>
+
+      <!-- Loading -->
+      <div *ngIf="loading()" class="loading-state">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Загрузка скриптов...</p>
+      </div>
+    </div>
+
+    <!-- Script Detail Section -->
+    <div class="script-detail-section" *ngIf="selectedScript()">
+      <mat-card class="script-detail-card">
+        <mat-card-header>
+          <mat-card-title>{{ selectedScript()?.title }}</mat-card-title>
+          <button mat-icon-button (click)="cancelEdit()" class="close-button">
+            <mat-icon>close</mat-icon>
+          </button>
+        </mat-card-header>
+
+        <mat-card-content>
+          <div class="script-info">
+            <p class="description">{{ selectedScript()?.description }}</p>
+            <div class="meta-chips">
+              <mat-chip
+                [color]="selectedScript()?.category?.color ? 'primary' : 'accent'"
+                [style.background-color]="selectedScript()?.category?.color || '#2196F3'"
+                selected
+              >
+                {{ selectedScript()?.category?.name || 'Без категории' }}
+              </mat-chip>
+              <mat-chip
+                [color]="selectedScript()?.isActive ? 'primary' : 'warn'"
+                selected
+              >
+                {{ selectedScript()?.isActive ? 'Активен' : 'Неактивен' }}
+              </mat-chip>
+            </div>
+          </div>
+
+          <div class="script-content">
+            <div *ngIf="selectedScript()?.steps && selectedScript()?.steps.length > 0" class="content-section">
+              <h4>Шаги разговора:</h4>
+              <ol class="steps-list">
+                <li *ngFor="let step of selectedScript()?.steps">{{ step }}</li>
+              </ol>
+            </div>
+
+            <div *ngIf="selectedScript()?.questions && selectedScript()?.questions.length > 0" class="content-section">
+              <h4>Вопросы для уточнения:</h4>
+              <ul class="questions-list">
+                <li *ngFor="let question of selectedScript()?.questions">{{ question }}</li>
+              </ul>
+            </div>
+
+            <div *ngIf="selectedScript()?.tips && selectedScript()?.tips.length > 0" class="content-section">
+              <h4>Полезные советы:</h4>
+              <ul class="tips-list">
+                <li *ngFor="let tip of selectedScript()?.tips">{{ tip }}</li>
+              </ul>
+            </div>
+          </div>
+        </mat-card-content>
+
+        <mat-card-actions>
+          <button mat-button (click)="cancelEdit()">Закрыть</button>
+          <button mat-raised-button color="primary" (click)="editScript(selectedScript()!)">
+            <mat-icon>edit</mat-icon>
+            Редактировать
+          </button>
+          <button mat-raised-button color="warn" (click)="deleteScript(selectedScript()!)">
+            <mat-icon>delete</mat-icon>
+            Удалить
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    </div>
+  </div>
+</div>

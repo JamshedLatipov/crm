@@ -5,6 +5,7 @@ import { authGuard } from './auth/auth.guard';
 import { AuthTestComponent } from './auth/auth-test.component';
 import { IvrAdminComponent } from './ivr/containers/ivr-list/ivr.component';
 import { OnlineMonitoringComponent } from './contact-center/monitoring/online-monitoring.component';
+import { CallScriptsManagerComponent } from './contact-center/scripts/call-scripts-manager.component';
 import { LeadsComponent } from './leads/leads.component';
 import { LeadsListComponent } from './leads/components/leads-list/leads-list.component';
 import { LeadsDashboardComponent } from './leads/components/leads-dashboard.component';
@@ -47,7 +48,8 @@ export const appRoutes: Route[] = [
         children: [
             { path: '', redirectTo: 'monitoring', pathMatch: 'full' },
             { path: 'monitoring', component: OnlineMonitoringComponent },
-            { path: 'ivr', component: IvrAdminComponent }
+            { path: 'ivr', component: IvrAdminComponent },
+            { path: 'scripts', component: CallScriptsManagerComponent }
         ]
     },
     { path: 'calls', redirectTo: 'softphone' }, // Redirect calls to softphone

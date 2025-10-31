@@ -1,8 +1,762 @@
-.softphone {
+// Softphone Component Styles
+:host {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+// Floating Button Styles
+.floating-button {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 50;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
   display: flex;
-  flex-direction: column;
-  gap: 1em;
-  max-width: 300px;
-  margin: 2em auto;
-  button { margin-right: 0.5em; }
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+
+  &:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
+  }
+
+  &:active {
+    transform: translateY(0) scale(0.95);
+  }
+
+  .material-icons {
+    font-size: 1.25rem;
+    transition: transform 0.2s ease;
+  }
+
+  &:hover .material-icons {
+    transform: scale(1.1);
+  }
+}
+
+// Active Call Indicator
+.active-call-indicator {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background: #10b981;
+  border: 2px solid white;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+// Missed Call Badge
+.missed-call-badge {
+  position: absolute;
+  top: -0.5rem;
+  right: -0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.125rem 0.375rem;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 0.75rem;
+  background: #ef4444;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+// Expanded Panel Styles
+.expanded-panel {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 50;
+  width: 22rem;
+  max-height: 85vh;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 1rem;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(2rem) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+// Panel Header
+.panel-header {
+  padding: 1rem 1rem 0.75rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 1rem 1rem 0 0;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="50" cy="50" r="0.5" fill="rgba(255,255,255,0.15)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+    opacity: 0.3;
+  }
+}
+
+.header-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.status-bar {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.minimize-button {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 0.25rem;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+// Panel Content
+.panel-content {
+  padding: 1rem;
+  max-height: calc(85vh - 6rem);
+  overflow-y: auto;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.3);
+    border-radius: 2px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba(156, 163, 175, 0.5);
+  }
+}
+
+// Tab Navigation
+.tab-navigation {
+  border-bottom: 1px solid rgba(229, 231, 235, 0.5);
+  margin-bottom: 1.5rem;
+}
+
+.tab-buttons {
+  display: flex;
+  background: rgba(249, 250, 251, 0.8);
+  border-radius: 0.75rem;
+  padding: 0.25rem;
+  backdrop-filter: blur(10px);
+}
+
+.tab-button {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+
+  .material-icons {
+    font-size: 1.125rem;
+  }
+
+  &.active {
+    background: white;
+    color: #6366f1;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
+    font-weight: 600;
+  }
+
+  &:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.5);
+    color: #374151;
+  }
+}
+
+// Content Sections
+.content-section {
+  background: white;
+  border: 1px solid rgba(229, 231, 235, 0.8);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-color: rgba(229, 231, 235, 0.9);
+  }
+}
+
+// Incoming Call Alert
+.incoming-call-alert {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 2px solid #fbbf24;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+.incoming-call-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.incoming-call-info {
+  .call-type-icon {
+    color: #f59e0b;
+    margin-right: 0.5rem;
+  }
+
+  .caller-name {
+    font-weight: 600;
+    color: #92400e;
+  }
+
+  .caller-number {
+    font-size: 0.875rem;
+    color: #a16207;
+  }
+}
+
+.incoming-call-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.answer-button {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  background: #10b981;
+  color: white;
+  border: none;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+
+  &:hover {
+    background: #059669;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.reject-button {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  background: #ef4444;
+  color: white;
+  border: none;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+
+  &:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// Dialer Section
+.dialer-section {
+  .number-input {
+    position: relative;
+    margin-bottom: 1.5rem;
+
+    .number-display {
+      width: 100%;
+      padding: 1rem 4rem 1rem 1rem;
+      border: 2px solid rgba(229, 231, 235, 0.8);
+      border-radius: 1rem;
+      background: white;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #1f2937;
+      text-align: center;
+      letter-spacing: 0.1em;
+      transition: all 0.3s ease;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+
+      &:focus {
+        outline: none;
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1), inset 0 1px 3px rgba(0, 0, 0, 0.05);
+      }
+
+      &::placeholder {
+        color: #9ca3af;
+        font-weight: 400;
+      }
+    }
+
+    .input-actions {
+      position: absolute;
+      right: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      gap: 0.25rem;
+    }
+
+    .action-button {
+      width: 1.75rem;
+      height: 1.75rem;
+      border-radius: 0.375rem;
+      border: none;
+      background: rgba(156, 163, 175, 0.1);
+      color: #6b7280;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: rgba(156, 163, 175, 0.2);
+        color: #374151;
+        transform: scale(1.05);
+      }
+
+      &:active {
+        transform: scale(0.95);
+      }
+    }
+  }
+
+  .dialpad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.375rem;
+    margin-bottom: 1rem;
+  }
+
+  .dial-button {
+    width: 100%;
+    height: 3rem;
+    aspect-ratio: 1;
+    border-radius: 0.5rem;
+    border: 2px solid rgba(229, 231, 235, 0.8);
+    background: white;
+    color: #1f2937;
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+
+    &:hover {
+      border-color: #6366f1;
+      background: rgba(99, 102, 241, 0.05);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(99, 102, 241, 0.15);
+    }
+
+    &:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+  }
+
+  .call-button {
+    width: 100%;
+    padding: 0.625rem;
+    border-radius: 0.5rem;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border: none;
+    font-size: 0.875rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+
+    &:hover:not(:disabled) {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+}
+
+// DTMF Section
+.dtmf-section {
+  .dtmf-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+
+    .dtmf-label {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #6b7280;
+    }
+
+    .dtmf-sequence {
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 0.75rem;
+      color: #6366f1;
+      background: rgba(99, 102, 241, 0.1);
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.375rem;
+    }
+  }
+
+  .dtmf-pad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.25rem;
+  }
+
+  .dtmf-button {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 0.375rem;
+    border: 1px solid rgba(229, 231, 235, 0.8);
+    background: rgba(249, 250, 251, 0.8);
+    color: #374151;
+    font-size: 0.75rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: rgba(99, 102, 241, 0.1);
+      border-color: #6366f1;
+      color: #6366f1;
+      transform: scale(1.05);
+    }
+
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+}
+
+// Call Notes Section
+.call-notes-section {
+  .notes-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.5rem;
+  }
+
+  .notes-textarea {
+    width: 100%;
+    min-height: 4rem;
+    padding: 0.5rem;
+    border: 1px solid rgba(229, 231, 235, 0.8);
+    border-radius: 0.5rem;
+    background: white;
+    color: #1f2937;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    resize: vertical;
+    transition: all 0.2s ease;
+
+    &:focus {
+      outline: none;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    &::placeholder {
+      color: #9ca3af;
+    }
+  }
+}
+
+// Transfer Section
+.transfer-section {
+  .transfer-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.5rem;
+  }
+
+  .transfer-controls {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .transfer-input {
+    flex: 1;
+    padding: 0.5rem;
+    border: 1px solid rgba(229, 231, 235, 0.8);
+    border-radius: 0.5rem;
+    background: white;
+    color: #1f2937;
+    font-size: 0.8125rem;
+    transition: all 0.2s ease;
+
+    &:focus {
+      outline: none;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    &::placeholder {
+      color: #9ca3af;
+    }
+  }
+
+  .transfer-buttons {
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  .transfer-button {
+    padding: 0.375rem 0.5rem;
+    border-radius: 0.375rem;
+    border: none;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &.blind {
+      background: #f59e0b;
+      color: white;
+
+      &:hover {
+        background: #d97706;
+        transform: translateY(-1px);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+    }
+
+    &.attended {
+      background: #3b82f6;
+      color: white;
+
+      &:hover {
+        background: #2563eb;
+        transform: translateY(-1px);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+    }
+  }
+}
+
+// Audio Elements (Hidden)
+.audio-element {
+  display: none;
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .floating-button {
+    bottom: 1rem;
+    right: 1rem;
+    width: 2.5rem;
+    height: 2.5rem;
+
+    .material-icons {
+      font-size: 1.125rem;
+    }
+  }
+
+  .expanded-panel {
+    bottom: 1rem;
+    right: 1rem;
+    width: calc(100vw - 2rem);
+    max-width: 20rem;
+    max-height: 80vh;
+  }
+
+  .panel-header {
+    padding: 0.75rem 0.75rem 0.5rem;
+  }
+
+  .status-bar {
+    font-size: 0.9rem;
+  }
+
+  .panel-content {
+    padding: 0.75rem;
+    max-height: calc(80vh - 5rem);
+  }
+
+  .dialpad {
+    gap: 0.25rem;
+  }
+
+  .dial-button {
+    font-size: 0.9rem;
+  }
+
+  .call-button {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  .incoming-call-actions {
+    flex-direction: column;
+  }
+
+  .answer-button,
+  .reject-button {
+    width: 100%;
+    justify-content: center;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .expanded-panel {
+    width: calc(100vw - 1rem);
+    max-width: none;
+    max-height: 75vh;
+  }
+
+  .dialpad {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.2rem;
+  }
+
+  .dial-button {
+    font-size: 0.85rem;
+  }
+
+  .call-button {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .status-bar {
+    font-size: 0.85rem;
+  }
 }

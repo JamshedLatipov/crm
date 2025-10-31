@@ -16,6 +16,7 @@ import { AdsIntegrationModule } from './ads-integration/ads-integration.module';
 import { ReportsModule } from './reports/reports.module';
 import { ContactCenterModule } from './contact-center/contact-center.module';
 import { PromoCompaniesModule } from './promo-companies/promo-companies.module';
+import { CallScriptsModule } from './call-scripts/call-scripts.module';
 
 export const MODULES = [
     LeadModule,
@@ -36,4 +37,5 @@ export const MODULES = [
     ReportsModule,
     ContactCenterModule,
     PromoCompaniesModule,
+    CallScriptsModule,
 ];

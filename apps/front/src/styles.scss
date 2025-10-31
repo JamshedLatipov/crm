@@ -71,6 +71,12 @@ body {
   --success-light: rgba(16, 185, 129, 0.1);
   --error-light: rgba(239, 68, 68, 0.1);
 }
+::ng-deep {
+  .mat-mdc-dialog-surface {
+    max-height: unset !important;
+    height: unset !important;
+  }
+}
 
 /* Material Icons */
 .material-icons {

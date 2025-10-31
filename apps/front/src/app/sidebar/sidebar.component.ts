@@ -57,6 +57,7 @@ export class SidebarComponent {
       children: [
         { icon: 'visibility', label: 'Онлайн мониторинг', route: '/contact-center/monitoring' },
         { icon: 'dialpad', label: 'IVR', route: '/contact-center/ivr' },
+        { icon: 'description', label: 'Скрипты звонков', route: '/contact-center/scripts' },
       ],
     },
     { icon: 'group', label: 'Пользователи', route: '/users' },

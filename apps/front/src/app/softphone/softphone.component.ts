@@ -4,6 +4,7 @@ import {
   HostListener,
   OnDestroy,
   inject,
+  signal,
 } from '@angular/core';
 import { environment } from '../../environments/environment';
 import { Subject } from 'rxjs';
@@ -28,7 +29,8 @@ import {
   SoftphoneCallActionsComponent,
   SoftphoneScriptsPanelComponent,
 } from './components';
-import { SoftphoneCallHistoryComponent } from './components/softphone-call-history.component';
+import { SoftphoneCallHistoryComponent } from './components/softphone-call-history/softphone-call-history.component';
+import { CallHistoryItem } from './components/softphone-call-history/softphone-call-history.types';
 
 // Define custom interfaces to avoid 'any' types
 interface JsSIPSessionEvent {
@@ -72,19 +74,19 @@ type JsSIPSession = any;
   ],
 })
 export class SoftphoneComponent implements OnInit, OnDestroy {
-  status = 'Disconnected';
+  status = signal('Disconnected');
   // Incoming call state
-  incoming = false;
-  incomingFrom: string | null = null;
-  callActive = false;
-  muted = false;
-  onHold = false;
-  holdInProgress = false;
-  microphoneError = false;
+  incoming = signal(false);
+  incomingFrom = signal<string | null>(null);
+  callActive = signal(false);
+  muted = signal(false);
+  onHold = signal(false);
+  holdInProgress = signal(false);
+  microphoneError = signal(false);
   private currentSession: JsSIPSession | null = null;
   // Таймер звонка
   private callStart: number | null = null;
-  callDuration = '00:00';
+  callDuration = signal('00:00');
   private durationTimer: number | null = null;
 
   // Ringback tone (WebAudio) while outgoing call is ringing
@@ -101,6 +103,61 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   dtmfSequence = '';
   // Transfer UI
   transferTarget = '';
+
+  // Call history data
+  callHistory = signal<CallHistoryItem[]>([
+    {
+      id: '1',
+      number: '+7 (999) 123-45-67',
+      timestamp: new Date(Date.now() - 1000 * 60 * 5), // 5 minutes ago
+      duration: '02:34',
+      status: 'completed',
+      type: 'outgoing',
+      notes: 'Обсудили условия контракта',
+      contactName: 'Иванов Иван',
+      contactId: 'contact-1'
+    },
+    {
+      id: '2',
+      number: '+7 (999) 987-65-43',
+      timestamp: new Date(Date.now() - 1000 * 60 * 15), // 15 minutes ago
+      duration: '00:00',
+      status: 'missed',
+      type: 'incoming',
+      contactName: 'Петрова Анна',
+      contactId: 'contact-2'
+    },
+    {
+      id: '3',
+      number: '+7 (999) 555-12-34',
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
+      duration: '01:45',
+      status: 'completed',
+      type: 'incoming',
+      notes: 'Заказ оформлен',
+      contactName: 'Сидоров Алексей',
+      contactId: 'contact-3'
+    },
+    {
+      id: '4',
+      number: '+7 (999) 777-88-99',
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
+      duration: '00:00',
+      status: 'failed',
+      type: 'outgoing'
+    },
+    {
+      id: '5',
+      number: '+7 (999) 111-22-33',
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2), // 2 days ago
+      duration: '05:12',
+      status: 'completed',
+      type: 'outgoing',
+      notes: 'Техническая поддержка',
+      contactName: 'Кузнецова Мария',
+      contactId: 'contact-4'
+    }
+  ]);
 
   // Asterisk host is read from environment config (moved from hardcoded value)
   private readonly asteriskHost = environment.asteriskHost || '127.0.0.1';
@@ -149,19 +206,19 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     this.softphone.events$.pipe(takeUntil(this.destroy$)).subscribe((ev) => {
       switch (ev.type) {
         case 'registered':
-          this.status = 'Registered!';
+          this.status.set('Registered!');
           break;
         case 'registrationFailed':
           this.registrationFailed(ev.payload as JsSIPRegisterEvent);
           break;
         case 'connecting':
-          this.status = 'Connecting...';
+          this.status.set('Connecting...');
           break;
         case 'connected':
-          this.status = 'Connected, registering...';
+          this.status.set('Connected, registering...');
           break;
         case 'disconnected':
-          this.status = 'Disconnected';
+          this.status.set('Disconnected');
           break;
         case 'progress':
           this.handleCallProgress(ev.payload as JsSIPSessionEvent);
@@ -177,24 +234,24 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
           this.handleCallFailed(ev.payload as JsSIPSessionEvent);
           break;
         case 'transferResult':
-          this.status = ev.payload?.ok
+          this.status.set(ev.payload?.ok
             ? 'Transfer initiated'
-            : 'Transfer result: ' + (ev.payload?.error || 'unknown');
+            : 'Transfer result: ' + (ev.payload?.error || 'unknown'));
           break;
         case 'transferFailed':
-          this.status = 'Transfer failed';
+          this.status.set('Transfer failed');
           break;
         case 'hold':
           // Session confirmed placed on hold
-          this.onHold = true;
-          this.holdInProgress = false;
-          this.status = 'Call on hold';
+          this.onHold.set(true);
+          this.holdInProgress.set(false);
+          this.status.set('Call on hold');
           break;
         case 'unhold':
           // Session resumed from hold
-          this.onHold = false;
-          this.holdInProgress = false;
-          this.status = this.callActive ? 'Call in progress' : this.isRegistered() ? 'Registered!' : 'Disconnected';
+          this.onHold.set(false);
+          this.holdInProgress.set(false);
+          this.status.set(this.callActive() ? 'Call in progress' : this.isRegistered() ? 'Registered!' : 'Disconnected');
           break;
           break;
         case 'newRTCSession': {
@@ -206,7 +263,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
             (sess && sess.direction) ||
             'outgoing';
           if (dir === 'incoming' || dir === 'inbound') {
-            this.incoming = true;
+            this.incoming.set(true);
             // try to extract caller display or remote identity
             const from =
               (sess &&
@@ -214,12 +271,13 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
                   sess.remote_identity?.display_name)) ||
               (ev.payload && ev.payload.from) ||
               null;
-            this.incomingFrom =
-              typeof from === 'string' ? from : from?.toString?.() ?? null;
-            this.status = `Incoming call${
-              this.incomingFrom ? ' from ' + this.incomingFrom : ''
-            }`;
-            console.log('Incoming call from:', this.incomingFrom);
+            this.incomingFrom.set(
+              typeof from === 'string' ? from : from?.toString?.() ?? null
+            );
+            this.status.set(`Incoming call${
+              this.incomingFrom() ? ' from ' + this.incomingFrom() : ''
+            }`);
+            console.log('Incoming call from:', this.incomingFrom());
             // Auto-expand if user prefers
             try {
               if (this.autoExpandOnIncoming && !this.expanded) this.toggleExpand();
@@ -236,14 +294,14 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
               if (typeof Notification !== 'undefined') {
                 if (Notification.permission === 'granted') {
                   new Notification('Incoming call', {
-                    body: this.incomingFrom || 'Unknown caller',
+                    body: this.incomingFrom() || 'Unknown caller',
                     tag: 'softphone-incoming',
                   });
                 } else if (Notification.permission !== 'denied') {
                   Notification.requestPermission().then((perm) => {
                     if (perm === 'granted') {
                       new Notification('Incoming call', {
-                        body: this.incomingFrom || 'Unknown caller',
+                        body: this.incomingFrom() || 'Unknown caller',
                         tag: 'softphone-incoming',
                       });
                     }
@@ -297,9 +355,9 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   // Унифицированные хендлеры событий звонка
   private handleCallProgress(e: JsSIPSessionEvent) {
     console.log('Call is in progress', e);
-    this.status = 'Ringing...';
+    this.status.set('Ringing...');
     // Use outgoing ringtone while dialing
-    if (this.incoming) {
+    if (this.incoming()) {
       this.ringtone.startRingback(RINGBACK_DEFAULT_LEVEL, RINGTONE_SRC);
     } else {
       this.ringtone.startRingback(
@@ -311,8 +369,8 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
 
   private handleCallConfirmed(e: JsSIPSessionEvent) {
     console.log('Call confirmed', e);
-    this.status = 'Call in progress';
-    this.callActive = true;
+    this.status.set('Call in progress');
+    this.callActive.set(true);
     this.startCallTimer();
     this.ringtone.stopRingback();
   }
@@ -320,11 +378,11 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   private handleCallEnded(e: JsSIPSessionEvent) {
     console.log('Call ended with cause:', e.data?.cause);
     // detect missed incoming calls (incoming shown but never answered)
-    const wasMissed = this.incoming && !this.callActive;
-    this.callActive = false;
+    const wasMissed = this.incoming() && !this.callActive();
+    this.callActive.set(false);
     this.ringtone.stopRingback();
     this.stopCallTimer();
-    this.onHold = false;
+    this.onHold.set(false);
     // If missed, increment counter
     if (wasMissed) {
       try {
@@ -335,38 +393,38 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       }
     }
     // Clear incoming state and session so UI resets when caller hangs up
-    this.incoming = false;
-    this.incomingFrom = null;
+    this.incoming.set(false);
+    this.incomingFrom.set(null);
     this.currentSession = null;
     // play busy tone if ended due to busy or other error-like cause
     const causeStr = e.data?.cause ? String(e.data?.cause) : '';
     if (causeStr.toLowerCase().includes('busy') || causeStr === '486') {
       this.ringtone.playOneShot(BUSY_RINGTONE_SRC, 0.8, 1000);
     }
-    this.status = this.isRegistered()
+    this.status.set(this.isRegistered()
       ? 'Registered!'
-      : `Call ended: ${e.data?.cause || 'Normal clearing'}`;
+      : `Call ended: ${e.data?.cause || 'Normal clearing'}`);
   }
 
   private handleCallFailed(e: JsSIPSessionEvent) {
     console.log('Call failed with cause:', e);
-    this.callActive = false;
+    this.callActive.set(false);
     this.stopCallTimer();
     // stop any ringback and play busy/error tone to signal failure
     this.ringtone.stopRingback();
     this.ringtone.playOneShot(BUSY_RINGTONE_SRC, 0.8, 1000);
     // Ensure incoming UI/state is cleared when call fails
-    this.incoming = false;
-    this.incomingFrom = null;
+    this.incoming.set(false);
+    this.incomingFrom.set(null);
     this.currentSession = null;
-    this.status = this.isRegistered()
+    this.status.set(this.isRegistered()
       ? 'Registered!'
-      : `Call failed: ${e.data?.cause || 'Unknown reason'}`;
+      : `Call failed: ${e.data?.cause || 'Unknown reason'}`);
   }
 
   registrationFailed(e: JsSIPRegisterEvent) {
     console.error('Registration failed:', e);
-    this.status = 'Registration failed: ' + e.cause;
+    this.status.set('Registration failed: ' + e.cause);
     // Log detailed error information
     this.ringtone.stopRingback();
     if (e.response) {
@@ -390,19 +448,19 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       this.durationTimer = null;
     }
     this.callStart = null;
-    this.callDuration = '00:00';
+    this.callDuration.set('00:00');
   }
   private updateDuration() {
     if (!this.callStart) return;
     const diff = Math.floor((Date.now() - this.callStart) / 1000);
     const mm = String(Math.floor(diff / 60)).padStart(2, '0');
     const ss = String(diff % 60).padStart(2, '0');
-    this.callDuration = `${mm}:${ss}`;
+    this.callDuration.set(`${mm}:${ss}`);
   }
 
   connect() {
     if (!this.sipUser || !this.sipPassword) {
-      this.status = 'Введите SIP логин и пароль';
+      this.status.set('Введите SIP логин и пароль');
       return;
     }
 
@@ -410,7 +468,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     this.checkMicrophoneAccess();
 
     // Delegate to service to create and start UA
-    this.status = 'Connecting...';
+    this.status.set('Connecting...');
     this.softphone.connect(this.sipUser, this.sipPassword, this.asteriskHost);
   }
 
@@ -430,53 +488,53 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
 
   // User answers the incoming call
   answerIncoming() {
-    if (!this.incoming || !this.currentSession) return;
+    if (!this.incoming() || !this.currentSession) return;
     try {
       this.softphone.answer(this.currentSession);
-      this.incoming = false;
-      this.status = 'Call answered';
+      this.incoming.set(false);
+      this.status.set('Call answered');
       this.ringtone.stopRingback();
     } catch (err) {
       console.error('Answer failed', err);
-      this.status = 'Answer failed';
+      this.status.set('Answer failed');
     }
   }
 
   // User rejects the incoming call
   rejectIncoming() {
-    if (!this.incoming || !this.currentSession) return;
+    if (!this.incoming() || !this.currentSession) return;
     try {
       this.softphone.reject(this.currentSession);
-      this.incoming = false;
-      this.status = 'Call rejected';
+      this.incoming.set(false);
+      this.status.set('Call rejected');
       this.ringtone.stopRingback();
     } catch (err) {
       console.error('Reject failed', err);
-      this.status = 'Reject failed';
+      this.status.set('Reject failed');
     }
   }
 
   call() {
     if (!this.callee) {
-      this.status = 'Введите номер абонента';
+      this.status.set('Введите номер абонента');
       return;
     }
     if (!this.softphone.isRegistered()) {
-      this.status = 'Сначала необходимо подключиться';
+      this.status.set('Сначала необходимо подключиться');
       return;
     }
 
-    this.status = `Calling ${this.callee}...`;
+    this.status.set(`Calling ${this.callee}...`);
     try {
       const session = this.softphone.call(
         `sip:${this.callee}@${this.asteriskHost}`
       );
       this.currentSession = session;
-      this.callActive = true;
+      this.callActive.set(true);
       console.log('Call session created:', session);
     } catch (error) {
       console.error('Error initiating call:', error);
-      this.status = 'Ошибка при совершении вызова';
+      this.status.set('Ошибка при совершении вызова');
     }
   }
 
@@ -486,26 +544,26 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
 
   // Toggle local audio track enabled state
   toggleMute() {
-    if (!this.callActive || !this.currentSession) return;
+    if (!this.callActive() || !this.currentSession) return;
     try {
       const pc: RTCPeerConnection | undefined =
         this.currentSession['connection'];
       if (pc) {
         pc.getSenders()?.forEach((sender) => {
           if (sender.track && sender.track.kind === 'audio') {
-            sender.track.enabled = this.muted; // if currently muted flag true -> enabling
+            sender.track.enabled = this.muted(); // if currently muted flag true -> enabling
           }
         });
       }
-      this.muted = !this.muted;
+      this.muted.set(!this.muted());
       // After flipping flag, correct actual track state (above used previous value)
       if (pc) {
         pc.getSenders()?.forEach((sender) => {
           if (sender.track && sender.track.kind === 'audio')
-            sender.track.enabled = !this.muted;
+            sender.track.enabled = !this.muted();
         });
       }
-      this.status = this.muted ? 'Microphone muted' : 'Call in progress';
+      this.status.set(this.muted() ? 'Microphone muted' : 'Call in progress');
     } catch (e) {
       console.error('Mute toggle failed', e);
     }
@@ -513,21 +571,21 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
 
   // Hold / Unhold using JsSIP built-in re-INVITE logic
   toggleHold() {
-    if (!this.callActive || !this.currentSession) return;
-    if (this.holdInProgress) return;
+    if (!this.callActive() || !this.currentSession) return;
+    if (this.holdInProgress()) return;
     try {
-      this.holdInProgress = true;
-      const goingToHold = !this.onHold;
+      this.holdInProgress.set(true);
+      const goingToHold = !this.onHold();
       if (goingToHold) {
-        this.status = 'Placing on hold...';
+        this.status.set('Placing on hold...');
         this.softphone.hold();
       } else {
-        this.status = 'Resuming call...';
+        this.status.set('Resuming call...');
         this.softphone.unhold();
       }
     } catch (e) {
       console.error('Hold toggle failed', e);
-      this.holdInProgress = false;
+      this.holdInProgress.set(false);
     }
   }
 
@@ -536,25 +594,25 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     navigator.mediaDevices
       .getUserMedia({ audio: true })
       .then((stream) => {
-        this.microphoneError = false;
+        this.microphoneError.set(false);
         // Освобождаем ресурсы после проверки
         stream.getTracks().forEach((track) => track.stop());
       })
       .catch((error) => {
         console.error('Microphone access denied:', error);
-        this.microphoneError = true;
-        this.status = 'Для звонков необходим доступ к микрофону';
+        this.microphoneError.set(true);
+        this.status.set('Для звонков необходим доступ к микрофону');
       });
   }
 
   // Dial pad interactions
   pressKey(key: string) {
     if (/[0-9*#]/.test(key)) {
-      if (this.callActive) {
+      if (this.callActive()) {
         try {
           this.softphone.sendDTMF(key);
           this.dtmfSequence = (this.dtmfSequence + key).slice(-32); // keep last 32 keys
-          this.status = `DTMF: ${key}`;
+          this.status.set(`DTMF: ${key}`);
         } catch (e) {
           console.warn('DTMF send failed', e);
         }
@@ -604,20 +662,20 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
 
   // Initiate transfer via backend
   async transfer(type: 'blind' | 'attended' = 'blind') {
-    if (!this.callActive) {
-      this.status = 'No active call to transfer';
+    if (!this.callActive()) {
+      this.status.set('No active call to transfer');
       return;
     }
     if (!this.transferTarget) {
-      this.status = 'Enter transfer target (e.g. SIP/1000)';
+      this.status.set('Enter transfer target (e.g. SIP/1000)');
       return;
     }
     try {
-      this.status = 'Transferring...';
+      this.status.set('Transferring...');
       await this.softphone.transfer(this.transferTarget, type);
     } catch (err) {
       console.error('Transfer request failed', err);
-      this.status = 'Transfer request failed';
+      this.status.set('Transfer request failed');
     }
   }
 
@@ -625,6 +683,18 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     const cleaned = raw.replace(/[^0-9*#+]/g, '');
     if (!cleaned) return;
     this.callee = cleaned;
-    this.status = `Number pasted (${cleaned.length} digits)`;
+    this.status.set(`Number pasted (${cleaned.length} digits)`);
+  }
+
+  // Handle call number from history
+  onCallNumber(number: string) {
+    this.callee = number;
+    this.activeTab = 'dial';
+  }
+
+  // Handle view contact from history
+  onViewContact(contactId: string) {
+    console.log('View contact:', contactId);
+    // TODO: Navigate to contact page
   }
 }

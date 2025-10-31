@@ -1,0 +1,111 @@
+<div class="call-history-container">
+  <!-- Header -->
+  <div class="header">
+    <h3 class="title">
+      <mat-icon>history</mat-icon>
+      История звонков
+    </h3>
+    <button mat-icon-button (click)="refreshHistory()" [disabled]="isLoading()">
+      <mat-icon>refresh</mat-icon>
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-label>Поиск</mat-label>
+      <input matInput [(ngModel)]="searchQuery" (ngModelChange)="onSearchChange($event)" placeholder="Поиск по номеру...">
+      <mat-icon matSuffix>search</mat-icon>
+    </mat-form-field>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+    <!-- Error State -->
+    <div class="error-state" *ngIf="error()">
+      <mat-icon>error</mat-icon>
+      <p>{{ error() }}</p>
+      <button mat-raised-button (click)="refreshHistory()">Повторить</button>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="!isLoading() && !error() && (!calls() || calls().length === 0)">
+      <mat-icon>call_missed</mat-icon>
+      <h4>Звонки не найдены</h4>
+      <button mat-stroked-button (click)="clearAllFilters()">Очистить фильтры</button>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading" *ngIf="isLoading()">
+      <mat-icon>sync</mat-icon>
+      <p>Загрузка...</p>
+    </div>
+
+    <!-- Calls Table -->
+        <!-- Calls Table -->
+    <table class="calls-table" *ngIf="!isLoading() && !error() && calls() && calls().length > 0">
+      <thead>
+        <tr>
+          <th>Number</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let call of calls(); trackBy: trackByCallId" [class.recent]="isRecentCall(call)">
+          <td>
+            <div class="number-time-cell">
+              <div class="number-cell">
+                <div class="left-group">
+                  <mat-icon
+                    [class]="getDirectionClass(call)"
+                    [matTooltip]="getDirectionLabel(call)"
+                    class="direction-icon">
+                    {{ getDirectionIcon(call) }}
+                  </mat-icon>
+                  <span class="number" [class]="getDispositionClass(call)" [matTooltip]="getDispositionLabel(call)">{{ call.src || call.dst }}</span>
+                  <mat-icon
+                    *ngIf="getCallNotes(call)"
+                    class="notes-icon"
+                    [matTooltip]="getCallNotes(call)">
+                    notes
+                  </mat-icon>
+                </div>
+                <div class="actions">
+                  <button
+                    mat-icon-button
+                    (click)="callNumber(call.src || call.dst)"
+                    [matTooltip]="'Позвонить ' + (call.src || call.dst)"
+                    class="action-btn">
+                    <mat-icon>call</mat-icon>
+                  </button>
+                  <button
+                    mat-icon-button
+                    (click)="showCallDetails(call)"
+                    [matTooltip]="'Показать детали'"
+                    class="action-btn">
+                    <mat-icon>info</mat-icon>
+                  </button>
+                </div>
+              </div>
+              <div class="time-cell">
+                <div class="time-duration-row">
+                  <span class="time">{{ formatCallTime(call.calldate) }}</span>
+                  <span class="date" [matTooltip]="formatCallDate(call.calldate)">{{ formatCallDate(call.calldate) }}</span>
+                  <span class="duration" [matTooltip]="call.billsec + ' сек. оплачено'">
+                    {{ formatDuration(call.duration) }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination" *ngIf="!isLoading() && !error() && calls() && calls().length > 0">
+    <button mat-stroked-button (click)="previousPage()" [disabled]="currentPage() === 1">Previous</button>
+    <span>{{ currentPage() }} of {{ totalPages() }}</span>
+    <button mat-stroked-button (click)="nextPage()" [disabled]="currentPage() === totalPages()">Next</button>
+  </div>
+</div>
