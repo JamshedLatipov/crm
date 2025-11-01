@@ -53,6 +53,25 @@
               </mat-option>
             </mat-select>
           </mat-form-field>
+
+          <mat-form-field appearance="outline" class="modern-field">
+            <mat-label>Родительский скрипт</mat-label>
+            <mat-select
+              [(ngModel)]="script.parentId"
+              name="parentId"
+            >
+              <mat-option value="">Нет родителя (корневой скрипт)</mat-option>
+              <mat-option
+                *ngFor="let availableScript of availableScripts()"
+                [value]="availableScript.id"
+                [disabled]="isEditMode && availableScript.id === script.id"
+              >
+                {{ availableScript.title }}
+                <span class="parent-indicator" *ngIf="availableScript.parentId"> (дочерний)</span>
+              </mat-option>
+            </mat-select>
+            <mat-hint *ngIf="parentScript">Создание дочернего скрипта для: {{ parentScript.title }}</mat-hint>
+          </mat-form-field>
         </div>
 
         <mat-form-field appearance="outline" class="modern-field">

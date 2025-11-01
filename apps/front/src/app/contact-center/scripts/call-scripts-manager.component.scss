@@ -885,41 +885,30 @@
   }
 }
 
-.title-cell {
+.script-hierarchy {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  width: 100%;
 }
 
-.avatar {
-  background: var(--primary-color, #667eea);
-  color: #fff;
-  border-radius: 50%;
-  width: 48px;
-  height: 48px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 20px;
-  flex-shrink: 0;
-}
-
-.title-meta {
+.hierarchy-indent {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: -10px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: #e5e7eb;
+  }
 }
 
-.title-main {
-  font-weight: 600;
-  color: var(--primary-color);
-  font-size: 14px;
-}
-
-.title-sub {
-  font-size: 12px;
-  color: #6b7280;
-  margin-top: 2px;
+.hierarchy-indent:first-child::before {
+  display: none;
 }

@@ -94,6 +94,10 @@ export class CallScriptCategoriesListPageComponent implements OnInit {
     this.loadCategories();
   }
 
+  goBack() {
+    this.router.navigate(['/contact-center/scripts']);
+  }
+
   loadCategories() {
     this.http.get<CallScriptCategory[]>(`${this.apiBase}/call-script-categories`).subscribe({
       next: (categories) => {

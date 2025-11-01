@@ -11,27 +11,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { HttpClient } from '@angular/common/http';
-
-export interface CallScript {
-  id: string;
-  title: string;
-  description: string;
-  categoryId: string;
-  category?: CallScriptCategory;
-  steps: string[];
-  questions: string[];
-  tips: string[];
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface CallScriptCategory {
-  id: string;
-  name: string;
-  description: string;
-  isActive: boolean;
-}
+import { CallScript, CallScriptCategory } from '../../../shared/interfaces/call-script.interface';
 
 @Component({
   selector: 'app-call-script-dialog',
@@ -59,17 +39,44 @@ export class CallScriptDialogComponent {
 
   script: Partial<CallScript> = {};
   categories = signal<CallScriptCategory[]>([]);
+  availableScripts = signal<CallScript[]>([]);
   isEditMode = false;
+  parentScript?: CallScript;
 
   ngOnInit() {
     this.script = { ...this.data.script };
     this.categories.set(this.data.categories || []);
     this.isEditMode = this.data.isEditMode || false;
+    this.parentScript = this.data.parentScript;
+
+    // If creating a child script, ensure parentId is set
+    if (this.parentScript && !this.isEditMode) {
+      this.script.parentId = this.parentScript.id;
+    }
 
     // Initialize arrays if not present
     if (!this.script.steps) this.script.steps = [];
     if (!this.script.questions) this.script.questions = [];
     if (!this.script.tips) this.script.tips = [];
+
+    // Load available scripts for parent selection (exclude current script and its descendants)
+    this.loadAvailableScripts();
+  }
+
+  private loadAvailableScripts() {
+    this.http.get<CallScript[]>('/api/call-scripts').subscribe({
+      next: (scripts) => {
+        // Filter out current script and its descendants to prevent circular references
+        let available = scripts;
+        if (this.isEditMode && this.script.id) {
+          available = available.filter(s => s.id !== this.script.id);
+        }
+        this.availableScripts.set(available);
+      },
+      error: (error) => {
+        console.error('Error loading available scripts:', error);
+      }
+    });
   }
 
   addStep() {
@@ -105,6 +112,7 @@ export class CallScriptDialogComponent {
 
     const scriptData = {
       ...this.script,
+      parentId: this.script.parentId || undefined, // Convert empty string to undefined
       steps: this.parseMultilineText(this.script.steps as string[]),
       questions: this.parseMultilineText(this.script.questions as string[]),
       tips: this.parseMultilineText(this.script.tips as string[])

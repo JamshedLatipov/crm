@@ -21,6 +21,14 @@
         </button>
 
         <button
+          mat-stroked-button
+          (click)="toggleViewMode()"
+        >
+          <mat-icon>{{ viewMode() === 'tree' ? 'list' : 'account_tree' }}</mat-icon>
+          {{ viewMode() === 'tree' ? 'Список' : 'Дерево' }}
+        </button>
+
+        <button
           mat-raised-button
           color="primary"
           (click)="createNewScript()"
@@ -71,8 +79,20 @@
 
   <!-- Content -->
   <div class="content-section">
-    <!-- Scripts List -->
-    <div class="scripts-list-section">
+    <!-- Tree View -->
+    <div class="tree-view-section" *ngIf="viewMode() === 'tree'">
+      <app-call-script-tree
+        [scripts]="scripts()"
+        [loading]="loading()"
+        (createChild)="createNewScript($event)"
+        (edit)="editScript($event)"
+        (delete)="deleteScript($event)"
+        (view)="viewScript($event)"
+      ></app-call-script-tree>
+    </div>
+
+    <!-- List View -->
+    <div class="scripts-list-section" *ngIf="viewMode() === 'list'">
       <crm-table
         [columns]="columns"
         [data]="tableData"
@@ -83,17 +103,21 @@
       <!-- Templates -->
       <ng-template #titleTemplate let-script>
         <div class="title-cell">
-          <div class="avatar circle">
-            {{ (script.title || '?').charAt(0) }}
-          </div>
-          <div class="title-meta">
-            <div class="title-main">
-              <a (click)="viewScript(script)" class="script-link">
-                {{ script.title }}
-              </a>
+          <div class="script-hierarchy">
+            <div class="hierarchy-indent" [style.padding-left.px]="(script.level || 0) * 20">
+              <div class="avatar circle">
+                {{ (script.title || '?').charAt(0) }}
+              </div>
             </div>
-            <div class="title-sub" *ngIf="script.subtitle">
-              {{ script.subtitle }}
+            <div class="title-meta">
+              <div class="title-main">
+                <a (click)="viewScript(script)" class="script-link">
+                  {{ script.title }}
+                </a>
+              </div>
+              <div class="title-sub" *ngIf="script.subtitle">
+                {{ script.subtitle }}
+              </div>
             </div>
           </div>
         </div>
@@ -118,6 +142,9 @@
       </ng-template>
 
       <ng-template #actionsTemplate let-script>
+        <button (click)="createNewScript(script)" mat-icon-button color="accent" class="add-child-btn" [attr.data-script-id]="script.id" title="Создать дочерний скрипт">
+          <mat-icon>add</mat-icon>
+        </button>
         <button (click)="editScript(script)" mat-icon-button color="primary" class="edit-btn" [attr.data-script-id]="script.id">
           <mat-icon>edit</mat-icon>
         </button>

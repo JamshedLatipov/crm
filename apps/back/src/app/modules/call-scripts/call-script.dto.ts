@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsEnum, IsBoolean, IsArray } from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsBoolean, IsArray, IsUUID, IsNumber } from 'class-validator';
 import { CallScriptCategory } from './entities/call-script.entity';
 
 export class CreateCallScriptDto {
@@ -31,6 +31,13 @@ export class CreateCallScriptDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  parentId?: string | null;
+
+  @IsOptional()
+  @IsNumber()
+  sortOrder?: number;
 }
 
 export class UpdateCallScriptDto {
@@ -64,4 +71,11 @@ export class UpdateCallScriptDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  parentId?: string | null;
+
+  @IsOptional()
+  @IsNumber()
+  sortOrder?: number;
 }

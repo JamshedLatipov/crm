@@ -1,0 +1,327 @@
+// Wrapper
+.call-script-tree-wrapper {
+  @apply w-full;
+}
+
+.call-script-tree {
+  @apply w-full;
+  padding: 0;
+  background: transparent;
+}
+
+// Tree node styles
+.tree-node-content {
+  @apply flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-all duration-200;
+  min-height: 56px;
+  position: relative;
+  border: 1px solid transparent;
+  background: var(--mat-sys-surface-container-lowest);
+  
+  &:hover {
+    background: var(--mat-sys-surface-container);
+    border-color: var(--mat-sys-outline-variant);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    
+    .action-menu-btn {
+      opacity: 1;
+    }
+  }
+
+  &.is-expanded {
+    background: var(--mat-sys-surface-container);
+    border-color: var(--mat-sys-outline-variant);
+  }
+
+  &.leaf-node {
+    background: var(--mat-sys-surface);
+  }
+
+  & + .tree-node-content {
+    margin-top: 6px;
+  }
+}
+
+// Node main content (left side)
+.node-main-content {
+  @apply flex items-center gap-2 flex-1 min-w-0;
+}
+
+// Toggle button
+.toggle-btn {
+  @apply flex-shrink-0 transition-transform duration-200;
+  width: 36px !important;
+  height: 36px !important;
+  
+  .toggle-icon {
+    @apply text-xl;
+    color: var(--mat-sys-on-surface-variant);
+    transition: transform 0.2s ease;
+  }
+  
+  &:hover .toggle-icon {
+    color: var(--mat-sys-on-surface);
+  }
+}
+
+.toggle-placeholder {
+  width: 36px;
+  flex-shrink: 0;
+}
+
+// Node icon wrapper
+.node-icon-wrapper {
+  @apply flex items-center justify-center flex-shrink-0 rounded-lg transition-all duration-200;
+  width: 40px;
+  height: 40px;
+  background: var(--mat-sys-primary-container);
+  
+  .node-icon {
+    @apply text-xl;
+    color: var(--mat-sys-on-primary-container);
+    
+    &.folder-icon {
+      color: var(--mat-sys-primary);
+    }
+    
+    &.document-icon {
+      color: var(--mat-sys-secondary);
+    }
+  }
+}
+
+.tree-node-content:hover .node-icon-wrapper {
+  background: var(--mat-sys-primary-container);
+  transform: scale(1.05);
+}
+
+// Node info
+.node-info {
+  @apply flex flex-col gap-0.5 flex-1 min-w-0 cursor-pointer;
+  
+  .node-title {
+    @apply text-sm font-medium truncate transition-colors duration-200;
+    color: var(--mat-sys-on-surface);
+    line-height: 1.4;
+  }
+  
+  .node-meta {
+    @apply text-xs truncate;
+    color: var(--mat-sys-on-surface-variant);
+    opacity: 0.7;
+  }
+  
+  &:hover .node-title {
+    color: var(--mat-sys-primary);
+  }
+}
+
+// Node actions (right side)
+.node-actions {
+  @apply flex items-center gap-2 flex-shrink-0;
+}
+
+// Status badge
+.status-badge {
+  @apply flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200;
+  
+  .status-icon {
+    @apply text-base;
+  }
+  
+  .status-text {
+    @apply hidden sm:inline;
+  }
+  
+  &.status-active {
+    background: rgba(76, 175, 80, 0.1);
+    color: #4CAF50;
+    
+    .status-icon {
+      color: #4CAF50;
+    }
+  }
+  
+  &.status-inactive {
+    background: rgba(158, 158, 158, 0.1);
+    color: #9E9E9E;
+    
+    .status-icon {
+      color: #9E9E9E;
+    }
+  }
+}
+
+// Category badge
+.category-badge {
+  @apply flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200;
+  background: var(--mat-sys-tertiary-container);
+  color: var(--mat-sys-on-tertiary-container);
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  
+  .category-icon {
+    @apply text-sm flex-shrink-0;
+  }
+}
+
+// Action menu button
+.action-menu-btn {
+  @apply flex-shrink-0 transition-all duration-200;
+  width: 36px !important;
+  height: 36px !important;
+  opacity: 0;
+  
+  mat-icon {
+    color: var(--mat-sys-on-surface-variant);
+  }
+  
+  &:hover mat-icon {
+    color: var(--mat-sys-on-surface);
+  }
+}
+
+// Tree children
+.tree-children {
+  margin-left: 20px;
+  padding-left: 20px;
+  border-left: 2px solid var(--mat-sys-outline-variant);
+  margin-top: 6px;
+}
+
+// Context menu styles
+::ng-deep .tree-context-menu {
+  .mat-mdc-menu-content {
+    padding: 8px;
+  }
+  
+  .mat-mdc-menu-item {
+    @apply rounded-md transition-all duration-150;
+    font-size: 14px;
+    min-height: 44px;
+    margin-bottom: 2px;
+    
+    mat-icon {
+      @apply mr-3;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+    
+    &:hover {
+      background: var(--mat-sys-surface-container-high);
+    }
+    
+    &.menu-item-view mat-icon {
+      color: var(--mat-sys-primary);
+    }
+    
+    &.menu-item-add mat-icon {
+      color: #4CAF50;
+    }
+    
+    &.menu-item-edit mat-icon {
+      color: var(--mat-sys-tertiary);
+    }
+    
+    &.menu-item-delete {
+      color: var(--mat-sys-error);
+      
+      &:hover {
+        background: rgba(244, 67, 54, 0.08);
+      }
+    }
+  }
+  
+  mat-divider {
+    margin: 6px 0;
+  }
+}
+
+// Empty state
+.empty-state {
+  @apply flex items-center justify-center py-20 px-6;
+  
+  .empty-state-content {
+    @apply flex flex-col items-center text-center max-w-sm;
+    
+    .empty-state-icon {
+      @apply flex items-center justify-center rounded-full mb-6;
+      width: 80px;
+      height: 80px;
+      background: var(--mat-sys-surface-container-high);
+      
+      mat-icon {
+        font-size: 48px;
+        width: 48px;
+        height: 48px;
+        color: var(--mat-sys-on-surface-variant);
+        opacity: 0.5;
+      }
+    }
+    
+    .empty-state-title {
+      @apply text-lg font-semibold mb-2;
+      color: var(--mat-sys-on-surface);
+      margin: 0;
+    }
+    
+    .empty-state-description {
+      @apply text-sm;
+      color: var(--mat-sys-on-surface-variant);
+      opacity: 0.8;
+      margin: 0;
+      line-height: 1.5;
+    }
+  }
+}
+
+// Loading state
+.loading-state {
+  @apply flex items-center justify-center py-16 px-6;
+  
+  .loading-content {
+    @apply flex flex-col items-center text-center;
+    
+    .loading-spinner {
+      @apply mb-4;
+      font-size: 48px;
+      width: 48px;
+      height: 48px;
+      color: var(--mat-sys-primary);
+      animation: spin 1s linear infinite;
+    }
+    
+    .loading-text {
+      @apply text-sm;
+      color: var(--mat-sys-on-surface-variant);
+      margin: 0;
+    }
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+// Tree invisible class for collapsed nodes
+.tree-invisible {
+  display: none;
+}
+
+// Material tree overrides
+::ng-deep {
+  .mat-nested-tree-node {
+    min-height: auto;
+  }
+  
+  .mat-tree-node {
+    min-height: auto;
+  }
+  
+  .mat-tree {
+    background: transparent;
+  }
+}

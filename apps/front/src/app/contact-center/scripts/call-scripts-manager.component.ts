@@ -17,20 +17,8 @@ import { CrmTableComponent, CrmColumn } from '../../../../src/app/shared/compone
 import { CallScriptCategory } from './call-script-category-dialog/call-script-category-dialog.component';
 import { CallScriptDialogComponent } from './call-script-dialog/call-script-dialog.component';
 import { RouterLink, RouterModule, Router } from "@angular/router";
-
-export interface CallScript {
-  id: string;
-  title: string;
-  description: string;
-  categoryId: string;
-  category?: CallScriptCategory;
-  steps: string[];
-  questions: string[];
-  tips: string[];
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { CallScript, CallScriptTree } from '../../shared/interfaces/call-script.interface';
+import { CallScriptTreeComponent } from './call-script-tree/call-script-tree.component';
 
 @Component({
   selector: 'app-call-scripts-manager',
@@ -50,12 +38,12 @@ export interface CallScript {
     DatePipe,
     CrmTableComponent,
     RouterModule,
-    RouterLink
+    CallScriptTreeComponent
 ],
   templateUrl: './call-scripts-manager.component.html',
   styleUrls: ['./call-scripts-manager.component.scss']
 })
-export class CallScriptsManagerComponent implements AfterViewInit {
+export class CallScriptsManagerComponent {
   private http = inject(HttpClient);
   private dialog = inject(MatDialog);
   private router = inject(Router);
@@ -69,18 +57,19 @@ export class CallScriptsManagerComponent implements AfterViewInit {
 
   @Input() templates: { [key: string]: TemplateRef<any> } = {};
 
-  scripts = signal<CallScript[]>([]);
+  scripts = signal<CallScriptTree[]>([]);
   loading = signal(false);
   searchQuery = signal('');
   categories = signal<CallScriptCategory[]>([]);
+  viewMode = signal<'list' | 'tree'>('tree');
 
   // Filter properties
   selectedCategoryId = '';
   selectedStatus = '';
 
   // Computed signals for statistics
-  activeScriptsCount = computed(() => this.scripts().filter(s => s.isActive).length);
-  totalScriptsCount = computed(() => this.scripts().length);
+  activeScriptsCount = computed(() => this.flattenScripts(this.scripts()).filter(s => s.isActive).length);
+  totalScriptsCount = computed(() => this.flattenScripts(this.scripts()).length);
 
   // Table columns configuration
   columns: CrmColumn[] = [
@@ -115,7 +104,8 @@ export class CallScriptsManagerComponent implements AfterViewInit {
   get tableData(): any[] {
     return this.filteredScripts.map(script => ({
       ...script,
-      subtitle: script.description || 'Без описания'
+      subtitle: script.description || 'Без описания',
+      level: this.getScriptLevel(script)
     }));
   }
 
@@ -134,10 +124,6 @@ export class CallScriptsManagerComponent implements AfterViewInit {
     this.loadScripts();
   }
 
-  ngAfterViewInit() {
-    // Templates are now available after view init
-  }
-
   loadCategories() {
     this.http.get<CallScriptCategory[]>(`${this.apiBase}/call-script-categories/active`).subscribe({
       next: (categories) => {
@@ -151,7 +137,11 @@ export class CallScriptsManagerComponent implements AfterViewInit {
 
   loadScripts() {
     this.loading.set(true);
-    this.http.get<CallScript[]>(`${this.apiBase}/call-scripts`).subscribe({
+    const url = this.viewMode() === 'tree'
+      ? `${this.apiBase}/call-scripts?tree=true&active=true`
+      : `${this.apiBase}/call-scripts`;
+
+    this.http.get<CallScriptTree[]>(url).subscribe({
       next: (scripts) => {
         this.scripts.set(scripts);
         this.loading.set(false);
@@ -163,15 +153,40 @@ export class CallScriptsManagerComponent implements AfterViewInit {
     });
   }
 
+  private flattenScripts(scripts: CallScriptTree[]): CallScript[] {
+    const result: CallScript[] = [];
+    const flatten = (scripts: CallScriptTree[], level = 0) => {
+      for (const script of scripts) {
+        result.push({ ...script, level: level } as CallScript & { level: number });
+        if (script.children && script.children.length > 0) {
+          flatten(script.children as CallScriptTree[], level + 1);
+        }
+      }
+    };
+    flatten(scripts);
+    return result;
+  }
+
+  private getScriptLevel(script: CallScript): number {
+    let level = 0;
+    let current = script;
+    while (current.parent) {
+      level++;
+      current = current.parent;
+    }
+    return level;
+  }
+
   get filteredScripts(): CallScript[] {
-    let filtered = this.scripts();
+    const allScripts = this.flattenScripts(this.scripts());
+    let filtered = allScripts;
 
     // Text search
     const query = this.searchQuery().toLowerCase();
     if (query) {
       filtered = filtered.filter(script =>
         script.title.toLowerCase().includes(query) ||
-        script.description.toLowerCase().includes(query) ||
+        script.description?.toLowerCase().includes(query) ||
         (script.category?.name || '').toLowerCase().includes(query)
       );
     }
@@ -200,7 +215,12 @@ export class CallScriptsManagerComponent implements AfterViewInit {
     this.searchQuery.set(this.searchQuery());
   }
 
-  createNewScript() {
+  toggleViewMode() {
+    this.viewMode.update(mode => mode === 'list' ? 'tree' : 'list');
+    this.loadScripts();
+  }
+
+  createNewScript(parentScript?: CallScript) {
     const defaultCategoryId = this.categories().length > 0 ? this.categories()[0].id : '';
     const dialogRef = this.dialog.open(CallScriptDialogComponent, {
       width: '90vw',
@@ -212,13 +232,16 @@ export class CallScriptsManagerComponent implements AfterViewInit {
           title: '',
           description: '',
           categoryId: defaultCategoryId,
+          parentId: parentScript?.id,
           steps: [],
           questions: [],
           tips: [],
-          isActive: true
+          isActive: true,
+          sortOrder: 0
         },
         categories: this.categories(),
-        isEditMode: false
+        isEditMode: false,
+        parentScript
       }
     });
 
@@ -255,15 +278,17 @@ export class CallScriptsManagerComponent implements AfterViewInit {
       title: scriptData.title,
       description: scriptData.description,
       categoryId: scriptData.categoryId,
+      parentId: scriptData.parentId,
       steps: scriptData.steps,
       questions: scriptData.questions,
       tips: scriptData.tips,
-      isActive: scriptData.isActive
+      isActive: scriptData.isActive,
+      sortOrder: scriptData.sortOrder
     };
 
     this.http.post<CallScript>(`${this.apiBase}/call-scripts`, createData).subscribe({
       next: (savedScript) => {
-        this.scripts.update(scripts => [...scripts, savedScript]);
+        this.loadScripts(); // Reload to get updated tree structure
       },
       error: (error) => {
         console.error('Error saving script:', error);
@@ -277,17 +302,17 @@ export class CallScriptsManagerComponent implements AfterViewInit {
       title: script.title,
       description: script.description,
       categoryId: script.categoryId,
+      parentId: script.parentId,
       steps: script.steps,
       questions: script.questions,
       tips: script.tips,
-      isActive: script.isActive
+      isActive: script.isActive,
+      sortOrder: script.sortOrder
     };
 
     this.http.patch<CallScript>(`${this.apiBase}/call-scripts/${script.id}`, updateData).subscribe({
       next: (updatedScript) => {
-        this.scripts.update(scripts =>
-          scripts.map(s => s.id === script.id ? updatedScript : s)
-        );
+        this.loadScripts(); // Reload to get updated tree structure
       },
       error: (error) => {
         console.error('Error updating script:', error);
@@ -296,11 +321,11 @@ export class CallScriptsManagerComponent implements AfterViewInit {
   }
 
   deleteScript(script: CallScript) {
-    if (!confirm(`Удалить скрипт "${script.title}"?`)) return;
+    if (!confirm(`Удалить скрипт "${script.title}"?\n\nВсе дочерние скрипты также будут удалены.`)) return;
 
     this.http.delete(`${this.apiBase}/call-scripts/${script.id}`).subscribe({
       next: () => {
-        this.scripts.update(scripts => scripts.filter(s => s.id !== script.id));
+        this.loadScripts(); // Reload to get updated tree structure
       },
       error: (error) => {
         console.error('Error deleting script:', error);

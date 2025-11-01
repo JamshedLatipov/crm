@@ -1,9 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany, Tree, TreeChildren, TreeParent } from 'typeorm';
 import { CallScriptCategory } from './call-script-category.entity';
 
 export { CallScriptCategory };
 
 @Entity('call_scripts')
+@Tree('materialized-path')
 export class CallScript {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -21,6 +22,15 @@ export class CallScript {
   @Column()
   categoryId: string;
 
+  @TreeParent()
+  parent: CallScript;
+
+  @Column({ nullable: true })
+  parentId: string;
+
+  @TreeChildren()
+  children: CallScript[];
+
   @Column({ type: 'simple-array', nullable: true })
   steps: string[];
 
@@ -32,6 +42,9 @@ export class CallScript {
 
   @Column({ default: true })
   isActive: boolean;
+
+  @Column({ default: 0 })
+  sortOrder: number;
 
   @CreateDateColumn()
   createdAt: Date;
