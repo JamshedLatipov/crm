@@ -1,15 +1,4 @@
 <div class="call-history-container">
-  <!-- Header -->
-  <div class="header">
-    <h3 class="title">
-      <mat-icon>history</mat-icon>
-      История звонков
-    </h3>
-    <button mat-icon-button (click)="refreshHistory()" [disabled]="isLoading()">
-      <mat-icon>refresh</mat-icon>
-    </button>
-  </div>
-
   <!-- Filters -->
   <div class="filters">
     <mat-form-field appearance="outline" class="search-field">
@@ -17,6 +6,9 @@
       <input matInput [(ngModel)]="searchQuery" (ngModelChange)="onSearchChange($event)" placeholder="Поиск по номеру...">
       <mat-icon matSuffix>search</mat-icon>
     </mat-form-field>
+    <button mat-icon-button (click)="refreshHistory()" [disabled]="isLoading()" class="refresh-btn">
+      <mat-icon>refresh</mat-icon>
+    </button>
   </div>
 
   <!-- Content -->
@@ -103,9 +95,13 @@
   </div>
 
   <!-- Pagination -->
-  <div class="pagination" *ngIf="!isLoading() && !error() && calls() && calls().length > 0">
-    <button mat-stroked-button (click)="previousPage()" [disabled]="currentPage() === 1">Previous</button>
-    <span>{{ currentPage() }} of {{ totalPages() }}</span>
-    <button mat-stroked-button (click)="nextPage()" [disabled]="currentPage() === totalPages()">Next</button>
-  </div>
+  <mat-paginator
+    *ngIf="!isLoading() && !error() && calls() && calls().length > 0"
+    [length]="totalRecords()"
+    [pageSize]="pageSize()"
+    [pageSizeOptions]="[10, 20, 50, 100]"
+    (page)="onPageChange($event)"
+    showFirstLastButtons
+    class="custom-paginator">
+  </mat-paginator>
 </div>

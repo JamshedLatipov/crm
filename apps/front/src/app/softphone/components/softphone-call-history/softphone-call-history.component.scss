@@ -3,39 +3,50 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem;
-  border-bottom: 1px solid #e5e7eb;
-  background: #f9fafb;
-}
-
-.title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #1f2937;
-  margin: 0;
-
-  mat-icon {
-    color: #6366f1;
-  }
-}
-
 .filters {
   display: flex;
+  align-items: center;
   gap: 1rem;
   padding: 0.75rem;
   border-bottom: 1px solid #e5e7eb;
   background: #f9fafb;
 
-  .search-field,
-  .date-field {
+  .search-field {
     flex: 1;
+
+    ::ng-deep .mat-mdc-form-field-outline {
+      height: 40px;
+    }
+
+    ::ng-deep .mat-mdc-form-field-flex {
+      height: 40px;
+    }
+
+    ::ng-deep .mdc-text-field {
+      height: 40px;
+    }
+
+    ::ng-deep .mdc-text-field__input {
+      height: 40px;
+      padding-top: 0;
+      padding-bottom: 0;
+      display: flex;
+      align-items: center;
+    }
+  }
+
+  .refresh-btn {
+    color: #6b7280;
+
+    &:hover {
+      color: #374151;
+      background: #e5e7eb;
+    }
+
+    &[disabled] {
+      color: #d1d5db;
+      cursor: not-allowed;
+    }
   }
 }
 
@@ -264,9 +275,29 @@
   }
 }
 
+.custom-paginator {
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+
+  ::ng-deep .mat-mdc-paginator-container {
+    justify-content: center;
+    padding: 0.75rem;
+  }
+
+  ::ng-deep .mat-mdc-paginator-page-size {
+    display: none;
+  }
+
+  ::ng-deep .mat-mdc-paginator-range-label {
+    margin: 0 1rem;
+    font-weight: 500;
+    color: #374151;
+  }
+}
+
 @media (max-width: 768px) {
   .filters {
-    flex-direction: column;
+    gap: 0.5rem;
   }
 
   .calls-table {

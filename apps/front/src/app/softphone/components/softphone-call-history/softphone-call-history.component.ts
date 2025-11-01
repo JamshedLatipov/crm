@@ -1,4 +1,4 @@
-import { Component, signal, computed, inject, OnInit, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, Input, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -7,6 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatPaginatorModule, MatPaginator } from '@angular/material/paginator';
 import { SoftphoneCallHistoryService } from '../../services/softphone-call-history.service';
 import { CdrRecord, CdrQuery, CdrResponse } from '../../types/cdr.types';
 import { environment } from '../../../../environments/environment';
@@ -23,13 +24,16 @@ import { endOfToday, startOfToday } from 'date-fns';
     MatFormFieldModule,
     MatInputModule,
     MatTooltipModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    MatPaginatorModule
   ],
   templateUrl: './softphone-call-history.component.html',
   styleUrls: ['./softphone-call-history.component.scss']
 })
 export class SoftphoneCallHistoryComponent implements OnInit, OnChanges {
   private historyService = inject(SoftphoneCallHistoryService);
+
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
 
   // Input properties
   @Input() operatorId: string | null = null;
@@ -113,9 +117,15 @@ export class SoftphoneCallHistoryComponent implements OnInit, OnChanges {
         this.calls.set(response.data);
         this.totalRecords.set(response.total);
         this.totalPages.set(Math.ceil(response.total / this.pageSize()));
+
+        // Update paginator if it exists
+        if (this.paginator) {
+          this.paginator.length = response.total;
+          this.paginator.pageIndex = this.currentPage() - 1; // MatPaginator uses 0-based indexing
+        }
       }
     } catch (err) {
-      this.error.set(err instanceof Error ? err.message : 'Failed to load call history');
+      this.error.set(err instanceof Error ? err.message : 'Не удалось загрузить историю звонков');
       console.error('Error loading call history:', err);
     } finally {
       this.isLoading.set(false);
@@ -144,18 +154,10 @@ export class SoftphoneCallHistoryComponent implements OnInit, OnChanges {
     this.loadCallHistory();
   }
 
-  previousPage(): void {
-    if (this.currentPage() > 1) {
-      this.currentPage.set(this.currentPage() - 1);
-      this.loadCallHistory();
-    }
-  }
-
-  nextPage(): void {
-    if (this.currentPage() < this.totalPages()) {
-      this.currentPage.set(this.currentPage() + 1);
-      this.loadCallHistory();
-    }
+  onPageChange(event: any): void {
+    this.currentPage.set(event.pageIndex + 1); // Convert from 0-based to 1-based
+    this.pageSize.set(event.pageSize);
+    this.loadCallHistory();
   }
 
   getPaginationInfo(): string {

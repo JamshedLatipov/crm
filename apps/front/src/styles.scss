@@ -1,4 +1,3 @@
-
 // Include theming for Angular Material with `mat.theme()`.
 // This Sass mixin will define CSS variables that are used for styling Angular Material
 // components according to the Material 3 design spec.
@@ -15,14 +14,16 @@
 // @use 'app/pipeline/analytics-modal.component.scss';
 
 html {
-  @include mat.theme((
-    color: (
-      primary: mat.$azure-palette,
-      tertiary: mat.$blue-palette,
-    ),
-    typography: Roboto,
-    density: 0,
-  ));
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$azure-palette,
+        tertiary: mat.$blue-palette,
+      ),
+      typography: Roboto,
+      density: 0,
+    )
+  );
 }
 
 body {
@@ -46,7 +47,6 @@ body {
 @tailwind utilities;
 
 /* You can add global styles to this file, and also import other style files */
-
 
 :root {
   --primary-color: #4285f4;
@@ -97,16 +97,22 @@ body {
   font-feature-settings: 'liga';
 }
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+html,
+body {
+  height: 100%;
+}
+body {
+  margin: 0;
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+}
 
 /* Primary buttons visual style overrides (applies to Angular Material primary buttons) */
 .mat-raised-button.mat-primary,
 .mat-flat-button.mat-primary,
 button.mat-raised-button.mat-primary,
 button.mat-flat-button.mat-primary,
-button[mat-raised-button][color="primary"],
-button[mat-flat-button][color="primary"] {
+button[mat-raised-button][color='primary'],
+button[mat-flat-button][color='primary'] {
   background-color: #4285f4 !important;
   color: #ffffff !important;
   border-radius: 8px !important;
@@ -118,27 +124,29 @@ button[mat-flat-button][color="primary"] {
 /* Ensure icons inside primary buttons are white */
 .mat-raised-button.mat-primary .mat-icon,
 .mat-flat-button.mat-primary .mat-icon,
-button[mat-raised-button][color="primary"] .mat-icon,
-button[mat-flat-button][color="primary"] .mat-icon {
+button[mat-raised-button][color='primary'] .mat-icon,
+button[mat-flat-button][color='primary'] .mat-icon {
   color: #ffffff !important;
 }
 
 /* Slight hover/active states to match a standard primary button */
 .mat-raised-button.mat-primary:hover,
 .mat-flat-button.mat-primary:hover,
-button[mat-raised-button][color="primary"]:hover,
-button[mat-flat-button][color="primary"]:hover {
+button[mat-raised-button][color='primary']:hover,
+button[mat-flat-button][color='primary']:hover {
   background-color: #3977e6 !important; /* slightly darker */
 }
 
 /* Disabled primary buttons */
 .mat-raised-button.mat-primary.mat-button-disabled,
-button[mat-raised-button][color="primary"].mat-button-disabled {
-  background-color: rgba(66,133,244,0.5) !important;
-  color: rgba(255,255,255,0.7) !important;
+button[mat-raised-button][color='primary'].mat-button-disabled {
+  background-color: rgba(66, 133, 244, 0.5) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
 }
 .mat-mdc-dialog-surface {
-    overflow: hidden !important;
+  overflow: hidden !important;
+  height: unset !important;
+  max-height: unset !important;
 }
 
 /*
@@ -183,7 +191,10 @@ textarea.mat-input-element:focus {
 .mat-mdc-option .mat-icon,
 .mat-mdc-option .mat-pseudo-checkbox-full,
 .cdk-overlay-pane .mat-mdc-select-panel .mat-mdc-option .mat-icon,
-.cdk-overlay-pane .mat-mdc-select-panel .mat-mdc-option .mat-pseudo-checkbox-full,
+.cdk-overlay-pane
+  .mat-mdc-select-panel
+  .mat-mdc-option
+  .mat-pseudo-checkbox-full,
 .cdk-overlay-pane .mat-select-panel .mat-option .mat-icon,
 .cdk-overlay-pane .mat-select-panel .mat-option .mat-pseudo-checkbox-full {
   margin-right: -8px !important;
@@ -195,4 +206,73 @@ textarea.mat-input-element:focus {
 .cdk-overlay-pane .mat-select-panel .mat-option {
   display: flex !important;
   align-items: center !important;
+}
+
+/* Call Script Preview Dialog Styles */
+.preview-dialog-container {
+  min-width: 700px !important;
+  max-width: 900px !important;
+  max-height: 90vh !important;
+  background: white !important;
+  border-radius: 1rem !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1) !important;
+  overflow: hidden !important;
+}
+
+.dialog-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-direction: column !important;
+  padding: 2rem 2rem 1.5rem !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+  text-align: center !important;
+}
+
+.dialog-title {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.75rem !important;
+  font-size: 1.8rem !important;
+  font-weight: 700 !important;
+  margin: 0 0 0.5rem 0 !important;
+  line-height: 1.2 !important;
+}
+
+.dialog-title mat-icon {
+  font-size: 2rem !important;
+  width: 2rem !important;
+  height: 2rem !important;
+}
+
+.dialog-subtitle {
+  font-size: 1rem !important;
+  opacity: 0.9 !important;
+  margin: 0 !important;
+  line-height: 1.4 !important;
+}
+
+.dialog-content {
+  padding: 2rem !important;
+  max-height: 60vh !important;
+  overflow-y: auto !important;
+  background: white !important;
+}
+
+.dialog-actions {
+  padding: 1rem 2rem !important;
+  background: white !important;
+  border-top: 1px solid #f3f4f6 !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 1rem !important;
+  margin: 0 !important;
+}
+
+.action-buttons {
+  display: flex !important;
+  gap: 0.75rem !important;
 }

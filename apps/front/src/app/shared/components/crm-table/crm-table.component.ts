@@ -15,6 +15,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { BehaviorSubject } from 'rxjs';
 
 export interface CrmColumn {
@@ -114,7 +115,7 @@ export interface CrmColumn {
               >
               <ng-container *ngIf="col.key === 'actions'">
                 <div class="actions-cell">
-                  <span class="actions-inner">{{ renderCell(row, col) }}</span>
+                  <span class="actions-inner" [innerHTML]="renderCell(row, col)"></span>
                 </div>
               </ng-container>
             </div>
@@ -275,19 +276,13 @@ export interface CrmColumn {
         color: #6b7280;
         margin-top: 2px;
       }
-      /* actions shown on hover - matching deals style */
+      /* actions always visible */
       .actions-cell {
-        opacity: 0;
-        transition: opacity 0.2s ease;
         display: flex;
         align-items: center;
         justify-content: flex-end;
         gap: 8px;
         width: 120px;
-      }
-      .mat-row:hover .actions-cell,
-      .mat-mdc-row:hover .actions-cell {
-        opacity: 1;
       }
       .actions-inner {
         display: flex;
@@ -400,6 +395,8 @@ export class CrmTableComponent implements AfterViewInit {
   private selected = new Set<any>();
   allSelected = false;
 
+  constructor(private sanitizer: DomSanitizer) {}
+
   ngAfterViewInit(): void {
     this.setupColumns();
     this.reload();
@@ -438,9 +435,15 @@ export class CrmTableComponent implements AfterViewInit {
     this.rowClick.emit(row);
   }
 
-  renderCell(row: any, col: CrmColumn) {
+  renderCell(row: any, col: CrmColumn): string | SafeHtml {
     try {
-      if (col.cell) return col.cell(row);
+      if (col.cell) {
+        const result = col.cell(row);
+        if (col.key === 'actions') {
+          return this.sanitizer.bypassSecurityTrustHtml(result as string);
+        }
+        return result;
+      }
       return row[col.key] ?? '';
     } catch {
       return '';

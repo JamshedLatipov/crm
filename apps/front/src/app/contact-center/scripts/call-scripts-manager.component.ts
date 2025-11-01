@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -12,9 +12,11 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { CrmTableComponent, CrmColumn } from '../../../../src/app/shared/components/crm-table/crm-table.component';
 import { CallScriptCategory } from './call-script-category-dialog.component';
 import { CallScriptCategoriesListDialogComponent } from './call-script-categories-list-dialog.component';
 import { CallScriptDialogComponent } from './call-script-dialog/call-script-dialog.component';
+import { CallScriptPreviewDialogComponent } from './call-script-preview-dialog/call-script-preview-dialog.component';
 
 export interface CallScript {
   id: string;
@@ -44,7 +46,9 @@ export interface CallScript {
     MatSelectModule,
     MatCardModule,
     MatChipsModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    CrmTableComponent,
+    CallScriptPreviewDialogComponent
   ],
   templateUrl: './call-scripts-manager.component.html',
   styleUrls: ['./call-scripts-manager.component.scss']
@@ -56,7 +60,6 @@ export class CallScriptsManagerComponent {
 
   scripts = signal<CallScript[]>([]);
   loading = signal(false);
-  selectedScript = signal<CallScript | null>(null);
   searchQuery = signal('');
   categories = signal<CallScriptCategory[]>([]);
 
@@ -67,6 +70,50 @@ export class CallScriptsManagerComponent {
   // Computed signals for statistics
   activeScriptsCount = computed(() => this.scripts().filter(s => s.isActive).length);
   totalScriptsCount = computed(() => this.scripts().length);
+
+  // Table columns configuration
+  columns: CrmColumn[] = [
+    {
+      key: 'title',
+      label: 'Название',
+      cell: (script: CallScript) => script.title
+    },
+    {
+      key: 'category',
+      label: 'Категория',
+      cell: (script: CallScript) => script.category?.name || 'Без категории'
+    },
+    {
+      key: 'status',
+      label: 'Статус',
+      cell: (script: CallScript) => script.isActive ? 'Активен' : 'Неактивен'
+    },
+    {
+      key: 'updatedAt',
+      label: 'Обновлено',
+      cell: (script: CallScript) => new Date(script.updatedAt).toLocaleDateString('ru-RU')
+    },
+    {
+      key: 'actions',
+      label: 'Действия',
+      cell: (script: CallScript) => `
+        <button mat-icon-button color="primary" class="edit-btn" data-script-id="${script.id}">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button mat-icon-button color="warn" class="delete-btn" data-script-id="${script.id}">
+          <mat-icon>delete</mat-icon>
+        </button>
+      `
+    }
+  ];
+
+  // Prepare data for table with subtitle
+  get tableData(): any[] {
+    return this.filteredScripts.map(script => ({
+      ...script,
+      subtitle: script.description || 'Без описания'
+    }));
+  }
 
   ngOnInit() {
     this.loadCategories();
@@ -136,7 +183,7 @@ export class CallScriptsManagerComponent {
   }
 
   selectScript(script: CallScript) {
-    this.selectedScript.set(script);
+    this.openPreviewDialog(script);
   }
 
   createNewScript() {
@@ -189,7 +236,18 @@ export class CallScriptsManagerComponent {
   }
 
   saveScript(scriptData: Partial<CallScript>) {
-    this.http.post<CallScript>(`${this.apiBase}/call-scripts`, scriptData).subscribe({
+    // Create create object with only the fields that exist in the entity
+    const createData: Partial<CallScript> = {
+      title: scriptData.title,
+      description: scriptData.description,
+      categoryId: scriptData.categoryId,
+      steps: scriptData.steps,
+      questions: scriptData.questions,
+      tips: scriptData.tips,
+      isActive: scriptData.isActive
+    };
+
+    this.http.post<CallScript>(`${this.apiBase}/call-scripts`, createData).subscribe({
       next: (savedScript) => {
         this.scripts.update(scripts => [...scripts, savedScript]);
       },
@@ -200,12 +258,22 @@ export class CallScriptsManagerComponent {
   }
 
   updateScript(script: CallScript) {
-    this.http.put<CallScript>(`${this.apiBase}/call-scripts/${script.id}`, script).subscribe({
+    // Create update object with only the fields that exist in the entity
+    const updateData: Partial<CallScript> = {
+      title: script.title,
+      description: script.description,
+      categoryId: script.categoryId,
+      steps: script.steps,
+      questions: script.questions,
+      tips: script.tips,
+      isActive: script.isActive
+    };
+
+    this.http.patch<CallScript>(`${this.apiBase}/call-scripts/${script.id}`, updateData).subscribe({
       next: (updatedScript) => {
         this.scripts.update(scripts =>
           scripts.map(s => s.id === script.id ? updatedScript : s)
         );
-        this.selectedScript.set(updatedScript);
       },
       error: (error) => {
         console.error('Error updating script:', error);
@@ -219,9 +287,6 @@ export class CallScriptsManagerComponent {
     this.http.delete(`${this.apiBase}/call-scripts/${script.id}`).subscribe({
       next: () => {
         this.scripts.update(scripts => scripts.filter(s => s.id !== script.id));
-        if (this.selectedScript()?.id === script.id) {
-          this.selectedScript.set(null);
-        }
       },
       error: (error) => {
         console.error('Error deleting script:', error);
@@ -229,31 +294,60 @@ export class CallScriptsManagerComponent {
     });
   }
 
-  cancelEdit() {
-    this.selectedScript.set(null);
+  // Table event handlers
+  onTableRowClick(script: any) {
+    this.openPreviewDialog(script);
   }
 
-  getCategoryLabel(categoryId: string): string {
-    const category = this.categories().find(c => c.id === categoryId);
-    return category?.name || categoryId;
+  openPreviewDialog(script: CallScript) {
+    const dialogRef = this.dialog.open(CallScriptPreviewDialogComponent, {
+      width: '90vw',
+      maxWidth: '900px',
+      height: '90vh',
+      maxHeight: '800px',
+      data: { script }
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result?.action === 'edit') {
+        this.editScript(result.script);
+      } else if (result?.action === 'delete') {
+        this.deleteScript(result.script);
+      }
+    });
   }
 
-  trackByScriptId(index: number, script: CallScript): string {
-    return script.id;
-  }
-
-  // Category management methods
   openCategoriesDialog() {
     const dialogRef = this.dialog.open(CallScriptCategoriesListDialogComponent, {
       width: '90vw',
       maxWidth: '1200px',
-      height: '80vh',
-      maxHeight: '700px'
+      height: '90vh',
+      maxHeight: '800px'
     });
 
-    // После закрытия модалки перезагрузим категории
     dialogRef.afterClosed().subscribe(() => {
+      // Reload categories after dialog closes
       this.loadCategories();
     });
+  }
+
+  @HostListener('click', ['$event'])
+  onTableActionClick(event: Event) {
+    const target = event.target as HTMLElement;
+    const button = target.closest('button.edit-btn, button.delete-btn') as HTMLButtonElement;
+    if (!button) return;
+
+    event.stopPropagation();
+    const scriptId = button.getAttribute('data-script-id');
+    if (!scriptId) return;
+
+    const script = this.scripts().find(s => s.id === scriptId);
+    if (!script) return;
+
+    if (button.classList.contains('edit-btn')) {
+      this.editScript(script);
+    } else if (button.classList.contains('delete-btn')) {
+      this.deleteScript(script);
+    }
   }
 }
