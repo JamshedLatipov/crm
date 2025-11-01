@@ -1,0 +1,58 @@
+<div class="dialog-container">
+  <div class="dialog-header">
+    <h2 class="dialog-title">{{ isEditMode() ? 'Редактирование категории' : 'Создание категории' }}</h2>
+    <p class="dialog-subtitle">
+      {{ isEditMode() ? 'Обновите информацию о категории' : 'Создайте новую категорию для организации скриптов' }}
+    </p>
+  </div>
+
+  <mat-dialog-content class="dialog-content">
+    <form class="category-form" #form="ngForm" *ngIf="!loading()">
+      <div class="form-section">
+        <div class="form-grid">
+          <mat-form-field appearance="outline" class="modern-field">
+            <mat-label>Название категории <span class="required-indicator">*</span></mat-label>
+            <input matInput [(ngModel)]="categoryData.name" name="name" required placeholder="Введите название категории" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="modern-field">
+            <mat-label>Цвет категории</mat-label>
+            <input matInput type="color" [(ngModel)]="categoryData.color" name="color" />
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="modern-field">
+          <mat-label>Описание</mat-label>
+          <textarea matInput [(ngModel)]="categoryData.description" name="description" rows="3" placeholder="Краткое описание категории"></textarea>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="modern-field">
+          <mat-label>Порядок сортировки</mat-label>
+          <input matInput type="number" [(ngModel)]="categoryData.sortOrder" name="sortOrder" min="0" />
+        </mat-form-field>
+
+        <mat-checkbox [(ngModel)]="categoryData.isActive" name="isActive" class="modern-checkbox">
+          Активная категория
+        </mat-checkbox>
+      </div>
+    </form>
+
+    <!-- Loading -->
+    <div *ngIf="loading()" class="loading-state">
+      <mat-icon>hourglass_empty</mat-icon>
+      <p>Загрузка категории...</p>
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions class="dialog-actions" *ngIf="!loading()">
+    <button mat-stroked-button (click)="onCancel()" class="cancel-btn">
+      <mat-icon>close</mat-icon>
+      Отмена
+    </button>
+    <button mat-raised-button color="primary" (click)="onSave()" [disabled]="saving() || !categoryData.name?.trim()" class="save-btn">
+      <mat-icon *ngIf="saving()">hourglass_empty</mat-icon>
+      <mat-icon *ngIf="!saving()">{{ isEditMode() ? 'save' : 'add' }}</mat-icon>
+      {{ saving() ? 'Сохранение...' : (isEditMode() ? 'Сохранить изменения' : 'Создать категорию') }}
+    </button>
+  </mat-dialog-actions>
+</div>

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Input, TemplateRef, ViewChild, AfterViewInit } from '@angular/core';
 import { AdsService, Campaign } from '../../services/ads.service';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -11,18 +11,32 @@ import { CrmTableComponent, CrmColumn } from '../../shared/components/crm-table/
     <div class="p-4">
       <h2 class="text-xl mb-4">Advertising campaigns</h2>
       <div *ngIf="loading">Loading...</div>
-      <crm-table *ngIf="!loading" [title]="'Campaigns'" [columns]="columns" [data]="campaigns" [pageSize]="10" (rowClick)="onRowClicked($event)"></crm-table>
+      <crm-table *ngIf="!loading" [columns]="columns" [data]="campaigns" [pageSize]="10" [templates]="tableTemplates" (rowClick)="onRowClicked($event)"></crm-table>
     </div>
+
+    <ng-template #tableTitleTemplate>
+      <h3>Campaigns</h3>
+    </ng-template>
+
+    <ng-template #actionsTemplate let-campaign>
+      View metrics
+    </ng-template>
   `,
   imports: [CommonModule, CrmTableComponent]
 })
-export class AdsCampaignsComponent implements OnInit {
+export class AdsCampaignsComponent implements OnInit, AfterViewInit {
   campaigns: Campaign[] = [];
   loading = false;
+
+  @Input() templates: { [key: string]: TemplateRef<any> } = {};
+
+  @ViewChild('tableTitleTemplate') tableTitleTemplate!: TemplateRef<any>;
+  @ViewChild('actionsTemplate') actionsTemplate!: TemplateRef<any>;
+
   columns: CrmColumn[] = [
     { key: 'name', label: 'Name' },
     { key: 'status', label: 'Status' },
-    { key: 'actions', label: 'Actions', cell: (r) => 'View metrics' }
+    { key: 'actions', label: 'Actions', template: 'actionsTemplate' }
   ];
 
   constructor(private ads: AdsService, private router: Router) {}
@@ -33,6 +47,17 @@ export class AdsCampaignsComponent implements OnInit {
       this.loading = false;
       if (r.success && r.data) this.campaigns = r.data;
     }, () => this.loading = false);
+  }
+
+  ngAfterViewInit() {
+    // Templates are now available after view init
+  }
+
+  get tableTemplates(): { [key: string]: TemplateRef<any> } {
+    return {
+      tableTitleTemplate: this.tableTitleTemplate,
+      actionsTemplate: this.actionsTemplate
+    };
   }
 
   viewMetrics(c: Campaign) {

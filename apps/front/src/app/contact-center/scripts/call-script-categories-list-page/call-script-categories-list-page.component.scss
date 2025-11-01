@@ -1,0 +1,246 @@
+.page-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.page-content {
+  padding: 2rem;
+  min-height: calc(100vh - 64px);
+  background: #f8fafc;
+}
+
+.main-card {
+  max-width: 1200px;
+  margin: 0 auto;
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.page-description {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: #6b7280;
+}
+
+.page-description p {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+/* Search Section */
+.search-section {
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: center;
+}
+
+.search-field {
+  width: 100%;
+  max-width: 500px;
+}
+
+/* Table Section */
+.table-section {
+  margin-top: 2rem;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 1.5rem;
+}
+
+.section-title mat-icon {
+  color: #6366f1;
+}
+
+/* Table Container */
+.table-container {
+  background: white;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Category Name Cell */
+.category-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.color-indicator {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.name-text {
+  font-weight: 500;
+  color: #111827;
+}
+
+/* Status Chip */
+.status-chip {
+  font-size: 0.75rem;
+  min-height: 24px;
+}
+
+::ng-deep .mat-mdc-chip.status-chip {
+  min-height: 24px !important;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.actions-cell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  width: 120px;
+}
+
+.edit-btn, .delete-btn {
+  background: none;
+  border: none;
+  border-radius: 0.5rem;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #6b7280;
+}
+
+.edit-btn:hover {
+  background: #f0f9ff;
+  color: #2563eb;
+  transform: scale(1.05);
+}
+
+.delete-btn:hover {
+  background: #fef2f2;
+  color: #dc2626;
+  transform: scale(1.05);
+}
+
+.material-icons {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  font-family: 'Material Icons';
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: #6b7280;
+  background: white;
+  border: 2px dashed #e5e7eb;
+  border-radius: 0.75rem;
+}
+
+.empty-state mat-icon {
+  font-size: 3rem;
+  width: 3rem;
+  height: 3rem;
+  color: #d1d5db;
+  margin-bottom: 1rem;
+}
+
+.empty-state p {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.empty-state small {
+  color: #9ca3af;
+  font-size: 0.875rem;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .page-content {
+    padding: 1rem;
+  }
+
+  .main-card {
+    margin: 0;
+  }
+
+  .search-field {
+    max-width: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-toolbar .page-title {
+    font-size: 1.25rem;
+  }
+
+  .page-content {
+    padding: 0.5rem;
+  }
+
+  .table-container {
+    overflow-x: auto;
+  }
+
+  .section-title {
+    font-size: 1.1rem;
+  }
+}
+
+/* Animation */
+.main-card {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Table Row Hover */
+.categories-table tr:hover {
+  background: #f9fafb;
+}
+
+/* Focus States */
+.search-field.mat-focused .mat-mdc-form-field-outline {
+  border-color: #6366f1;
+  border-width: 2px;
+}

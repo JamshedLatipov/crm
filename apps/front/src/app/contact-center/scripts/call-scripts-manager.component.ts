@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, HostListener } from '@angular/core';
+import { Component, inject, signal, computed, Input, TemplateRef, ViewChild, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -12,11 +12,11 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { DatePipe } from '@angular/common';
 import { CrmTableComponent, CrmColumn } from '../../../../src/app/shared/components/crm-table/crm-table.component';
-import { CallScriptCategory } from './call-script-category-dialog.component';
-import { CallScriptCategoriesListDialogComponent } from './call-script-categories-list-dialog.component';
+import { CallScriptCategory } from './call-script-category-dialog/call-script-category-dialog.component';
 import { CallScriptDialogComponent } from './call-script-dialog/call-script-dialog.component';
-import { CallScriptPreviewDialogComponent } from './call-script-preview-dialog/call-script-preview-dialog.component';
+import { RouterLink, RouterModule, Router } from "@angular/router";
 
 export interface CallScript {
   id: string;
@@ -47,16 +47,27 @@ export interface CallScript {
     MatCardModule,
     MatChipsModule,
     MatProgressSpinnerModule,
+    DatePipe,
     CrmTableComponent,
-    CallScriptPreviewDialogComponent
-  ],
+    RouterModule,
+    RouterLink
+],
   templateUrl: './call-scripts-manager.component.html',
   styleUrls: ['./call-scripts-manager.component.scss']
 })
-export class CallScriptsManagerComponent {
+export class CallScriptsManagerComponent implements AfterViewInit {
   private http = inject(HttpClient);
   private dialog = inject(MatDialog);
+  private router = inject(Router);
   private apiBase = environment.apiBase;
+
+  @ViewChild('titleTemplate') titleTemplate!: TemplateRef<any>;
+  @ViewChild('categoryTemplate') categoryTemplate!: TemplateRef<any>;
+  @ViewChild('statusTemplate') statusTemplate!: TemplateRef<any>;
+  @ViewChild('updatedAtTemplate') updatedAtTemplate!: TemplateRef<any>;
+  @ViewChild('actionsTemplate') actionsTemplate!: TemplateRef<any>;
+
+  @Input() templates: { [key: string]: TemplateRef<any> } = {};
 
   scripts = signal<CallScript[]>([]);
   loading = signal(false);
@@ -76,34 +87,27 @@ export class CallScriptsManagerComponent {
     {
       key: 'title',
       label: 'Название',
-      cell: (script: CallScript) => script.title
+      template: 'titleTemplate'
     },
     {
       key: 'category',
       label: 'Категория',
-      cell: (script: CallScript) => script.category?.name || 'Без категории'
+      template: 'categoryTemplate'
     },
     {
       key: 'status',
       label: 'Статус',
-      cell: (script: CallScript) => script.isActive ? 'Активен' : 'Неактивен'
+      template: 'statusTemplate'
     },
     {
       key: 'updatedAt',
       label: 'Обновлено',
-      cell: (script: CallScript) => new Date(script.updatedAt).toLocaleDateString('ru-RU')
+      template: 'updatedAtTemplate'
     },
     {
       key: 'actions',
       label: 'Действия',
-      cell: (script: CallScript) => `
-        <button mat-icon-button color="primary" class="edit-btn" data-script-id="${script.id}">
-          <mat-icon>edit</mat-icon>
-        </button>
-        <button mat-icon-button color="warn" class="delete-btn" data-script-id="${script.id}">
-          <mat-icon>delete</mat-icon>
-        </button>
-      `
+      template: 'actionsTemplate'
     }
   ];
 
@@ -115,9 +119,23 @@ export class CallScriptsManagerComponent {
     }));
   }
 
+  get tableTemplates(): { [key: string]: TemplateRef<any> } {
+    return {
+      titleTemplate: this.titleTemplate,
+      categoryTemplate: this.categoryTemplate,
+      statusTemplate: this.statusTemplate,
+      updatedAtTemplate: this.updatedAtTemplate,
+      actionsTemplate: this.actionsTemplate
+    };
+  }
+
   ngOnInit() {
     this.loadCategories();
     this.loadScripts();
+  }
+
+  ngAfterViewInit() {
+    // Templates are now available after view init
   }
 
   loadCategories() {
@@ -180,10 +198,6 @@ export class CallScriptsManagerComponent {
   filterByStatus() {
     // Trigger change detection
     this.searchQuery.set(this.searchQuery());
-  }
-
-  selectScript(script: CallScript) {
-    this.openPreviewDialog(script);
   }
 
   createNewScript() {
@@ -294,60 +308,7 @@ export class CallScriptsManagerComponent {
     });
   }
 
-  // Table event handlers
-  onTableRowClick(script: any) {
-    this.openPreviewDialog(script);
-  }
-
-  openPreviewDialog(script: CallScript) {
-    const dialogRef = this.dialog.open(CallScriptPreviewDialogComponent, {
-      width: '90vw',
-      maxWidth: '900px',
-      height: '90vh',
-      maxHeight: '800px',
-      data: { script }
-    });
-
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result?.action === 'edit') {
-        this.editScript(result.script);
-      } else if (result?.action === 'delete') {
-        this.deleteScript(result.script);
-      }
-    });
-  }
-
-  openCategoriesDialog() {
-    const dialogRef = this.dialog.open(CallScriptCategoriesListDialogComponent, {
-      width: '90vw',
-      maxWidth: '1200px',
-      height: '90vh',
-      maxHeight: '800px'
-    });
-
-    dialogRef.afterClosed().subscribe(() => {
-      // Reload categories after dialog closes
-      this.loadCategories();
-    });
-  }
-
-  @HostListener('click', ['$event'])
-  onTableActionClick(event: Event) {
-    const target = event.target as HTMLElement;
-    const button = target.closest('button.edit-btn, button.delete-btn') as HTMLButtonElement;
-    if (!button) return;
-
-    event.stopPropagation();
-    const scriptId = button.getAttribute('data-script-id');
-    if (!scriptId) return;
-
-    const script = this.scripts().find(s => s.id === scriptId);
-    if (!script) return;
-
-    if (button.classList.contains('edit-btn')) {
-      this.editScript(script);
-    } else if (button.classList.contains('delete-btn')) {
-      this.deleteScript(script);
-    }
+  viewScript(script: CallScript) {
+    this.router.navigate(['/contact-center/scripts/view', script.id]);
   }
 }

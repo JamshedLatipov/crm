@@ -5,6 +5,7 @@ import {
   EventEmitter,
   ViewChild,
   AfterViewInit,
+  TemplateRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableModule } from '@angular/material/table';
@@ -15,7 +16,6 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { BehaviorSubject } from 'rxjs';
 
 export interface CrmColumn {
@@ -24,6 +24,7 @@ export interface CrmColumn {
   sortable?: boolean;
   width?: string;
   cell?: (row: any) => string | number | null;
+  template?: string; // Template reference name for ng-template
 }
 
 @Component({
@@ -42,8 +43,13 @@ export interface CrmColumn {
   ],
   template: `
     <div class="crm-table">
-      <div class="crm-table-toolbar" *ngIf="title">
-        <h3 class="crm-table-title">{{ title }}</h3>
+      <div class="crm-table-toolbar" *ngIf="title || getTemplate('tableTitleTemplate')">
+        <div class="crm-table-title">
+          <ng-container *ngIf="title">{{ title }}</ng-container>
+          <ng-container *ngIf="!title && getTemplate('tableTitleTemplate')">
+            <ng-container *ngTemplateOutlet="getTemplate('tableTitleTemplate')"></ng-container>
+          </ng-container>
+        </div>
         <div class="crm-table-actions">
           <button mat-icon-button *ngIf="loading | async" aria-label="loading">
             <mat-progress-spinner
@@ -94,29 +100,13 @@ export interface CrmColumn {
           </th>
           <td mat-cell *matCellDef="let row">
             <div class="cell-wrap">
-              <div *ngIf="col.key === 'title'" class="title-cell">
-                <div class="avatar circle">
-                  {{
-                    (renderCell(row, { key: col.key, label: '' }) || '?')
-                      .toString()
-                      .charAt(0)
-                  }}
-                </div>
-                <div class="title-meta">
-                  <div class="title-main">{{ renderCell(row, col) }}</div>
-                  <div class="title-sub" *ngIf="row.subtitle">
-                    {{ row.subtitle }}
-                  </div>
-                </div>
-              </div>
-              <ng-container
-                *ngIf="col.key !== 'title' && col.key !== 'actions'"
-                >{{ renderCell(row, col) }}</ng-container
-              >
-              <ng-container *ngIf="col.key === 'actions'">
-                <div class="actions-cell">
-                  <span class="actions-inner" [innerHTML]="renderCell(row, col)"></span>
-                </div>
+              <ng-container *ngIf="!col.template">
+                {{ renderCell(row, col) }}
+              </ng-container>
+              <ng-container *ngIf="col.template">
+                <ng-container
+                  *ngTemplateOutlet="getTemplate(col.template); context: { $implicit: row, column: col }"
+                ></ng-container>
               </ng-container>
             </div>
           </td>
@@ -161,6 +151,9 @@ export interface CrmColumn {
         font-size: 18px;
         font-weight: 700;
         color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
       }
       table.crm-deals-table {
         width: 100%;
@@ -384,7 +377,7 @@ export class CrmTableComponent implements AfterViewInit {
   @Output() selectionChange = new EventEmitter<any[]>();
 
   @ViewChild(MatPaginator) paginator?: MatPaginator;
-  @ViewChild(MatSort) sort?: MatSort;
+  @Input() templates: { [key: string]: TemplateRef<any> } = {};
 
   loading = new BehaviorSubject<boolean>(false);
 
@@ -395,7 +388,11 @@ export class CrmTableComponent implements AfterViewInit {
   private selected = new Set<any>();
   allSelected = false;
 
-  constructor(private sanitizer: DomSanitizer) {}
+  constructor() {}
+
+  getTemplate(templateName: string): TemplateRef<any> | null {
+    return this.templates[templateName] || null;
+  }
 
   ngAfterViewInit(): void {
     this.setupColumns();
@@ -435,19 +432,20 @@ export class CrmTableComponent implements AfterViewInit {
     this.rowClick.emit(row);
   }
 
-  renderCell(row: any, col: CrmColumn): string | SafeHtml {
+  renderCell(row: any, col: CrmColumn): string {
     try {
       if (col.cell) {
         const result = col.cell(row);
-        if (col.key === 'actions') {
-          return this.sanitizer.bypassSecurityTrustHtml(result as string);
-        }
-        return result;
+        return result as string;
       }
       return row[col.key] ?? '';
     } catch {
       return '';
     }
+  }
+
+  isActionsColumn(col: CrmColumn): boolean {
+    return col.key === 'actions';
   }
 
   toggleRow(row: any, ev: any) {

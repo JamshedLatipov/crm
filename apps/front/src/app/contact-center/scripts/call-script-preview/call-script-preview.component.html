@@ -1,0 +1,147 @@
+<div class="page-container" *ngIf="!loading && script">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="title-section">
+        <button mat-icon-button (click)="onClose()" class="back-button">
+          <mat-icon>arrow_back</mat-icon>
+        </button>
+        <div class="title-info">
+          <h1>{{ script.title }}</h1>
+          <p class="subtitle">Просмотр скрипта разговора</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button mat-raised-button color="warn" (click)="onDelete()">
+          <mat-icon>delete</mat-icon>
+          Удалить
+        </button>
+        <button mat-raised-button color="primary" (click)="onEdit()">
+          <mat-icon>edit</mat-icon>
+          Редактировать
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page Content -->
+  <div class="page-content">
+    <div class="content-wrapper">
+      <!-- Script Info Cards -->
+      <div class="info-cards">
+        <div class="info-card">
+          <mat-icon class="card-icon">label</mat-icon>
+          <div class="card-content">
+            <span class="card-label">Категория</span>
+            <span class="card-value">{{ script.category?.name || 'Без категории' }}</span>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <mat-icon class="card-icon">{{ script.isActive ? 'check_circle' : 'cancel' }}</mat-icon>
+          <div class="card-content">
+            <span class="card-label">Статус</span>
+            <span class="card-value">{{ script.isActive ? 'Активен' : 'Неактивен' }}</span>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <mat-icon class="card-icon">schedule</mat-icon>
+          <div class="card-content">
+            <span class="card-label">Обновлено</span>
+            <span class="card-value">{{ script.updatedAt | date:'dd.MM.yyyy HH:mm' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="description-section" *ngIf="script.description">
+        <div class="section-card">
+          <mat-icon class="section-icon">info</mat-icon>
+          <div class="section-content">
+            <h3 class="section-title">Описание</h3>
+            <p class="description-text">{{ script.description }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="content-sections">
+        <!-- Steps Section -->
+        <div class="content-section" *ngIf="script.steps && script.steps.length > 0">
+          <div class="section-card">
+            <div class="section-header">
+              <mat-icon class="section-icon">list_alt</mat-icon>
+              <h3 class="section-title">Шаги разговора</h3>
+            </div>
+            <div class="steps-list">
+              <div class="step-item" *ngFor="let step of script.steps; let i = index">
+                <div class="step-number">{{ i + 1 }}</div>
+                <div class="step-content">
+                  <p class="step-text">{{ step }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Questions Section -->
+        <div class="content-section" *ngIf="script.questions && script.questions.length > 0">
+          <div class="section-card">
+            <div class="section-header">
+              <mat-icon class="section-icon">help</mat-icon>
+              <h3 class="section-title">Вопросы для уточнения</h3>
+            </div>
+            <div class="questions-list">
+              <div class="question-item" *ngFor="let question of script.questions">
+                <mat-icon class="question-icon">help_outline</mat-icon>
+                <p class="question-text">{{ question }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tips Section -->
+        <div class="content-section" *ngIf="script.tips && script.tips.length > 0">
+          <div class="section-card">
+            <div class="section-header">
+              <mat-icon class="section-icon">lightbulb</mat-icon>
+              <h3 class="section-title">Полезные советы</h3>
+            </div>
+            <div class="tips-list">
+              <div class="tip-item" *ngFor="let tip of script.tips">
+                <mat-icon class="tip-icon">lightbulb_outline</mat-icon>
+                <p class="tip-text">{{ tip }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div
+          class="empty-state"
+          *ngIf="
+            (!script.steps || script.steps.length === 0) &&
+            (!script.questions || script.questions.length === 0) &&
+            (!script.tips || script.tips.length === 0)
+          "
+        >
+          <mat-icon class="empty-icon">description</mat-icon>
+          <h4 class="empty-title">
+            Скрипт не содержит дополнительных материалов
+          </h4>
+          <p class="empty-description">
+            Все шаги, вопросы и советы будут отображаться здесь
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Loading State -->
+<div class="loading-container" *ngIf="loading">
+  <div class="loading-content">
+    <mat-icon class="loading-icon">hourglass_empty</mat-icon>
+    <h3>Загрузка скрипта...</h3>
+  </div>
+</div>

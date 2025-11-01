@@ -1,0 +1,84 @@
+<mat-toolbar color="primary" class="page-toolbar">
+  <mat-toolbar-row>
+    <span class="page-title">Управление категориями скриптов</span>
+    <span class="spacer"></span>
+    <button mat-raised-button color="accent" (click)="openCreateCategoryDialog()">
+      <mat-icon>add</mat-icon>
+      Создать категорию
+    </button>
+  </mat-toolbar-row>
+</mat-toolbar>
+
+<div class="page-content">
+  <mat-card class="main-card">
+    <mat-card-content>
+      <div class="page-description">
+        <p>Создавайте и управляйте категориями для организации скриптов звонков</p>
+      </div>
+
+      <!-- Search Section -->
+      <div class="search-section">
+        <mat-form-field appearance="outline" class="search-field">
+          <mat-label>Поиск категорий</mat-label>
+          <input
+            matInput
+            [(ngModel)]="searchQuery"
+            (input)="filterCategories()"
+            placeholder="Введите название категории"
+          />
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+      </div>
+
+      <!-- Categories Table Section -->
+      <div class="table-section">
+        <h3 class="section-title">
+          <mat-icon>category</mat-icon>
+          Список категорий
+        </h3>
+
+        <div class="table-container">
+          <crm-table
+            [columns]="columns"
+            [data]="tableData"
+            [pageSize]="10"
+            [templates]="tableTemplates"
+          ></crm-table>
+
+          <!-- Templates for table columns -->
+          <ng-template #nameTemplate let-row>
+            <div class="category-name-cell">
+              <div class="color-indicator" [style.background-color]="row.color || '#2196F3'"></div>
+              <span class="name-text">{{ row.name }}</span>
+            </div>
+          </ng-template>
+
+          <ng-template #statusTemplate let-row>
+            <mat-chip [color]="row.isActive ? 'primary' : 'warn'" selected class="status-chip">
+              {{ row.isActive ? 'Активна' : 'Неактивна' }}
+            </mat-chip>
+          </ng-template>
+
+          <ng-template #actionsTemplate let-row>
+            <div class="actions-cell">
+              <div class="action-buttons">
+                <button class="edit-btn" [attr.data-category-id]="row.id" title="Редактировать" (click)="onTableActionClick($event)">
+                  <span class="material-icons">edit</span>
+                </button>
+                <button class="delete-btn" [attr.data-category-id]="row.id" title="Удалить" (click)="onTableActionClick($event)">
+                  <span class="material-icons">delete</span>
+                </button>
+              </div>
+            </div>
+          </ng-template>
+
+          <div *ngIf="filteredCategories().length === 0" class="empty-state">
+            <mat-icon>category</mat-icon>
+            <p>{{ searchQuery ? 'Категории не найдены' : 'Категорий пока нет' }}</p>
+            <small *ngIf="!searchQuery">Создайте первую категорию для организации скриптов</small>
+          </div>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

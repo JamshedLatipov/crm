@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectorRef, Input, TemplateRef, ViewChild, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { concat, Observable, shareReplay } from 'rxjs';
 import { ContactCenterMonitoringService, OperatorStatus, QueueStatus } from '../services/contact-center-monitoring.service';
@@ -20,9 +20,19 @@ Chart.register(...registerables, ChartDataLabels);
   templateUrl: './online-monitoring.component.html',
   styleUrls: ['./online-monitoring.component.scss'],
 })
-export class OnlineMonitoringComponent implements OnInit {
+export class OnlineMonitoringComponent implements OnInit, AfterViewInit {
   private svc = inject(ContactCenterMonitoringService);
   private cdr = inject(ChangeDetectorRef);
+
+  @ViewChild('titleTemplate') titleTemplate!: TemplateRef<any>;
+  @ViewChild('statusTemplate') statusTemplate!: TemplateRef<any>;
+  @ViewChild('currentCallTemplate') currentCallTemplate!: TemplateRef<any>;
+  @ViewChild('avgHandleTimeTemplate') avgHandleTimeTemplate!: TemplateRef<any>;
+  @ViewChild('serviceTemplate') serviceTemplate!: TemplateRef<any>;
+  @ViewChild('actionsTemplate') actionsTemplate!: TemplateRef<any>;
+  @ViewChild('tableTitleTemplate') tableTitleTemplate!: TemplateRef<any>;
+
+  @Input() templates: { [key: string]: TemplateRef<any> } = {};
 
   // Combine a one-time REST snapshot (fast initial render) with the live WS stream.
   // concat will emit the snapshot first (HTTP completes) and then forward live updates from WS.
@@ -121,6 +131,10 @@ export class OnlineMonitoringComponent implements OnInit {
     });
   }
 
+  ngAfterViewInit() {
+    // Templates are now available after view init
+  }
+
   getPercentage(status: string): number {
     const total = this.currentOperators.length;
     if (total === 0) return 0;
@@ -152,12 +166,24 @@ export class OnlineMonitoringComponent implements OnInit {
 
   // crm-table column definitions for operators
   columns: CrmColumn[] = [
-    { key: 'title', label: 'Оператор', width: '30%', cell: (r: any) => r.name || '—' },
-    { key: 'status', label: 'Статус', width: '15%', cell: (r: any) => this.formatStatus(r.status) },
-    { key: 'currentCall', label: 'Клиент', width: '20%', cell: (r: any) => r.currentCall || '—' },
-    { key: 'avgHandleTime', label: 'Время в статусе', width: '15%', cell: (r: any) => (r.avgHandleTime ? r.avgHandleTime + 's' : '—') },
-    { key: 'service', label: 'Сервис', width: '10%', cell: (r: any) => 'Продажи' },
-    { key: 'actions', label: '', width: '10%', cell: (r: any) => 'Подробно' },
+    { key: 'title', label: 'Оператор', width: '30%', template: 'titleTemplate' },
+    { key: 'status', label: 'Статус', width: '15%', template: 'statusTemplate' },
+    { key: 'currentCall', label: 'Клиент', width: '20%', template: 'currentCallTemplate' },
+    { key: 'avgHandleTime', label: 'Время в статусе', width: '15%', template: 'avgHandleTimeTemplate' },
+    { key: 'service', label: 'Сервис', width: '10%', template: 'serviceTemplate' },
+    { key: 'actions', label: '', width: '10%', template: 'actionsTemplate' },
   ];
+
+  get tableTemplates(): { [key: string]: TemplateRef<any> } {
+    return {
+      titleTemplate: this.titleTemplate,
+      statusTemplate: this.statusTemplate,
+      currentCallTemplate: this.currentCallTemplate,
+      avgHandleTimeTemplate: this.avgHandleTimeTemplate,
+      serviceTemplate: this.serviceTemplate,
+      actionsTemplate: this.actionsTemplate,
+      tableTitleTemplate: this.tableTitleTemplate
+    };
+  }
 
 }

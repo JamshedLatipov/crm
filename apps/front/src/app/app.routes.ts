@@ -6,6 +6,8 @@ import { AuthTestComponent } from './auth/auth-test.component';
 import { IvrAdminComponent } from './ivr/containers/ivr-list/ivr.component';
 import { OnlineMonitoringComponent } from './contact-center/monitoring/online-monitoring.component';
 import { CallScriptsManagerComponent } from './contact-center/scripts/call-scripts-manager.component';
+import { CallScriptCategoriesListPageComponent } from './contact-center/scripts/call-script-categories-list-page/call-script-categories-list-page.component';
+import { CallScriptPreviewPageComponent } from './contact-center/scripts/call-script-preview/call-script-preview.component';
 import { LeadsComponent } from './leads/leads.component';
 import { LeadsListComponent } from './leads/components/leads-list/leads-list.component';
 import { LeadsDashboardComponent } from './leads/components/leads-dashboard.component';
@@ -49,7 +51,9 @@ export const appRoutes: Route[] = [
             { path: '', redirectTo: 'monitoring', pathMatch: 'full' },
             { path: 'monitoring', component: OnlineMonitoringComponent },
             { path: 'ivr', component: IvrAdminComponent },
-            { path: 'scripts', component: CallScriptsManagerComponent }
+            { path: 'scripts', component: CallScriptsManagerComponent },
+            { path: 'scripts/categories', component: CallScriptCategoriesListPageComponent },
+            { path: 'scripts/view/:id', component: CallScriptPreviewPageComponent }
         ]
     },
     { path: 'calls', redirectTo: 'softphone' }, // Redirect calls to softphone

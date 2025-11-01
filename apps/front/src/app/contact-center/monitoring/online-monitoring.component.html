@@ -98,7 +98,40 @@
       <input class="search" placeholder="Поиск операторов..." />
     </div>
       <div class="operators-table">
-        <crm-table [title]="'Операторы'" [columns]="columns" [data]="operators$ | async" [showPaginator]="false"></crm-table>
+        <crm-table [columns]="columns" [data]="operators$ | async" [showPaginator]="false" [templates]="tableTemplates"></crm-table>
       </div>
+
+      <!-- Table Title Template -->
+      <ng-template #tableTitleTemplate>
+        <h3 class="operators-table-title">
+          <mat-icon>people</mat-icon>
+          Операторы
+        </h3>
+      </ng-template>
+
+      <!-- Templates -->
+      <ng-template #titleTemplate let-operator>
+        {{ operator.name || '—' }}
+      </ng-template>
+
+      <ng-template #statusTemplate let-operator>
+        {{ formatStatus(operator.status) }}
+      </ng-template>
+
+      <ng-template #currentCallTemplate let-operator>
+        {{ operator.currentCall || '—' }}
+      </ng-template>
+
+      <ng-template #avgHandleTimeTemplate let-operator>
+        {{ operator.avgHandleTime ? operator.avgHandleTime + 's' : '—' }}
+      </ng-template>
+
+      <ng-template #serviceTemplate let-operator>
+        Продажи
+      </ng-template>
+
+      <ng-template #actionsTemplate let-operator>
+        Подробно
+      </ng-template>
   </div>
 </div>
