@@ -14,6 +14,19 @@
 
   <mat-dialog-content class="dialog-content">
     <form class="script-form" #form="ngForm">
+      <!-- Parent Script Info Banner (when creating child) -->
+      <div class="parent-info-banner" *ngIf="parentScript && !isEditMode">
+        <mat-icon class="banner-icon">account_tree</mat-icon>
+        <div class="banner-content">
+          <span class="banner-label">Дочерний для:</span>
+          <strong class="parent-name">{{ parentScript.title }}</strong>
+          <span class="category-badge" *ngIf="parentScript.category">
+            <mat-icon>label</mat-icon>
+            {{ parentScript.category.name }}
+          </span>
+        </div>
+      </div>
+
       <!-- Basic Information Section -->
       <div class="form-section">
         <h3 class="section-title">
@@ -59,18 +72,29 @@
             <mat-select
               [(ngModel)]="script.parentId"
               name="parentId"
+              [disabled]="parentScript && !isEditMode"
             >
               <mat-option value="">Нет родителя (корневой скрипт)</mat-option>
               <mat-option
-                *ngFor="let availableScript of availableScripts()"
+                *ngFor="let availableScript of hierarchicalScripts()"
                 [value]="availableScript.id"
                 [disabled]="isEditMode && availableScript.id === script.id"
+                [class.nested-option]="availableScript.depth && availableScript.depth > 0"
               >
-                {{ availableScript.title }}
+                <span class="hierarchy-indent" [style.padding-left.px]="(availableScript.depth || 0) * 20">
+                  {{ getScriptIndent(availableScript) }}{{ availableScript.title }}
+                </span>
                 <span class="parent-indicator" *ngIf="availableScript.parentId"> (дочерний)</span>
               </mat-option>
             </mat-select>
-            <mat-hint *ngIf="parentScript">Создание дочернего скрипта для: {{ parentScript.title }}</mat-hint>
+            <mat-hint *ngIf="parentScript && !isEditMode" class="parent-hint">
+              <mat-icon class="hint-icon">lock</mat-icon>
+              Родитель установлен автоматически и не может быть изменен
+            </mat-hint>
+            <mat-hint *ngIf="!parentScript" class="default-hint">
+              <mat-icon class="hint-icon">info</mat-icon>
+              Оставьте пустым для создания корневого скрипта
+            </mat-hint>
           </mat-form-field>
         </div>
 

@@ -1,26 +1,34 @@
+/* Call Script Tree Component - следует дизайн-системе проекта */
+
 // Wrapper
 .call-script-tree-wrapper {
-  @apply w-full;
+  width: 100%;
 }
 
 .call-script-tree {
-  @apply w-full;
+  width: 100%;
   padding: 0;
   background: transparent;
 }
 
 // Tree node styles
 .tree-node-content {
-  @apply flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-all duration-200;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  transition: all 0.2s ease;
   min-height: 56px;
   position: relative;
   border: 1px solid transparent;
-  background: var(--mat-sys-surface-container-lowest);
+  background: var(--card-background, #ffffff);
   
   &:hover {
-    background: var(--mat-sys-surface-container);
-    border-color: var(--mat-sys-outline-variant);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    background: var(--brand-secondary, #f0f6fc);
+    border-color: var(--border-color, #e6e9ee);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
     
     .action-menu-btn {
       opacity: 1;
@@ -28,38 +36,43 @@
   }
 
   &.is-expanded {
-    background: var(--mat-sys-surface-container);
-    border-color: var(--mat-sys-outline-variant);
+    background: var(--brand-secondary, #f0f6fc);
+    border-color: var(--border-color, #e6e9ee);
   }
 
   &.leaf-node {
-    background: var(--mat-sys-surface);
+    background: var(--card-background, #ffffff);
   }
 
   & + .tree-node-content {
-    margin-top: 6px;
+    margin-top: 8px;
   }
 }
 
 // Node main content (left side)
 .node-main-content {
-  @apply flex items-center gap-2 flex-1 min-w-0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
 }
 
 // Toggle button
 .toggle-btn {
-  @apply flex-shrink-0 transition-transform duration-200;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
   width: 36px !important;
   height: 36px !important;
   
   .toggle-icon {
-    @apply text-xl;
-    color: var(--mat-sys-on-surface-variant);
+    font-size: 20px;
+    color: var(--text-secondary, #6c757d);
     transition: transform 0.2s ease;
   }
   
   &:hover .toggle-icon {
-    color: var(--mat-sys-on-surface);
+    color: var(--text-primary, #212529);
   }
 }
 
@@ -70,232 +83,299 @@
 
 // Node icon wrapper
 .node-icon-wrapper {
-  @apply flex items-center justify-center flex-shrink-0 rounded-lg transition-all duration-200;
-  width: 40px;
-  height: 40px;
-  background: var(--mat-sys-primary-container);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  width: 42px;
+  height: 42px;
+  background: var(--primary-light, rgba(66, 133, 244, 0.1));
   
   .node-icon {
-    @apply text-xl;
-    color: var(--mat-sys-on-primary-container);
+    font-size: 20px;
+    color: var(--primary-color, #4285f4);
     
     &.folder-icon {
-      color: var(--mat-sys-primary);
+      color: var(--primary-color, #4285f4);
     }
     
     &.document-icon {
-      color: var(--mat-sys-secondary);
+      color: var(--info-color, #4285f4);
     }
   }
 }
 
 .tree-node-content:hover .node-icon-wrapper {
-  background: var(--mat-sys-primary-container);
+  background: var(--primary-light, rgba(66, 133, 244, 0.15));
   transform: scale(1.05);
 }
 
 // Node info
 .node-info {
-  @apply flex flex-col gap-0.5 flex-1 min-w-0 cursor-pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
   
   .node-title {
-    @apply text-sm font-medium truncate transition-colors duration-200;
-    color: var(--mat-sys-on-surface);
+    font-size: 14px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: color 0.2s ease;
+    color: var(--text-primary, #1e293b);
     line-height: 1.4;
   }
   
   .node-meta {
-    @apply text-xs truncate;
-    color: var(--mat-sys-on-surface-variant);
-    opacity: 0.7;
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-secondary, #64748b);
+    opacity: 0.8;
   }
   
   &:hover .node-title {
-    color: var(--mat-sys-primary);
+    color: var(--primary-color, #4285f4);
   }
 }
 
 // Node actions (right side)
 .node-actions {
-  @apply flex items-center gap-2 flex-shrink-0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 // Status badge
 .status-badge {
-  @apply flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
   
   .status-icon {
-    @apply text-base;
+    font-size: 16px;
   }
   
   .status-text {
-    @apply hidden sm:inline;
+    display: none;
+  }
+  
+  @media (min-width: 640px) {
+    .status-text {
+      display: inline;
+    }
   }
   
   &.status-active {
-    background: rgba(76, 175, 80, 0.1);
-    color: #4CAF50;
+    background: var(--success-light, rgba(16, 185, 129, 0.1));
+    color: var(--success-color, #10b981);
     
     .status-icon {
-      color: #4CAF50;
+      color: var(--success-color, #10b981);
     }
   }
   
   &.status-inactive {
-    background: rgba(158, 158, 158, 0.1);
-    color: #9E9E9E;
+    background: var(--muted-color, #e9ecef);
+    color: var(--text-secondary, #6c757d);
     
     .status-icon {
-      color: #9E9E9E;
+      color: var(--text-secondary, #6c757d);
     }
   }
 }
 
 // Category badge
 .category-badge {
-  @apply flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200;
-  background: var(--mat-sys-tertiary-container);
-  color: var(--mat-sys-on-tertiary-container);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  background: var(--info-light, rgba(66, 133, 244, 0.1));
+  color: var(--info-color, #4285f4);
   max-width: 140px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   
   .category-icon {
-    @apply text-sm flex-shrink-0;
+    font-size: 14px;
+    flex-shrink: 0;
   }
 }
 
 // Action menu button
 .action-menu-btn {
-  @apply flex-shrink-0 transition-all duration-200;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
   width: 36px !important;
   height: 36px !important;
   opacity: 0;
   
   mat-icon {
-    color: var(--mat-sys-on-surface-variant);
+    color: var(--text-secondary, #6c757d);
   }
   
   &:hover mat-icon {
-    color: var(--mat-sys-on-surface);
+    color: var(--text-primary, #212529);
   }
 }
 
 // Tree children
 .tree-children {
-  margin-left: 20px;
-  padding-left: 20px;
-  border-left: 2px solid var(--mat-sys-outline-variant);
-  margin-top: 6px;
+  margin-left: 24px;
+  padding-left: 24px;
+  border-left: 2px solid var(--border-color, #e6e9ee);
+  margin-top: 8px;
 }
 
 // Context menu styles
 ::ng-deep .tree-context-menu {
   .mat-mdc-menu-content {
     padding: 8px;
+    border-radius: 10px;
   }
   
   .mat-mdc-menu-item {
-    @apply rounded-md transition-all duration-150;
+    border-radius: 8px;
+    transition: all 0.15s ease;
     font-size: 14px;
+    font-weight: 500;
     min-height: 44px;
     margin-bottom: 2px;
     
     mat-icon {
-      @apply mr-3;
+      margin-right: 12px;
       font-size: 20px;
       width: 20px;
       height: 20px;
     }
     
     &:hover {
-      background: var(--mat-sys-surface-container-high);
+      background: var(--brand-secondary, #f0f6fc);
     }
     
     &.menu-item-view mat-icon {
-      color: var(--mat-sys-primary);
+      color: var(--primary-color, #4285f4);
     }
     
     &.menu-item-add mat-icon {
-      color: #4CAF50;
+      color: var(--success-color, #10b981);
     }
     
     &.menu-item-edit mat-icon {
-      color: var(--mat-sys-tertiary);
+      color: var(--warning-color, #f59e0b);
     }
     
     &.menu-item-delete {
-      color: var(--mat-sys-error);
+      color: var(--error-color, #ef4444);
       
       &:hover {
-        background: rgba(244, 67, 54, 0.08);
+        background: var(--error-light, rgba(239, 68, 68, 0.1));
       }
     }
   }
   
   mat-divider {
     margin: 6px 0;
+    background-color: var(--border-color, #dee2e6);
   }
 }
 
 // Empty state
 .empty-state {
-  @apply flex items-center justify-center py-20 px-6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px;
   
   .empty-state-content {
-    @apply flex flex-col items-center text-center max-w-sm;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    max-width: 480px;
     
     .empty-state-icon {
-      @apply flex items-center justify-center rounded-full mb-6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      margin-bottom: 24px;
       width: 80px;
       height: 80px;
-      background: var(--mat-sys-surface-container-high);
+      background: var(--brand-secondary, #f0f6fc);
       
       mat-icon {
         font-size: 48px;
         width: 48px;
         height: 48px;
-        color: var(--mat-sys-on-surface-variant);
-        opacity: 0.5;
+        color: var(--primary-color, #4285f4);
+        opacity: 0.6;
       }
     }
     
     .empty-state-title {
-      @apply text-lg font-semibold mb-2;
-      color: var(--mat-sys-on-surface);
-      margin: 0;
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text-primary, #1e293b);
+      margin: 0 0 8px 0;
     }
     
     .empty-state-description {
-      @apply text-sm;
-      color: var(--mat-sys-on-surface-variant);
-      opacity: 0.8;
+      font-size: 14px;
+      color: var(--text-secondary, #64748b);
+      opacity: 0.9;
       margin: 0;
-      line-height: 1.5;
+      line-height: 1.6;
     }
   }
 }
 
 // Loading state
 .loading-state {
-  @apply flex items-center justify-center py-16 px-6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 24px;
   
   .loading-content {
-    @apply flex flex-col items-center text-center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
     
     .loading-spinner {
-      @apply mb-4;
+      margin-bottom: 16px;
       font-size: 48px;
       width: 48px;
       height: 48px;
-      color: var(--mat-sys-primary);
+      color: var(--primary-color, #4285f4);
       animation: spin 1s linear infinite;
     }
     
     .loading-text {
-      @apply text-sm;
-      color: var(--mat-sys-on-surface-variant);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary, #64748b);
       margin: 0;
     }
   }

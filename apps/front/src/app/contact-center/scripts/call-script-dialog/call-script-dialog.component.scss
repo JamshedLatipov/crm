@@ -30,6 +30,88 @@
   padding: 2rem;
 }
 
+// Parent Info Banner - минималистичный дизайн без заливки
+.parent-info-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  background: transparent;
+  border: 2px solid #667eea;
+  border-radius: 10px;
+  animation: slideIn 0.25s ease-out;
+
+  .banner-icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+    color: #667eea;
+    flex-shrink: 0;
+  }
+
+  .banner-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    flex: 1;
+    min-width: 0;
+    color: var(--text-primary, #1e293b);
+    font-size: 13px;
+
+    .banner-label {
+      font-weight: 600;
+      color: var(--text-secondary, #64748b);
+      white-space: nowrap;
+    }
+
+    .parent-name {
+      font-weight: 700;
+      color: var(--text-primary, #1e293b);
+      background: var(--brand-secondary, #f0f6fc);
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid #667eea;
+      max-width: 250px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .category-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: transparent;
+      border: 1px solid #667eea;
+      color: #667eea;
+      padding: 4px 8px;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+
+      mat-icon {
+        font-size: 14px;
+        width: 14px;
+        height: 14px;
+      }
+    }
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Form Sections */
 .form-section {
   background: #f8fafc;
@@ -110,6 +192,69 @@
 
 .modern-checkbox {
   margin-top: 1rem;
+}
+
+// Hint styles for parent field - ультракомпактные
+::ng-deep .modern-field {
+  .mat-mdc-form-field-hint {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    margin-top: 3px;
+    padding: 4px 8px;
+    border-radius: 5px;
+    font-weight: 500;
+
+    &.parent-hint {
+      background: #fef3c7;
+      color: #92400e;
+      border-left: 2px solid #f59e0b;
+      
+      .hint-icon {
+        color: #f59e0b;
+      }
+    }
+
+    &.default-hint {
+      background: #dbeafe;
+      color: #1e40af;
+      border-left: 2px solid #3b82f6;
+      
+      .hint-icon {
+        color: #3b82f6;
+      }
+    }
+
+    .hint-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+  }
+}
+
+.parent-indicator {
+  font-size: 11px;
+  color: #64748b;
+  font-style: italic;
+}
+
+// Hierarchical select styles
+.hierarchy-indent {
+  display: inline-block;
+  font-family: 'Roboto', sans-serif;
+}
+
+::ng-deep .nested-option {
+  .mat-mdc-option-text {
+    color: #64748b;
+  }
+  
+  &.mat-mdc-option-active {
+    background: rgba(102, 126, 234, 0.08);
+  }
 }
 
 /* Items Container */
