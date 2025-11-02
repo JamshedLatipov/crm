@@ -81,4 +81,9 @@ export class SidebarComponent {
     const current = this.router.url;
     return item.children.some((c) => current.startsWith(c.route || ''));
   }
+
+  async logout() {
+    await this.auth.logout();
+    this.router.navigate(['/login']);
+  }
 }

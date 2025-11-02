@@ -1,8 +1,11 @@
-import { Controller, Post, Body, ForbiddenException, Req } from '@nestjs/common';
+import { Controller, Post, Body, ForbiddenException, Req, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto } from './auth.dto';
-import { ApiTags, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiBody, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Request } from 'express';
+import { JwtAuthGuard } from './jwt-auth.guard';
+import { CurrentUser } from './current-user.decorator';
+import { User } from './user.entity';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -24,5 +27,13 @@ export class AuthController {
   @ApiBody({ type: RegisterDto })
   async register(@Body() body: RegisterDto) {
     return this.authService.register(body);
+  }
+
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Выход из системы' })
+  async logout(@CurrentUser() user: User, @Req() request: Request) {
+    return this.authService.logout(user, request);
   }
 }

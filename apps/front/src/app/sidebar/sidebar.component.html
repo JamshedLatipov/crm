@@ -85,6 +85,16 @@
         >
           <mat-icon>settings</mat-icon>
         </button>
+        <button
+          mat-icon-button
+          class="logout-btn"
+          [matTooltip]="'Выйти'"
+          matTooltipPosition="right"
+          aria-label="Выйти"
+          (click)="logout()"
+        >
+          <mat-icon>exit_to_app</mat-icon>
+        </button>
       </div>
     </div>
   </div>

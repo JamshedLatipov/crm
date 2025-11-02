@@ -106,9 +106,20 @@ export class AuthService {
     }
   }
 
-  logout() {
+  async logout() {
+    try {
+      // Call logout API to log the activity on server
+      await firstValueFrom(
+        this.http.post(`${this.apiBase}/auth/logout`, {})
+      );
+    } catch (error) {
+      // Ignore API errors during logout
+      console.warn('Logout API call failed:', error);
+    }
+
+    // Clear local session data
     this._user.set(null);
-  this.clearStoredAuth();
+    this.clearStoredAuth();
     localStorage.removeItem('operator.username');
     localStorage.removeItem('operator.password');
   }

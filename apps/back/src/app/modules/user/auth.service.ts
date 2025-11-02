@@ -64,4 +64,13 @@ export class AuthService {
     const user = this.userRepo.create({ ...data, password: hash });
     return this.userRepo.save(user);
   }
+
+  async logout(user: User, request?: Request) {
+    // Log logout activity
+    if (request) {
+      await this.userActivityService.logLogout(user.id.toString());
+    }
+
+    return { message: 'Successfully logged out' };
+  }
 }
