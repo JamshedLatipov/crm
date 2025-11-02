@@ -21,8 +21,8 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { IvrTreeNodeComponent } from '../../components/ivr-tree-node/ivr-tree-node.component';
 import { IvrNodeDialogComponent } from '../../components/ivr-node-dialog/ivr-node-dialog.component';
-import { IvrHeaderComponent } from '../../components/ivr-header/ivr-header.component';
 import { IvrRootsListComponent } from '../../components/ivr-roots-list/ivr-roots-list.component';
+import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.component';
 
 const ACTIONS = ['menu', 'playback', 'dial', 'goto', 'hangup', 'queue'];
 
@@ -45,8 +45,8 @@ const ACTIONS = ['menu', 'playback', 'dial', 'goto', 'hangup', 'queue'];
     MatTooltipModule,
     IvrTreeNodeComponent,
     MatDialogModule,
-    IvrHeaderComponent,
     IvrRootsListComponent,
+    PageLayoutComponent,
   ],
   templateUrl: './ivr.component.html',
   styleUrls: ['./ivr.component.scss'],

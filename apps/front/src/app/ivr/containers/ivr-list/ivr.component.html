@@ -1,77 +1,91 @@
 <!-- Page Header -->
 
-<app-ivr-header (reload)="reload()" (newRoot)="newRoot()"></app-ivr-header>
-
-<div class="container">
-  <app-ivr-roots-list
-    [roots]="rootNodes"
-    [selectedId]="selected?.id"
-    [actionLabels]="actionLabels"
-    (select)="select($event)"
-    (edit)="onNodeEdit($event)"
-    (delete)="onNodeDelete($event)"
-    (reorder)="handleRootsReorder($event)"
-    (createFirst)="newRoot()"
-  ></app-ivr-roots-list>
-
-  <!-- Tree Panel -->
-  <div class="panel children-panel">
-    <div class="panel-header">
-      <div class="panel-title">
-        <mat-icon>account_tree</mat-icon>
-        <h3>Структура дерева</h3>
-      </div>
-      <button 
-        mat-mini-fab 
-        color="primary" 
-        (click)="newChild()"
-        matTooltip="Добавить дочерний элемент"
-        class="add-child-btn"
-        [disabled]="!treeRoot?.id"
-      >
-        <mat-icon>add</mat-icon>
-      </button>
-    </div>
-    
-    <div class="panel-content">
-      <!-- Show tree when tree root is selected -->
-      <ng-container *ngIf="treeRoot?.id">
-        <div class="tree-container" *ngIf="childrenOfTreeRoot().length > 0; else emptyChildren">
-          <app-ivr-tree-node
-            *ngFor="let child of childrenOfTreeRoot()"
-            [node]="child"
-            [children]="getNodeChildren(child.id)"
-            [selectedId]="selected?.id"
-            [level]="0"
-            [actionLabels]="actionLabels"
-            [allNodes]="allNodes"
-            [lazyLoad]="true"
-            [expandOnSelect]="false"
-            (onSelect)="onNodeSelect($event)"
-            (onAddChild)="onNodeAddChild($event)"
-            (onEdit)="onNodeEdit($event)"
-            (onDelete)="onNodeDelete($event)"
-            (onLoadChildren)="handleLoadChildren($event)"
-          ></app-ivr-tree-node>
-        </div>
-
-        <ng-template #emptyChildren>
-          <div class="empty-state small">
-            <mat-icon>inbox</mat-icon>
-            <p>Нет дочерних элементов</p>
-          </div>
-        </ng-template>
-      </ng-container>
-
-      <!-- Show prompt when no parent is selected -->
-      <div class="empty-state" *ngIf="!selected?.id">
-        <mat-icon>touch_app</mat-icon>
-        <p>Выберите корневой элемент</p>
-        <small>Выберите элемент слева для просмотра его дочерних элементов</small>
-      </div>
-    </div>
+<app-page-layout
+  title="Управление IVR"
+  subtitle="Интерактивное голосовое меню и автоматизация звонков"
+>
+  <div page-actions>
+    <button mat-stroked-button (click)="reload()">
+      <mat-icon>refresh</mat-icon>
+      Обновить
+    </button>
+    <button mat-raised-button color="primary" (click)="newRoot()">
+      <mat-icon>add</mat-icon>
+      Добавить корень
+    </button>
   </div>
 
-  <!-- Editor Panel -->
-  <!-- Editor removed: editing is now performed in modal dialog -->
-</div>
+  <div class="container">
+    <app-ivr-roots-list
+      [roots]="rootNodes"
+      [selectedId]="selected?.id"
+      [actionLabels]="actionLabels"
+      (select)="select($event)"
+      (edit)="onNodeEdit($event)"
+      (delete)="onNodeDelete($event)"
+      (reorder)="handleRootsReorder($event)"
+      (createFirst)="newRoot()"
+    ></app-ivr-roots-list>
+
+    <!-- Tree Panel -->
+    <div class="panel children-panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <mat-icon>account_tree</mat-icon>
+          <h3>Структура дерева</h3>
+        </div>
+        <button
+          mat-mini-fab
+          color="primary"
+          (click)="newChild()"
+          matTooltip="Добавить дочерний элемент"
+          class="add-child-btn"
+          [disabled]="!treeRoot?.id"
+        >
+          <mat-icon>add</mat-icon>
+        </button>
+      </div>
+
+      <div class="panel-content">
+        <!-- Show tree when tree root is selected -->
+        <ng-container *ngIf="treeRoot?.id">
+          <div class="tree-container" *ngIf="childrenOfTreeRoot().length > 0; else emptyChildren">
+            <app-ivr-tree-node
+              *ngFor="let child of childrenOfTreeRoot()"
+              [node]="child"
+              [children]="getNodeChildren(child.id)"
+              [selectedId]="selected?.id"
+              [level]="0"
+              [actionLabels]="actionLabels"
+              [allNodes]="allNodes"
+              [lazyLoad]="true"
+              [expandOnSelect]="false"
+              (onSelect)="onNodeSelect($event)"
+              (onAddChild)="onNodeAddChild($event)"
+              (onEdit)="onNodeEdit($event)"
+              (onDelete)="onNodeDelete($event)"
+              (onLoadChildren)="handleLoadChildren($event)"
+            ></app-ivr-tree-node>
+          </div>
+
+          <ng-template #emptyChildren>
+            <div class="empty-state small">
+              <mat-icon>inbox</mat-icon>
+              <p>Нет дочерних элементов</p>
+            </div>
+          </ng-template>
+        </ng-container>
+
+        <!-- Show prompt when no parent is selected -->
+        <div class="empty-state" *ngIf="!selected?.id">
+          <mat-icon>touch_app</mat-icon>
+          <p>Выберите корневой элемент</p>
+          <small>Выберите элемент слева для просмотра его дочерних элементов</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Editor Panel -->
+    <!-- Editor removed: editing is now performed in modal dialog -->
+  </div>
+</app-page-layout>

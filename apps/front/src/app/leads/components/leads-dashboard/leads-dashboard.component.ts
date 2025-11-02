@@ -9,6 +9,7 @@ import { RouterModule } from '@angular/router';
 
 import { LeadService } from '../../services/lead.service';
 import { LeadStatistics, Lead, LeadStatus, LeadSource, LeadPriority } from '../../models/lead.model';
+import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.component';
 
 @Component({
   selector: 'app-leads-dashboard',
@@ -20,7 +21,8 @@ import { LeadStatistics, Lead, LeadStatus, LeadSource, LeadPriority } from '../.
     MatButtonModule,
     MatProgressSpinnerModule,
     MatChipsModule,
-    RouterModule
+    RouterModule,
+    PageLayoutComponent
   ],
   templateUrl: './leads-dashboard.component.html',
   styleUrls: ['./leads-dashboard.component.scss']

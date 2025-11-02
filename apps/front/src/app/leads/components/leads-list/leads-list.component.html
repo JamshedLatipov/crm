@@ -1,19 +1,13 @@
-<div class="leads-container">
-  <!-- Header -->
-  <div class="header">
-    <div class="title-section">
-      <h1>Лиды</h1>
-    </div>
-    <div class="actions">
-      <button mat-raised-button color="primary" (click)="openCreateDialog()">
-        <mat-icon>add</mat-icon>
-        Новый лид
-      </button>
-      <button mat-stroked-button color="primary" (click)="bulkQuickAssign()" [disabled]="selectedLeads().length === 0" class="ml-2">
-        <mat-icon>flash_on</mat-icon>
-        Быстрое назначение ({{ selectedLeads().length }})
-      </button>
-    </div>
+<app-page-layout title="Лиды">
+  <div page-actions>
+    <button mat-raised-button color="primary" (click)="openCreateDialog()">
+      <mat-icon>add</mat-icon>
+      Новый лид
+    </button>
+    <button mat-stroked-button color="primary" (click)="bulkQuickAssign()" [disabled]="selectedLeads().length === 0" class="ml-2">
+      <mat-icon>flash_on</mat-icon>
+      Быстрое назначение ({{ selectedLeads().length }})
+    </button>
   </div>
 
   <!-- Tabs -->
@@ -348,4 +342,4 @@
       </div>
     }
   </div>
-</div>
+</app-page-layout>

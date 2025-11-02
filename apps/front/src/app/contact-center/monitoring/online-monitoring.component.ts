@@ -9,6 +9,7 @@ import { ChartData, ChartOptions, ChartType } from 'chart.js';
 import { Chart, registerables } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { MatIconModule } from '@angular/material/icon';
+import { PageLayoutComponent } from '@crm/front/app/shared/page-layout/page-layout.component';
 
 // Register all Chart.js components
 Chart.register(...registerables, ChartDataLabels);
@@ -16,7 +17,7 @@ Chart.register(...registerables, ChartDataLabels);
 @Component({
   selector: 'app-online-monitoring',
   standalone: true,
-  imports: [CommonModule, CrmTableComponent, BaseChartDirective, MatIconModule],
+  imports: [CommonModule, CrmTableComponent, BaseChartDirective, MatIconModule, PageLayoutComponent],
   templateUrl: './online-monitoring.component.html',
   styleUrls: ['./online-monitoring.component.scss'],
 })

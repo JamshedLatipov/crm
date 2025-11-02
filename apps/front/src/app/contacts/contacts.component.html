@@ -1,44 +1,36 @@
-<div class="page-container">
-  <div class="page-header">
-    <div class="header-content">
-      <div>
-        <h1>Контакты</h1>
-        <p class="subtitle">Управление контактами клиентов</p>
-      </div>
-      <div class="header-actions">
-        <button mat-raised-button  color="primary" (click)="openCreateDialog()">
-          <mat-icon>add</mat-icon>
-          <span>Создать контакт</span>
-        </button>
+<app-page-layout title="Контакты" subtitle="Управление контактами клиентов">
+  <div page-actions>
+    <button mat-raised-button  color="primary" (click)="openCreateDialog()">
+      <mat-icon>add</mat-icon>
+      <span>Создать контакт</span>
+    </button>
 
-        <div class="bulk-buttons ml-2">
-          <button
-            mat-stroked-button
-            [matMenuTriggerFor]="bulkMenu"
-            aria-label="Действия"
-            [disabled]="selectedCount() === 0"
-            [attr.aria-disabled]="selectedCount() === 0"
-            title="Выберите строки, чтобы открыть действия"
-          >
-            <mat-icon>more_horiz</mat-icon>
-            Действия
-          </button>
-          <mat-menu #bulkMenu="matMenu">
-            <button mat-menu-item (click)="deleteSelected()">
-              <mat-icon>delete</mat-icon>
-              <span>Удалить</span>
-            </button>
-            <button mat-menu-item (click)="bulkActivateSelected()">
-              <mat-icon>check_circle</mat-icon>
-              <span>Активировать</span>
-            </button>
-            <button mat-menu-item (click)="bulkDeactivateSelected()">
-              <mat-icon>remove_circle</mat-icon>
-              <span>Деактивировать</span>
-            </button>
-          </mat-menu>
-        </div>
-      </div>
+    <div class="bulk-buttons ml-2">
+      <button
+        mat-stroked-button
+        [matMenuTriggerFor]="bulkMenu"
+        aria-label="Действия"
+        [disabled]="selectedCount() === 0"
+        [attr.aria-disabled]="selectedCount() === 0"
+        title="Выберите строки, чтобы открыть действия"
+      >
+        <mat-icon>more_horiz</mat-icon>
+        Действия
+      </button>
+      <mat-menu #bulkMenu="matMenu">
+        <button mat-menu-item (click)="deleteSelected()">
+          <mat-icon>delete</mat-icon>
+          <span>Удалить</span>
+        </button>
+        <button mat-menu-item (click)="bulkActivateSelected()">
+          <mat-icon>check_circle</mat-icon>
+          <span>Активировать</span>
+        </button>
+        <button mat-menu-item (click)="bulkDeactivateSelected()">
+          <mat-icon>remove_circle</mat-icon>
+          <span>Деактивировать</span>
+        </button>
+      </mat-menu>
     </div>
   </div>
 
@@ -218,4 +210,4 @@
       <p>Загрузка контактов...</p>
     </div>
   </ng-template>
-</div>
+</app-page-layout>

@@ -19,6 +19,7 @@ import { CallScriptDialogComponent } from './call-script-dialog/call-script-dial
 import { RouterLink, RouterModule, Router } from "@angular/router";
 import { CallScript, CallScriptTree } from '../../shared/interfaces/call-script.interface';
 import { CallScriptTreeComponent } from './call-script-tree/call-script-tree.component';
+import { PageLayoutComponent } from '../../shared/page-layout/page-layout.component';
 
 @Component({
   selector: 'app-call-scripts-manager',
@@ -38,7 +39,8 @@ import { CallScriptTreeComponent } from './call-script-tree/call-script-tree.com
     DatePipe,
     CrmTableComponent,
     RouterModule,
-    CallScriptTreeComponent
+    CallScriptTreeComponent,
+    PageLayoutComponent
 ],
   templateUrl: './call-scripts-manager.component.html',
   styleUrls: ['./call-scripts-manager.component.scss']

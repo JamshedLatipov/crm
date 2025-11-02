@@ -21,6 +21,7 @@ import { TaskTypeDisplayComponent } from '../components/task-type-display/task-t
 import { TaskStatusComponent } from '../components/task-status/task-status.component';
 import { TaskModalService } from '../services/task-modal.service';
 import { TaskModalComponent } from '../components/task-modal/task-modal.component';
+import { PageLayoutComponent } from '../../shared/page-layout/page-layout.component';
 
 interface Task {
   id: number;
@@ -63,7 +64,8 @@ interface Task {
     TaskDueDateComponent,
     TaskTypeDisplayComponent,
     TaskStatusComponent,
-    TaskModalComponent
+    TaskModalComponent,
+    PageLayoutComponent
   ],
   templateUrl: './task-list.component.html',
   styleUrls: ['./task-list.component.scss']

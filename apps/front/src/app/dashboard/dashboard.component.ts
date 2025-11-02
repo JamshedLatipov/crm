@@ -11,18 +11,14 @@ import { CallsApiService } from '../services/calls.service';
 import { LeadStatistics } from '../leads/models/lead.model';
 import { ActivityService, ActivityItem } from '../services/activity.service';
 import { Router } from '@angular/router';
+import { PageLayoutComponent } from '../shared/page-layout/page-layout.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, MatCardModule, MatIconModule, MatButtonModule],
+  imports: [CommonModule, RouterModule, MatCardModule, MatIconModule, MatButtonModule, PageLayoutComponent],
   template: `
-    <div class="dashboard" role="region" aria-label="Панель управления">
-      <div class="dashboard-header">
-        <h1>Панель управления</h1>
-        <p class="subtitle">Добро пожаловать в CRM</p>
-      </div>
-
+    <app-page-layout title="Панель управления" subtitle="Добро пожаловать в CRM">
       <div class="dashboard-grid">
         <div class="main-column">
         <!-- Stats Cards -->
@@ -191,31 +187,9 @@ import { Router } from '@angular/router';
         </mat-card>
 
       </div>
-    </div>
+    </app-page-layout>
   `,
   styles: [`
-    .dashboard {
-      max-width: 1400px;
-      margin: 0 auto;
-    }
-
-    .dashboard-header {
-      margin-bottom: 32px;
-    }
-
-    .dashboard-header h1 {
-      font-size: 32px;
-      font-weight: 700;
-      color: #1f2937;
-      margin: 0 0 8px 0;
-    }
-
-    .subtitle {
-      color: #6b7280;
-      font-size: 16px;
-      margin: 0;
-    }
-
     .dashboard-grid {
       display: grid;
       /* Left: main content, Right: activity sidebar */

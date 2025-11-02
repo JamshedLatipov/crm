@@ -20,6 +20,7 @@ import { ContactsService } from './contacts.service';
 import { StatusTabsComponent } from '../shared/components/status-tabs/status-tabs.component';
 import { Router } from '@angular/router';
 import { Contact, ContactsStats } from './contact.interfaces';
+import { PageLayoutComponent } from '../shared/page-layout/page-layout.component';
 
 @Component({
   selector: 'app-contacts',
@@ -42,6 +43,7 @@ import { Contact, ContactsStats } from './contact.interfaces';
     FormsModule,
     MatDialogModule,
     StatusTabsComponent,
+    PageLayoutComponent,
   ],
   templateUrl: './contacts.component.html',
   styleUrls: ['./contacts.component.scss'],

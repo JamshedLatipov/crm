@@ -42,6 +42,7 @@ import { AssignLeadDialogComponent } from '../assign-lead-dialog.component';
 import { QuickAssignDialogComponent } from '../quick-assign-dialog.component';
 import { ConvertToDealDialogComponent } from '../convert-to-deal-dialog/convert-to-deal-dialog.component';
 import { leadStatusDisplay, leadSourceDisplay, leadPriorityDisplay } from '../../../shared/utils';
+import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.component';
 
 @Component({
   selector: 'app-leads-list',
@@ -67,6 +68,7 @@ import { leadStatusDisplay, leadSourceDisplay, leadPriorityDisplay } from '../..
     MatDividerModule,
     MatCheckboxModule,
     StatusTabsComponent,
+    PageLayoutComponent,
   ],
   templateUrl: './leads-list.component.html',
   styleUrls: ['./leads-list.component.scss'],

@@ -14,6 +14,7 @@ import { Router } from '@angular/router';
 import { environment } from '../../../../environments/environment';
 import { CallScriptCategory, CallScriptCategoryDialogComponent } from '../call-script-category-dialog/call-script-category-dialog.component';
 import { CrmTableComponent, CrmColumn } from '../../../shared/components/crm-table/crm-table.component';
+import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.component';
 
 @Component({
   selector: 'app-call-script-categories-list-page',
@@ -29,7 +30,8 @@ import { CrmTableComponent, CrmColumn } from '../../../shared/components/crm-tab
     MatToolbarModule,
     MatCardModule,
     MatDialogModule,
-    CrmTableComponent
+    CrmTableComponent,
+    PageLayoutComponent
   ],
   templateUrl: './call-script-categories-list-page.component.html',
   styleUrls: ['./call-script-categories-list-page.component.scss']

@@ -1,44 +1,36 @@
 <div class="call-scripts-manager-container">
-  <!-- Page Header -->
-  <div class="page-header">
-    <div class="header-content">
-      <div class="title-section">
-        <h1>Справочник скриптов для звонков</h1>
-        <p class="subtitle">
-          Всего: {{ totalScriptsCount() }} |
-          Активных: {{ activeScriptsCount() }} |
-          Категорий: {{ categories().length }}
-        </p>
-      </div>
-      <div class="header-actions">
-        <button
-          mat-raised-button
-          color="accent"
-          [routerLink]="'/contact-center/scripts/categories'"
-        >
-          <mat-icon>category</mat-icon>
-          Управление категориями
-        </button>
+<app-page-layout
+  title="Справочник скриптов для звонков"
+  [subtitle]="'Всего: ' + totalScriptsCount() + ' | Активных: ' + activeScriptsCount() + ' | Категорий: ' + categories().length"
+>
+  <div page-actions>
+    <button
+      mat-raised-button
+      color="accent"
+      [routerLink]="'/contact-center/scripts/categories'"
+    >
+      <mat-icon>category</mat-icon>
+      Управление категориями
+    </button>
 
-        <button
-          mat-stroked-button
-          (click)="toggleViewMode()"
-        >
-          <mat-icon>{{ viewMode() === 'tree' ? 'list' : 'account_tree' }}</mat-icon>
-          {{ viewMode() === 'tree' ? 'Список' : 'Дерево' }}
-        </button>
+    <button
+      mat-stroked-button
+      (click)="toggleViewMode()"
+    >
+      <mat-icon>{{ viewMode() === 'tree' ? 'list' : 'account_tree' }}</mat-icon>
+      {{ viewMode() === 'tree' ? 'Список' : 'Дерево' }}
+    </button>
 
-        <button
-          mat-raised-button
-          color="primary"
-          (click)="createNewScript()"
-        >
-          <mat-icon>add</mat-icon>
-          Создать скрипт
-        </button>
-      </div>
-    </div>
+    <button
+      mat-raised-button
+      color="primary"
+      (click)="createNewScript()"
+    >
+      <mat-icon>add</mat-icon>
+      Создать скрипт
+    </button>
   </div>
+</app-page-layout>
 
   <!-- Filters Section -->
   <div class="filters-section">

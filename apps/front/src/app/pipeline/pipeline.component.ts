@@ -16,6 +16,7 @@ import { DealContactSelectorComponent } from './deal-contact-selector.component'
 import { AutomationSettingsComponent } from './automation-settings/automation-settings.component';
 import { DealStatusComponent, DealStatus as DealStatusType } from '../shared/components/deal-status/deal-status.component';
 import { forkJoin } from 'rxjs';
+import { PageLayoutComponent } from '../shared/page-layout/page-layout.component';
 
 @Component({
   selector: 'app-pipeline',
@@ -28,7 +29,8 @@ import { forkJoin } from 'rxjs';
     MatIconModule, 
     MatButtonModule, 
     MatTooltipModule, 
-    DealStatusComponent
+    DealStatusComponent,
+    PageLayoutComponent
   ],
   templateUrl: './pipeline.component.html',
   styleUrls: ['./pipeline.component.scss'],

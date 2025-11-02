@@ -18,6 +18,7 @@ import { PromoCompaniesService } from '../../services/promo-companies.service';
 import { PromoCompany } from '../../models/promo-company.model';
 import { CreatePromoCompanyDialogComponent } from '../create-promo-company-dialog/create-promo-company-dialog.component';
 import { EditPromoCompanyDialogComponent } from '../edit-promo-company-dialog/edit-promo-company-dialog.component';
+import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.component';
 
 @Component({
   selector: 'app-promo-companies-list',
@@ -38,21 +39,18 @@ import { EditPromoCompanyDialogComponent } from '../edit-promo-company-dialog/ed
     MatPaginatorModule,
     MatTooltipModule,
     MatDividerModule,
+    PageLayoutComponent,
   ],
   template: `
-    <div class="promo-companies-page">
-      <!-- Header -->
-      <div class="page-header">
-        <div class="header-content">
-          <h1>Промо-компании</h1>
-          <p class="subtitle">Управление промоутерскими кампаниями и партнерами</p>
-        </div>
-        <div class="header-actions">
-          <button mat-raised-button color="primary" (click)="openCreateDialog()">
-            <mat-icon>add</mat-icon>
-            Создать промо-компанию
-          </button>
-        </div>
+    <app-page-layout
+      title="Промо-компании"
+      subtitle="Управление промоутерскими кампаниями и партнерами"
+    >
+      <div page-actions>
+        <button mat-raised-button color="primary" (click)="openCreateDialog()">
+          <mat-icon>add</mat-icon>
+          Создать промо-компанию
+        </button>
       </div>
 
       <!-- Статистика -->
@@ -225,7 +223,7 @@ import { EditPromoCompanyDialogComponent } from '../edit-promo-company-dialog/ed
           </div>
         </div>
       </div>
-    </div>
+    </app-page-layout>
   `,
   styles: [`
     .promo-companies-page {

@@ -23,6 +23,7 @@ import { UserManagementService, User, UserFilters } from '../../../services/user
 import { PasswordResetSnackbarComponent } from '../../../shared/components/password-reset-snackbar/password-reset-snackbar.component';
 import { StatusTabsComponent } from '../../../shared/components/status-tabs/status-tabs.component';
 import { roleDisplay, getWorkloadColor } from '../../../shared/utils';
+import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.component';
 
 @Component({
   selector: 'app-user-list',
@@ -49,7 +50,8 @@ import { roleDisplay, getWorkloadColor } from '../../../shared/utils';
     MatCardModule,
     MatDividerModule
     ,
-    StatusTabsComponent
+    StatusTabsComponent,
+    PageLayoutComponent
   ],
   templateUrl: './user-list.component.html',
   changeDetection: ChangeDetectionStrategy.Default,

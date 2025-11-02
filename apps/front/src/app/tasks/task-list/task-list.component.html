@@ -1,9 +1,5 @@
-<div class="page-header">
-  <div class="header-content">
-    <h1>Задачи</h1>
-    <p class="subtitle">Управление задачами и их выполнением</p>
-  </div>
-  <div class="header-actions">
+<app-page-layout title="Задачи" subtitle="Управление задачами и их выполнением">
+  <div page-actions>
     <button mat-stroked-button (click)="goToTaskTypes()">
       <mat-icon>category</mat-icon>
       Типы задач
@@ -13,10 +9,9 @@
       Создать задачу
     </button>
   </div>
-</div>
 
-<!-- Статистика -->
-<div class="stats-section">
+  <!-- Статистика -->
+  <div class="stats-section">
   <div class="stats-grid">
     <div class="stat-card">
       <div class="stat-icon">
@@ -245,3 +240,4 @@
 
 <!-- Task creation modal -->
 <app-task-modal></app-task-modal>
+</app-page-layout>

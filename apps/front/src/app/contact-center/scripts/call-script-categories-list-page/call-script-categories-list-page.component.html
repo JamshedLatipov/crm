@@ -1,23 +1,17 @@
-<!-- Page Header -->
-<div class="page-header">
-  <div class="header-content">
-    <div class="title-section">
-      <button mat-icon-button (click)="goBack()" class="back-button">
-        <mat-icon>arrow_back</mat-icon>
-      </button>
-      <div class="title-info">
-        <h1>Управление категориями скриптов</h1>
-        <p class="subtitle">Создавайте и управляйте категориями для организации скриптов звонков</p>
-      </div>
-    </div>
-    <div class="header-actions">
-      <button mat-raised-button color="primary" (click)="openCreateCategoryDialog()">
-        <mat-icon>add</mat-icon>
-        Создать категорию
-      </button>
-    </div>
+<app-page-layout
+  title="Управление категориями скриптов"
+  subtitle="Создавайте и управляйте категориями для организации скриптов звонков"
+>
+  <div page-actions>
+    <button mat-icon-button (click)="goBack()" class="back-button">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <button mat-raised-button color="primary" (click)="openCreateCategoryDialog()">
+      <mat-icon>add</mat-icon>
+      Создать категорию
+    </button>
   </div>
-</div>
+</app-page-layout>
 
 <!-- Page Content -->
 <div class="page-content">

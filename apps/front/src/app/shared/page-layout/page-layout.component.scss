@@ -1,0 +1,50 @@
+.page-layout {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  padding: 24px 32px;
+  background: var(--primary-color, #4285f4);
+  border-radius: 16px;
+  color: white;
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+
+  .header-content {
+    h1 {
+      margin: 0;
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      margin: 8px 0 0 0;
+      font-size: 16px;
+      opacity: 0.9;
+    }
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+
+    button {
+      height: 48px;
+      padding: 0 24px;
+      border-radius: 12px;
+      font-weight: 600;
+      background: white;
+      color: #667eea;
+
+      mat-icon {
+        margin-right: 8px;
+      }
+    }
+  }
+}

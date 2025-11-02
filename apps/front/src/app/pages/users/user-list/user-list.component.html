@@ -1,40 +1,27 @@
-<div class="user-list-container">
-  <!-- Header -->
-  <div class="page-header">
-    <div class="header-content">
-      <div class="title-section">
-        <h1>Управление пользователями</h1>
-        <p class="subtitle">
-          Всего: {{ userService.totalUsers() }} | Активных:
-          {{ userService.activeUsers() }} | Доступных:
-          {{ userService.availableUsers() }}
-        </p>
-      </div>
-      <div class="header-actions">
-        <button
-          mat-raised-button
-          color="primary"
-          (click)="createUser()"
-          [disabled]="userService.isLoading()"
-        >
-          <mat-icon>add</mat-icon>
-          Добавить пользователя
-        </button>
-        <button
-          mat-stroked-button
-          [matMenuTriggerFor]="actionsMenu"
-          [disabled]="selectedUsers().length === 0"
-          [attr.aria-disabled]="selectedUsers().length === 0"
-          title="Выберите пользователей, чтобы открыть действия"
-        >
-          <mat-icon>more_vert</mat-icon>
-          Действия
-          @if (selectedUsers().length > 0) {
-            ({{ selectedUsers().length }})
-          }
-        </button>
-      </div>
-    </div>
+<app-page-layout title="Управление пользователями" subtitle="Всего: {{ userService.totalUsers() }} | Активных: {{ userService.activeUsers() }} | Доступных: {{ userService.availableUsers() }}">
+  <div page-actions>
+    <button
+      mat-raised-button
+      color="primary"
+      (click)="createUser()"
+      [disabled]="userService.isLoading()"
+    >
+      <mat-icon>add</mat-icon>
+      Добавить пользователя
+    </button>
+    <button
+      mat-stroked-button
+      [matMenuTriggerFor]="actionsMenu"
+      [disabled]="selectedUsers().length === 0"
+      [attr.aria-disabled]="selectedUsers().length === 0"
+      title="Выберите пользователей, чтобы открыть действия"
+    >
+      <mat-icon>more_vert</mat-icon>
+      Действия
+      @if (selectedUsers().length > 0) {
+        ({{ selectedUsers().length }})
+      }
+    </button>
   </div>
 
   <!-- Filters -->
@@ -336,4 +323,4 @@
       <span>Удалить выбранных</span>
     </button>
   </mat-menu>
-</div>
+</app-page-layout>
