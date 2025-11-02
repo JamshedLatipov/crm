@@ -11,6 +11,7 @@ import { RolesGuard } from './roles.guard';
 import { JwtStrategy } from './jwt.strategy';
 import { PsAuth } from '../calls/entities/ps-auth.entity';
 import { PsEndpoint } from '../calls/entities/ps-endpoint.entity';
+import { UserActivityModule } from '../user-activity/user-activity.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { PsEndpoint } from '../calls/entities/ps-endpoint.entity';
       secret: process.env.JWT_SECRET || 'secret',
       signOptions: { expiresIn: '1d' },
     }),
+    UserActivityModule,
   ],
   providers: [AuthService, UserService, RolesGuard, JwtStrategy],
   controllers: [AuthController, UserController],

@@ -152,11 +152,7 @@
 
             <mat-tab label="Активность">
               <div class="tab-content">
-                <mat-card>
-                  <mat-card-content>
-                    <p class="text-gray-500 text-center py-8">История активности будет доступна в следующих версиях</p>
-                  </mat-card-content>
-                </mat-card>
+                <app-user-activity [user]="currentUser()!"></app-user-activity>
               </div>
             </mat-tab>
 

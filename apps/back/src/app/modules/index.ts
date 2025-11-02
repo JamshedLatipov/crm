@@ -17,6 +17,7 @@ import { ReportsModule } from './reports/reports.module';
 import { ContactCenterModule } from './contact-center/contact-center.module';
 import { PromoCompaniesModule } from './promo-companies/promo-companies.module';
 import { CallScriptsModule } from './call-scripts/call-scripts.module';
+import { UserActivityModule } from './user-activity/user-activity.module';
 
 export const MODULES = [
     LeadModule,
@@ -38,4 +39,5 @@ export const MODULES = [
     ContactCenterModule,
     PromoCompaniesModule,
     CallScriptsModule,
+    UserActivityModule,
 ];

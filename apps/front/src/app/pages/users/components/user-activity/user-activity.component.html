@@ -1,0 +1,74 @@
+<div class="user-activity">
+  <mat-card class="activity-card">
+    <mat-card-header>
+      <div mat-card-avatar class="activity-avatar">
+        <mat-icon>timeline</mat-icon>
+      </div>
+      <mat-card-title>История активности</mat-card-title>
+      <mat-card-subtitle>Последние действия пользователя</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <div *ngIf="isLoading()" class="loading-container">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Загрузка активности...</p>
+      </div>
+
+      <div *ngIf="!isLoading() && activities().length === 0" class="empty-state">
+        <mat-icon>history</mat-icon>
+        <h3>Нет активности</h3>
+        <p>История действий пользователя будет отображаться здесь</p>
+      </div>
+
+      <div *ngIf="!isLoading() && activities().length > 0" class="activity-list">
+        <div
+          *ngFor="let activity of activities(); trackBy: trackByActivityId"
+          class="activity-item"
+        >
+          <div class="activity-icon">
+            <mat-icon
+              [matTooltip]="getActivityTypeLabel(activity.type)"
+              [style.color]="getActivityColor(activity.type) === 'success' ? '#4caf50' :
+                           getActivityColor(activity.type) === 'warn' ? '#ff9800' :
+                           getActivityColor(activity.type) === 'primary' ? '#2196f3' :
+                           getActivityColor(activity.type) === 'accent' ? '#9c27b0' : '#757575'"
+            >
+              {{ getActivityIcon(activity.type) }}
+            </mat-icon>
+          </div>
+
+          <div class="activity-content">
+            <div class="activity-description">{{ activity.description }}</div>
+            <div class="activity-timestamp">{{ formatTimestamp(activity.timestamp) }}</div>
+
+            <!-- Additional metadata -->
+            <div *ngIf="activity.metadata" class="activity-metadata">
+              <mat-chip *ngIf="activity.metadata['leadName']">
+                {{ activity.metadata['leadName'] }}
+              </mat-chip>
+
+              <mat-chip *ngIf="activity.metadata['phoneNumber']">
+                {{ activity.metadata['phoneNumber'] }}
+              </mat-chip>
+
+              <mat-chip *ngIf="activity.metadata['duration']">
+                {{ formatDuration(activity.metadata['duration']) }}
+              </mat-chip>
+
+              <mat-chip *ngIf="activity.metadata['skillName']">
+                {{ activity.metadata['skillName'] }}
+              </mat-chip>
+            </div>
+          </div>
+        </div>
+      </div>
+    </mat-card-content>
+
+    <mat-card-actions *ngIf="!isLoading() && activities().length > 0">
+      <button mat-button color="primary">
+        <mat-icon>expand_more</mat-icon>
+        Показать больше
+      </button>
+    </mat-card-actions>
+  </mat-card>
+</div>

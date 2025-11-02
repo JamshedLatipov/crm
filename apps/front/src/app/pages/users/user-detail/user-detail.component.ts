@@ -24,6 +24,7 @@ import { UserHeaderComponent } from '../components/user-header/user-header.compo
 import { UserRolesComponent } from '../components/user-roles/user-roles.component';
 import { UserTerritoriesComponent } from '../components/user-territories/user-territories.component';
 import { UserSkillsComponent } from '../components/user-skills/user-skills.component';
+import { UserActivityComponent } from '../components/user-activity/user-activity.component';
 import { roleDisplay, getUserStatusBadgeClass } from '../../../shared/utils';
 
 type TabType = 'overview' | 'performance' | 'activity';
@@ -41,6 +42,7 @@ type TabType = 'overview' | 'performance' | 'activity';
     UserRolesComponent,
     UserTerritoriesComponent,
     UserSkillsComponent,
+    UserActivityComponent,
     MatFormFieldModule,
     MatInputModule,
     MatAutocompleteModule,

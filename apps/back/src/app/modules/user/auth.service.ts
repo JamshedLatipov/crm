@@ -6,6 +6,8 @@ import { PsAuth } from '../calls/entities/ps-auth.entity';
 import { PsEndpoint } from '../calls/entities/ps-endpoint.entity';
 import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
+import { UserActivityService } from '../user-activity/user-activity.service';
+import { Request } from 'express';
 
 @Injectable()
 export class AuthService {
@@ -16,7 +18,8 @@ export class AuthService {
   private readonly psAuthRepo: Repository<PsAuth>,
   @InjectRepository(PsEndpoint)
   private readonly psEndpointRepo: Repository<PsEndpoint>,
-    private readonly jwtService: JwtService
+    private readonly jwtService: JwtService,
+    private readonly userActivityService: UserActivityService,
   ) {}
 
   async validateUser(username: string, password: string): Promise<User | null> {
@@ -28,7 +31,7 @@ export class AuthService {
     return null;
   }
 
-  async login(user: User) {
+  async login(user: User, request?: Request) {
     // Attempt to resolve SIP auth credentials (if endpoint linked & has auth ref)
     let sip: { username?: string; password?: string } | undefined;
     if (user.sipEndpointId) {
@@ -39,6 +42,16 @@ export class AuthService {
         if (auth) sip = { username: auth.username, password: auth.password };
       }
     }
+
+    // Log login activity
+    if (request) {
+      await this.userActivityService.logLogin(
+        user.id.toString(),
+        request.ip,
+        request.get('User-Agent'),
+      );
+    }
+
     const payload = { username: user.username, sub: user.id, roles: user.roles, operator: sip };
     return {
       access_token: this.jwtService.sign(payload),

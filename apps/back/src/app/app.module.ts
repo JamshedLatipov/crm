@@ -18,6 +18,7 @@ import { TASKS_MIGRATIONS } from './modules/tasks/migrations';
 import { ADS_INTEGRATION_MIGRATIONS } from './modules/ads-integration/migrations';
 import { PROMO_COMPANIES_MIGRATIONS } from './modules/promo-companies/migrations';
 import { CALL_SCRIPTS_MIGRATIONS } from './modules/call-scripts/migrations';
+import { USER_ACTIVITY_MIGRATIONS } from './modules/user-activity/migrations';
 
 @Module({
   imports: [
@@ -29,7 +30,7 @@ import { CALL_SCRIPTS_MIGRATIONS } from './modules/call-scripts/migrations';
       username: process.env.DB_USER || 'postgres',
       password: process.env.DB_PASS || 'postgres',
       database: process.env.DB_NAME || 'crm',
-      synchronize: false,
+      synchronize: true,
       autoLoadEntities: true,
       migrations: [
         ...CALLS_MIGRATIONS,
@@ -44,6 +45,7 @@ import { CALL_SCRIPTS_MIGRATIONS } from './modules/call-scripts/migrations';
         ...ADS_INTEGRATION_MIGRATIONS,
         ...PROMO_COMPANIES_MIGRATIONS,
         ...CALL_SCRIPTS_MIGRATIONS,
+        ...USER_ACTIVITY_MIGRATIONS,
       ],
       migrationsRun: true,
     }),
