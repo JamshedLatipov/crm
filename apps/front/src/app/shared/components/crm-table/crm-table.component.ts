@@ -5,6 +5,10 @@ import {
   EventEmitter,
   ViewChild,
   AfterViewInit,
+  ContentChildren,
+  Directive,
+  Input as NgInput,
+  QueryList,
   TemplateRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -25,6 +29,16 @@ export interface CrmColumn {
   width?: string;
   cell?: (row: any) => string | number | null;
   template?: string; // Template reference name for ng-template
+}
+
+/**
+ * Directive to mark a projected template for a specific column key.
+ * Usage: <ng-template crmColumnTemplate="status" let-row>...</ng-template>
+ */
+@Directive({ selector: '[crmColumnTemplate]', standalone: true })
+export class CrmColumnTemplateDirective {
+  @NgInput('crmColumnTemplate') name!: string;
+  constructor(public template: TemplateRef<any>) {}
 }
 
 @Component({
@@ -80,6 +94,10 @@ export interface CrmColumn {
             ></mat-checkbox>
           </td>
         </ng-container>
+
+
+            <!-- Allow projected templates for column cells -->
+            <ng-content></ng-content>
 
         <ng-container *ngFor="let col of columns" [matColumnDef]="col.key">
           <th
@@ -365,6 +383,22 @@ export interface CrmColumn {
   ],
 })
 export class CrmTableComponent implements AfterViewInit {
+  // Collect projected templates marked with CrmColumnTemplateDirective
+  @ContentChildren(CrmColumnTemplateDirective) projected?: QueryList<CrmColumnTemplateDirective>;
+
+  // Map of projected templates by name
+  projectedTemplates: { [k: string]: TemplateRef<any> } = {};
+
+  ngAfterContentInit() {
+    if (this.projected) {
+      this.projectedTemplates = {};
+      this.projected.forEach((d) => {
+        if (d && d.name && d.template) this.projectedTemplates[d.name] = d.template;
+      });
+    }
+  }
+
+  // Support both @Input() templates and projectedTemplates
   @Input() title?: string;
   @Input() columns: CrmColumn[] = [];
   @Input() data: any[] = [];
@@ -391,7 +425,7 @@ export class CrmTableComponent implements AfterViewInit {
   constructor() {}
 
   getTemplate(templateName: string): TemplateRef<any> | null {
-    return this.templates[templateName] || null;
+    return this.templates[templateName] || this.projectedTemplates[templateName] || null;
   }
 
   ngAfterViewInit(): void {

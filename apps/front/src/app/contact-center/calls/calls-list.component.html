@@ -1,0 +1,58 @@
+<app-page-layout title="Список звонков" [subtitle]="'Просмотр CDR записей'">
+  <div page-actions>
+    <button mat-stroked-button (click)="load(1)">
+      <mat-icon>refresh</mat-icon>
+      Обновить
+    </button>
+  </div>
+</app-page-layout>
+
+<!-- Filters Section -->
+<div class="filters-section">
+  <div class="filters-grid">
+    <mat-form-field appearance="outline">
+      <mat-label>От (src)</mat-label>
+      <input matInput placeholder="Src" [(ngModel)]="srcFilter" (ngModelChange)="load(1)" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Кому (dst)</mat-label>
+      <input matInput placeholder="Dst" [(ngModel)]="dstFilter" (ngModelChange)="load(1)" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Статус (disposition)</mat-label>
+      <input matInput placeholder="Disposition" [(ngModel)]="dispositionFilter" (ngModelChange)="load(1)" />
+    </mat-form-field>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="content-section">
+  <div *ngIf="loading()" class="loading">
+    <mat-spinner diameter="36"></mat-spinner>
+  </div>
+
+  <crm-table
+    [columns]="columns"
+    [data]="tableData"
+    [pageSize]="limit()"
+  >
+    <ng-template crmColumnTemplate="statusTemplate" let-row>
+      <div [class]="dispositionInfo(row.disposition).cls">
+        <mat-icon class="status-icon">{{ dispositionInfo(row.disposition).icon }}</mat-icon>
+        <span class="status-text">{{ dispositionInfo(row.disposition).text }}</span>
+      </div>
+    </ng-template>
+
+    <ng-template crmColumnTemplate="actionsTemplate" let-row>
+      <div class="actions-cell">
+        <div class="actions-inner">
+          <button mat-icon-button (click)="view(row)">
+            <mat-icon>visibility</mat-icon>
+          </button>
+        </div>
+      </div>
+    </ng-template>
+  </crm-table>
+</div>

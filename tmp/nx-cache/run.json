@@ -1,8 +1,8 @@
 {
   "run": {
     "command": "nx build front",
-    "startTime": "2025-11-02T11:51:27.457Z",
-    "endTime": "2025-11-02T11:51:44.551Z",
+    "startTime": "2025-11-19T13:54:42.991Z",
+    "endTime": "2025-11-19T13:54:54.100Z",
     "inner": false
   },
   "tasks": [
@@ -10,9 +10,9 @@
       "taskId": "front:build:production",
       "target": "build",
       "projectName": "front",
-      "hash": "4065261780914739376",
-      "startTime": "2025-11-02T11:51:27.493Z",
-      "endTime": "2025-11-02T11:51:44.530Z",
+      "hash": "8734004574620050233",
+      "startTime": "2025-11-19T13:54:43.018Z",
+      "endTime": "2025-11-19T13:54:54.084Z",
       "params": "",
       "cacheStatus": "cache-miss",
       "status": 0

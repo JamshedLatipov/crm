@@ -1,0 +1,33 @@
+.calls-card { max-width: 1200px; margin: 16px auto; }
+.filters { display:flex; gap:8px; margin-bottom:12px; }
+.filters input { padding:8px 10px; border-radius:6px; border:1px solid #e5e7eb; }
+.calls-table { width:100%; }
+.loading { display:flex; align-items:center; justify-content:center; padding:16px; }
+
+/* Status chips for call dispositions */
+.status-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 6px 10px;
+	border-radius: 16px;
+	font-weight: 600;
+	font-size: 13px;
+	color: #fff;
+	box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+	white-space: nowrap;
+}
+
+.status-chip .status-icon {
+	font-size: 16px;
+	opacity: 0.95;
+}
+
+.status-chip.answered { background: #16a34a; border: 1px solid rgba(22,163,74,0.9); }
+.status-chip.no-answer { background: #6b7280; border: 1px solid rgba(107,114,128,0.9); }
+.status-chip.busy { background: #f97316; border: 1px solid rgba(249,115,22,0.9); }
+.status-chip.failed { background: #ef4444; border: 1px solid rgba(239,68,68,0.9); }
+.status-chip.voicemail { background: #7c3aed; border: 1px solid rgba(124,58,237,0.9); }
+.status-chip.unknown { background: #374151; border: 1px solid rgba(55,65,81,0.9); }
+
+.status-text { line-height: 1; }

@@ -29,6 +29,7 @@ import { AdsCampaignDetailComponent } from './pages/ads/ads-campaign-detail.comp
 import { AdsAccountsComponent } from './pages/ads/ads-accounts.component';
 import { TaskCalendarPageComponent } from './tasks/task-calendar/task-calendar-page.component';
 import { PromoCompaniesComponent } from './promo-companies/promo-companies.component';
+import { ContactCenterCallsComponent } from './contact-center/calls/calls-list.component';
 
 export const appRoutes: Route[] = [
     { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
@@ -49,6 +50,7 @@ export const appRoutes: Route[] = [
         canActivate: [authGuard],
         children: [
             { path: '', redirectTo: 'monitoring', pathMatch: 'full' },
+            { path: 'calls', component: ContactCenterCallsComponent },
             { path: 'monitoring', component: OnlineMonitoringComponent },
             { path: 'ivr', component: IvrAdminComponent },
             { path: 'scripts', component: CallScriptsManagerComponent },

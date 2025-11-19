@@ -18,6 +18,14 @@ export interface User {
   isAvailable: boolean;
   skills: string[];
   territories: string[];
+  // Optional fields present on raw /users responses used by various components
+  sip_endpoint_id?: string; // snake_case from backend
+  sipEndpointId?: string; // camelCase variant
+  sipEndpoint?: string;
+  firstName?: string;
+  lastName?: string;
+  fullName?: string;
+  username?: string;
 }
 
 export interface ManagersStats {
@@ -85,5 +93,12 @@ export class UsersService {
     }
 
     return this.http.get<User>(`${this.apiUrl}/users/managers/auto-assign?${params.toString()}`);
+  }
+
+  /**
+   * Get all users (raw) — used by UI components that need user metadata such as sip_endpoint_id
+   */
+  getAllUsers(): Observable<User[]> {
+    return this.http.get<User[]>(`${this.apiUrl}/users`);
   }
 }
