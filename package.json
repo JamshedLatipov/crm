@@ -109,6 +109,7 @@
     "dayjs": "^1.11.9",
     "ffmpeg-static": "^5.1.0",
     "jssip": "^3.10.1",
+    "lodash-es": "^4.17.21",
     "ng2-charts": "^8.0.0",
     "node-fetch": "^2.7.0",
     "passport": "^0.7.0",

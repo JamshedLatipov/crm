@@ -54,5 +54,15 @@
         </div>
       </div>
     </ng-template>
+
+    <ng-template crmColumnTemplate="mediaTemplate" let-row>
+      <div class="media-cell">
+        <ng-container *ngIf="row.matchedMedia; else noMedia">
+          <audio controls preload="none" [src]="row.matchedMedia.url || (env.apiBase + '/ivr/media/' + row.matchedMedia.id)"></audio>
+          <a class="media-download" [href]="row.matchedMedia.url || (env.apiBase + '/ivr/media/' + row.matchedMedia.id)" target="_blank" rel="noopener">Скачать</a>
+        </ng-container>
+        <ng-template #noMedia>-</ng-template>
+      </div>
+    </ng-template>
   </crm-table>
 </div>

@@ -1,5 +1,7 @@
 import { Component, signal, inject, OnInit } from '@angular/core';
 import { UsersService } from '../../users/users.service';
+import { IvrApiService } from '../../ivr/ivr.service';
+import { environment } from '../../../environments/environment';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableModule } from '@angular/material/table';
@@ -40,6 +42,8 @@ export class ContactCenterCallsComponent implements OnInit {
   private svc = inject(CallsService);
   private opSvc = inject(ContactCenterMonitoringService);
   private usersSvc = inject(UsersService);
+  private ivr = inject(IvrApiService);
+  public env = environment;
 
   // operator id -> name map
   operatorMap = signal<Record<string, string>>({});
@@ -76,6 +80,7 @@ export class ContactCenterCallsComponent implements OnInit {
         return `${m}:${String(s).padStart(2, '0')}`;
       }
     },
+    { key: 'media', label: 'Аудио', template: 'mediaTemplate' },
     { key: 'actions', label: '', template: 'actionsTemplate' }
   ];
   data = signal<CdrItem[]>([]);
@@ -86,6 +91,7 @@ export class ContactCenterCallsComponent implements OnInit {
   srcFilter = signal('');
   dstFilter = signal('');
   dispositionFilter = signal('');
+  mediaList = signal<{ id: string; name?: string; filename?: string }[]>([]);
 
   get tableData() {
     return this.data();
@@ -146,6 +152,12 @@ export class ContactCenterCallsComponent implements OnInit {
         this.load();
       }
     });
+
+    // load IVR media files (prompts and stored audio) so we can try to match recordings
+    this.ivr.mediaList().subscribe({
+      next: (m) => this.mediaList.set(m || []),
+      error: () => this.mediaList.set([]),
+    });
   }
 
   load(p = this.page(), l = this.limit()) {
@@ -153,7 +165,37 @@ export class ContactCenterCallsComponent implements OnInit {
     this.svc.list(p, l, { src: this.srcFilter(), dst: this.dstFilter(), disposition: this.dispositionFilter() }).subscribe({
       next: (res) => {
         const map = this.operatorMap();
-        const prepared = (res.data || []).map((it: any) => ({ ...it, operatorName: (it.user && map[it.user]) ? map[it.user] : it.user }));
+        const media = this.mediaList();
+        const prepared = (res.data || []).map((it: any) => {
+          // prefer explicit recording reference if present in CDR (recordingfile)
+          let found = undefined as any;
+          if (it.recordingfile) {
+            const filename = it.recordingfile;
+            const url = this.env.apiBase + '/recordings/' + encodeURIComponent(filename);
+            found = { id: filename, filename, url, name: filename };
+          }
+
+          // fallback: try to find matching IVR media by uniqueid or by src/dst
+          if (!found) {
+            const uid = it.uniqueid || it.id || '';
+            const src = (it.src || '').toString();
+            const dst = (it.dst || '').toString();
+            if (uid) {
+              const m = media.find((m: any) => (m.filename || '').includes(uid));
+              if (m) found = { ...m, url: this.env.apiBase + '/ivr/media/' + m.id };
+            }
+            if (!found && src) {
+              const m = media.find((m: any) => (m.filename || '').includes(src) || (m.name || '').includes(src));
+              if (m) found = { ...m, url: this.env.apiBase + '/ivr/media/' + m.id };
+            }
+            if (!found && dst) {
+              const m = media.find((m: any) => (m.filename || '').includes(dst) || (m.name || '').includes(dst));
+              if (m) found = { ...m, url: this.env.apiBase + '/ivr/media/' + m.id };
+            }
+          }
+
+          return { ...it, operatorName: (it.user && map[it.user]) ? map[it.user] : it.user, matchedMedia: found };
+        });
         this.data.set(prepared);
         this.total.set(res.total || (res.data || []).length);
         this.page.set(res.page || p);

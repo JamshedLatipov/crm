@@ -1,0 +1,25 @@
+<app-page-layout title="Отчёт по операторам" [subtitle]="'Производительность операторов'">
+	<div page-actions>
+		<button mat-stroked-button (click)="load()"><mat-icon>refresh</mat-icon> Обновить</button>
+	</div>
+</app-page-layout>
+
+<div class="filters">
+	<mat-form-field appearance="outline">
+		<mat-label>Поиск оператора</mat-label>
+		<input matInput placeholder="Имя оператора" [ngModel]="filter()" (ngModelChange)="filter.set($event)" />
+	</mat-form-field>
+</div>
+
+<div class="content">
+	<div *ngIf="loading()" class="loading"><mat-spinner diameter="32"></mat-spinner></div>
+	<crm-table *ngIf="!loading()" [columns]="columns" [data]="filtered" [pageSize]="20">
+		<ng-template crmColumnTemplate="name" let-row>
+			<ng-container *ngIf="row.userId; else plainName">
+				<a [routerLink]="['/users', row.userId]">{{ row.name }}</a>
+			</ng-container>
+			<ng-template #plainName>{{ row.name }}</ng-template>
+		</ng-template>
+	</crm-table>
+</div>
+

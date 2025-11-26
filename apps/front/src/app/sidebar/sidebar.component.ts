@@ -55,14 +55,43 @@ export class SidebarComponent {
       label: 'Контакт центр',
       expanded: false,
       children: [
-        { icon: 'visibility', label: 'Онлайн мониторинг', route: '/contact-center/monitoring' },
+        {
+          icon: 'visibility',
+          label: 'Онлайн мониторинг',
+          route: '/contact-center/monitoring',
+        },
         { icon: 'call', label: 'Звонки', route: '/contact-center/calls' },
         { icon: 'dialpad', label: 'IVR', route: '/contact-center/ivr' },
-        { icon: 'description', label: 'Скрипты звонков', route: '/contact-center/scripts' },
+        {
+          icon: 'description',
+          label: 'Скрипты звонков',
+          route: '/contact-center/scripts',
+        },
       ],
     },
     { icon: 'group', label: 'Пользователи', route: '/users' },
-    { icon: 'assessment', label: 'Отчеты', route: '/reports' },
+    {
+      icon: 'assessment',
+      label: 'Отчеты',
+      expanded: false,
+      children: [
+        {
+          icon: 'insights',
+          label: 'Источники звонков',
+          route: '/reports/contact-center/sources',
+        },
+        {
+          icon: 'people_alt',
+          label: 'Отчёт операторов',
+          route: '/reports/contact-center/operators',
+        },
+        {
+          icon: 'queue',
+          label: 'Отчёт по службам',
+          route: '/reports/contact-center/queues',
+        },
+      ],
+    },
     { icon: 'help_outline', label: 'Помощь', route: '/help' },
   ];
 
