@@ -40,6 +40,10 @@
   }
 }
 
+.action-btn {
+  margin:0 5px;
+}
+
 // Page Header (consistent with other pages)
 .page-header {
   display: flex;
@@ -103,66 +107,19 @@
     position: relative;
     z-index: 1;
 
-    .action-btn {
-      height: 48px;
-      padding: 0 24px;
-      border-radius: 12px;
-      font-weight: 600;
-      background: rgba(255, 255, 255, 0.95);
-      color: #667eea;
-      border: none;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      cursor: pointer;
-      backdrop-filter: blur(10px);
-
-      mat-icon {
-        font-size: 20px;
-        width: 20px;
-        height: 20px;
-      }
-
-      &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-        background: white;
-      }
-
-      &:active {
-        transform: translateY(0);
-      }
-
-      &.analytics-btn {
-        color: #667eea;
-      }
-
-      &.automation-btn {
-        color: #059669;
-      }
-
-      &.automation-settings-btn {
-        color: #7c3aed;
-      }
-
-      &.refresh-btn {
-        color: #d97706;
-      }
-    }
-
     .create-btn {
-      height: 48px;
-      padding: 0 28px;
-      border-radius: 12px;
-      font-weight: 600;
-      display: flex;
+      height: 40px;
+      padding: 0 18px;
+      border-radius: 999px;
+      font-weight: 700;
+      display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: rgba(255, 255, 255, 0.2);
-      color: white;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      transition: all 0.3s ease;
+      background: #ffffff; /* solid white */
+      color: var(--primary-color, #4285f4);
+      border: none;
+      box-shadow: 0 6px 18px rgba(66, 133, 244, 0.12);
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
       cursor: pointer;
 
       mat-icon {
@@ -172,9 +129,8 @@
       }
 
       &:hover {
-        background: rgba(255, 255, 255, 0.3);
-        border-color: rgba(255, 255, 255, 0.5);
         transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(66, 133, 244, 0.16);
       }
     }
   }
@@ -453,7 +409,7 @@
       }
 
       .stage-count {
-        background:  #10b981;
+        background: #10b981;
         box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
       }
     }
@@ -548,7 +504,7 @@
   }
 
   .stage-count {
-    background:  #667eea 0%;
+    background: #667eea 0%;
     color: white;
     padding: 6px 12px;
     border-radius: 10px;
@@ -572,9 +528,7 @@
   padding: 10px 12px; // Уменьшено с 20px
   margin: 6px 8px 0 8px; // Уменьшено с 10px
   border-radius: 12px; // Уменьшено с 16px
-  box-shadow: 
-    0 2px 8px rgba(0, 0, 0, 0.05),
-    0 1px 3px rgba(0, 0, 0, 0.08),
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.08),
     0 0 0 1px rgba(0, 0, 0, 0.02);
   cursor: pointer; // Изменено с move на pointer для кликабельности
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); // Быстрее анимация
@@ -592,15 +546,11 @@
     left: 0;
     width: 3px; // Уменьшено с 5px
     height: 100%;
-    background: linear-gradient(180deg, 
-      #667eea 0%, 
-      #764ba2 50%, 
-      #f093fb 100%
-    );
+    background: linear-gradient(180deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
     opacity: 0;
     transition: all 0.3s ease; // Быстрее
   }
-  
+
   // Subtle shine effect on hover
   &::after {
     content: '';
@@ -621,18 +571,16 @@
 
   &:hover {
     background: white;
-    box-shadow: 
-      0 8px 20px rgba(102, 126, 234, 0.12),
-      0 3px 8px rgba(0, 0, 0, 0.1),
-      0 0 0 1px rgba(102, 126, 234, 0.1);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.12),
+      0 3px 8px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(102, 126, 234, 0.1);
     transform: translateY(-3px) scale(1.02); // Меньше подъем
-    
+
     &::before {
       opacity: 1;
       width: 4px; // Уменьшено с 6px
       box-shadow: 0 0 15px rgba(102, 126, 234, 0.5);
     }
-    
+
     &::after {
       transform: translateX(100%) translateY(100%) rotate(45deg);
     }
@@ -646,13 +594,11 @@
 .deal.cdk-drag-dragging {
   opacity: 0.95;
   transform: rotate(4deg) scale(1.08);
-  box-shadow: 
-    0 20px 60px rgba(102, 126, 234, 0.25),
-    0 8px 24px rgba(0, 0, 0, 0.15),
-    0 0 0 3px rgba(102, 126, 234, 0.5);
+  box-shadow: 0 20px 60px rgba(102, 126, 234, 0.25),
+    0 8px 24px rgba(0, 0, 0, 0.15), 0 0 0 3px rgba(102, 126, 234, 0.5);
   z-index: 1000;
   background: white;
-  
+
   &::before {
     opacity: 1;
     width: 8px;
@@ -662,7 +608,8 @@
 }
 
 @keyframes borderPulse {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 30px rgba(102, 126, 234, 0.8);
   }
   50% {
@@ -676,7 +623,7 @@
   align-items: flex-start;
   margin-bottom: 8px; // Уменьшено с 14px
   position: relative;
-  
+
   // Decorative corner accent
   &::before {
     content: '';
@@ -690,7 +637,7 @@
     border-radius: 0 12px 0 12px;
     transition: opacity 0.3s ease;
   }
-  
+
   .deal:hover &::before {
     opacity: 0.2;
   }
@@ -731,7 +678,7 @@
   opacity: 0;
   transform: translateX(10px);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  
+
   .contact-action-btn {
     width: 28px; // Уменьшено с 36px
     height: 28px; // Уменьшено с 36px
@@ -741,7 +688,7 @@
     background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border: 1px solid #e2e8f0;
-    
+
     mat-icon {
       width: 16px; // Уменьшено с 20px
       height: 16px; // Уменьшено с 20px
@@ -750,19 +697,19 @@
       color: #667eea;
       transition: all 0.3s ease;
     }
-    
+
     &:hover {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       transform: scale(1.15) rotate(5deg);
       box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); // Меньше тень
       border-color: transparent;
-      
+
       mat-icon {
         color: white;
         transform: scale(1.1);
       }
     }
-    
+
     &:active {
       transform: scale(1.05) rotate(2deg);
     }
@@ -789,7 +736,7 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: 1px solid transparent;
   font-weight: 500;
-  
+
   mat-icon {
     width: 14px; // Уменьшено с 18px
     height: 14px; // Уменьшено с 18px
@@ -797,14 +744,14 @@
     color: #667eea;
     transition: all 0.3s ease;
   }
-  
+
   &:hover {
     background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
     color: #475569;
     border-color: #c7d2fe;
     transform: translateX(2px); // Уменьшено с 4px
     box-shadow: 0 1px 4px rgba(102, 126, 234, 0.1);
-    
+
     mat-icon {
       transform: scale(1.1); // Уменьшено с 1.2
       color: #764ba2;
@@ -827,7 +774,7 @@
   display: inline-block;
   box-shadow: 0 1px 4px rgba(16, 185, 129, 0.15);
   transition: all 0.3s ease;
-  
+
   &:hover {
     transform: scale(1.03); // Уменьшено с 1.05
     box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
@@ -847,12 +794,12 @@
   gap: 4px; // Уменьшено с 6px
   border: 1px solid #cbd5e1;
   transition: all 0.3s ease;
-  
+
   &::before {
     content: '📊';
     font-size: 11px; // Уменьшено с 14px
   }
-  
+
   &:hover {
     background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
     border-color: #93c5fd;
@@ -872,13 +819,13 @@
   border-radius: 6px; // Уменьшено с 8px
   border: 1px solid #fcd34d;
   transition: all 0.3s ease;
-  
+
   &::before {
     content: '📅';
     font-size: 12px; // Уменьшено с 15px
     animation: dateIconBounce 2s ease-in-out infinite;
   }
-  
+
   &:hover {
     background: linear-gradient(135deg, #fde047 0%, #facc15 100%);
     transform: translateY(-1px); // Уменьшено с -2px
@@ -887,7 +834,8 @@
 }
 
 @keyframes dateIconBounce {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0);
   }
   50% {
@@ -918,7 +866,7 @@
   overflow-x: hidden; // Скрываем горизонтальный скролл
   scroll-behavior: smooth; // Плавный скроллинг
   -webkit-overflow-scrolling: touch; // Плавный скроллинг на iOS
-  
+
   // Оптимизация производительности скроллинга
   will-change: scroll-position;
   transform: translateZ(0); // GPU ускорение
@@ -1088,12 +1036,11 @@
   margin: 6px 8px 0 8px; // Уменьшено с 10px
   padding: 10px 12px; // Уменьшено с 20px
   min-height: 80px; // Уменьшено вдвое со 150px
-  box-shadow: 
-    0 2px 8px rgba(102, 126, 234, 0.1),
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1),
     inset 0 0 20px rgba(102, 126, 234, 0.05);
   position: relative;
   overflow: hidden;
-  
+
   // Animated border effect
   &::before {
     content: '';
@@ -1106,7 +1053,7 @@
     border-radius: 12px; // Уменьшено с 16px
     animation: dashAnimation 1s linear infinite;
   }
-  
+
   // Center icon/text
   &::after {
     content: '↓';
@@ -1130,7 +1077,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.3;
     transform: translate(-50%, -50%) scale(1);
   }

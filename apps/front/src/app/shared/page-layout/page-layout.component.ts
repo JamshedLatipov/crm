@@ -6,7 +6,7 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './page-layout.component.html',
-  styleUrl: './page-layout.component.scss',
+  styleUrls: ['./page-layout.component.scss'],
 })
 export class PageLayoutComponent {
   title = input<string>('');

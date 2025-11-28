@@ -1,5 +1,4 @@
 .page-layout {
-  max-width: 1400px;
   margin: 0 auto;
 }
 
@@ -34,17 +33,41 @@
     gap: 12px;
     align-items: center;
 
+    /* Base button sizing inside header */
     button {
-      height: 48px;
-      padding: 0 24px;
-      border-radius: 12px;
+      height: 44px;
+      padding: 0 18px;
+      border-radius: 10px;
       font-weight: 600;
-      background: white;
-      color: #667eea;
+      min-width: 44px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
 
-      mat-icon {
-        margin-right: 8px;
+    /* Primary action: high-contrast white background with primary-colored text */
+    button.mat-raised-button.mat-primary,
+    button[mat-raised-button][color='primary'] {
+      background: #ffffff !important;
+      color: var(--primary-color, #4285f4) !important;
+      box-shadow: none !important;
+      border: none !important;
+    }
+
+    ::ng-deep {
+      button.mat-stroked-button,
+      button[mat-stroked-button] {
+        color: rgba(255,255,255,0.95) !important;
+        border-color: rgba(255,255,255,0.28) !important;
+        background: rgba(255,255,255,0.04) !important;
       }
     }
+
+    /* Icon-only buttons should be white */
+    button.mat-icon-button {
+      color: #ffffff !important;
+    }
+
+    mat-icon { margin-right: 6px; }
   }
 }

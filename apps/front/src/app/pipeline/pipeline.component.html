@@ -1,21 +1,21 @@
 <app-page-layout title="Pipeline продаж" subtitle="Управление сделками и процессом продаж">
   <div page-actions>
-    <button (click)="openAnalytics()"
+    <button mat-stroked-button (click)="openAnalytics()"
             [disabled]="isLoadingAnalytics()"
             class="action-btn analytics-btn">
       <mat-icon *ngIf="!isLoadingAnalytics()">analytics</mat-icon>
       <mat-icon *ngIf="isLoadingAnalytics()" class="animate-spin">refresh</mat-icon>
       <span>{{ isLoadingAnalytics() ? 'Загрузка...' : 'Аналитика' }}</span>
     </button>
-    <button (click)="openAutomationSettings()" class="action-btn automation-settings-btn">
+    <button mat-stroked-button (click)="openAutomationSettings()" class="action-btn automation-settings-btn">
       <mat-icon>settings</mat-icon>
       <span>Настройки автоматизации</span>
     </button>
-    <button (click)="triggerAutomation()" class="action-btn automation-btn">
+    <button mat-stroked-button (click)="triggerAutomation()" class="action-btn automation-btn">
       <mat-icon>play_arrow</mat-icon>
       <span>Запустить автоматизацию</span>
     </button>
-    <button (click)="load()" class="action-btn refresh-btn" [disabled]="isLoadingData()">
+    <button mat-stroked-button (click)="load()" class="action-btn refresh-btn" [disabled]="isLoadingData()">
       <mat-icon [class.animate-spin]="isLoadingData()">refresh</mat-icon>
       <span>Обновить</span>
     </button>

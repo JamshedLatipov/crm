@@ -219,39 +219,41 @@ textarea.mat-input-element:focus {
   overflow: hidden !important;
 }
 
+/* Standard dialog header: left-aligned title with optional subtitle and a close button on the right.
+   Previously a large centered gradient was applied globally which caused dialogs to look oversized.
+   Keep this neutral so individual dialog components can override styles when needed. */
 .dialog-header {
   display: flex !important;
   align-items: center !important;
-  justify-content: center !important;
-  flex-direction: column !important;
-  padding: 2rem 2rem 1.5rem !important;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-  color: white !important;
-  text-align: center !important;
+  justify-content: space-between !important;
+  padding: 16px 20px !important;
+  background: transparent !important;
+  color: inherit !important;
+  text-align: left !important;
+  border-bottom: 1px solid var(--border-color) !important;
 }
 
 .dialog-title {
   display: flex !important;
   align-items: center !important;
-  justify-content: center !important;
-  gap: 0.75rem !important;
-  font-size: 1.8rem !important;
-  font-weight: 700 !important;
-  margin: 0 0 0.5rem 0 !important;
+  gap: 0.5rem !important;
+  font-size: 1.125rem !important;
+  font-weight: 600 !important;
+  margin: 0 !important;
   line-height: 1.2 !important;
 }
 
 .dialog-title mat-icon {
-  font-size: 2rem !important;
-  width: 2rem !important;
-  height: 2rem !important;
+  font-size: 1.25rem !important;
+  width: 1.25rem !important;
+  height: 1.25rem !important;
 }
 
 .dialog-subtitle {
-  font-size: 1rem !important;
-  opacity: 0.9 !important;
+  font-size: 0.95rem !important;
+  opacity: 0.8 !important;
   margin: 0 !important;
-  line-height: 1.4 !important;
+  line-height: 1.3 !important;
 }
 
 .dialog-content {
