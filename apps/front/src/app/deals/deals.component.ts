@@ -21,6 +21,7 @@ import { Deal, DealStatus as DealStatusEnum } from '../pipeline/dtos';
 import { DealStatus as DealStatusType, DealStatusComponent } from '../shared/components/deal-status/deal-status.component';
 import { StatusTabsComponent } from '../shared/components/status-tabs/status-tabs.component';
 import { DealFormComponent } from './components/deal-form.component/deal-form.component';
+import { PageLayoutComponent } from '../shared/page-layout/page-layout.component';
 import { StatusChangeDialogComponent, StatusChangeData, StatusChangeResult } from './components/status-change-dialog.component';
 import { User } from '../users/users.service';
 
@@ -43,20 +44,16 @@ import { User } from '../users/users.service';
     MatDividerModule,
     DealStatusComponent,
     StatusTabsComponent,
+    PageLayoutComponent,
     MatPaginatorModule
   ],
   template: `
-      <div class="page-header">
-        <div class="header-content">
-          <h1>Сделки</h1>
-          <p class="subtitle">Управление всеми сделками и их статусами</p>
-        </div>
-        <div class="header-actions">
-          <button mat-raised-button color="primary" (click)="openCreateDialog()">
-            <mat-icon>add</mat-icon>
-            Создать сделку
-          </button>
-        </div>
+    <app-page-layout title="Сделки" subtitle="Управление всеми сделками и их статусами">
+      <div page-actions>
+        <button mat-raised-button color="primary" (click)="openCreateDialog()">
+          <mat-icon>add</mat-icon>
+          Создать сделку
+        </button>
       </div>
 
       <!-- Статистика -->
@@ -251,6 +248,7 @@ import { User } from '../users/users.service';
           </div>
         </div>
       </div>
+    </app-page-layout>
     `,
   styles: [`
     .deals-page {
