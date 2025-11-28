@@ -1,6 +1,6 @@
 import { Component, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -42,7 +42,7 @@ import { PromoCompany } from '../../models/promo-company.model';
       <form [formGroup]="promoForm" class="promo-form">
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Промо-компания</mat-label>
-          <mat-select formControlName="promoCompanyId">
+          <mat-select formControlName="promoCompanyId" [disabled]="promoCompanies.length === 0">
             <mat-option *ngFor="let company of promoCompanies" [value]="company.id">
               <div class="option-content">
                 <mat-icon class="option-icon">campaign</mat-icon>
@@ -52,9 +52,11 @@ import { PromoCompany } from '../../models/promo-company.model';
                 </div>
               </div>
             </mat-option>
+            <mat-option *ngIf="promoCompanies.length === 0" [value]="null" disabled>Нет доступных промо-компаний</mat-option>
           </mat-select>
           <mat-icon matSuffix>campaign</mat-icon>
         </mat-form-field>
+        <div *ngIf="promoCompanies.length === 0" class="empty-list-note">Нет активных промо-компаний для присвоения.</div>
       </form>
     </mat-dialog-content>
 
@@ -228,7 +230,7 @@ export class AssignPromoCompanyDialogComponent {
     @Inject(MAT_DIALOG_DATA) public data: any
   ) {
     this.promoForm = this.fb.group({
-      promoCompanyId: [null]
+      promoCompanyId: [null, [Validators.required]]
     });
 
     this.loadPromoCompanies();
