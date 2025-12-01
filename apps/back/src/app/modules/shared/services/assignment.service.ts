@@ -4,6 +4,7 @@ import { Repository, In } from 'typeorm';
 import { User } from '../../user/user.entity';
 import { Assignment } from '../entities/assignment.entity';
 import { NotificationService } from '../services/notification.service';
+import { NotificationType, NotificationChannel, NotificationPriority } from '../entities/notification.entity';
 import { UserActivityService } from '../../user-activity/user-activity.service';
 import { Lead } from '../../leads/lead.entity';
 
@@ -268,15 +269,47 @@ export class AssignmentService {
       order: { assignedAt: 'DESC' }
     });
 
-    return assignments.map(assignment => ({
-      id: assignment.id,
-      userId: assignment.userId,
-      userName: assignment.user?.fullName || assignment.user?.email,
-      userEmail: assignment.user?.email,
-      assignedBy: assignment.assignedBy,
-      assignedAt: assignment.assignedAt,
-      reason: assignment.reason
-    }));
+    const result = [];
+    for (const assignment of assignments) {
+      // Resolve lazy relations if they're Promises
+      const resolvedUser = assignment.user && typeof (assignment.user as any).then === 'function'
+        ? await (assignment.user as any)
+        : assignment.user;
+      const resolvedAssignedBy = assignment.assignedByUser && typeof (assignment.assignedByUser as any).then === 'function'
+        ? await (assignment.assignedByUser as any)
+        : assignment.assignedByUser;
+
+      result.push({
+        id: assignment.id,
+        userId: assignment.userId,
+        userName: resolvedUser?.fullName || resolvedUser?.email,
+        userEmail: resolvedUser?.email,
+        user: resolvedUser ? {
+          id: resolvedUser.id,
+          firstName: resolvedUser.firstName,
+          lastName: resolvedUser.lastName,
+          fullName: (resolvedUser.firstName || resolvedUser.lastName) ? `${resolvedUser.firstName || ''} ${resolvedUser.lastName || ''}`.trim() : resolvedUser.username,
+          email: resolvedUser.email,
+          avatar: resolvedUser.avatar,
+          roles: resolvedUser.roles
+        } : null,
+        assignedBy: assignment.assignedBy,
+        assignedByUserName: resolvedAssignedBy?.fullName || resolvedAssignedBy?.email,
+        assignedByUser: resolvedAssignedBy ? {
+          id: resolvedAssignedBy.id,
+          firstName: resolvedAssignedBy.firstName,
+          lastName: resolvedAssignedBy.lastName,
+          fullName: (resolvedAssignedBy.firstName || resolvedAssignedBy.lastName) ? `${resolvedAssignedBy.firstName || ''} ${resolvedAssignedBy.lastName || ''}`.trim() : resolvedAssignedBy.username,
+          email: resolvedAssignedBy.email,
+          avatar: resolvedAssignedBy.avatar,
+          roles: resolvedAssignedBy.roles
+        } : null,
+        assignedAt: assignment.assignedAt,
+        reason: assignment.reason
+      });
+    }
+
+    return result;
   }
 
   async getAssignmentHistory(entityType: string, entityId: string, limit = 50) {
@@ -290,18 +323,47 @@ export class AssignmentService {
       take: limit
     });
 
-    return assignments.map(assignment => ({
-      id: assignment.id,
-      userId: assignment.userId,
-      userName: assignment.user?.fullName || assignment.user?.email,
-      assignedBy: assignment.assignedBy,
-      assignedByName: assignment.assignedByUser?.fullName || assignment.assignedByUser?.email,
-      assignedAt: assignment.assignedAt,
-      removedAt: assignment.removedAt,
-      status: assignment.status,
-      reason: assignment.reason,
-      removalReason: assignment.removalReason
-    }));
+    const result = [];
+    for (const assignment of assignments) {
+      const resolvedUser = assignment.user && typeof (assignment.user as any).then === 'function'
+        ? await (assignment.user as any)
+        : assignment.user;
+      const resolvedAssignedBy = assignment.assignedByUser && typeof (assignment.assignedByUser as any).then === 'function'
+        ? await (assignment.assignedByUser as any)
+        : assignment.assignedByUser;
+
+      result.push({
+        id: assignment.id,
+        userId: assignment.userId,
+        userName: resolvedUser?.fullName || resolvedUser?.email,
+        user: resolvedUser ? {
+          id: resolvedUser.id,
+          firstName: resolvedUser.firstName,
+          lastName: resolvedUser.lastName,
+          fullName: (resolvedUser.firstName || resolvedUser.lastName) ? `${resolvedUser.firstName || ''} ${resolvedUser.lastName || ''}`.trim() : resolvedUser.username,
+          email: resolvedUser.email,
+          avatar: resolvedUser.avatar,
+          roles: resolvedUser.roles
+        } : null,
+        assignedBy: assignment.assignedBy,
+        assignedByUser: resolvedAssignedBy ? {
+          id: resolvedAssignedBy.id,
+          firstName: resolvedAssignedBy.firstName,
+          lastName: resolvedAssignedBy.lastName,
+          fullName: (resolvedAssignedBy.firstName || resolvedAssignedBy.lastName) ? `${resolvedAssignedBy.firstName || ''} ${resolvedAssignedBy.lastName || ''}`.trim() : resolvedAssignedBy.username,
+          email: resolvedAssignedBy.email,
+          avatar: resolvedAssignedBy.avatar,
+          roles: resolvedAssignedBy.roles
+        } : null,
+        assignedAt: assignment.assignedAt,
+        removedAt: assignment.removedAt,
+        status: assignment.status,
+        reason: assignment.reason,
+        removalReason: assignment.removalReason
+      });
+    }
+
+    return result;
   }
 
   async getUserAssignments(userId: number, query: UserAssignmentQuery = {}) {
@@ -323,16 +385,25 @@ export class AssignmentService {
       take: limit
     });
 
-    return assignments.map(assignment => ({
-      id: assignment.id,
-      entityType: assignment.entityType,
-      entityId: assignment.entityId,
-      assignedBy: assignment.assignedBy,
-      assignedByName: assignment.assignedByUser?.fullName || assignment.assignedByUser?.email,
-      assignedAt: assignment.assignedAt,
-      reason: assignment.reason,
-      status: assignment.status
-    }));
+      return assignments.map(assignment => ({
+        id: assignment.id,
+        entityType: assignment.entityType,
+        entityId: assignment.entityId,
+        assignedBy: assignment.assignedBy,
+        assignedByName: assignment.assignedByUser?.fullName || assignment.assignedByUser?.email,
+        user: assignment.user ? {
+          id: assignment.user.id,
+          firstName: assignment.user.firstName,
+          lastName: assignment.user.lastName,
+          fullName: (assignment.user.firstName || assignment.user.lastName) ? `${assignment.user.firstName || ''} ${assignment.user.lastName || ''}`.trim() : assignment.user.username,
+          email: assignment.user.email,
+          avatar: assignment.user.avatar,
+          roles: assignment.user.roles
+        } : null,
+        assignedAt: assignment.assignedAt,
+        reason: assignment.reason,
+        status: assignment.status
+      }));
   }
 
   async getAssignmentStatistics(period = '30d', groupBy = 'user') {
@@ -374,27 +445,39 @@ export class AssignmentService {
 
     const idsAsString = entityIds.map(String);
 
-    const assignments = await this.assignmentRepository.find({
-      where: {
-        entityType,
-        entityId: In(idsAsString),
-        status: 'active'
-      },
-      relations: ['user', 'assignedByUser'],
-      order: { assignedAt: 'DESC' }
-    });
+    // Use QueryBuilder with explicit joins to ensure lazy relations are loaded correctly
+    const assignments = await this.assignmentRepository.createQueryBuilder('assignment')
+      .leftJoinAndSelect('assignment.user', 'user')
+      .leftJoinAndSelect('assignment.assignedByUser', 'assignedByUser')
+      .where('assignment.entityType = :entityType', { entityType })
+      .andWhere('assignment.entityId IN (:...ids)', { ids: idsAsString })
+      .andWhere('assignment.status = :status', { status: 'active' })
+      .orderBy('assignment.assignedAt', 'DESC')
+      .getMany();
 
     const map = new Map<string, any>();
     for (const assignment of assignments) {
-      // Если для entityId ещё нет записи в map, записываем первый (самый свежий) assignment
       if (!map.has(assignment.entityId)) {
+        const resolvedUser = assignment.user && typeof (assignment.user as any).then === 'function'
+          ? await (assignment.user as any)
+          : assignment.user;
+
         map.set(assignment.entityId, {
           id: assignment.id,
           userId: assignment.userId,
-          userName: assignment.user?.fullName || assignment.user?.email,
-          userEmail: assignment.user?.email,
+          userName: resolvedUser?.fullName || resolvedUser?.email,
+          userEmail: resolvedUser?.email,
           assignedAt: assignment.assignedAt,
-          reason: assignment.reason
+          reason: assignment.reason,
+          user: resolvedUser ? {
+            id: resolvedUser.id,
+            firstName: resolvedUser.firstName,
+            lastName: resolvedUser.lastName,
+            fullName: (resolvedUser.firstName || resolvedUser.lastName) ? `${resolvedUser.firstName || ''} ${resolvedUser.lastName || ''}`.trim() : resolvedUser.username,
+            email: resolvedUser.email,
+            avatar: resolvedUser.avatar,
+            roles: resolvedUser.roles
+          } : null,
         });
       }
     }
@@ -487,28 +570,28 @@ export class AssignmentService {
 
   private async sendAssignmentNotifications(assignments: Assignment[], assignedByUser: User) {
     for (const assignment of assignments) {
-      // Choose a NotificationType appropriate for the entity type
-      let notificationType: any = null;
+      // Choose a NotificationType appropriate for the entity type (use enum values)
+      let notificationType: NotificationType;
       switch (assignment.entityType) {
         case 'lead':
-          notificationType = 'LEAD_ASSIGNED';
+          notificationType = NotificationType.LEAD_ASSIGNED;
           break;
         case 'deal':
-          notificationType = 'DEAL_ASSIGNED';
+          notificationType = NotificationType.DEAL_ASSIGNED;
           break;
         case 'task':
-          notificationType = 'TASK_ASSIGNED';
+          notificationType = NotificationType.TASK_ASSIGNED;
           break;
         default:
-          notificationType = 'SYSTEM_REMINDER';
+          notificationType = NotificationType.SYSTEM_REMINDER;
       }
 
       await this.notificationService.create({
-        type: notificationType as any,
+        type: notificationType,
         title: 'New Assignment',
         message: `You have been assigned to ${assignment.entityType} #${assignment.entityId} by ${assignedByUser.fullName || assignedByUser.email}`,
-        channel: 'in_app' as any,
-        priority: 'medium' as any,
+        channel: NotificationChannel.IN_APP,
+        priority: NotificationPriority.MEDIUM,
         recipientId: assignment.userId.toString(),
         data: {
           assignmentId: assignment.id,

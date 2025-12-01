@@ -122,6 +122,17 @@ export class AssignmentController {
     return this.assignmentService.getAssignmentHistory(entityType, entityId, limit);
   }
 
+  @Post('current/batch')
+  async getCurrentAssignmentsForEntities(@Body() body: { entityType: string; entityIds: (string | number)[] }) {
+    const map = await this.assignmentService.getCurrentAssignmentsForEntities(body.entityType, body.entityIds || []);
+    // Convert Map to plain object for JSON serialization
+    const obj: Record<string, any> = {};
+    for (const [key, value] of map.entries()) {
+      obj[key] = value;
+    }
+    return obj;
+  }
+
   @Get('user/:userId')
   async getUserAssignments(
     @Param('userId', ParseIntPipe) userId: number,

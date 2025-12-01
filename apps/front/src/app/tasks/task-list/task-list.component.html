@@ -172,17 +172,15 @@
       <ng-container matColumnDef="assignedTo">
         <th mat-header-cell *matHeaderCellDef mat-sort-header>Исполнитель</th>
         <td mat-cell *matCellDef="let task">
-          <ng-container *ngIf="task.assignedTo; else noAssignee">
-            <div class="assignee-cell">
-              <div class="user-avatar">
-                {{ task.assignedTo.firstName?.charAt(0) || '?' }}
-              </div>
-              <span>{{ task.assignedTo.firstName }} {{ task.assignedTo.lastName }}</span>
-            </div>
-          </ng-container>
-          <ng-template #noAssignee>
-            <span class="muted">Не назначено</span>
-          </ng-template>
+              <ng-container *ngIf="getAssignedManagerName(task); else noAssignee">
+                <div class="assignee-cell">
+                  <div class="user-avatar">{{ getAssignedManagerName(task).charAt(0) || '?' }}</div>
+                  <span>{{ getAssignedManagerName(task) }}</span>
+                </div>
+              </ng-container>
+              <ng-template #noAssignee>
+                <span class="muted">Не назначено</span>
+              </ng-template>
         </td>
       </ng-container>
 

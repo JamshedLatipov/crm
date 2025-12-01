@@ -24,7 +24,7 @@ import {
   LeadStatus,
 } from '../../models/lead.model';
 import { ChangeStatusDialogComponent } from '../change-status-dialog/change-status-dialog.component';
-import { AssignLeadDialogComponent } from '../assign-lead-dialog/assign-lead-dialog.component';
+import { AssignUserDialogComponent } from '../../../deals/components/assign-user-dialog.component';
 import { EditLeadDialogComponent } from '../edit-lead-dialog/edit-lead-dialog.component';
 import { ConvertToDealDialogComponent } from '../convert-to-deal-dialog/convert-to-deal-dialog.component';
 import { CommentsComponent } from '../../../shared/components/comments/comments.component';
@@ -33,6 +33,7 @@ import { LeadStatusComponent } from '../lead-status/lead-status.component';
 import { LeadPriorityComponent } from '../lead-priority/lead-priority.component';
 import { LeadActionsComponent } from '../lead-actions/lead-actions.component';
 import { TaskListWidgetComponent } from '../../../tasks/components/task-list-widget.component';
+import { AssignmentService } from '../../../services/assignment.service';
 import { PromoCompaniesService } from '../../../promo-companies/services/promo-companies.service';
 import { CreatePromoCompanyDialogComponent } from '../../../promo-companies/components/create-promo-company-dialog/create-promo-company-dialog.component';
 import { AssignPromoCompanyDialogComponent } from '../../../promo-companies/components/assign-promo-company-dialog/assign-promo-company-dialog.component';
@@ -81,6 +82,7 @@ export class LeadDetailComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
   private readonly promoCompaniesService = inject(PromoCompaniesService);
+  private readonly assignmentService = inject(AssignmentService);
 
   lead: Lead = {} as Lead;
   activities: LeadActivity[] = [];
@@ -165,14 +167,21 @@ export class LeadDetailComponent implements OnInit {
 
   private loadCurrentAssignments(): void {
     if (!this.lead?.id) return;
-    this.leadService.getCurrentAssignments(this.lead.id).subscribe({
-      next: (assignments) => {
-        this.currentAssignments = assignments;
+    // Use centralized assignments API to load current assignments for this lead
+    this.assignmentService.getCurrentAssignments('lead', this.lead.id).subscribe({
+      next: (users) => {
+        // assignment service returns User[]; map to local Assignment shape
+        this.currentAssignments = users.map(u => ({
+          userId: u.id,
+          userName: u.name,
+          userEmail: u.email,
+          assignedAt: (u as any).assignedAt || new Date()
+        } as any));
       },
       error: (err) => {
-        console.error('Error loading assignments:', err);
+        console.error('Error loading assignments from central assignments API:', err);
         this.currentAssignments = [];
-      },
+      }
     });
   }
 
@@ -342,20 +351,26 @@ export class LeadDetailComponent implements OnInit {
     if (this.isConverted) {
       return; // Конвертированные лиды нельзя редактировать
     }
-    
-    const dialogRef = this.dialog.open(AssignLeadDialogComponent, {
-      width: '700px',
+    // Open shared users dialog for changing assignee
+    const users = this.managers.map(m => ({ id: m.id?.toString(), name: m.fullName, email: (m as any).email, role: m.roles?.[0] }));
+    const dialogRef = this.dialog.open(AssignUserDialogComponent, {
+      width: '560px',
       maxWidth: '90vw',
       data: {
-        lead: this.lead,
-        currentAssignee: this.getCurrentAssignee(),
-      },
+        deal: { title: this.lead.name, assignedTo: this.getCurrentAssignee() } as any,
+        currentUsers: []
+      }
     });
 
-    dialogRef.afterClosed().subscribe((result: Lead | undefined) => {
-      if (result) {
-        this.lead = result; // Update current lead data
-        this.loadCurrentAssignments(); // Reload assignments
+    dialogRef.afterClosed().subscribe((result: any) => {
+      if (result && result.userId) {
+        this.leadService.assignLead(this.lead.id, result.userId).subscribe({
+          next: (updated) => {
+            this.lead = updated;
+            this.loadCurrentAssignments();
+          },
+          error: (err) => console.error('Error assigning lead:', err)
+        });
       }
     });
   }

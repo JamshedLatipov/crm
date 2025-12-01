@@ -1,21 +1,21 @@
 {
   "run": {
-    "command": "nx serve back --host 0.0.0.0 --watch",
-    "startTime": "2025-11-19T12:31:20.845Z",
-    "endTime": "2025-11-20T15:42:14.953Z",
+    "command": "nx test back --skip-nx-cache",
+    "startTime": "2025-12-01T18:57:39.096Z",
+    "endTime": "2025-12-01T18:57:40.196Z",
     "inner": false
   },
   "tasks": [
     {
-      "taskId": "back:serve",
-      "target": "serve",
+      "taskId": "back:test",
+      "target": "test",
       "projectName": "back",
-      "hash": "4217130301523868424",
-      "startTime": "2025-11-19T12:31:20.874Z",
-      "endTime": "2025-11-20T15:42:14.736Z",
+      "hash": "5572825846157097917",
+      "startTime": "2025-12-01T18:57:39.121Z",
+      "endTime": "2025-12-01T18:57:40.193Z",
       "params": "",
       "cacheStatus": "cache-miss",
-      "status": 1
+      "status": 0
     }
   ]
 }

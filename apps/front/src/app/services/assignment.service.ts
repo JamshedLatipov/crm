@@ -2,6 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, BehaviorSubject } from 'rxjs';
 import { map, catchError, tap } from 'rxjs/operators';
+import { environment } from '@crm/front/environments/environment';
 
 export interface User {
   id: number;
@@ -56,7 +57,7 @@ export class AssignmentService {
 
   // Private properties
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = '/api';
+  private readonly baseUrl = `${environment.apiBase}/assignments`;
   private readonly usersSubject = new BehaviorSubject<User[]>([]);
   private readonly assignmentsSubject = new BehaviorSubject<AssignmentHistory[]>([]);
 
@@ -150,7 +151,7 @@ export class AssignmentService {
     this.setLoading(true);
     this.setError(null);
 
-    return this.http.post<AssignmentResponse>(`${this.baseUrl}/assignments`, request).pipe(
+    return this.http.post<AssignmentResponse>(`${this.baseUrl}/`, request).pipe(
       tap(response => {
         if (response.success) {
           // Обновляем локальное состояние
@@ -190,7 +191,7 @@ export class AssignmentService {
       reason
     };
 
-    return this.http.delete<AssignmentResponse>(`${this.baseUrl}/assignments`, { body: request }).pipe(
+    return this.http.delete<AssignmentResponse>(`${this.baseUrl}/`, { body: request }).pipe(
       tap(response => {
         if (response.success) {
           this.loadAssignmentHistory(entityType, entityId);
@@ -206,7 +207,7 @@ export class AssignmentService {
   // Получение истории назначений
   loadAssignmentHistory(entityType: string, entityId: string | number): Observable<AssignmentHistory[]> {
     return this.http.get<AssignmentHistory[]>(
-      `${this.baseUrl}/assignments/history/${entityType}/${entityId}`
+      `${this.baseUrl}/history/${entityType}/${entityId}`
     ).pipe(
       tap(assignments => {
         this.assignments.set(assignments);
@@ -236,9 +237,17 @@ export class AssignmentService {
 
   // Получение текущих назначений для сущности
   getCurrentAssignments(entityType: string, entityId: string | number): Observable<User[]> {
-    return this.http.get<number[]>(`${this.baseUrl}/assignments/current/${entityType}/${entityId}`).pipe(
+    return this.http.get<number[]>(`${this.baseUrl}/current/${entityType}/${entityId}`).pipe(
       map(userIds => this.users().filter(user => userIds.includes(user.id))),
       catchError(() => of([]))
+    );
+  }
+
+  // Batch: получение текущих назначений для нескольких сущностей
+  getCurrentAssignmentsForEntities(entityType: string, entityIds: (string | number)[]): Observable<Record<string, { id: number; name: string; email?: string; assignedAt?: string }>> {
+    if (!entityIds || entityIds.length === 0) return of({});
+    return this.http.post<any>(`${this.baseUrl}/current/batch`, { entityType, entityIds }).pipe(
+      catchError(() => of({}))
     );
   }
 

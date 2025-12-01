@@ -144,10 +144,8 @@
         <th mat-header-cell *matHeaderCellDef>Ответственный менеджер</th>
         <td mat-cell *matCellDef="let lead" class="manager-cell">
           <div class="manager-container">
-            @if (lead.assignedTo) {
-              <span class="manager-name">
-                {{ getManagerName(lead.assignedTo) }}
-              </span>
+            @if (getAssignedManagerName(lead)) {
+              <span class="manager-name">{{ getAssignedManagerName(lead) }}</span>
             } @else {
               <span class="unassigned-text">Не назначен</span>
             }

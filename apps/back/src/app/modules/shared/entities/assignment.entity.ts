@@ -9,6 +9,7 @@ import {
   Index
 } from 'typeorm';
 import { User } from '../../user/user.entity';
+import { Task } from '../../tasks/task.entity';
 
 @Entity('assignments')
 @Index(['entityType', 'entityId'])
@@ -21,8 +22,8 @@ export class Assignment {
   @Column({ name: 'entity_type' })
   entityType: string;
 
-  @Column({ name: 'entity_id' })
-  entityId: string;
+  @Column({ name: 'entity_id', nullable: true })
+  entityId?: string;
 
   @Column({ name: 'user_id' })
   userId: number;
@@ -92,6 +93,11 @@ export class Assignment {
   @ManyToOne(() => User, { lazy: true })
   @JoinColumn({ name: 'assigned_by' })
   assignedByUser?: User;
+
+  // Optional relation to a Task entity when assignment.entityType === 'task'
+  @ManyToOne(() => Task, { nullable: true, lazy: true })
+  @JoinColumn({ name: 'entity_id' })
+  task?: Task;
 
   // Helper methods
   isActive(): boolean {

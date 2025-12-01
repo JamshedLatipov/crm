@@ -15,6 +15,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSortModule, Sort } from '@angular/material/sort';
 import { TasksService } from '../tasks.service';
+import { AssignmentService } from '../../services/assignment.service';
 import { RouterModule, Router } from '@angular/router';
 import { TaskDueDateComponent } from '../components/task-due-date/task-due-date.component';
 import { TaskTypeDisplayComponent } from '../components/task-type-display/task-type-display.component';
@@ -95,10 +96,14 @@ export class TaskListComponent implements OnInit {
   
   displayedColumns: string[] = ['title', 'taskType', 'status', 'assignedTo', 'dueDate', 'actions'];
   
+  // Map of entityId -> current assignment (from centralized assignments API)
+  currentAssignmentsMap = signal<Record<string, { id: number; name: string; email?: string; assignedAt?: string }>>({});
+
   constructor(
-    private tasksService: TasksService, 
+    private tasksService: TasksService,
     private router: Router,
-    private taskModalService: TaskModalService
+    private taskModalService: TaskModalService,
+    private assignmentService: AssignmentService
   ) {}
 
   ngOnInit() {
@@ -118,6 +123,16 @@ export class TaskListComponent implements OnInit {
         this.tasks.set(data);
         this.updateStats(data);
         this.applyFilters();
+        // Fetch current assignments for the loaded tasks in batch
+        const ids = data.map((t: Task) => t.id).filter(Boolean);
+        if (ids.length) {
+          this.assignmentService.getCurrentAssignmentsForEntities('task', ids).subscribe({
+            next: (map) => this.currentAssignmentsMap.set(map || {}),
+            error: (err) => console.error('Error loading assignments for tasks list:', err)
+          });
+        } else {
+          this.currentAssignmentsMap.set({});
+        }
         this.isLoading.set(false);
       },
       error: () => {
@@ -270,5 +285,21 @@ export class TaskListComponent implements OnInit {
         this.loadTasks();
       });
     }
+  }
+
+  // Return the display name for the assigned user using centralized assignments when available
+  getAssignedManagerName(task: Task): string {
+    const map = this.currentAssignmentsMap();
+    const assigned = map && map[task.id as any];
+    if (assigned && assigned.name) return assigned.name;
+
+    // Fallback to legacy assignedTo field structure
+    if (task.assignedTo) {
+      const first = task.assignedTo.firstName || task.assignedTo.name || '';
+      const last = task.assignedTo.lastName || '';
+      return `${first} ${last}`.trim();
+    }
+
+    return '';
   }
 }
