@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Deal, DealStatus } from './deal.entity';
 import { CreateDealDto } from './dto/create-deal.dto';
 import { UpdateDealDto } from './dto/update-deal.dto';
@@ -65,14 +65,18 @@ export class DealsService {
         .take(limit);
 
       const [items, total] = await qb.getManyAndCount();
+      await this.attachAssignments(items);
       return { items, total };
     }
 
     // Non-paginated legacy behavior
-    return this.dealRepository.find({
+    const deals = await this.dealRepository.find({
       relations: ['stage', 'company', 'contact', 'lead'],
       order: { createdAt: 'DESC' },
     });
+
+    await this.attachAssignments(deals);
+    return deals;
   }
 
   async getDealById(id: string): Promise<Deal> {
@@ -85,24 +89,77 @@ export class DealsService {
       throw new NotFoundException(`Deal with id ${id} not found`);
     }
 
+    // Attach assignment info so frontend receives assigned user
+    await this.attachAssignments(deal);
     return deal;
   }
 
+  /**
+   * Attach current assignment info to a Deal or array of Deals.
+   * Adds `assignedTo` as a string user id when present.
+   */
+  private async attachAssignments(dealsOrDeal: Deal[] | Deal | null): Promise<void> {
+    if (!dealsOrDeal) return;
+    const deals = Array.isArray(dealsOrDeal) ? dealsOrDeal : [dealsOrDeal];
+    if (deals.length === 0) return;
+
+    try {
+      const ids = deals.map(d => String(d.id));
+      const assignmentsMap = await this.assignmentService.getCurrentAssignmentsForEntities('deal', ids);
+
+      for (const deal of deals) {
+        let assign = assignmentsMap.get(String(deal.id));
+        if (!assign) {
+          try {
+            const single = await this.assignmentService.getCurrentAssignments('deal', String(deal.id));
+            if (single && single.length > 0) assign = single[0];
+          } catch (err) {
+            // ignore per-entity lookup errors
+          }
+        }
+
+        if (assign && assign.userId) {
+          (deal as any).assignedTo = String(assign.userId);
+          // attach a richer user object for frontend convenience
+          (deal as any).assignedUser = assign.user ? {
+            id: assign.user.id,
+            firstName: assign.user.firstName,
+            lastName: assign.user.lastName,
+            fullName: assign.user.fullName || `${assign.user.firstName || ''} ${assign.user.lastName || ''}`.trim() || assign.user.username,
+            email: assign.user.email,
+            avatar: assign.user.avatar,
+            roles: assign.user.roles
+          } : null;
+          (deal as any).assignedAt = assign.assignedAt;
+        } else {
+          (deal as any).assignedTo = null;
+          (deal as any).assignedUser = null;
+          (deal as any).assignedAt = null;
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to attach assignments to deals:', err?.message || err);
+      for (const deal of deals) {
+        (deal as any).assignedTo = null;
+      }
+    }
+  }
+
   async createDeal(dto: CreateDealDto, userId?: string, userName?: string): Promise<Deal> {
-    // Создаем сделку без связей
-    const deal = this.dealRepository.create({
+    // Создаем сделку без связей. Note: assignedTo is now stored in `assignments` table.
+    const dealPayload: Partial<Deal> = {
       title: dto.title,
       amount: dto.amount,
       currency: dto.currency,
       probability: dto.probability,
       expectedCloseDate: new Date(dto.expectedCloseDate),
       stageId: dto.stageId,
-      assignedTo: dto.assignedTo,
       notes: dto.notes,
       meta: dto.meta,
-    });
+    };
 
-  const savedDeal = await this.dealRepository.save(deal);
+  const deal = this.dealRepository.create(dealPayload as any);
+  const savedDeal = (await this.dealRepository.save(deal as any)) as Deal;
 
     // Записываем создание сделки в историю
     await this.historyService.createHistoryEntry({
@@ -116,7 +173,7 @@ export class DealsService {
         'Сумма': `${savedDeal.amount} ${savedDeal.currency}`,
         'Вероятность': `${savedDeal.probability}%`,
         'Этап': savedDeal.stageId,
-        'Назначена': savedDeal.assignedTo,
+        'Назначена': (dto as any).assignedTo || null,
         'Ожидаемая дата закрытия': savedDeal.expectedCloseDate.toLocaleDateString('ru-RU')
       }
     });
@@ -149,9 +206,15 @@ export class DealsService {
     const existingDeal = await this.getDealById(id);
     // Извлекаем ID связей из DTO
     const { contactId, companyId, leadId, expectedCloseDate, actualCloseDate, ...dealData } = dto;
+    // assignedTo was removed from Deal entity; if present in DTO, handle via AssignmentService
+    const assignedToPayload = (dealData as any).assignedTo;
+    if ((dealData as any).assignedTo !== undefined) {
+      // remove it so TypeORM update doesn't try to set a non-existing column
+      delete (dealData as any).assignedTo;
+    }
     
     // Обновляем основные данные сделки (только те поля, которые есть в entity)
-    if (Object.keys(dealData).length > 0 || expectedCloseDate || actualCloseDate) {
+  if (Object.keys(dealData).length > 0 || expectedCloseDate || actualCloseDate) {
       // Создаем объект для обновления с правильными типами
       const updateData: Partial<Deal> = { ...dealData };
       
@@ -228,7 +291,26 @@ export class DealsService {
       }
     }
     
-    // Возвращаем обновленную сделку со всеми связями
+    // If an assignedTo was provided in the DTO, handle it via AssignmentService/assignDeal
+    if (assignedToPayload !== undefined) {
+      try {
+        // delegate assignment handling to assignDeal which creates/removes Assignment records
+        await this.assignDeal(id, String(assignedToPayload), userId, userName);
+      } catch (err) {
+        console.warn('Failed to apply assignment change via assignDeal:', err?.message || err);
+      }
+    }
+
+    // If status changed to WON or LOST, complete assignments for this deal
+    if (dto.status !== undefined && (dto.status === DealStatus.WON || dto.status === DealStatus.LOST)) {
+      try {
+        await this.assignmentService.completeAssignment('deal', id, 'Deal closed');
+      } catch (err) {
+        console.warn('Failed to complete assignments for deal:', err?.message || err);
+      }
+    }
+
+    // Return the fully updated deal
     return updatedDeal;
   }
 
@@ -478,9 +560,9 @@ export class DealsService {
     }
     
     console.log('assignDeal called with:', { id, originalManagerId: managerId, normalizedManagerId, userId, userName });
-    const existingDeal = await this.getDealById(id);
-    const oldAssignedTo = existingDeal.assignedTo;
-    console.log('existing deal assignedTo:', oldAssignedTo, typeof oldAssignedTo);
+  const existingDeal = await this.getDealById(id);
+  const oldAssignedTo = (existingDeal as any).assignedTo;
+  console.log('existing deal assignedTo:', oldAssignedTo, typeof oldAssignedTo);
 
     // Если пользователь уже назначен, ничего не делаем
     if (oldAssignedTo === normalizedManagerId) {
@@ -544,13 +626,28 @@ export class DealsService {
     });
     console.log('assignment result:', assignmentResult);
 
-    // Обновляем поле assignedTo в сделке - используем нормализованное значение
-    const updateData = { assignedTo: normalizedManagerId };
-    console.log('updating deal with:', updateData);
-    const updated = await this.updateDeal(id, updateData, userId, userName);
-    console.log('updated deal assignedTo:', updated.assignedTo, typeof updated.assignedTo);
+    // We no longer persist `assignedTo` on the Deal entity (column removed).
+    // Record the assignment change in history and return the deal with relations.
+    try {
+      await this.historyService.createHistoryEntry({
+        dealId: id,
+        fieldName: 'assignedTo',
+        oldValue: existingDeal ? String((existingDeal as any).assignedTo) : null,
+        newValue: normalizedManagerId,
+        changeType: DealChangeType.ASSIGNED,
+        userId,
+        userName,
+        description: `Сделка назначена: ${normalizedManagerId}`,
+        metadata: {
+          'Назначена': normalizedManagerId,
+          'Дата изменения': new Date().toLocaleDateString('ru-RU')
+        }
+      });
+    } catch (err) {
+      console.warn('Failed to write assignment history entry:', err?.message || err);
+    }
 
-    return updated;
+    return this.getDealById(id);
   }
 
   // Фильтрация и поиск
@@ -570,11 +667,18 @@ export class DealsService {
   }
 
   async getDealsByManager(managerId: string): Promise<Deal[]> {
-    return this.dealRepository.find({
-      where: { assignedTo: managerId },
-      relations: ['stage'],
-      order: { createdAt: 'DESC' },
-    });
+    // assignedTo column was removed; fetch deals assigned to manager via AssignmentService
+    try {
+      const assignments = await this.assignmentService.getUserAssignments(Number(managerId), { entityType: 'deal', status: 'active' } as any);
+      const dealIds = assignments.map(a => a.entityId).filter(Boolean);
+      if (dealIds.length === 0) return [];
+  const deals = await this.dealRepository.find({ where: { id: In(dealIds as any) }, relations: ['stage'], order: { createdAt: 'DESC' } });
+  await this.attachAssignments(deals);
+  return deals;
+    } catch (err) {
+      console.warn('Failed to get deals by manager via assignments:', err?.message || err);
+      return [];
+    }
   }
 
   async getOverdueDeals(): Promise<Deal[]> {

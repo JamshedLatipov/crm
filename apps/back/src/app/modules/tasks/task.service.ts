@@ -322,6 +322,15 @@ export class TaskService {
         );
       }
     }
+
+    // If status changed to done/completed, complete assignments for this task
+    if (data.status !== undefined && (data.status === 'done' || data.status === 'completed')) {
+      try {
+        await this.assignmentService.completeAssignment('task', id, 'Task completed');
+      } catch (err) {
+        console.warn('Failed to complete assignments for task:', err?.message || err);
+      }
+    }
     
     return updated;
   }

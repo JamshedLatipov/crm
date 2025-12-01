@@ -4,6 +4,7 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
@@ -11,6 +12,7 @@ import { PipelineStage } from '../pipeline/pipeline.entity';
 import { Company } from '../companies/entities/company.entity';
 import { Contact } from '../contacts/contact.entity';
 import { Lead } from '../leads/lead.entity';
+import { Assignment } from '../shared/entities/assignment.entity';
 
 export enum DealStatus {
   OPEN = 'open',
@@ -78,8 +80,6 @@ export class Deal {
   })
   status: DealStatus;
 
-  @Column({ type: 'varchar' })
-  assignedTo: string; // ID менеджера
 
   @Column('text', { nullable: true })
   notes?: string;
@@ -92,4 +92,7 @@ export class Deal {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @OneToMany(() => Assignment, assignment => assignment.deal)
+  assignments?: Assignment[];
 }

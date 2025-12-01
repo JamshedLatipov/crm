@@ -1,8 +1,8 @@
 {
   "run": {
-    "command": "nx test back --skip-nx-cache",
-    "startTime": "2025-12-01T18:57:39.096Z",
-    "endTime": "2025-12-01T18:57:40.196Z",
+    "command": "nx test back",
+    "startTime": "2025-12-01T20:16:27.011Z",
+    "endTime": "2025-12-01T20:16:28.083Z",
     "inner": false
   },
   "tasks": [
@@ -10,9 +10,9 @@
       "taskId": "back:test",
       "target": "test",
       "projectName": "back",
-      "hash": "5572825846157097917",
-      "startTime": "2025-12-01T18:57:39.121Z",
-      "endTime": "2025-12-01T18:57:40.193Z",
+      "hash": "6120128526277009403",
+      "startTime": "2025-12-01T20:16:27.037Z",
+      "endTime": "2025-12-01T20:16:28.081Z",
       "params": "",
       "cacheStatus": "cache-miss",
       "status": 0

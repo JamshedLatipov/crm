@@ -60,6 +60,20 @@ export class User {
   @Column({ type: 'int', default: 15 })
   maxLeadsCapacity: number; // Максимальная вместимость лидов
 
+  // Workload tracking for deals
+  @Column({ type: 'int', default: 0 })
+  currentDealsCount: number;
+
+  @Column({ type: 'int', default: 20 })
+  maxDealsCapacity: number;
+
+  // Workload tracking for tasks
+  @Column({ type: 'int', default: 0 })
+  currentTasksCount: number;
+
+  @Column({ type: 'int', default: 30 })
+  maxTasksCapacity: number;
+
   @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
   conversionRate: number; // Процент конверсии
 

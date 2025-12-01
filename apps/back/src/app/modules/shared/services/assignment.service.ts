@@ -41,6 +41,49 @@ export class AssignmentService {
     private readonly userActivityService: UserActivityService,
   ) {}
 
+  // Helper: build a where-clause object for the specific entity FK column
+  private buildEntityWhere(entityType: string, entityId: string | number) {
+    switch (entityType) {
+      case 'task':
+        return { taskId: Number(entityId) };
+      case 'lead':
+        return { leadId: Number(entityId) };
+      case 'deal':
+        return { dealId: String(entityId) };
+      default:
+        return {};
+    }
+  }
+
+  // Helper: apply the appropriate FK column to a payload before create/save
+  private applyEntityIdToPayload(payload: any, entityType: string, entityId: string | number) {
+    if (!payload) return;
+    switch (entityType) {
+      case 'task':
+        payload.taskId = Number(entityId);
+        break;
+      case 'lead':
+        payload.leadId = Number(entityId);
+        break;
+      case 'deal':
+        payload.dealId = String(entityId);
+        break;
+      default:
+        break;
+    }
+  }
+
+  // Helper: extract a single stable entity id string from an Assignment instance
+  private getEntityIdFromAssignment(a: Assignment | any): string {
+    if (!a) return '';
+    if (a.taskId !== undefined && a.taskId !== null) return String(a.taskId);
+    if (a.leadId !== undefined && a.leadId !== null) return String(a.leadId);
+    if (a.dealId !== undefined && a.dealId !== null) return String(a.dealId);
+    // As a last resort, if entityType present and id stored in some other field
+    if ((a as any).entityId) return String((a as any).entityId);
+    return '';
+  }
+
   async createAssignment(request: CreateAssignmentRequest) {
     const { entityType, entityId, assignedTo, assignedBy, reason, notifyAssignees = true } = request;
 
@@ -62,10 +105,11 @@ export class AssignmentService {
     }
 
     // Check for existing assignments
+    const entityWhere = this.buildEntityWhere(entityType, entityId);
     const existingAssignments = await this.assignmentRepository.find({
       where: {
         entityType,
-        entityId: String(entityId),
+        ...entityWhere,
         userId: In(assignedTo),
         status: 'active'
       }
@@ -73,19 +117,45 @@ export class AssignmentService {
 
     // Create new assignments only for users not already assigned
     const alreadyAssignedIds = existingAssignments.map(a => a.userId);
-    const newAssignments = assignedTo
+    const newPayloads = assignedTo
       .filter(userId => !alreadyAssignedIds.includes(userId))
-      .map(userId => this.assignmentRepository.create({
-        entityType,
-        entityId: String(entityId),
-        userId,
-        assignedBy,
-        reason,
-        status: 'active',
-        assignedAt: new Date()
-      }));
+      .map(userId => {
+        const payload: any = {
+          entityType,
+          userId,
+          assignedBy,
+          reason,
+          status: 'active',
+          assignedAt: new Date()
+        };
+        this.applyEntityIdToPayload(payload, entityType, entityId);
+        return payload as Partial<Assignment>;
+      });
 
-    const savedAssignments = await this.assignmentRepository.save(newAssignments);
+    const newEntities = this.assignmentRepository.create(newPayloads);
+    const savedAssignments = await this.assignmentRepository.save(newEntities as any[]);
+
+    // Update user workload counters per-entity
+    try {
+      if (savedAssignments.length > 0) {
+        const countsByUser = new Map<number, number>();
+        for (const a of savedAssignments) {
+          countsByUser.set(a.userId, (countsByUser.get(a.userId) || 0) + 1);
+        }
+
+        for (const [userId, cnt] of countsByUser) {
+          if (entityType === 'deal') {
+            await this.userRepository.increment({ id: userId }, 'currentDealsCount', cnt);
+          } else if (entityType === 'task') {
+            await this.userRepository.increment({ id: userId }, 'currentTasksCount', cnt);
+          } else if (entityType === 'lead') {
+            await this.userRepository.increment({ id: userId }, 'currentLeadsCount', cnt);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to update user workload counters after createAssignment:', err?.message || err);
+    }
 
     // Log user activity for lead assignments (if userActivity service available)
     if (this.userActivityService && assignedByUser && savedAssignments.length > 0) {
@@ -112,24 +182,25 @@ export class AssignmentService {
 
         // Log an activity for the assigning user (one entry per created assignment)
         for (const a of savedAssignments) {
+          const assignedEntityId = this.getEntityIdFromAssignment(a);
           if (entityType === 'lead') {
             await this.userActivityService.logLeadAssigned(
               assignedByUser.id.toString(),
-              String(a.entityId),
-              title || String(a.entityId),
+              String(assignedEntityId),
+              title || String(assignedEntityId),
             );
           } else if (entityType === 'deal') {
             // log deal assigned
             await this.userActivityService.logDealAssigned(
               assignedByUser.id.toString(),
-              String(a.entityId),
-              title || String(a.entityId),
+              String(assignedEntityId),
+              title || String(assignedEntityId),
             );
           } else if (entityType === 'task') {
             await this.userActivityService.logTaskAssigned(
               assignedByUser.id.toString(),
-              String(a.entityId),
-              title || String(a.entityId),
+              String(assignedEntityId),
+              title || String(assignedEntityId),
             );
           }
         }
@@ -184,7 +255,7 @@ export class AssignmentService {
     const assignments = await this.assignmentRepository.find({
       where: {
         entityType,
-        entityId: String(entityId),
+        ...this.buildEntityWhere(entityType, entityId),
         userId: In(userIds),
         status: 'active'
       }
@@ -203,6 +274,28 @@ export class AssignmentService {
         removalReason: reason
       }
     );
+
+    // Decrement user workload counters for removed assignments
+    try {
+      if (assignments.length > 0) {
+        const countsByUser = new Map<number, number>();
+        for (const a of assignments) {
+          countsByUser.set(a.userId, (countsByUser.get(a.userId) || 0) + 1);
+        }
+
+        for (const [userId, cnt] of countsByUser) {
+          if (entityType === 'deal') {
+            await this.userRepository.decrement({ id: userId }, 'currentDealsCount', cnt);
+          } else if (entityType === 'task') {
+            await this.userRepository.decrement({ id: userId }, 'currentTasksCount', cnt);
+          } else if (entityType === 'lead') {
+            await this.userRepository.decrement({ id: userId }, 'currentLeadsCount', cnt);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to update user workload counters after removeAssignment:', err?.message || err);
+    }
 
     // Log unassignment activities (non-blocking)
     if (this.userActivityService && assignments.length > 0) {
@@ -229,20 +322,20 @@ export class AssignmentService {
           if (entityType === 'lead') {
             await this.userActivityService.logLeadUnassigned(
               String(a.userId),
-              String(a.entityId),
-              title || String(a.entityId),
+              String(this.getEntityIdFromAssignment(a)),
+              title || String(this.getEntityIdFromAssignment(a)),
             );
           } else if (entityType === 'deal') {
             await this.userActivityService.logDealUnassigned(
               String(a.userId),
-              String(a.entityId),
-              title || String(a.entityId),
+              String(this.getEntityIdFromAssignment(a)),
+              title || String(this.getEntityIdFromAssignment(a)),
             );
           } else if (entityType === 'task') {
             await this.userActivityService.logTaskUnassigned(
               String(a.userId),
-              String(a.entityId),
-              title || String(a.entityId),
+              String(this.getEntityIdFromAssignment(a)),
+              title || String(this.getEntityIdFromAssignment(a)),
             );
           }
         }
@@ -258,11 +351,61 @@ export class AssignmentService {
     };
   }
 
+  /**
+   * Mark active assignments for an entity as completed (e.g. when deal/task is closed)
+   * Decrements user workload counters similarly to removeAssignment.
+   */
+  async completeAssignment(entityType: string, entityId: string | number, reason?: string) {
+    const assignments = await this.assignmentRepository.find({
+      where: {
+        entityType,
+        ...this.buildEntityWhere(entityType, entityId),
+        status: 'active'
+      }
+    });
+
+    if (assignments.length === 0) {
+      return { success: true, completedCount: 0 };
+    }
+
+    // Update assignments to completed status
+    await this.assignmentRepository.update(
+      { id: In(assignments.map(a => a.id)) },
+      {
+        status: 'completed',
+        completedAt: new Date(),
+        removalReason: reason || null
+      }
+    );
+
+    // Decrement user workload counters for completed assignments
+    try {
+      const countsByUser = new Map<number, number>();
+      for (const a of assignments) {
+        countsByUser.set(a.userId, (countsByUser.get(a.userId) || 0) + 1);
+      }
+
+      for (const [userId, cnt] of countsByUser) {
+        if (entityType === 'deal') {
+          await this.userRepository.decrement({ id: userId }, 'currentDealsCount', cnt);
+        } else if (entityType === 'task') {
+          await this.userRepository.decrement({ id: userId }, 'currentTasksCount', cnt);
+        } else if (entityType === 'lead') {
+          await this.userRepository.decrement({ id: userId }, 'currentLeadsCount', cnt);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to update user workload counters after completeAssignment:', err?.message || err);
+    }
+
+    return { success: true, completedCount: assignments.length };
+  }
+
   async getCurrentAssignments(entityType: string, entityId: string) {
     const assignments = await this.assignmentRepository.find({
       where: {
         entityType,
-        entityId,
+        ...this.buildEntityWhere(entityType, entityId),
         status: 'active'
       },
       relations: ['user', 'assignedByUser'],
@@ -316,7 +459,7 @@ export class AssignmentService {
     const assignments = await this.assignmentRepository.find({
       where: {
         entityType,
-        entityId
+        ...this.buildEntityWhere(entityType, entityId)
       },
       relations: ['user', 'assignedByUser'],
       order: { assignedAt: 'DESC' },
@@ -388,7 +531,7 @@ export class AssignmentService {
       return assignments.map(assignment => ({
         id: assignment.id,
         entityType: assignment.entityType,
-        entityId: assignment.entityId,
+        entityId: this.getEntityIdFromAssignment(assignment),
         assignedBy: assignment.assignedBy,
         assignedByName: assignment.assignedByUser?.fullName || assignment.assignedByUser?.email,
         user: assignment.user ? {
@@ -446,23 +589,25 @@ export class AssignmentService {
     const idsAsString = entityIds.map(String);
 
     // Use QueryBuilder with explicit joins to ensure lazy relations are loaded correctly
+    const column = entityType === 'task' ? 'assignment.taskId' : entityType === 'lead' ? 'assignment.leadId' : 'assignment.dealId';
     const assignments = await this.assignmentRepository.createQueryBuilder('assignment')
       .leftJoinAndSelect('assignment.user', 'user')
       .leftJoinAndSelect('assignment.assignedByUser', 'assignedByUser')
       .where('assignment.entityType = :entityType', { entityType })
-      .andWhere('assignment.entityId IN (:...ids)', { ids: idsAsString })
+      .andWhere(`${column} IN (:...ids)`, { ids: idsAsString })
       .andWhere('assignment.status = :status', { status: 'active' })
       .orderBy('assignment.assignedAt', 'DESC')
       .getMany();
 
     const map = new Map<string, any>();
     for (const assignment of assignments) {
-      if (!map.has(assignment.entityId)) {
+      const key = this.getEntityIdFromAssignment(assignment);
+      if (!map.has(key)) {
         const resolvedUser = assignment.user && typeof (assignment.user as any).then === 'function'
           ? await (assignment.user as any)
           : assignment.user;
 
-        map.set(assignment.entityId, {
+        map.set(key, {
           id: assignment.id,
           userId: assignment.userId,
           userName: resolvedUser?.fullName || resolvedUser?.email,
@@ -532,22 +677,31 @@ export class AssignmentService {
     });
 
     if (rules.byWorkload) {
-      // Get current workload for each user
+      // Get current workload for each user for this entityType
       const workloadQuery = await this.assignmentRepository
         .createQueryBuilder('assignment')
         .select('assignment.userId', 'userId')
         .addSelect('COUNT(*)', 'workload')
         .where('assignment.status = :status', { status: 'active' })
+        .andWhere('assignment.entityType = :entityType', { entityType })
         .groupBy('assignment.userId')
         .getRawMany();
 
       const workloadMap = new Map(workloadQuery.map(w => [w.userId, parseInt(w.workload)]));
-      
-      // Sort users by workload (ascending)
+
+      // Sort users by workload ratio (workload / capacity) ascending
       availableUsers.sort((a, b) => {
         const workloadA = workloadMap.get(a.id) || 0;
         const workloadB = workloadMap.get(b.id) || 0;
-        return workloadA - workloadB;
+
+        const capField = entityType === 'deal' ? 'maxDealsCapacity' : entityType === 'task' ? 'maxTasksCapacity' : 'maxLeadsCapacity';
+        const capA = (a as any)[capField] || 1;
+        const capB = (b as any)[capField] || 1;
+
+        const ratioA = workloadA / Math.max(1, capA);
+        const ratioB = workloadB / Math.max(1, capB);
+        if (ratioA === ratioB) return workloadA - workloadB; // tie-breaker by absolute workload
+        return ratioA - ratioB;
       });
     }
 
@@ -589,7 +743,7 @@ export class AssignmentService {
       await this.notificationService.create({
         type: notificationType,
         title: 'New Assignment',
-        message: `You have been assigned to ${assignment.entityType} #${assignment.entityId} by ${assignedByUser.fullName || assignedByUser.email}`,
+  message: `You have been assigned to ${assignment.entityType} #${this.getEntityIdFromAssignment(assignment)} by ${assignedByUser.fullName || assignedByUser.email}`,
         channel: NotificationChannel.IN_APP,
         priority: NotificationPriority.MEDIUM,
         recipientId: assignment.userId.toString(),
@@ -598,7 +752,7 @@ export class AssignmentService {
           assignedBy: assignment.assignedBy,
           reason: assignment.reason,
           entityType: assignment.entityType,
-          entityId: assignment.entityId
+          entityId: this.getEntityIdFromAssignment(assignment)
         }
       });
     }

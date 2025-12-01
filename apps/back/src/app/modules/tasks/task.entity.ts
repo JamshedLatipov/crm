@@ -18,7 +18,7 @@ export class Task {
 
   // Assigned users are now stored in the centralized `assignments` table.
   // We expose a relation to Assignment so tasks can load related assignments if needed.
-  @OneToMany(() => Assignment, (assignment: any) => (assignment as any).task, { lazy: true })
+  @OneToMany(() => Assignment, assignment => assignment.taskId, { lazy: true })
   assignments?: Assignment[];
 
   @OneToMany(() => TaskComment, comment => comment.task, { cascade: true })

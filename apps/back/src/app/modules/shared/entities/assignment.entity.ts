@@ -10,9 +10,11 @@ import {
 } from 'typeorm';
 import { User } from '../../user/user.entity';
 import { Task } from '../../tasks/task.entity';
+import { Lead } from '../../leads/lead.entity';
+import { Deal } from '../../deals/deal.entity';
 
 @Entity('assignments')
-@Index(['entityType', 'entityId'])
+@Index(['entityType', 'taskId', 'leadId', 'dealId'])
 @Index(['userId', 'status'])
 @Index(['assignedAt'])
 export class Assignment {
@@ -22,8 +24,16 @@ export class Assignment {
   @Column({ name: 'entity_type' })
   entityType: string;
 
-  @Column({ name: 'entity_id', nullable: true })
-  entityId?: string;
+  // New explicit FK columns introduced by Variant B migration.
+  // These are nullable and will be populated from entity_type/entity_id when migrating.
+  @Column({ name: 'task_id', type: 'integer', nullable: true })
+  taskId?: number;
+
+  @Column({ name: 'lead_id', type: 'integer', nullable: true })
+  leadId?: number;
+
+  @Column({ name: 'deal_id', type: 'uuid', nullable: true })
+  dealId?: string;
 
   @Column({ name: 'user_id' })
   userId: number;
@@ -94,10 +104,19 @@ export class Assignment {
   @JoinColumn({ name: 'assigned_by' })
   assignedByUser?: User;
 
-  // Optional relation to a Task entity when assignment.entityType === 'task'
+  // New, explicit relations that reference the dedicated FK columns created by the migration.
+  // Prefer these new relations over the old polymorphic `entity_id` column.
   @ManyToOne(() => Task, { nullable: true, lazy: true })
-  @JoinColumn({ name: 'entity_id' })
-  task?: Task;
+  @JoinColumn({ name: 'task_id' })
+  taskRef?: Task;
+
+  @ManyToOne(() => Lead, { nullable: true, lazy: true })
+  @JoinColumn({ name: 'lead_id' })
+  lead?: Lead;
+
+  @ManyToOne(() => Deal, { nullable: true, lazy: true })
+  @JoinColumn({ name: 'deal_id' })
+  deal?: Deal;
 
   // Helper methods
   isActive(): boolean {

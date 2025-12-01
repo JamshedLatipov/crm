@@ -84,14 +84,44 @@ export interface AssignUserDialogData {
                     <span class="separator">•</span>
                     <span class="user-department">{{ user.department }}</span>
                   </div>
-                  <div class="user-workload" [class.overloaded]="!user.isAvailable">
-                    <div class="workload-bar">
-                      <div class="workload-fill" [style.width.%]="user.workloadPercentage"></div>
+                  <!-- Leads-style sections for Leads, Deals and Tasks -->
+                  <div class="user-workload">
+                    <!-- workload wrapper to apply CSS defined under .user-workload -->
+                    <div class="workload-section" [class.high]="(user.workload ?? 0) > (user.maxCapacity ?? 0)">
+                    <div class="workload-text" [class.high]="(user.workload ?? 0) > (user.maxCapacity ?? 0)">
+                      Лидов: {{ user.workload ?? 0 }} / {{ user.maxCapacity ?? 0 }}
                     </div>
-                    <span class="workload-text">
-                      {{ user.workload }}/{{ user.maxCapacity }} задач
-                      ({{ user.workloadPercentage | number:'1.0-0' }}%)
-                    </span>
+                    <div class="workload-bar">
+                      <div class="workload-fill"
+                           [style.width.%]="(user.workloadPercentage ?? ((user.workload ?? 0) / (user.maxCapacity || 1) * 100))"
+                           [class.warning]="(user.workload ?? 0) > (user.maxCapacity ?? 0)">
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="workload-section" [class.high]="(user.currentDealsCount ?? 0) > (user.maxDealsCapacity ?? 0)">
+                    <div class="workload-text" [class.high]="(user.currentDealsCount ?? 0) > (user.maxDealsCapacity ?? 0)">
+                      Сделок: {{ user.currentDealsCount ?? 0 }} / {{ user.maxDealsCapacity ?? 0 }}
+                    </div>
+                    <div class="workload-bar">
+                      <div class="workload-fill"
+                           [style.width.%]="(user.currentDealsCount ?? 0) / (user.maxDealsCapacity || 1) * 100"
+                           [class.warning]="(user.currentDealsCount ?? 0) > (user.maxDealsCapacity ?? 0)">
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="workload-section" [class.high]="(user.currentTasksCount ?? 0) > (user.maxTasksCapacity ?? 0)">
+                    <div class="workload-text" [class.high]="(user.currentTasksCount ?? 0) > (user.maxTasksCapacity ?? 0)">
+                      Задач: {{ user.currentTasksCount ?? 0 }} / {{ user.maxTasksCapacity ?? 0 }}
+                    </div>
+                    <div class="workload-bar">
+                      <div class="workload-fill"
+                           [style.width.%]="(user.currentTasksCount ?? 0) / (user.maxTasksCapacity || 1) * 100"
+                           [class.warning]="(user.currentTasksCount ?? 0) > (user.maxTasksCapacity ?? 0)">
+                      </div>
+                    </div>
+                  </div>
                   </div>
                 </div>
                 <div class="user-status">
@@ -246,11 +276,13 @@ export interface AssignUserDialogData {
       }
     }
 
-    .user-item {
-      display: flex;
-      gap: 12px;
-      width: 100%;
-      align-items: flex-start;
+  .user-item {
+  display: flex;
+  gap: 12px;
+  /* make items a bit narrower than full width so they don't stretch edge-to-edge */
+  width: 92%;
+  max-width: 880px;
+  align-items: flex-start;
       
       .user-avatar {
         width: 44px;

@@ -372,6 +372,8 @@ export class UserFormComponent implements OnInit {
       department: [''],
       roles: [[], [Validators.required]],
       maxLeadsCapacity: [15],
+      maxDealsCapacity: [20],
+      maxTasksCapacity: [30],
       managerID: [null],
       isActive: [true],
       isAvailableForAssignment: [true]
@@ -432,6 +434,8 @@ export class UserFormComponent implements OnInit {
       department: user.department,
       roles: user.roles,
       maxLeadsCapacity: user.maxLeadsCapacity,
+      maxDealsCapacity: (user as any).maxDealsCapacity ?? 20,
+      maxTasksCapacity: (user as any).maxTasksCapacity ?? 30,
       managerID: user.managerID,
       isActive: user.isActive,
       isAvailableForAssignment: user.isAvailableForAssignment

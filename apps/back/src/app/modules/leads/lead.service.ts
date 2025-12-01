@@ -191,35 +191,51 @@ export class LeadService {
       .getMany();
 
     // Attach current assignment (assignedTo) for each lead to make frontend rendering simple
+    await this.attachAssignments(leads);
+
+    return {
+      leads,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  /**
+   * Attach current assignment info to a Lead or array of Leads.
+   * Adds `assignedTo` as a string user id when present.
+   */
+  private async attachAssignments(leadsOrLead: Lead[] | Lead | null): Promise<void> {
+    if (!leadsOrLead) return;
+    const leads = Array.isArray(leadsOrLead) ? leadsOrLead : [leadsOrLead];
+    if (leads.length === 0) return;
+
     try {
       const ids = leads.map(l => String(l.id));
       const assignmentsMap = await this.assignmentService.getCurrentAssignmentsForEntities('lead', ids);
 
-      const leadsWithAssignment = leads.map(lead => {
-        const assign = assignmentsMap.get(String(lead.id));
-        // attach assignedTo as string user id if exists
-        if (assign && assign.userId) {
-          // keep existing object shape and add assignedTo
-          return Object.assign(lead, { assignedTo: String(assign.userId) });
+      for (const lead of leads) {
+        let assign = assignmentsMap.get(String(lead.id));
+        if (!assign) {
+          try {
+            const single = await this.assignmentService.getCurrentAssignments('lead', String(lead.id));
+            if (single && single.length > 0) assign = single[0];
+          } catch (err) {
+            // ignore per-entity lookup errors
+          }
         }
-        return lead;
-      });
 
-      return {
-        leads: leadsWithAssignment,
-        total,
-        page,
-        totalPages: Math.ceil(total / limit),
-      };
+        if (assign && assign.userId) {
+          (lead as any).assignedTo = String(assign.userId);
+        } else {
+          (lead as any).assignedTo = null;
+        }
+      }
     } catch (err) {
-      // If assignment lookup fails for any reason, return leads without assignedTo but don't break the endpoint
       console.warn('Failed to attach assignments to leads:', err?.message || err);
-      return {
-        leads,
-        total,
-        page,
-        totalPages: Math.ceil(total / limit),
-      };
+      for (const lead of leads) {
+        (lead as any).assignedTo = null;
+      }
     }
   }
 
@@ -343,10 +359,13 @@ export class LeadService {
   }
 
   async findById(id: number): Promise<Lead | null> {
-    return this.leadRepo.findOne({
+    const lead = await this.leadRepo.findOne({
       where: { id },
       relations: ['company', 'deals'],
     });
+    if (!lead) return null;
+    await this.attachAssignments(lead);
+    return lead;
   }
 
   async update(id: number, data: Partial<Lead>, userId?: string, userName?: string): Promise<Lead> {
@@ -422,6 +441,15 @@ export class LeadService {
     // Если изменился статус, обновляем вероятность конверсии
     if (data.status && data.status !== existingLead.status) {
       await this.scoringService.updateConversionProbability(id);
+      // If lead moved to a final state, complete assignments and decrement counters
+      const finalStatuses = [LeadStatus.CONVERTED, LeadStatus.REJECTED, LeadStatus.LOST];
+      if (finalStatuses.includes(data.status as LeadStatus)) {
+        try {
+          await this.assignmentService.completeAssignment('lead', id, 'Lead closed');
+        } catch (err) {
+          console.warn('Failed to complete assignments for lead:', err?.message || err);
+        }
+      }
     }
 
     return updatedLead;
