@@ -34,15 +34,18 @@
           type="button"
           class="nav-link nav-link-toggle"
           (click)="toggleExpand(item)"
+          (keydown.enter)="toggleExpand(item)"
+          (keydown.space)="toggleExpand(item)"
           [class.active]="isChildRouteActive(item)"
           [class.expanded]="item.expanded"
           aria-label="Toggle submenu"
+          role="button"
+          tabindex="0"
+          [attr.aria-expanded]="item.expanded"
         >
           <mat-icon class="nav-icon">{{ item.icon }}</mat-icon>
           <span class="nav-label">{{ item.label }}</span>
-          <mat-icon class="chev">{{
-            item.expanded ? 'expand_less' : 'expand_more'
-          }}</mat-icon>
+          <mat-icon class="chev">{{ item.expanded ? 'expand_less' : 'expand_more' }}</mat-icon>
         </button>
 
         <ul *ngIf="item.children?.length && item.expanded" class="sub-list">
