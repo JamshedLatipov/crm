@@ -2,7 +2,7 @@
   <div class="modal-header">
     <h2 mat-dialog-title>
       <mat-icon>analytics</mat-icon>
-      Sales Pipeline Analytics
+      Аналитика воронки продаж
     </h2>
     <button mat-icon-button [mat-dialog-close]="false" class="close-button">
       <mat-icon>close</mat-icon>
@@ -97,7 +97,7 @@
           <div class="tab-content table-tab">
             <div class="table-header">
               <h3>Детальная аналитика по этапам</h3>
-              <p class="table-subtitle">Подробные метрики для каждого этапа sales pipeline</p>
+              <p class="table-subtitle">Подробные метрики для каждого этапа воронки продаж</p>
             </div>
 
             <app-stages-table [stages]="data.analytics?.byStage"></app-stages-table>

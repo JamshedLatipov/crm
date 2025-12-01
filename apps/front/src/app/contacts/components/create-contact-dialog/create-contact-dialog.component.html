@@ -13,7 +13,7 @@
         <mat-icon class="section-icon">person</mat-icon>
         <h3>Основная информация</h3>
       </div>
-      <div class="form-field-container">
+        <div class="form-field-container">
         <mat-form-field appearance="outline" class="full-width required-field">
           <mat-label>Имя</mat-label>
           <input matInput formControlName="name" />
@@ -23,7 +23,7 @@
 
         <div class="form-row">
           <mat-form-field appearance="outline" class="form-field">
-            <mat-label>Email</mat-label>
+            <mat-label>Электронная почта</mat-label>
             <input matInput type="email" formControlName="email" />
             <mat-icon matSuffix>email</mat-icon>
             <mat-error *ngIf="form.get('email')?.hasError('email')">Некорректный email</mat-error>
@@ -69,7 +69,7 @@
             <mat-icon class="panel-header-icon">badge</mat-icon>
             Имена
           </mat-panel-title>
-          <mat-panel-description class="panel-desc">First / Last / Middle</mat-panel-description>
+          <mat-panel-description class="panel-desc">Имя / Фамилия / Отчество</mat-panel-description>
           <span class="filled-badge" *ngIf="hasValues('firstName','lastName','middleName')">Заполнено</span>
         </mat-expansion-panel-header>
         <div class="optional-group">
@@ -220,20 +220,20 @@
               <mat-label>Источник</mat-label>
               <mat-select formControlName="source">
                 <mat-option [value]="null">Не указан</mat-option>
-                <mat-option value="website">Website</mat-option>
-                <mat-option value="phone">Phone</mat-option>
-                <mat-option value="email">Email</mat-option>
-                <mat-option value="referral">Referral</mat-option>
-                <mat-option value="social_media">Social Media</mat-option>
-                <mat-option value="advertising">Advertising</mat-option>
-                <mat-option value="import">Import</mat-option>
-                <mat-option value="other">Other</mat-option>
+                <mat-option value="website">Веб-сайт</mat-option>
+                <mat-option value="phone">Телефон</mat-option>
+                <mat-option value="email">Электронная почта</mat-option>
+                <mat-option value="referral">Рекомендация</mat-option>
+                <mat-option value="social_media">Социальные сети</mat-option>
+                <mat-option value="advertising">Реклама</mat-option>
+                <mat-option value="import">Импорт</mat-option>
+                <mat-option value="other">Другое</mat-option>
               </mat-select>
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="form-field">
               <mat-label>Назначен (assignedTo)</mat-label>
-              <input matInput formControlName="assignedTo" placeholder="User ID" />
+              <input matInput formControlName="assignedTo" placeholder="ID пользователя" />
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="form-field full-width">

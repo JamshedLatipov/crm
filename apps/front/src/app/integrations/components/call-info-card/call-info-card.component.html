@@ -14,10 +14,10 @@
         <div mat-card-avatar class="avatar-placeholder">
           <mat-icon>person</mat-icon>
         </div>
-        <mat-card-title>{{ info.name || 'Unknown Client' }}</mat-card-title>
+        <mat-card-title>{{ info.name || 'Неизвестный клиент' }}</mat-card-title>
         <mat-card-subtitle>{{ info.phone }}</mat-card-subtitle>
         <div class="header-actions">
-            <button mat-icon-button *ngIf="info.externalUrl" (click)="openExternalUrl()" matTooltip="Open in external system">
+            <button mat-icon-button *ngIf="info.externalUrl" (click)="openExternalUrl()" matTooltip="Открыть во внешней системе">
                 <mat-icon>open_in_new</mat-icon>
             </button>
         </div>
@@ -25,25 +25,25 @@
       <mat-card-content>
         <div class="stats-grid">
           <div class="stat-item" *ngIf="info.balance !== undefined">
-            <span class="label">Balance</span>
+            <span class="label">Баланс</span>
             <span class="value" [class.negative]="info.balance < 0">
               {{ info.balance | number:'1.2-2' }} {{ info.currency }}
             </span>
           </div>
           <div class="stat-item" *ngIf="info.status">
-            <span class="label">Status</span>
+            <span class="label">Статус</span>
             <span class="value status-badge">{{ info.status }}</span>
           </div>
         </div>
       </mat-card-content>
     </mat-card>
 
-    <!-- Dynamic Sections -->
+    <!-- Динамические секции -->
     <mat-tab-group *ngIf="info.sections?.length" dynamicHeight>
       <mat-tab *ngFor="let section of info.sections" [label]="section.ui.title">
         <div class="section-content p-4">
           
-          <!-- Details View -->
+          <!-- Просмотр — детали -->
           <div *ngIf="section.ui.type === 'details'" class="details-grid">
             <div *ngFor="let field of section.ui.fields" class="detail-item">
               <span class="detail-label">{{ field.label }}</span>
@@ -51,7 +51,7 @@
             </div>
           </div>
 
-          <!-- Table View -->
+          <!-- Табличный вид -->
           <div *ngIf="section.ui.type === 'table'" class="table-container">
             <table mat-table [dataSource]="section.data" class="w-full">
               <ng-container *ngFor="let col of section.ui.columns" [matColumnDef]="col.key">
@@ -64,7 +64,7 @@
             </table>
             
             <div *ngIf="!section.data?.length" class="p-4 text-center text-gray-500">
-              No data available
+              Нет данных
             </div>
           </div>
 

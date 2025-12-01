@@ -25,11 +25,25 @@ export class CallScriptsService {
    * Return full trees optionally filtered by active state.
    * If `activeOnly` is true, nodes are included only if they are active or have active descendants.
    */
-  async findTreesFiltered(activeOnly = false): Promise<CallScript[]> {
-    // Fetch a flat list of scripts and build a tree from parentId relationships.
-    const all = await this.callScriptRepository.find({
-      order: { sortOrder: 'ASC', updatedAt: 'DESC' },
-    });
+  async findTreesFiltered(activeOnly = false, q?: string, categoryId?: string): Promise<CallScript[]> {
+    const qb = this.callScriptRepository.createQueryBuilder('script');
+
+    if (categoryId) {
+      qb.andWhere('script.categoryId = :categoryId', { categoryId });
+    }
+
+    if (activeOnly) {
+      qb.andWhere('script.isActive = true');
+    }
+
+    if (q) {
+      const like = `%${q.replace(/%/g, '\\%')}%`;
+      // Use ILIKE for case-insensitive search on Postgres
+      qb.andWhere('(script.title ILIKE :like OR script.description ILIKE :like)', { like });
+    }
+
+    qb.orderBy('script.sortOrder', 'ASC').addOrderBy('script.updatedAt', 'DESC');
+    const all = await qb.getMany();
 
     // Map nodes by id and ensure children arrays
     const map = new Map<string, CallScript & { children: CallScript[] }>();

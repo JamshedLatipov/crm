@@ -38,7 +38,7 @@
 
         <div class="form-row">
           <mat-form-field appearance="outline" class="form-field">
-            <mat-label>Email</mat-label>
+            <mat-label>Электронная почта</mat-label>
             <input matInput type="email" formControlName="email" >
             <mat-icon matSuffix>email</mat-icon>
             <mat-error *ngIf="leadForm.get('email')?.hasError('email')">Некорректный email</mat-error>
@@ -102,7 +102,7 @@
             <mat-select formControlName="source">
               <mat-option value="website">Веб-сайт</mat-option>
               <mat-option value="phone">Телефонный звонок</mat-option>
-              <mat-option value="email">Email</mat-option>
+              <mat-option value="email">Электронная почта</mat-option>
               <mat-option value="referral">Рекомендация</mat-option>
               <mat-option value="facebook">Facebook</mat-option>
               <mat-option value="linkedin">LinkedIn</mat-option>

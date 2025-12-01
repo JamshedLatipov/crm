@@ -1,18 +1,18 @@
-<app-page-layout title="Client Search">
+<app-page-layout title="Поиск клиента">
   <div class="search-container">
     <mat-card class="search-card">
       <mat-card-content>
         <div class="search-form">
           <mat-form-field appearance="outline" class="phone-input">
-            <mat-label>Phone Number</mat-label>
+            <mat-label>Номер телефона</mat-label>
             <input matInput [(ngModel)]="searchPhone" placeholder="+1234567890" (keyup.enter)="search()">
-            <button *ngIf="searchPhone()" matSuffix mat-icon-button aria-label="Clear" (click)="clear()">
+            <button *ngIf="searchPhone()" matSuffix mat-icon-button aria-label="Очистить" (click)="clear()">
               <mat-icon>close</mat-icon>
             </button>
           </mat-form-field>
           <button mat-raised-button color="primary" (click)="search()" [disabled]="!searchPhone()">
             <mat-icon>search</mat-icon>
-            Search
+            Поиск
           </button>
         </div>
       </mat-card-content>
@@ -23,8 +23,8 @@
     <app-call-info-card [phone]="activePhone()"></app-call-info-card>
   </div>
   
-  <div class="empty-state" *ngIf="!activePhone()">
+    <div class="empty-state" *ngIf="!activePhone()">
     <mat-icon class="empty-icon">person_search</mat-icon>
-    <p>Enter a phone number to search for client information from integrated sources.</p>
+    <p>Введите номер телефона для поиска информации о клиенте в подключенных источниках.</p>
   </div>
 </app-page-layout>

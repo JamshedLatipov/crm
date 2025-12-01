@@ -12,19 +12,24 @@ export class CallScriptsController {
   }
 
   @Get()
-  findAll(@Query('category') category?: string, @Query('active') active?: string, @Query('tree') tree?: string) {
+  findAll(
+    @Query('category') category?: string,
+    @Query('active') active?: string,
+    @Query('tree') tree?: string,
+    @Query('q') q?: string,
+  ) {
+    // If tree view requested, support optional filters: active, q (search), category
+    if (tree === 'true') {
+      const activeOnly = active === 'true';
+      return this.callScriptsService.findTreesFiltered(activeOnly, q, category);
+    }
+
+    // Non-tree requests: category takes precedence
     if (category) {
       return this.callScriptsService.findByCategory(category);
     }
-    if (active === 'true' && tree === 'true') {
-      // Return trees filtered by active flag (keeps nodes that are active or have active descendants)
-      return this.callScriptsService.findTreesFiltered(true);
-    }
     if (active === 'true') {
       return this.callScriptsService.findActive();
-    }
-    if (tree === 'true') {
-      return this.callScriptsService.findTreesFiltered(false);
     }
     return this.callScriptsService.findAll();
   }

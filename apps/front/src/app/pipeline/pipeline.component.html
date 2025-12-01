@@ -1,4 +1,4 @@
-<app-page-layout title="Pipeline продаж" subtitle="Управление сделками и процессом продаж">
+<app-page-layout title="Воронка продаж" subtitle="Управление сделками и процессом продаж">
   <div page-actions>
     <button mat-stroked-button (click)="openAnalytics()"
             [disabled]="isLoadingAnalytics()"
@@ -25,7 +25,7 @@
     </button>
   </div>
 
-  <!-- Filters Panel -->
+  <!-- Панель фильтров -->
   <div class="filters-panel">
     <div class="filter-group">
       <mat-icon>search</mat-icon>
@@ -66,7 +66,7 @@
     </button>
   </div>
 
-  <!-- Pipeline Container -->
+  <!-- Контейнер воронки продаж -->
   <div class="pipeline-container">
     <div class="pipeline-grid" #pipelineGrid>
       <div *ngFor="let s of stages(); trackBy: trackByStageId" class="stage" [id]="'stage-' + s.id"
@@ -75,8 +75,8 @@
         <div class="stage-header">
           <h3 class="flex items-center gap-2">
             {{ s.name }}
-            <span *ngIf="s.type === 'won_stage'" class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded">Won</span>
-            <span *ngIf="s.type === 'lost_stage'" class="px-2 py-1 text-xs bg-red-100 text-red-800 rounded">Lost</span>
+            <span *ngIf="s.type === 'won_stage'" class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded">Выиграно</span>
+            <span *ngIf="s.type === 'lost_stage'" class="px-2 py-1 text-xs bg-red-100 text-red-800 rounded">Проиграно</span>
           </h3>
           <span class="stage-count">{{ getDealsForStage(s.id).length }}</span>
         </div>

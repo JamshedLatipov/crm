@@ -66,8 +66,8 @@ export class CallScriptsManagerComponent {
   viewMode = signal<'list' | 'tree'>('tree');
 
   // Filter properties
-  selectedCategoryId = '';
-  selectedStatus = '';
+  selectedCategoryId = signal('');
+  selectedStatus = signal('');
 
   // Computed signals for statistics
   activeScriptsCount = computed(() => this.flattenScripts(this.scripts()).filter(s => s.isActive).length);
@@ -139,9 +139,38 @@ export class CallScriptsManagerComponent {
 
   loadScripts() {
     this.loading.set(true);
-    const url = this.viewMode() === 'tree'
-      ? `${this.apiBase}/call-scripts?tree=true&active=true`
-      : `${this.apiBase}/call-scripts`;
+    // Build query params based on filters when requesting tree mode from server
+    if (this.viewMode() === 'tree') {
+      const params: string[] = ['tree=true'];
+      // status: active/inactive
+      if (this.selectedStatus()) {
+        const isActive = this.selectedStatus() === 'active';
+        params.push(`active=${isActive}`);
+      }
+      // category
+      if (this.selectedCategoryId()) {
+        params.push(`category=${encodeURIComponent(this.selectedCategoryId())}`);
+      }
+      // search/query
+      if (this.searchQuery()) {
+        params.push(`q=${encodeURIComponent(this.searchQuery())}`);
+      }
+
+      const url = `${this.apiBase}/call-scripts?${params.join('&')}`;
+      this.http.get<CallScriptTree[]>(url).subscribe({
+        next: (scripts) => {
+          this.scripts.set(scripts);
+          this.loading.set(false);
+        },
+        error: (error) => {
+          console.error('Error loading scripts:', error);
+          this.loading.set(false);
+        }
+      });
+      return;
+    }
+
+    const url = `${this.apiBase}/call-scripts`;
 
     this.http.get<CallScriptTree[]>(url).subscribe({
       next: (scripts) => {
@@ -194,13 +223,13 @@ export class CallScriptsManagerComponent {
     }
 
     // Category filter
-    if (this.selectedCategoryId) {
-      filtered = filtered.filter(script => script.categoryId === this.selectedCategoryId);
+    if (this.selectedCategoryId()) {
+      filtered = filtered.filter(script => script.categoryId === this.selectedCategoryId());
     }
 
     // Status filter
-    if (this.selectedStatus) {
-      const isActive = this.selectedStatus === 'active';
+    if (this.selectedStatus()) {
+      const isActive = this.selectedStatus() === 'active';
       filtered = filtered.filter(script => script.isActive === isActive);
     }
 
@@ -208,13 +237,19 @@ export class CallScriptsManagerComponent {
   }
 
   filterByCategory() {
-    // Trigger change detection
-    this.searchQuery.set(this.searchQuery());
+    // kept for compatibility (no-op because bindings now use signals)
   }
 
   filterByStatus() {
-    // Trigger change detection
-    this.searchQuery.set(this.searchQuery());
+    // kept for compatibility (no-op because bindings now use signals)
+  }
+
+  onFiltersChange() {
+    // If we're in tree view, reload from server using current filters.
+    if (this.viewMode() === 'tree') {
+      this.loadScripts();
+    }
+    // In list view, filters are applied client-side via `filteredScripts` getter.
   }
 
   toggleViewMode() {

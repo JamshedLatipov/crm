@@ -40,7 +40,8 @@
         <mat-label>Поиск скриптов</mat-label>
         <input
           matInput
-          [(ngModel)]="searchQuery"
+          [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event); onFiltersChange()"
           placeholder="Название или описание..."
         >
         <mat-icon matSuffix>search</mat-icon>
@@ -49,7 +50,7 @@
       <!-- Category filter -->
       <mat-form-field appearance="outline">
         <mat-label>Категория</mat-label>
-        <mat-select [(ngModel)]="selectedCategoryId" (selectionChange)="filterByCategory()">
+        <mat-select [ngModel]="selectedCategoryId()" (ngModelChange)="selectedCategoryId.set($event); onFiltersChange()">
           <mat-option value="">Все категории</mat-option>
           <mat-option *ngFor="let category of categories()" [value]="category.id">
             {{ category.name }}
@@ -60,7 +61,7 @@
       <!-- Status filter -->
       <mat-form-field appearance="outline">
         <mat-label>Статус</mat-label>
-        <mat-select [(ngModel)]="selectedStatus" (selectionChange)="filterByStatus()">
+        <mat-select [ngModel]="selectedStatus()" (ngModelChange)="selectedStatus.set($event); onFiltersChange()">
           <mat-option value="">Все статусы</mat-option>
           <mat-option value="active">Активные</mat-option>
           <mat-option value="inactive">Неактивные</mat-option>
