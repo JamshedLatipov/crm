@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, TemplateRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -9,6 +9,7 @@ import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatDialog } from '@angular/material/dialog';
 import { IntegrationService, IntegrationConfig } from '../../integrations/services/integration.service';
 import { PageLayoutComponent } from '../../shared/page-layout/page-layout.component';
+import { CrmTableComponent, CrmColumn } from '../../shared/components/crm-table/crm-table.component';
 import { IntegrationConfigDialogComponent } from './dialogs/integration-config-dialog/integration-config-dialog.component';
 
 @Component({
@@ -19,7 +20,7 @@ import { IntegrationConfigDialogComponent } from './dialogs/integration-config-d
     MatCardModule,
     MatButtonModule,
     MatIconModule,
-    MatTableModule,
+    CrmTableComponent,
     MatSlideToggleModule,
     MatPaginatorModule,
     PageLayoutComponent
@@ -33,6 +34,26 @@ export class IntegrationsComponent {
   
   configs = signal<IntegrationConfig[]>([]);
   displayedColumns = ['name', 'isActive', 'sources', 'actions'];
+
+  // Columns for crm-table
+  columns: CrmColumn[] = [
+    { key: 'name', label: 'Название' },
+    { key: 'isActive', label: 'Активно', template: 'isActiveTemplate' },
+    { key: 'sources', label: 'Источники', template: 'sourcesTemplate' },
+    { key: 'actions', label: 'Действия', template: 'actionsTemplate' },
+  ];
+
+  @ViewChild('isActiveTemplate') isActiveTemplate!: TemplateRef<any>;
+  @ViewChild('sourcesTemplate') sourcesTemplate!: TemplateRef<any>;
+  @ViewChild('actionsTemplate') actionsTemplate!: TemplateRef<any>;
+
+  get tableTemplates(): { [key: string]: TemplateRef<any> } {
+    return {
+      isActiveTemplate: this.isActiveTemplate,
+      sourcesTemplate: this.sourcesTemplate,
+      actionsTemplate: this.actionsTemplate,
+    };
+  }
 
   constructor() {
     this.loadConfigs();

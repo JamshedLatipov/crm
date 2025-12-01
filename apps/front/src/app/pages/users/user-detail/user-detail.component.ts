@@ -142,6 +142,9 @@ export class UserDetailComponent implements OnInit {
   public readonly assignedDeals = signal<any[]>([]);
   public readonly assignedTasks = signal<any[]>([]);
   public readonly assignedLoading = signal<boolean>(false);
+  // Performance analytics
+  public readonly performanceLoading = signal<boolean>(false);
+  public readonly performanceStats = signal<any | null>(null);
 
   openSkillSelector(): void {
     this.showSkillSelector.set(true);
@@ -658,6 +661,8 @@ export class UserDetailComponent implements OnInit {
         if (ids.length === 0) {
           this.assignedTasks.set([]);
           this.assignedLoading.set(false);
+          // still load analytics even if there are no tasks
+          this.loadPerformanceAnalytics(userId);
           return;
         }
 
@@ -666,16 +671,38 @@ export class UserDetailComponent implements OnInit {
           next: (tasks) => {
             this.assignedTasks.set((tasks || []).filter(Boolean));
             this.assignedLoading.set(false);
+            // load analytics in parallel
+            this.loadPerformanceAnalytics(userId);
           },
           error: () => {
             this.assignedTasks.set([]);
             this.assignedLoading.set(false);
+            this.loadPerformanceAnalytics(userId);
           }
         });
       },
       error: () => {
         this.assignedTasks.set([]);
         this.assignedLoading.set(false);
+        this.loadPerformanceAnalytics(userId);
+      }
+    });
+  }
+
+  private loadPerformanceAnalytics(userId: number): void {
+    this.performanceLoading.set(true);
+
+    this.assignmentService.getAssignmentStatistics('30d', 'user').pipe(
+      catchError(() => of([]))
+    ).subscribe({
+      next: (rows: any[]) => {
+        const found = (rows || []).find((r: any) => Number(r.userId) === Number(userId) || String(r.userId) === String(userId));
+        this.performanceStats.set(found || null);
+        this.performanceLoading.set(false);
+      },
+      error: () => {
+        this.performanceStats.set(null);
+        this.performanceLoading.set(false);
       }
     });
   }

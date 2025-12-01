@@ -260,6 +260,14 @@ export class AssignmentService {
     );
   }
 
+  // Получение статистики назначений / активности
+  getAssignmentStatistics(period: string = '30d', groupBy: string = 'user') {
+    const params = { period, groupBy };
+    return this.http.get<any[]>(`${this.baseUrl}/statistics`, { params }).pipe(
+      catchError(() => of([]))
+    );
+  }
+
   // Поиск пользователей
   searchUsers(query: string, filters?: { role?: string; department?: string }): User[] {
     const allUsers = this.users();

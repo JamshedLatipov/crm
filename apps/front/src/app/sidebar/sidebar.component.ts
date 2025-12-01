@@ -69,8 +69,7 @@ export class SidebarComponent {
         },
       ],
     },
-    { icon: 'group', label: 'Пользователи', route: '/users' },
-    { icon: 'person_search', label: 'Поиск клиента', route: '/client-info' },
+  { icon: 'group', label: 'Пользователи', route: '/users' },
     {
       icon: 'assessment',
       label: 'Отчеты',
@@ -93,7 +92,15 @@ export class SidebarComponent {
         },
       ],
     },
-    { icon: 'integration_instructions', label: 'Интеграции', route: '/integrations' },
+    {
+      icon: 'integration_instructions',
+      label: 'Интеграции',
+      expanded: false,
+      children: [
+        { icon: 'integration_instructions', label: 'Список интеграций', route: '/integrations' },
+        { icon: 'person_search', label: 'Поиск клиента', route: '/client-info' },
+      ],
+    },
     { icon: 'help_outline', label: 'Помощь', route: '/help' },
   ];
 

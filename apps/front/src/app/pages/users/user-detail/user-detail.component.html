@@ -195,7 +195,39 @@
               <div class="tab-content">
                 <mat-card>
                   <mat-card-content>
-                    <p class="text-gray-500 text-center py-8">Аналитика производительности будет доступна в следующих версиях</p>
+                    <div *ngIf="performanceLoading()" class="loading-state">
+                      <mat-spinner diameter="30"></mat-spinner>
+                      <p>Загрузка аналитики...</p>
+                    </div>
+
+                    <div *ngIf="!performanceLoading() && performanceStats()" class="performance-grid">
+                      <div class="perf-item">
+                        <div class="perf-label">Всего назначений</div>
+                        <div class="perf-value">{{ performanceStats()?.totalAssignments ?? '-' }}</div>
+                      </div>
+
+                      <div class="perf-item">
+                        <div class="perf-label">Активных</div>
+                        <div class="perf-value">{{ performanceStats()?.activeAssignments ?? '-' }}</div>
+                      </div>
+
+                      <div class="perf-item">
+                        <div class="perf-label">Завершённых</div>
+                        <div class="perf-value">{{ performanceStats()?.completedAssignments ?? '-' }}</div>
+                      </div>
+
+                      <div class="perf-item">
+                        <div class="perf-label">Конверсия</div>
+                        <div class="perf-value">{{ performanceStats()?.conversionRate ? (performanceStats()?.conversionRate | number:'1.0-2') + '%' : '-' }}</div>
+                      </div>
+
+                      <div class="perf-item">
+                        <div class="perf-label">Доход</div>
+                        <div class="perf-value">{{ performanceStats()?.revenue ? (performanceStats()?.revenue | number:'1.0-2') + ' ₽' : '-' }}</div>
+                      </div>
+                    </div>
+
+                    <div *ngIf="!performanceLoading() && !performanceStats()" class="text-gray-500 text-center py-8">Аналитика недоступна</div>
                   </mat-card-content>
                 </mat-card>
               </div>

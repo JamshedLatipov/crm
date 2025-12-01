@@ -564,6 +564,38 @@
   padding: 20px;
 }
 
+/* Performance grid inside the Performance tab */
+.performance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 14px;
+  align-items: stretch;
+}
+
+.perf-item {
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+  border: 1px solid var(--border-color);
+  padding: 14px;
+  border-radius: 10px;
+  text-align: center;
+  min-height: 72px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+}
+
+.perf-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.perf-value {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 18px;
+}
+
 /* Assignments tab styles */
 .assignment-card {
   margin-bottom: 16px;
@@ -651,6 +683,18 @@
   overflow-y: auto;
   overflow-x: hidden;
   padding: 12px;
+}
+
+/* nicer thin scrollbar for modern browsers */
+.assignments-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+.assignments-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.12);
+  border-radius: 6px;
+}
+.assignments-scroll::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 /* Empty state styling */

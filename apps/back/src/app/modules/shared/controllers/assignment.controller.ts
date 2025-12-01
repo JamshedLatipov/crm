@@ -7,6 +7,7 @@ import {
   Param, 
   Query,
   ParseIntPipe,
+  DefaultValuePipe,
   HttpCode,
   HttpStatus
 } from '@nestjs/common';
@@ -138,7 +139,7 @@ export class AssignmentController {
     @Param('userId', ParseIntPipe) userId: number,
     @Query('status') status?: string,
     @Query('entityType') entityType?: string,
-    @Query('limit', ParseIntPipe) limit = 100
+  @Query('limit', new DefaultValuePipe(100), ParseIntPipe) limit?: number
   ) {
     return this.assignmentService.getUserAssignments(userId, { status, entityType, limit });
   }
