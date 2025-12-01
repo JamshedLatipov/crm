@@ -70,6 +70,7 @@ export class SidebarComponent {
       ],
     },
     { icon: 'group', label: 'Пользователи', route: '/users' },
+    { icon: 'person_search', label: 'Поиск клиента', route: '/client-info' },
     {
       icon: 'assessment',
       label: 'Отчеты',
@@ -92,6 +93,7 @@ export class SidebarComponent {
         },
       ],
     },
+    { icon: 'integration_instructions', label: 'Интеграции', route: '/integrations' },
     { icon: 'help_outline', label: 'Помощь', route: '/help' },
   ];
 

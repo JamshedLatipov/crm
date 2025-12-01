@@ -19,6 +19,7 @@ import { ADS_INTEGRATION_MIGRATIONS } from './modules/ads-integration/migrations
 import { PROMO_COMPANIES_MIGRATIONS } from './modules/promo-companies/migrations';
 import { CALL_SCRIPTS_MIGRATIONS } from './modules/call-scripts/migrations';
 import { USER_ACTIVITY_MIGRATIONS } from './modules/user-activity/migrations';
+import { INTEGRATIONS_MIGRATIONS } from './modules/integrations/migrations';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { USER_ACTIVITY_MIGRATIONS } from './modules/user-activity/migrations';
         ...PROMO_COMPANIES_MIGRATIONS,
         ...CALL_SCRIPTS_MIGRATIONS,
         ...USER_ACTIVITY_MIGRATIONS,
+        ...INTEGRATIONS_MIGRATIONS,
       ],
       migrationsRun: true,
     }),

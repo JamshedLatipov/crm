@@ -1,0 +1,25 @@
+.config-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 500px;
+  padding-top: 8px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.toggle-container {
+  margin-bottom: 8px;
+}
+
+.json-field {
+  font-family: monospace;
+  
+  textarea {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+}

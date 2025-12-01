@@ -1,0 +1,48 @@
+.search-container {
+  margin-bottom: 24px;
+}
+
+.search-card {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.search-form {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding-top: 8px;
+
+  .phone-input {
+    flex: 1;
+    margin-bottom: -1.25em; // Fix material form field spacing
+  }
+
+  button[mat-raised-button] {
+    height: 56px;
+    margin-bottom: 4px;
+  }
+}
+
+.result-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.empty-state {
+  text-align: center;
+  color: #6b7280;
+  margin-top: 64px;
+
+  .empty-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+
+  p {
+    font-size: 16px;
+  }
+}

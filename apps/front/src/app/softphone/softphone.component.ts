@@ -31,6 +31,7 @@ import {
 } from './components';
 import { SoftphoneCallHistoryComponent } from './components/softphone-call-history/softphone-call-history.component';
 import { CallHistoryItem } from './components/softphone-call-history/softphone-call-history.types';
+import { CallInfoCardComponent } from '../integrations';
 
 // Define custom interfaces to avoid 'any' types
 interface JsSIPSessionEvent {
@@ -71,6 +72,7 @@ type JsSIPSession = any;
     SoftphoneCallActionsComponent,
     SoftphoneScriptsPanelComponent,
     SoftphoneCallHistoryComponent,
+    CallInfoCardComponent,
   ],
 })
 export class SoftphoneComponent implements OnInit, OnDestroy {
@@ -183,7 +185,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     }
   }
   // UI tab state
-  activeTab: 'dial' | 'history' = 'dial';
+  activeTab: 'dial' | 'history' | 'info' = 'dial';
   // Expand/collapse softphone UI
   expanded = true;
   // Missed calls counter shown on minimized badge
@@ -264,6 +266,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
             'outgoing';
           if (dir === 'incoming' || dir === 'inbound') {
             this.incoming.set(true);
+            this.activeTab = 'info'; // Switch to info tab on incoming call
             // try to extract caller display or remote identity
             const from =
               (sess &&
@@ -371,6 +374,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     console.log('Call confirmed', e);
     this.status.set('Call in progress');
     this.callActive.set(true);
+    this.activeTab = 'info'; // Switch to info tab when call connects
     this.startCallTimer();
     this.ringtone.stopRingback();
   }

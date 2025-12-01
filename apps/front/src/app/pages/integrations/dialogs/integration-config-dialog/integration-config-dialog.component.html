@@ -1,0 +1,37 @@
+<h2 mat-dialog-title>{{ isEditMode ? 'Edit Integration' : 'New Integration' }}</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" class="config-form">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Name</mat-label>
+      <input matInput formControlName="name" placeholder="e.g. Banking API">
+      <mat-error *ngIf="form.get('name')?.hasError('required')">
+        Name is required
+      </mat-error>
+    </mat-form-field>
+
+    <div class="toggle-container">
+      <mat-slide-toggle formControlName="isActive" color="primary">
+        Active
+      </mat-slide-toggle>
+    </div>
+
+    <mat-form-field appearance="outline" class="full-width json-field">
+      <mat-label>Sources Configuration (JSON)</mat-label>
+      <textarea matInput formControlName="sources" rows="15" class="json-textarea"></textarea>
+      <mat-error *ngIf="form.get('sources')?.hasError('required')">
+        Configuration is required
+      </mat-error>
+      <mat-error *ngIf="form.get('sources')?.hasError('invalidJson')">
+        Invalid JSON format
+      </mat-error>
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">Cancel</button>
+  <button mat-raised-button color="primary" (click)="save()" [disabled]="form.invalid">
+    Save
+  </button>
+</mat-dialog-actions>

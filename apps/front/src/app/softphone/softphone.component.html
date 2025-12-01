@@ -63,6 +63,14 @@
             <span class="material-icons">history</span>
             <span>История</span>
           </button>
+          <button
+            (click)="activeTab = 'info'"
+            [class.active]="activeTab === 'info'"
+            class="tab-button"
+          >
+            <span class="material-icons">info</span>
+            <span>Инфо</span>
+          </button>
         </div>
       </div>
 
@@ -186,6 +194,13 @@
               *ngIf="activeTab === 'history'"
               [operatorId]="sipUser"
             />
+
+      <!-- Info Tab -->
+      <div *ngIf="activeTab === 'info'" class="info-tab-content" style="overflow-y: auto; max-height: 400px;">
+        <app-call-info-card
+            [phone]="incoming() ? incomingFrom() : callee"
+        ></app-call-info-card>
+      </div>
 
       <!-- Call Actions -->
       <app-softphone-call-actions
