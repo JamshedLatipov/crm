@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -23,7 +23,7 @@ interface CallScriptWithDepth extends CallScript {
   standalone: true,
   imports: [
     CommonModule,
-    FormsModule,
+    ReactiveFormsModule,
     MatDialogModule,
     MatButtonModule,
     MatIconModule,
@@ -40,37 +40,66 @@ interface CallScriptWithDepth extends CallScript {
 export class CallScriptDialogComponent {
   private http = inject(HttpClient);
   private dialogRef = inject(MatDialogRef<CallScriptDialogComponent>);
-  private data = inject(MAT_DIALOG_DATA);
+  private data = inject(MAT_DIALOG_DATA) as { script?: CallScript; categories?: CallScriptCategory[]; isEditMode?: boolean; parentScript?: CallScript };
   private apiBase = environment.apiBase;
+  private fb = inject(FormBuilder);
 
-  script: Partial<CallScript> = {};
+  form: FormGroup;
   categories = signal<CallScriptCategory[]>([]);
   availableScripts = signal<CallScript[]>([]);
   hierarchicalScripts = signal<CallScriptWithDepth[]>([]);
   isEditMode = false;
   parentScript?: CallScript;
 
+  constructor() {
+    // Initialize an empty form to avoid template errors before ngOnInit logic
+    this.form = this.fb.group({
+      id: [null],
+      title: ['', Validators.required],
+      categoryId: [null, Validators.required],
+      parentId: [null],
+      description: [''],
+      isActive: [true],
+      steps: this.fb.array([]),
+      questions: this.fb.array([]),
+      tips: this.fb.array([])
+    });
+  }
+
   ngOnInit() {
     console.log('Dialog initialized with data:', this.data);
-    
-    this.script = { ...this.data.script };
-    this.categories.set(this.data.categories || []);
-    this.isEditMode = this.data.isEditMode || false;
-    this.parentScript = this.data.parentScript;
+    const incoming = this.data || {};
+
+    this.categories.set(incoming.categories || []);
+    this.isEditMode = !!incoming.isEditMode;
+    this.parentScript = incoming.parentScript;
+
+    const script = incoming.script || {} as Partial<CallScript>;
 
     // If creating a child script, ensure parentId is set
     if (this.parentScript && !this.isEditMode) {
-      this.script.parentId = this.parentScript.id;
-      console.log('Setting parentId for child script:', this.script.parentId);
+      script.parentId = this.parentScript.id;
+      console.log('Setting parentId for child script:', script.parentId);
     }
 
-    // Initialize arrays if not present
-    if (!this.script.steps) this.script.steps = [];
-    if (!this.script.questions) this.script.questions = [];
-    if (!this.script.tips) this.script.tips = [];
+    // Patch form values
+    this.form.patchValue({
+      id: script.id || null,
+      title: script.title || '',
+      categoryId: script.categoryId || null,
+      parentId: script.parentId || null,
+      description: script.description || '',
+      isActive: script.isActive ?? true
+    });
 
-    // Log current parentId for debugging
-    console.log('Current script parentId:', this.script.parentId);
+    // Populate arrays
+    const steps = Array.isArray(script.steps) ? script.steps : [];
+    const questions = Array.isArray(script.questions) ? script.questions : [];
+    const tips = Array.isArray(script.tips) ? script.tips : [];
+
+    steps.forEach(s => this.addStep(s));
+    questions.forEach(q => this.addQuestion(q));
+    tips.forEach(t => this.addTip(t));
 
     // Load available scripts for parent selection (exclude current script and its descendants)
     this.loadAvailableScripts();
@@ -86,8 +115,9 @@ export class CallScriptDialogComponent {
         
         // Filter out current script and its descendants to prevent circular references
         let available = scripts;
-        if (this.isEditMode && this.script.id) {
-          available = available.filter(s => s.id !== this.script.id);
+        const currentId = this.form.value?.id;
+        if (this.isEditMode && currentId) {
+          available = available.filter(s => s.id !== currentId);
           console.log('Filtered out current script, available:', available.length);
         }
         
@@ -137,28 +167,53 @@ export class CallScriptDialogComponent {
     return '—'.repeat(depth) + (depth > 0 ? ' ' : '');
   }
 
-  addStep() {
-    this.script.steps = [...(this.script.steps || []), ''];
+  // Reactive form helpers for arrays
+  get steps(): FormArray {
+    return this.form.get('steps') as FormArray;
+  }
+
+  stepsControls() {
+    return this.steps.controls;
+  }
+
+  addStep(value: string = '') {
+    this.steps.push(this.fb.control(value));
   }
 
   removeStep(index: number) {
-    this.script.steps = (this.script.steps || []).filter((_, i) => i !== index);
+    this.steps.removeAt(index);
   }
 
-  addQuestion() {
-    this.script.questions = [...(this.script.questions || []), ''];
+  get questions(): FormArray {
+    return this.form.get('questions') as FormArray;
+  }
+
+  questionsControls() {
+    return this.questions.controls;
+  }
+
+  addQuestion(value: string = '') {
+    this.questions.push(this.fb.control(value));
   }
 
   removeQuestion(index: number) {
-    this.script.questions = (this.script.questions || []).filter((_, i) => i !== index);
+    this.questions.removeAt(index);
   }
 
-  addTip() {
-    this.script.tips = [...(this.script.tips || []), ''];
+  get tips(): FormArray {
+    return this.form.get('tips') as FormArray;
+  }
+
+  tipsControls() {
+    return this.tips.controls;
+  }
+
+  addTip(value: string = '') {
+    this.tips.push(this.fb.control(value));
   }
 
   removeTip(index: number) {
-    this.script.tips = (this.script.tips || []).filter((_, i) => i !== index);
+    this.tips.removeAt(index);
   }
 
   trackByIndex(index: number): number {
@@ -166,15 +221,16 @@ export class CallScriptDialogComponent {
   }
 
   onSave() {
-    if (!this.script.title?.trim() || !this.script.categoryId) return;
+    if (this.form.invalid) return;
 
+    const raw = this.form.value;
     const scriptData = {
-      ...this.script,
-      parentId: this.script.parentId && this.script.parentId !== '' ? this.script.parentId : null, // Convert empty string to null
-      steps: this.parseMultilineText(this.script.steps as string[]),
-      questions: this.parseMultilineText(this.script.questions as string[]),
-      tips: this.parseMultilineText(this.script.tips as string[])
-    };
+      ...raw,
+      parentId: raw.parentId && raw.parentId !== '' ? raw.parentId : null,
+      steps: this.parseMultilineText(raw.steps || []),
+      questions: this.parseMultilineText(raw.questions || []),
+      tips: this.parseMultilineText(raw.tips || [])
+    } as Partial<CallScript>;
 
     console.log('Saving script data:', scriptData);
     this.dialogRef.close(scriptData);

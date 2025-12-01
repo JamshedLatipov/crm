@@ -13,7 +13,7 @@
   </div>
 
   <mat-dialog-content class="dialog-content">
-    <form class="script-form" #form="ngForm">
+    <form class="script-form" [formGroup]="form">
       <!-- Parent Script Info Banner (when creating child) -->
       <div class="parent-info-banner" *ngIf="parentScript && !isEditMode">
         <mat-icon class="banner-icon">account_tree</mat-icon>
@@ -42,9 +42,7 @@
             >
             <input
               matInput
-              [(ngModel)]="script.title"
-              name="title"
-              required
+              formControlName="title"
               placeholder="Введите название скрипта"
             />
           </mat-form-field>
@@ -53,11 +51,7 @@
             <mat-label
               >Категория <span class="required-indicator">*</span></mat-label
             >
-            <mat-select
-              [(ngModel)]="script.categoryId"
-              name="categoryId"
-              required
-            >
+            <mat-select formControlName="categoryId">
               <mat-option
                 *ngFor="let category of categories()"
                 [value]="category.id"
@@ -69,16 +63,12 @@
 
           <mat-form-field appearance="outline" class="modern-field">
             <mat-label>Родительский скрипт</mat-label>
-            <mat-select
-              [(ngModel)]="script.parentId"
-              name="parentId"
-              [disabled]="parentScript && !isEditMode"
-            >
+            <mat-select formControlName="parentId" [disabled]="parentScript && !isEditMode">
               <mat-option value="">Нет родителя (корневой скрипт)</mat-option>
               <mat-option
                 *ngFor="let availableScript of hierarchicalScripts()"
                 [value]="availableScript.id"
-                [disabled]="isEditMode && availableScript.id === script.id"
+                [disabled]="isEditMode && availableScript.id === form.value.id"
                 [class.nested-option]="availableScript.depth && availableScript.depth > 0"
               >
                 <span class="hierarchy-indent" [style.padding-left.px]="(availableScript.depth || 0) * 20">
@@ -102,18 +92,13 @@
           <mat-label>Описание</mat-label>
           <textarea
             matInput
-            [(ngModel)]="script.description"
-            name="description"
+            formControlName="description"
             rows="3"
             placeholder="Краткое описание скрипта"
           ></textarea>
         </mat-form-field>
 
-        <mat-checkbox
-          [(ngModel)]="script.isActive"
-          name="isActive"
-          class="modern-checkbox"
-        >
+        <mat-checkbox formControlName="isActive" class="modern-checkbox">
           Активный скрипт
         </mat-checkbox>
       </div>
@@ -137,14 +122,10 @@
           </button>
         </div>
 
-        <div class="items-container">
+        <div class="items-container" formArrayName="steps">
           <div
             class="item-card"
-            *ngFor="
-              let step of script.steps;
-              let i = index;
-              trackBy: trackByIndex
-            "
+            *ngFor="let ctrl of stepsControls(); let i = index; trackBy: trackByIndex"
           >
             <mat-form-field
               appearance="outline"
@@ -153,8 +134,7 @@
               <mat-label>Шаг {{ i + 1 }}</mat-label>
               <input
                 matInput
-                [(ngModel)]="script.steps[i]"
-                [name]="'step-' + i"
+                [formControlName]="i"
                 placeholder="Описание шага разговора"
               />
             </mat-form-field>
@@ -170,7 +150,7 @@
             </button>
           </div>
 
-          <div *ngIf="script.steps.length === 0" class="empty-state">
+          <div *ngIf="stepsControls().length === 0" class="empty-state">
             <mat-icon>description</mat-icon>
             <p>Добавьте шаги для скрипта разговора</p>
           </div>
@@ -196,14 +176,10 @@
           </button>
         </div>
 
-        <div class="items-container">
+        <div class="items-container" formArrayName="questions">
           <div
             class="item-card"
-            *ngFor="
-              let question of script.questions;
-              let i = index;
-              trackBy: trackByIndex
-            "
+            *ngFor="let ctrl of questionsControls(); let i = index; trackBy: trackByIndex"
           >
             <mat-form-field
               appearance="outline"
@@ -212,8 +188,7 @@
               <mat-label>Вопрос {{ i + 1 }}</mat-label>
               <input
                 matInput
-                [(ngModel)]="script.questions[i]"
-                [name]="'question-' + i"
+                [formControlName]="i"
                 placeholder="Текст вопроса для уточнения"
               />
             </mat-form-field>
@@ -229,7 +204,7 @@
             </button>
           </div>
 
-          <div *ngIf="script.questions.length === 0" class="empty-state">
+          <div *ngIf="questionsControls().length === 0" class="empty-state">
             <mat-icon>help_outline</mat-icon>
             <p>Добавьте вопросы для уточнения деталей</p>
           </div>
@@ -255,14 +230,10 @@
           </button>
         </div>
 
-        <div class="items-container">
+        <div class="items-container" formArrayName="tips">
           <div
             class="item-card"
-            *ngFor="
-              let tip of script.tips;
-              let i = index;
-              trackBy: trackByIndex
-            "
+            *ngFor="let ctrl of tipsControls(); let i = index; trackBy: trackByIndex"
           >
             <mat-form-field
               appearance="outline"
@@ -271,8 +242,7 @@
               <mat-label>Совет {{ i + 1 }}</mat-label>
               <input
                 matInput
-                [(ngModel)]="script.tips[i]"
-                [name]="'tip-' + i"
+                [formControlName]="i"
                 placeholder="Текст полезного совета"
               />
             </mat-form-field>
@@ -288,7 +258,7 @@
             </button>
           </div>
 
-          <div *ngIf="script.tips.length === 0" class="empty-state">
+          <div *ngIf="tipsControls().length === 0" class="empty-state">
             <mat-icon>lightbulb_outline</mat-icon>
             <p>Добавьте полезные советы для операторов</p>
           </div>
@@ -297,7 +267,7 @@
     </form>
   </mat-dialog-content>
 
-  <mat-dialog-actions class="dialog-actions">
+    <mat-dialog-actions class="dialog-actions">
     <button mat-stroked-button (click)="onCancel()" class="cancel-btn">
       <mat-icon>close</mat-icon>
       Отмена
@@ -306,7 +276,7 @@
       mat-raised-button
       color="primary"
       (click)="onSave()"
-      [disabled]="!form.valid || !script.title?.trim() || !script.categoryId"
+      [disabled]="form.invalid"
       class="save-btn"
     >
       <mat-icon>{{ isEditMode ? 'save' : 'add' }}</mat-icon>

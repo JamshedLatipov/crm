@@ -21,6 +21,62 @@ export class CallScriptsService {
     return this.callScriptRepository.findTrees();
   }
 
+  /**
+   * Return full trees optionally filtered by active state.
+   * If `activeOnly` is true, nodes are included only if they are active or have active descendants.
+   */
+  async findTreesFiltered(activeOnly = false): Promise<CallScript[]> {
+    // Fetch a flat list of scripts and build a tree from parentId relationships.
+    const all = await this.callScriptRepository.find({
+      order: { sortOrder: 'ASC', updatedAt: 'DESC' },
+    });
+
+    // Map nodes by id and ensure children arrays
+    const map = new Map<string, CallScript & { children: CallScript[] }>();
+    for (const item of all) {
+      map.set(item.id, { ...item, children: [] });
+    }
+
+    // Attach children to parents
+    const roots: (CallScript & { children: CallScript[] })[] = [];
+    for (const node of map.values()) {
+      if (node.parentId) {
+        const parent = map.get(node.parentId);
+        if (parent) {
+          parent.children.push(node);
+          continue;
+        }
+      }
+      roots.push(node);
+    }
+
+    const pruneInactive = (node: CallScript & { children: CallScript[] }): CallScript | null => {
+      const keptChildren: CallScript[] = [];
+      for (const c of node.children) {
+        const kept = pruneInactive(c as any);
+        if (kept) keptChildren.push(kept as CallScript);
+      }
+      const nodeIsActive = !!(node as CallScript).isActive;
+      if (nodeIsActive || keptChildren.length > 0) {
+        const cloned: any = { ...node };
+        cloned.children = keptChildren;
+        return cloned as CallScript;
+      }
+      return null;
+    };
+
+    if (!activeOnly) {
+      return roots as CallScript[];
+    }
+
+    const result: CallScript[] = [];
+    for (const r of roots) {
+      const kept = pruneInactive(r);
+      if (kept) result.push(kept);
+    }
+    return result;
+  }
+
   async findRoots(): Promise<CallScript[]> {
     return this.callScriptRepository.findRoots();
   }
@@ -71,19 +127,14 @@ export class CallScriptsService {
   }
 
   async findActiveTrees(): Promise<CallScript[]> {
-    const roots = await this.callScriptRepository.findRoots();
-    const activeRoots = roots.filter(root => root.isActive);
-
-    const trees: CallScript[] = [];
-    for (const root of activeRoots) {
-      const tree = await this.callScriptRepository.findDescendantsTree(root, {
-        relations: ['children'],
-      });
-      if (tree) {
-        trees.push(tree);
-      }
-    }
-    return trees;
+    // Fetch active root scripts and include their children in the same query.
+    // Using relations here ensures `children` arrays are present in the returned trees
+    // (similar to `findTreesWithChildren`), avoiding cases where descendants are missing.
+    return await this.callScriptRepository.find({
+      where: { parentId: null, isActive: true },
+      relations: ['children', 'children.children'],
+      order: { sortOrder: 'ASC' },
+    });
   }
 
   async findTreesWithChildren(): Promise<CallScript[]> {

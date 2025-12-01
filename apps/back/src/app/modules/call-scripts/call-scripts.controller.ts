@@ -17,13 +17,14 @@ export class CallScriptsController {
       return this.callScriptsService.findByCategory(category);
     }
     if (active === 'true' && tree === 'true') {
-      return this.callScriptsService.findTreesWithChildren();
+      // Return trees filtered by active flag (keeps nodes that are active or have active descendants)
+      return this.callScriptsService.findTreesFiltered(true);
     }
     if (active === 'true') {
       return this.callScriptsService.findActive();
     }
     if (tree === 'true') {
-      return this.callScriptsService.findTreesWithChildren();
+      return this.callScriptsService.findTreesFiltered(false);
     }
     return this.callScriptsService.findAll();
   }
