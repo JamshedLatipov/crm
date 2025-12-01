@@ -23,7 +23,13 @@
           <mat-tab-group class="contact-tabs">
             <mat-tab label="Детали">
               <div class="tab-content">
+                <!-- Contact Info Card -->
                 <mat-card class="info-card profile-card">
+                  <mat-card-header>
+                    <div mat-card-avatar class="card-avatar profile"><mat-icon>account_circle</mat-icon></div>
+                    <mat-card-title>Контактная информация</mat-card-title>
+                    <mat-card-subtitle>Основные данные пользователя</mat-card-subtitle>
+                  </mat-card-header>
                   <mat-card-content>
                     <div class="contact-grid">
                       <div class="contact-item">
@@ -34,6 +40,14 @@
                         </div>
                       </div>
 
+                      <div class="contact-item">
+                        <div class="contact-icon"><mat-icon>email</mat-icon></div>
+                        <div class="contact-details">
+                          <span class="contact-label">Email</span>
+                          <span class="contact-value">{{ currentUser()?.email || '-' }}</span>
+                        </div>
+                      </div>
+
                       <div class="contact-item" *ngIf="currentUser()?.phone">
                         <div class="contact-icon"><mat-icon>phone</mat-icon></div>
                         <div class="contact-details">
@@ -41,15 +55,24 @@
                           <span class="contact-value">{{ currentUser()?.phone }}</span>
                         </div>
                       </div>
+
+                      <div class="contact-item" *ngIf="currentUser()?.department">
+                        <div class="contact-icon"><mat-icon>apartment</mat-icon></div>
+                        <div class="contact-details">
+                          <span class="contact-label">Отдел</span>
+                          <span class="contact-value">{{ currentUser()?.department }}</span>
+                        </div>
+                      </div>
                     </div>
                   </mat-card-content>
                 </mat-card>
 
-                <!-- Additional Info Card: show all missing user fields -->
-                <mat-card class="info-card mt-4">
+                <!-- Additional Info Card -->
+                <mat-card class="info-card">
                   <mat-card-header>
                     <div mat-card-avatar class="card-avatar info"><mat-icon>info</mat-icon></div>
-                    <mat-card-title>Дополнительно</mat-card-title>
+                    <mat-card-title>Системная информация</mat-card-title>
+                    <mat-card-subtitle>Дополнительные данные</mat-card-subtitle>
                   </mat-card-header>
                   <mat-card-content>
                     <div class="contact-grid">
@@ -97,7 +120,19 @@
                           <span class="contact-value">{{ currentUser()?.sipEndpointId || '-' }}</span>
                         </div>
                       </div>
+                    </div>
+                  </mat-card-content>
+                </mat-card>
 
+                <!-- Performance Metrics Card -->
+                <mat-card class="info-card">
+                  <mat-card-header>
+                    <div mat-card-avatar class="card-avatar stats"><mat-icon>analytics</mat-icon></div>
+                    <mat-card-title>Показатели эффективности</mat-card-title>
+                    <mat-card-subtitle>Статистика работы</mat-card-subtitle>
+                  </mat-card-header>
+                  <mat-card-content>
+                    <div class="contact-grid">
                       <div class="contact-item">
                         <div class="contact-icon"><mat-icon>trending_up</mat-icon></div>
                         <div class="contact-details">
@@ -115,10 +150,10 @@
                       </div>
 
                       <div class="contact-item">
-                        <div class="contact-icon"><mat-icon>analytics</mat-icon></div>
+                        <div class="contact-icon"><mat-icon>percent</mat-icon></div>
                         <div class="contact-details">
                           <span class="contact-label">Конверсия</span>
-                          <span class="contact-value">{{ currentUser()?.conversionRate !== undefined ? (currentUser()?.conversionRate | number:'1.0-2') : '-' }}</span>
+                          <span class="contact-value">{{ currentUser()?.conversionRate !== undefined ? (currentUser()?.conversionRate | number:'1.0-2') + '%' : '-' }}</span>
                         </div>
                       </div>
 
@@ -126,7 +161,7 @@
                         <div class="contact-icon"><mat-icon>attach_money</mat-icon></div>
                         <div class="contact-details">
                           <span class="contact-label">Всего дохода</span>
-                          <span class="contact-value">{{ currentUser()?.totalRevenue !== undefined ? (currentUser()?.totalRevenue | number:'1.0-2') : '-' }}</span>
+                          <span class="contact-value">{{ currentUser()?.totalRevenue !== undefined ? (currentUser()?.totalRevenue | number:'1.0-2') + ' ₽' : '-' }}</span>
                         </div>
                       </div>
 

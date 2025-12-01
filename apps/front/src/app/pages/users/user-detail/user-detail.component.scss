@@ -221,6 +221,21 @@
   grid-template-columns: 1fr 360px;
   gap: 24px;
 }
+
+.left-column {
+  min-width: 0;
+}
+
+.right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  .info-card {
+    margin-bottom: 0;
+  }
+}
+
 @media (max-width: 1100px) {
   .content-grid {
     grid-template-columns: 1fr;
@@ -233,48 +248,45 @@
   border: 1px solid var(--border-color);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
 }
-.profile-card mat-card-header {
-  padding: 20px;
-}
-.profile-card mat-card-content {
-  padding: 16px;
+
+.card-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
 }
 
 .card-avatar.profile {
-  background: var(--primary-color, #667eea);
+  background: linear-gradient(135deg, #667eea, #764ba2);
 }
 .card-avatar.map {
-  background: #4facfe;
+  background: linear-gradient(135deg, #4facfe, #00f2fe);
 }
 .card-avatar.skills {
-  background: #8e2de2;
+  background: linear-gradient(135deg, #8e2de2, #4a00e0);
 }
 .card-avatar.info {
-  background: #f5f7fa;
+  background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
   color: #2b2b2b;
 }
 .card-avatar.notes {
-  background: #4facfe;
+  background: linear-gradient(135deg, #4facfe, #00f2fe);
 }
 .card-avatar.deals {
-  background: #f093fb;
+  background: linear-gradient(135deg, #f093fb, #f5576c);
 }
 .card-avatar.process {
-  background: #43e97b;
+  background: linear-gradient(135deg, #43e97b, #38f9d7);
 }
 .card-avatar.metadata {
-  background: #ffecd2;
+  background: linear-gradient(135deg, #ffecd2, #fcb69f);
   color: #8b4513;
 }
-.card-avatar.deals {
-  background: #f093fb;
-}
-.card-avatar.process {
-  background: #43e97b;
-}
-.card-avatar.metadata {
-  background: #ffecd2;
-  color: #8b4513;
+.card-avatar.stats {
+  background: linear-gradient(135deg, #667eea, #764ba2);
 }
 
 .contact-grid {
@@ -480,21 +492,39 @@
 .metadata-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
+
 .metadata-item {
   display: flex;
-  gap: 12px;
-  align-items: center;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(102,126,234,0.03);
+  border-left: 3px solid var(--primary-color);
 }
+
 .metadata-key {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
   color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
 }
+
 .metadata-value {
   font-weight: 600;
+  color: var(--text-primary);
+  font-size: 14px;
+  padding-left: 22px;
 }
 
 /* Tabs styling similar to other detail pages */
@@ -516,9 +546,22 @@
   background: transparent;
 }
 
-/* Assignments tab styles */
-.tab-content .mat-card {
-  padding: 8px 12px;
+/* Card spacing inside tabs */
+.tab-content .info-card {
+  margin-bottom: 20px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.tab-content mat-card-header {
+  padding: 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.tab-content mat-card-content {
+  padding: 20px;
 }
 
 /* Assignments tab styles */
