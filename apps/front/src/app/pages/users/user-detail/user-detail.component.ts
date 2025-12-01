@@ -1,4 +1,6 @@
 import { Component, signal, inject, OnInit, ChangeDetectionStrategy, computed } from '@angular/core';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -17,7 +19,12 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatListModule } from '@angular/material/list';
 import { UserManagementService, User } from '../../../services/user-management.service';
+import { AssignmentService } from '../../../services/assignment.service';
+import { LeadService } from '../../../leads/services/lead.service';
+import { DealsService } from '../../../pipeline/deals.service';
+import { TasksService } from '../../../tasks/tasks.service';
 import { ReferenceDataService } from '../../../services/reference-data.service';
 import { PasswordResetSnackbarComponent } from '../../../shared/components/password-reset-snackbar/password-reset-snackbar.component';
 import { UserHeaderComponent } from '../components/user-header/user-header.component';
@@ -54,6 +61,7 @@ type TabType = 'overview' | 'performance' | 'activity';
     MatMenuModule,
     MatTooltipModule,
     MatTabsModule,
+  MatListModule,
     MatDividerModule
   ],
   templateUrl: './user-detail.component.html',
@@ -62,6 +70,10 @@ type TabType = 'overview' | 'performance' | 'activity';
 })
 export class UserDetailComponent implements OnInit {
   protected readonly userService = inject(UserManagementService);
+  protected readonly assignmentService = inject(AssignmentService);
+  protected readonly leadService = inject(LeadService);
+  protected readonly dealsService = inject(DealsService);
+  protected readonly tasksService = inject(TasksService);
   protected readonly referenceDataService = inject(ReferenceDataService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -124,6 +136,12 @@ export class UserDetailComponent implements OnInit {
 
   // Whether the inline skill selector is visible
   public readonly showSkillSelector = signal<boolean>(false);
+
+  // Assigned entities
+  public readonly assignedLeads = signal<any[]>([]);
+  public readonly assignedDeals = signal<any[]>([]);
+  public readonly assignedTasks = signal<any[]>([]);
+  public readonly assignedLoading = signal<boolean>(false);
 
   openSkillSelector(): void {
     this.showSkillSelector.set(true);
@@ -232,6 +250,31 @@ export class UserDetailComponent implements OnInit {
 
   goBack(): void {
     this.router.navigate(['/users']);
+  }
+
+  goToDeal(dealId: string | number): void {
+    if (!dealId) return;
+    this.router.navigate(['/deals', 'view', String(dealId)]);
+  }
+
+  goToTask(taskId: number): void {
+    if (!taskId) return;
+    this.router.navigate(['/tasks', 'view', taskId]);
+  }
+
+  goToLead(leadId: number): void {
+    if (!leadId) return;
+    this.router.navigate(['/leads', 'view', leadId]);
+  }
+
+  // For avatars/initials in assignment lists — try title/name, fallback to id
+  getEntityInitials(entity: any): string {
+    if (!entity) return '?';
+    const text = (entity.title || entity.name || String(entity.id || '')).toString().trim();
+    if (!text) return '?';
+    const parts = text.split(/\s+/).filter(Boolean);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[1][0]).toUpperCase();
   }
 
   // Utility methods
@@ -573,6 +616,8 @@ export class UserDetailComponent implements OnInit {
         if (user) {
           this.currentUser.set(user);
           this.loadManagerInfo(user.managerID);
+          // load assigned entities (leads, deals, tasks)
+          this.loadAssignedEntities(user.id);
         } else {
           this.showError('Пользователь не найден');
           this.goBack();
@@ -581,6 +626,56 @@ export class UserDetailComponent implements OnInit {
       error: () => {
         this.showError('Ошибка при загрузке пользователя');
         this.goBack();
+      }
+    });
+  }
+
+  private loadAssignedEntities(userId: number): void {
+    this.assignedLoading.set(true);
+
+    // Leads via manager endpoint
+    this.leadService.getLeadsByManager(String(userId)).pipe(
+      catchError(() => of([]))
+    ).subscribe({
+      next: (leads) => this.assignedLeads.set(leads || []),
+      error: () => this.assignedLeads.set([])
+    });
+
+    // Deals via manager endpoint
+    this.dealsService.getDealsByManager(String(userId)).pipe(
+      catchError(() => of([]))
+    ).subscribe({
+      next: (deals) => this.assignedDeals.set(deals || []),
+      error: () => this.assignedDeals.set([])
+    });
+
+    // Tasks: fetch user's task assignments then load tasks
+    this.assignmentService.getUserAssignments(userId, 'task').pipe(
+      catchError(() => of([]))
+    ).subscribe({
+      next: (assignments) => {
+        const ids = (assignments || []).map((a: any) => Number(a.entityId)).filter(Boolean);
+        if (ids.length === 0) {
+          this.assignedTasks.set([]);
+          this.assignedLoading.set(false);
+          return;
+        }
+
+        const calls = ids.map((id: number) => this.tasksService.get(id).pipe(catchError(() => of(null))));
+        forkJoin(calls).subscribe({
+          next: (tasks) => {
+            this.assignedTasks.set((tasks || []).filter(Boolean));
+            this.assignedLoading.set(false);
+          },
+          error: () => {
+            this.assignedTasks.set([]);
+            this.assignedLoading.set(false);
+          }
+        });
+      },
+      error: () => {
+        this.assignedTasks.set([]);
+        this.assignedLoading.set(false);
       }
     });
   }

@@ -165,6 +165,133 @@
                 </mat-card>
               </div>
             </mat-tab>
+
+            <mat-tab label="Назначения">
+              <div class="tab-content">
+                <!-- Leads Card -->
+                <mat-card class="info-card assignment-card">
+                  <div class="assignment-card-header">
+                    <div class="header-left">
+                      <div class="header-icon leads-icon">
+                        <mat-icon>people</mat-icon>
+                      </div>
+                      <div class="header-text">
+                        <h3>Лиды</h3>
+                        <span class="count">{{ assignedLeads().length }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <mat-card-content>
+                    <div *ngIf="assignedLeads().length === 0" class="empty-state">
+                      <mat-icon class="empty-icon">people_outline</mat-icon>
+                      <p class="empty-text">Нет назначенных лидов</p>
+                    </div>
+                    <div *ngIf="assignedLeads().length > 0" class="assignments-scroll">
+                      <div *ngFor="let l of assignedLeads()" (click)="goToLead(l.id)" class="assignment-item">
+                        <div class="assignment-avatar leads-avatar">
+                          <img *ngIf="l.avatar" [src]="l.avatar" alt="avatar" />
+                          <span *ngIf="!l.avatar">{{ getEntityInitials(l) }}</span>
+                        </div>
+                        <div class="assignment-content">
+                          <div class="assignment-title">{{ l.title || l.name || ('#' + l.id) }}</div>
+                          <div class="assignment-meta">
+                            <span class="meta-badge" *ngIf="l.status">
+                              <mat-icon>label</mat-icon>{{ l.status }}
+                            </span>
+                            <span class="meta-text" *ngIf="l.email">{{ l.email }}</span>
+                          </div>
+                        </div>
+                        <mat-icon class="assignment-arrow">chevron_right</mat-icon>
+                      </div>
+                    </div>
+                  </mat-card-content>
+                </mat-card>
+
+                <!-- Deals Card -->
+                <mat-card class="info-card assignment-card">
+                  <div class="assignment-card-header">
+                    <div class="header-left">
+                      <div class="header-icon deals-icon">
+                        <mat-icon>handshake</mat-icon>
+                      </div>
+                      <div class="header-text">
+                        <h3>Сделки</h3>
+                        <span class="count">{{ assignedDeals().length }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <mat-card-content>
+                    <div *ngIf="assignedDeals().length === 0" class="empty-state">
+                      <mat-icon class="empty-icon">handshake</mat-icon>
+                      <p class="empty-text">Нет назначенных сделок</p>
+                    </div>
+                    <div *ngIf="assignedDeals().length > 0" class="assignments-scroll">
+                      <div *ngFor="let d of assignedDeals()" (click)="goToDeal(d.id)" class="assignment-item">
+                        <div class="assignment-avatar deals-avatar">
+                          <img *ngIf="d.avatar" [src]="d.avatar" alt="avatar" />
+                          <span *ngIf="!d.avatar">{{ getEntityInitials(d) }}</span>
+                        </div>
+                        <div class="assignment-content">
+                          <div class="assignment-title">{{ d.title || ('#' + d.id) }}</div>
+                          <div class="assignment-meta">
+                            <span class="meta-badge" *ngIf="d.stage?.name">
+                              <mat-icon>timeline</mat-icon>{{ d.stage?.name }}
+                            </span>
+                            <span class="meta-badge" *ngIf="!d.stage?.name && d.status">
+                              <mat-icon>label</mat-icon>{{ d.status }}
+                            </span>
+                          </div>
+                        </div>
+                        <mat-icon class="assignment-arrow">chevron_right</mat-icon>
+                      </div>
+                    </div>
+                  </mat-card-content>
+                </mat-card>
+
+                <!-- Tasks Card -->
+                <mat-card class="info-card assignment-card">
+                  <div class="assignment-card-header">
+                    <div class="header-left">
+                      <div class="header-icon tasks-icon">
+                        <mat-icon>task</mat-icon>
+                      </div>
+                      <div class="header-text">
+                        <h3>Задачи</h3>
+                        <span class="count">{{ assignedTasks().length }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <mat-card-content>
+                    <div *ngIf="assignedLoading()" class="loading-state">
+                      <mat-spinner diameter="20"></mat-spinner>
+                      <span>Загрузка...</span>
+                    </div>
+                    <div *ngIf="!assignedLoading() && assignedTasks().length === 0" class="empty-state">
+                      <mat-icon class="empty-icon">task_alt</mat-icon>
+                      <p class="empty-text">Нет назначенных задач</p>
+                    </div>
+                    <div *ngIf="!assignedLoading() && assignedTasks().length > 0" class="assignments-scroll">
+                      <div *ngFor="let t of assignedTasks()" (click)="goToTask(t.id)" class="assignment-item">
+                        <div class="assignment-avatar tasks-avatar">
+                          <img *ngIf="t.avatar" [src]="t.avatar" alt="avatar" />
+                          <span *ngIf="!t.avatar">{{ getEntityInitials(t) }}</span>
+                        </div>
+                        <div class="assignment-content">
+                          <div class="assignment-title">{{ t.title || ('#' + t.id) }}</div>
+                          <div class="assignment-meta">
+                            <span class="meta-badge" *ngIf="t.status">
+                              <mat-icon>check_circle</mat-icon>{{ t.status }}
+                            </span>
+                            <span class="meta-text" *ngIf="t.dueDate">{{ t.dueDate }}</span>
+                          </div>
+                        </div>
+                        <mat-icon class="assignment-arrow">chevron_right</mat-icon>
+                      </div>
+                    </div>
+                  </mat-card-content>
+                </mat-card>
+              </div>
+            </mat-tab>
           </mat-tab-group>
         </div>
 

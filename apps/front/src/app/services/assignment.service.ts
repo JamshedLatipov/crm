@@ -1,5 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of, BehaviorSubject } from 'rxjs';
 import { map, catchError, tap } from 'rxjs/operators';
 import { environment } from '@crm/front/environments/environment';
@@ -239,6 +239,15 @@ export class AssignmentService {
   getCurrentAssignments(entityType: string, entityId: string | number): Observable<User[]> {
     return this.http.get<number[]>(`${this.baseUrl}/current/${entityType}/${entityId}`).pipe(
       map(userIds => this.users().filter(user => userIds.includes(user.id))),
+      catchError(() => of([]))
+    );
+  }
+
+  // Получение назначений пользователя (по типу сущности опционально)
+  getUserAssignments(userId: number, entityType?: string): Observable<any[]> {
+    let params = new HttpParams();
+    if (entityType) params = params.set('entityType', entityType);
+    return this.http.get<any[]>(`${this.baseUrl}/user/${userId}`, { params }).pipe(
       catchError(() => of([]))
     );
   }
