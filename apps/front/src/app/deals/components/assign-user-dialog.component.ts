@@ -9,6 +9,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { FormsModule } from '@angular/forms';
 import { UsersService, User } from '../../users/users.service';
+import { AuthService } from '../../auth/auth.service';
 import { Deal } from '../../pipeline/dtos';
 import { TaskDto } from '../../tasks/tasks.service';
 
@@ -615,6 +616,7 @@ export interface AssignUserDialogData {
 export class AssignUserDialogComponent {
   private readonly dialogRef = inject(MatDialogRef<AssignUserDialogComponent>);
   private readonly usersService = inject(UsersService);
+  private readonly auth = inject(AuthService);
   public readonly data = inject<AssignUserDialogData>(MAT_DIALOG_DATA);
 
   searchQuery = '';
@@ -677,7 +679,8 @@ export class AssignUserDialogComponent {
       
       this.dialogRef.close({
         userId: userIdValue,
-        user: selectedUser
+        user: selectedUser,
+        assignedBy: this.auth.getUserId() || 'system'
       });
     }
   }

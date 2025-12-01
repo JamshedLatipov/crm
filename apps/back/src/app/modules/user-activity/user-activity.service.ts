@@ -94,6 +94,51 @@ export class UserActivityService {
     );
   }
 
+  async logDealAssigned(userId: string, dealId: string, dealTitle: string): Promise<UserActivity> {
+    return await this.logActivity(
+      userId,
+      ActivityType.DEAL_ASSIGNED,
+      { dealId },
+      `Сделка "${dealTitle}" назначена пользователю`,
+    );
+  }
+
+  async logTaskAssigned(userId: string, taskId: string, taskTitle: string): Promise<UserActivity> {
+    return await this.logActivity(
+      userId,
+      ActivityType.TASK_ASSIGNED,
+      { taskId },
+      `Задача "${taskTitle}" назначена пользователю`,
+    );
+  }
+
+  async logLeadUnassigned(userId: string, leadId: string, leadTitle: string): Promise<UserActivity> {
+    return await this.logActivity(
+      userId,
+      ActivityType.LEAD_UNASSIGNED,
+      { leadId },
+      `Лид "${leadTitle}" снят с пользователя`,
+    );
+  }
+
+  async logDealUnassigned(userId: string, dealId: string, dealTitle: string): Promise<UserActivity> {
+    return await this.logActivity(
+      userId,
+      ActivityType.DEAL_UNASSIGNED,
+      { dealId },
+      `Сделка "${dealTitle}" снята с пользователя`,
+    );
+  }
+
+  async logTaskUnassigned(userId: string, taskId: string, taskTitle: string): Promise<UserActivity> {
+    return await this.logActivity(
+      userId,
+      ActivityType.TASK_UNASSIGNED,
+      { taskId },
+      `Задача "${taskTitle}" снята с пользователя`,
+    );
+  }
+
   async logLeadViewed(userId: string, leadId: string, leadTitle: string): Promise<UserActivity> {
     return await this.logActivity(
       userId,

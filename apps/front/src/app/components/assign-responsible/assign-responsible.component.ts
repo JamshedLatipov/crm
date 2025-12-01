@@ -1,4 +1,5 @@
 import { Component, inject, input, output, signal, computed } from '@angular/core';
+import { AuthService } from '../../auth/auth.service';
 import { CommonModule } from '@angular/common';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -320,6 +321,7 @@ export interface AssignmentData {
   `]
 })
 export class AssignResponsibleComponent {
+  private readonly auth = inject(AuthService);
   // Inputs
   public readonly entityType = input<'lead' | 'deal' | 'task' | 'notification'>('notification');
   public readonly entityId = input<string | number>();
@@ -390,12 +392,17 @@ export class AssignResponsibleComponent {
   onAssign(): void {
     const assignmentData: AssignmentData = {
       assignedTo: this.selectedUsers().map(user => user.id),
-      assignedBy: 'current-user', // Получать из AuthService
+      assignedBy: this.getAssignedBy(),
       assignedAt: new Date(),
       reason: this.reasonControl.value || undefined
     };
 
     this.assigned.emit(assignmentData);
+  }
+
+  private getAssignedBy(): string {
+    const userId = this.auth.getUserId();
+    return userId || 'system';
   }
 
   onCancel(): void {

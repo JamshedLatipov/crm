@@ -4,6 +4,8 @@ import { Repository, In } from 'typeorm';
 import { User } from '../../user/user.entity';
 import { Assignment } from '../entities/assignment.entity';
 import { NotificationService } from '../services/notification.service';
+import { UserActivityService } from '../../user-activity/user-activity.service';
+import { Lead } from '../../leads/lead.entity';
 
 export interface CreateAssignmentRequest {
   entityType: 'lead' | 'deal' | 'task' | 'notification';
@@ -34,7 +36,8 @@ export class AssignmentService {
     private readonly assignmentRepository: Repository<Assignment>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    private readonly notificationService: NotificationService
+    private readonly notificationService: NotificationService,
+    private readonly userActivityService: UserActivityService,
   ) {}
 
   async createAssignment(request: CreateAssignmentRequest) {
@@ -82,6 +85,59 @@ export class AssignmentService {
       }));
 
     const savedAssignments = await this.assignmentRepository.save(newAssignments);
+
+    // Log user activity for lead assignments (if userActivity service available)
+    if (this.userActivityService && assignedByUser && savedAssignments.length > 0) {
+      try {
+        // try to fetch entity title if repository available (lead, deal, task)
+        let title: string | undefined;
+        try {
+          if (entityType === 'lead') {
+            const lead = await this.assignmentRepository.manager.findOne(Lead as any, { where: { id: Number(entityId) } as any });
+            title = (lead as any)?.name;
+          } else if (entityType === 'deal') {
+            // lazy load Deal entity to avoid direct import issues
+            const Deal = require('../../deals/deal.entity').Deal;
+            const deal = await this.assignmentRepository.manager.findOne(Deal as any, { where: { id: Number(entityId) } as any });
+            title = (deal as any)?.title || (deal as any)?.name;
+          } else if (entityType === 'task') {
+            const Task = require('../../tasks/task.entity').Task;
+            const task = await this.assignmentRepository.manager.findOne(Task as any, { where: { id: Number(entityId) } as any });
+            title = (task as any)?.title || (task as any)?.name;
+          }
+        } catch (e) {
+          title = undefined;
+        }
+
+        // Log an activity for the assigning user (one entry per created assignment)
+        for (const a of savedAssignments) {
+          if (entityType === 'lead') {
+            await this.userActivityService.logLeadAssigned(
+              assignedByUser.id.toString(),
+              String(a.entityId),
+              title || String(a.entityId),
+            );
+          } else if (entityType === 'deal') {
+            // log deal assigned
+            await this.userActivityService.logDealAssigned(
+              assignedByUser.id.toString(),
+              String(a.entityId),
+              title || String(a.entityId),
+            );
+          } else if (entityType === 'task') {
+            await this.userActivityService.logTaskAssigned(
+              assignedByUser.id.toString(),
+              String(a.entityId),
+              title || String(a.entityId),
+            );
+          }
+        }
+      } catch (err) {
+        // Don't block assignment flow if logging fails - just warn to logs
+        // eslint-disable-next-line no-console
+        console.warn('Failed to log user activity for assignment:', err);
+      }
+    }
 
     // Send notifications if enabled
     if (notifyAssignees && savedAssignments.length > 0) {
@@ -146,6 +202,54 @@ export class AssignmentService {
         removalReason: reason
       }
     );
+
+    // Log unassignment activities (non-blocking)
+    if (this.userActivityService && assignments.length > 0) {
+      try {
+        let title: string | undefined;
+        try {
+          if (entityType === 'lead') {
+            const lead = await this.assignmentRepository.manager.findOne(Lead as any, { where: { id: Number(entityId) } as any });
+            title = (lead as any)?.name;
+          } else if (entityType === 'deal') {
+            const Deal = require('../../deals/deal.entity').Deal;
+            const deal = await this.assignmentRepository.manager.findOne(Deal as any, { where: { id: Number(entityId) } as any });
+            title = (deal as any)?.title || (deal as any)?.name;
+          } else if (entityType === 'task') {
+            const Task = require('../../tasks/task.entity').Task;
+            const task = await this.assignmentRepository.manager.findOne(Task as any, { where: { id: Number(entityId) } as any });
+            title = (task as any)?.title || (task as any)?.name;
+          }
+        } catch (e) {
+          title = undefined;
+        }
+
+        for (const a of assignments) {
+          if (entityType === 'lead') {
+            await this.userActivityService.logLeadUnassigned(
+              String(a.userId),
+              String(a.entityId),
+              title || String(a.entityId),
+            );
+          } else if (entityType === 'deal') {
+            await this.userActivityService.logDealUnassigned(
+              String(a.userId),
+              String(a.entityId),
+              title || String(a.entityId),
+            );
+          } else if (entityType === 'task') {
+            await this.userActivityService.logTaskUnassigned(
+              String(a.userId),
+              String(a.entityId),
+              title || String(a.entityId),
+            );
+          }
+        }
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn('Failed to log user activity for unassignment:', err);
+      }
+    }
 
     return {
       success: true,

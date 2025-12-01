@@ -6,11 +6,13 @@ import { Assignment } from './entities/assignment.entity';
 import { User } from '../user/user.entity';
 import { UserService } from '../user/user.service';
 import { NotificationModule } from '../notifications/notification.module';
+import { UserActivityModule } from '../user-activity/user-activity.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Assignment, User]),
-    NotificationModule
+    NotificationModule,
+    UserActivityModule
   ],
   controllers: [AssignmentController],
   providers: [AssignmentService, UserService],
