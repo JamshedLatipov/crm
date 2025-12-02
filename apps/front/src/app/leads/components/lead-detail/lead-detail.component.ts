@@ -37,6 +37,7 @@ import { AssignmentService } from '../../../services/assignment.service';
 import { PromoCompaniesService } from '../../../promo-companies/services/promo-companies.service';
 import { CreatePromoCompanyDialogComponent } from '../../../promo-companies/components/create-promo-company-dialog/create-promo-company-dialog.component';
 import { AssignPromoCompanyDialogComponent } from '../../../promo-companies/components/assign-promo-company-dialog/assign-promo-company-dialog.component';
+import { ConfirmActionDialogComponent } from '../../../shared/dialogs/confirm-action-dialog.component';
 
 interface HistoryEntry {
   field: string;
@@ -70,6 +71,7 @@ interface HistoryEntry {
     LeadActionsComponent,
     LeadStatusComponent,
     TaskListWidgetComponent,
+    ConfirmActionDialogComponent,
   ],
   templateUrl: './lead-detail.component.html',
   styleUrls: ['./lead-detail.component.scss'],
@@ -428,16 +430,29 @@ export class LeadDetailComponent implements OnInit {
       return;
     }
 
-    if (confirm(`Вы уверены, что хотите удалить лид "${this.lead.name}"?`)) {
-      this.leadService.deleteLead(this.lead.id).subscribe({
-        next: () => {
-          this.router.navigate(['/leads/list']);
-        },
-        error: (error: unknown) => {
-          console.error('Error deleting lead:', error);
-        },
-      });
-    }
+    const dialogRef = this.dialog.open(ConfirmActionDialogComponent, {
+      width: '480px',
+      data: {
+        title: 'Удалить лид',
+        message: `Вы уверены, что хотите удалить лид "${this.lead.name}"?`,
+        confirmText: 'Удалить',
+        cancelText: 'Отмена',
+        confirmColor: 'warn',
+      },
+    });
+
+    dialogRef.afterClosed().subscribe((res) => {
+      if (res?.confirmed) {
+        this.leadService.deleteLead(this.lead.id).subscribe({
+          next: () => {
+            this.router.navigate(['/leads/list']);
+          },
+          error: (error: unknown) => {
+            console.error('Error deleting lead:', error);
+          },
+        });
+      }
+    });
   }
 
   close(): void {
@@ -594,24 +609,37 @@ export class LeadDetailComponent implements OnInit {
   removePromoCompany(): void {
     if (!this.lead.promoCompanyId) return;
 
-    if (confirm('Вы уверены, что хотите отвязать лид от промо-компании?')) {
-      this.leadService.removeLeadFromPromoCompany(this.lead.id).subscribe({
-        next: () => {
-          this.snackBar.open('Лид отвязан от промо-компании', 'Закрыть', {
-            duration: 3000,
-          });
-          this.lead.promoCompanyId = undefined;
-        },
-        error: (error) => {
-          console.error('Error removing lead from promo company:', error);
-          this.snackBar.open(
-            'Ошибка отвязки лида от промо-компании',
-            'Закрыть',
-            { duration: 3000 }
-          );
-        },
-      });
-    }
+    const dialogRef2 = this.dialog.open(ConfirmActionDialogComponent, {
+      width: '480px',
+      data: {
+        title: 'Отвязать промо-компанию',
+        message: 'Вы уверены, что хотите отвязать лид от промо-компании?',
+        confirmText: 'Отвязать',
+        cancelText: 'Отмена',
+        confirmColor: 'warn',
+      },
+    });
+
+    dialogRef2.afterClosed().subscribe((res) => {
+      if (res?.confirmed) {
+        this.leadService.removeLeadFromPromoCompany(this.lead.id).subscribe({
+          next: () => {
+            this.snackBar.open('Лид отвязан от промо-компании', 'Закрыть', {
+              duration: 3000,
+            });
+            this.lead.promoCompanyId = undefined;
+          },
+          error: (error) => {
+            console.error('Error removing lead from promo company:', error);
+            this.snackBar.open(
+              'Ошибка отвязки лида от промо-компании',
+              'Закрыть',
+              { duration: 3000 }
+            );
+          },
+        });
+      }
+    });
   }
 
   assignPromoCompany(): void {

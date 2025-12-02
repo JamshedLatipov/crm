@@ -15,6 +15,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { ConfirmActionDialogComponent } from '../../shared/dialogs/confirm-action-dialog.component';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TasksService, TaskDto, TaskHistory } from '../tasks.service';
 import { AuthService } from '../../auth/auth.service';
@@ -59,7 +60,8 @@ export interface Status {
     MatTooltipModule,
     MatTabsModule,
     MatMenuModule,
-    MatDialogModule,
+  MatDialogModule,
+  ConfirmActionDialogComponent,
     HumanDatePipe,
     TaskDueDateComponent,
     CommentsComponent,
@@ -181,9 +183,20 @@ export class TaskDetailComponent implements OnInit {
 
   deleteTask() {
     if (!this.taskId) return;
+    const ref = this.dialog.open(ConfirmActionDialogComponent, {
+      width: '480px',
+      data: {
+        title: 'Удалить задачу',
+        message: 'Вы уверены, что хотите удалить эту задачу?',
+        confirmText: 'Удалить',
+        cancelText: 'Отмена',
+        confirmColor: 'warn'
+      }
+    });
 
-    if (confirm('Вы уверены, что хотите удалить эту задачу?')) {
-      this.tasksService.delete(this.taskId).subscribe({
+    ref.afterClosed().subscribe((res) => {
+      if (!res?.confirmed) return;
+      this.tasksService.delete(this.taskId!).subscribe({
         next: () => {
           this.snackBar.open('Задача удалена', 'OK', { duration: 3000 });
           this.router.navigate(['/tasks']);
@@ -195,7 +208,7 @@ export class TaskDetailComponent implements OnInit {
           });
         },
       });
-    }
+    });
   }
 
   goBack() {

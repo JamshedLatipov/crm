@@ -18,6 +18,7 @@ import { PromoCompaniesService } from '../../services/promo-companies.service';
 import { PromoCompany } from '../../models/promo-company.model';
 import { CreatePromoCompanyDialogComponent } from '../create-promo-company-dialog/create-promo-company-dialog.component';
 import { EditPromoCompanyDialogComponent } from '../edit-promo-company-dialog/edit-promo-company-dialog.component';
+import { ConfirmActionDialogComponent } from '../../../shared/dialogs/confirm-action-dialog.component';
 import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.component';
 
 @Component({
@@ -39,6 +40,7 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
     MatPaginatorModule,
     MatTooltipModule,
     MatDividerModule,
+    ConfirmActionDialogComponent,
     PageLayoutComponent,
   ],
   template: `
@@ -893,7 +895,19 @@ export class PromoCompaniesListComponent implements OnInit {
   }
 
   deletePromoCompany(promoCompany: PromoCompany): void {
-    if (confirm(`Вы уверены, что хотите удалить промо-компанию "${promoCompany.name}"?`)) {
+    const ref = this.dialog.open(ConfirmActionDialogComponent, {
+      width: '480px',
+      data: {
+        title: 'Удалить промо-компанию',
+        message: `Вы уверены, что хотите удалить промо-компанию "${promoCompany.name}"?`,
+        confirmText: 'Удалить',
+        cancelText: 'Отмена',
+        confirmColor: 'warn',
+      }
+    });
+
+    ref.afterClosed().subscribe((res) => {
+      if (!res?.confirmed) return;
       this.promoCompaniesService.delete(promoCompany.id).subscribe({
         next: () => {
           this.snackBar.open('Промо-компания удалена', 'Закрыть', { duration: 3000 });
@@ -904,7 +918,7 @@ export class PromoCompaniesListComponent implements OnInit {
           this.snackBar.open('Ошибка удаления промо-компании', 'Закрыть', { duration: 3000 });
         }
       });
-    }
+    });
   }
 
   getTypeLabel(type: string): string {

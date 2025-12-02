@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { ConfirmActionDialogComponent } from '../shared/dialogs/confirm-action-dialog.component';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
@@ -30,6 +31,7 @@ import { TaskTypeDialogComponent } from './task-type-dialog.component';
     MatMenuModule,
     MatProgressSpinnerModule,
     MatDividerModule,
+    ConfirmActionDialogComponent,
   ],
   template: `
     <div class="task-types-container">
@@ -619,7 +621,19 @@ export class TaskTypesManagerComponent implements OnInit {
   }
 
   deleteType(type: TaskType) {
-    if (confirm(`Вы уверены, что хотите удалить тип задачи "${type.name}"?`)) {
+    const ref = this.dialog.open(ConfirmActionDialogComponent, {
+      width: '480px',
+      data: {
+        title: 'Удалить тип задачи',
+        message: `Вы уверены, что хотите удалить тип задачи "${type.name}"?`,
+        confirmText: 'Удалить',
+        cancelText: 'Отмена',
+        confirmColor: 'warn'
+      }
+    });
+
+    ref.afterClosed().subscribe((res) => {
+      if (!res?.confirmed) return;
       this.taskTypeService.remove(type.id).subscribe({
         next: () => {
           this.snackBar.open('Тип задачи успешно удален', 'Закрыть', { duration: 3000 });
@@ -630,7 +644,7 @@ export class TaskTypesManagerComponent implements OnInit {
           this.snackBar.open('Ошибка при удалении типа задачи', 'Закрыть', { duration: 5000 });
         }
       });
-    }
+    });
   }
 
   formatDuration(minutes: number): string {

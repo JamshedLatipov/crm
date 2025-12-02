@@ -12,7 +12,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
 import { FormsModule } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatDialog } from '@angular/material/dialog';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { ConfirmActionDialogComponent } from '../../../shared/dialogs/confirm-action-dialog.component';
 import { ContactsService } from '../../contacts.service';
 import { Contact, ContactType, ContactSource, ContactActivity, ActivityType, Deal } from '../../contact.interfaces';
 
@@ -32,6 +33,9 @@ import { Contact, ContactType, ContactSource, ContactActivity, ActivityType, Dea
     MatMenuModule,
     MatTooltipModule,
     MatDividerModule
+    ,
+    MatDialogModule,
+    ConfirmActionDialogComponent,
   ],
   templateUrl: './contact-detail.component.html',
   styleUrls: ['./contact-detail.component.scss']
@@ -338,17 +342,27 @@ export class ContactDetailComponent implements OnInit {
 
   deleteContact(): void {
     if (!this.contact) return;
-    
-    const confirmed = confirm(`Вы уверены, что хотите удалить контакт "${this.contactsService.formatContactName(this.contact)}"?`);
-    if (confirmed) {
-      this.contactsService.deleteContact(this.contact.id).subscribe({
+    const ref = this.dialog.open(ConfirmActionDialogComponent, {
+      width: '480px',
+      data: {
+        title: 'Удалить контакт',
+        message: `Вы уверены, что хотите удалить контакт "${this.contactsService.formatContactName(this.contact)}"?`,
+        confirmText: 'Удалить',
+        cancelText: 'Отмена',
+        confirmColor: 'warn'
+      }
+    });
+
+    ref.afterClosed().subscribe((res) => {
+      if (!res?.confirmed) return;
+      this.contactsService.deleteContact(this.contact!.id).subscribe({
         next: () => {
           this.showSuccess('Контакт удален');
           this.goBack();
         },
         error: () => this.showError('Ошибка удаления контакта')
       });
-    }
+    });
   }
 
   onEdit(): void {
@@ -422,11 +436,22 @@ export class ContactDetailComponent implements OnInit {
   }
 
   deleteDeal(dealId: string): void {
-    const confirmed = confirm('Вы уверены, что хотите удалить эту сделку?');
-    if (confirmed) {
+    const ref = this.dialog.open(ConfirmActionDialogComponent, {
+      width: '420px',
+      data: {
+        title: 'Удалить сделку',
+        message: 'Вы уверены, что хотите удалить эту сделку?',
+        confirmText: 'Удалить',
+        cancelText: 'Отмена',
+        confirmColor: 'warn'
+      }
+    });
+
+    ref.afterClosed().subscribe((res) => {
+      if (!res?.confirmed) return;
       // Здесь должен быть вызов API для удаления сделки
       // После удаления - перезагрузить список сделок
       this.loadDeals(this.contact!.id);
-    }
+    });
   }
 }

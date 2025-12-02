@@ -12,7 +12,8 @@ import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
-import { MatDialog } from '@angular/material/dialog';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { ConfirmActionDialogComponent } from '../shared/dialogs/confirm-action-dialog.component';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -46,6 +47,9 @@ import { User } from '../users/users.service';
     StatusTabsComponent,
     PageLayoutComponent,
     MatPaginatorModule
+    ,
+    MatDialogModule,
+    ConfirmActionDialogComponent
   ],
   template: `
     <app-page-layout title="Сделки" subtitle="Управление всеми сделками и их статусами">
@@ -1114,7 +1118,19 @@ export class DealsComponent implements OnInit {
   }
 
   deleteDeal(deal: Deal) {
-    if (confirm(`Вы уверены, что хотите удалить сделку "${deal.title}"?`)) {
+    const ref = this.dialog.open(ConfirmActionDialogComponent, {
+      width: '480px',
+      data: {
+        title: 'Удалить сделку',
+        message: `Вы уверены, что хотите удалить сделку "${deal.title}"?`,
+        confirmText: 'Удалить',
+        cancelText: 'Отмена',
+        confirmColor: 'warn'
+      }
+    });
+
+    ref.afterClosed().subscribe((res) => {
+      if (!res?.confirmed) return;
       this.dealsService.deleteDeal(deal.id).subscribe({
         next: () => {
           this.loadDeals();
@@ -1125,7 +1141,7 @@ export class DealsComponent implements OnInit {
           this.snackBar.open('Ошибка удаления сделки', 'Закрыть', { duration: 3000 });
         }
       });
-    }
+    });
   }
 
   duplicateDeal(deal: Deal) {

@@ -1,7 +1,11 @@
 import { Component, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import {
+  MatDialogModule,
+  MatDialogRef,
+  MAT_DIALOG_DATA,
+} from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -21,9 +25,18 @@ export interface ConfirmActionData {
 @Component({
   selector: 'app-confirm-action-dialog',
   standalone: true,
-  imports: [CommonModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, ReactiveFormsModule],
+  imports: [
+    CommonModule,
+    MatDialogModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+    ReactiveFormsModule,
+  ],
   template: `
-    <h2 mat-dialog-title class="cad-title">{{ data.title || 'Подтвердите действие' }}</h2>
+    <h2 mat-dialog-title class="cad-title">
+      {{ data.title || 'Подтвердите действие' }}
+    </h2>
 
     <mat-dialog-content class="cad-content">
       <p class="cad-message">{{ data.message || '' }}</p>
@@ -31,14 +44,25 @@ export interface ConfirmActionData {
       <div *ngIf="data.showInput" class="cad-input">
         <mat-form-field appearance="outline" class="cad-form-field">
           <mat-label>{{ data.inputLabel || 'Значение' }}</mat-label>
-          <input matInput [type]="data.inputType || 'text'" [formControl]="inputControl" />
+          <input
+            matInput
+            [type]="data.inputType || 'text'"
+            [formControl]="inputControl"
+          />
         </mat-form-field>
       </div>
     </mat-dialog-content>
 
     <mat-dialog-actions align="end" class="cad-actions">
-      <button mat-button (click)="onCancel()">{{ data.cancelText || 'Отмена' }}</button>
-      <button mat-flat-button [color]="data.confirmColor || 'primary'" (click)="onConfirm()" cdkFocusInitial>
+      <button mat-button (click)="onCancel()">
+        {{ data.cancelText || 'Отмена' }}
+      </button>
+      <button
+        mat-flat-button
+        [color]="data.confirmColor || 'primary'"
+        (click)="onConfirm()"
+        cdkFocusInitial
+      >
         {{ data.confirmText || 'Подтвердить' }}
       </button>
     </mat-dialog-actions>
@@ -56,7 +80,10 @@ export class ConfirmActionDialogComponent {
   }
 
   onConfirm() {
-    this.dialogRef.close({ confirmed: true, value: this.data.showInput ? this.inputControl.value : undefined });
+    this.dialogRef.close({
+      confirmed: true,
+      value: this.data.showInput ? this.inputControl.value : undefined,
+    });
   }
 
   onCancel() {

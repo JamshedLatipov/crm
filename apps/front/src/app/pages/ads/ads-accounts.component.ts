@@ -4,8 +4,9 @@ import { AdsService } from '../../services/ads.service';
 import { AdsStateService } from '../../services/ads-state.service';
 import { Subscription } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatDialog } from '@angular/material/dialog';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ConfirmDialogComponent } from '../../shared/dialogs/confirm-dialog.component';
+import { ConfirmActionDialogComponent } from '../../shared/dialogs/confirm-action-dialog.component';
 import { formatDistanceToNow } from 'date-fns';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -26,6 +27,9 @@ import { ViewChild } from '@angular/core';
     MatPaginatorModule,
     MatCheckboxModule,
     MatTooltipModule,
+    MatDialogModule,
+    // use the new ConfirmActionDialogComponent for richer confirmations
+    ConfirmActionDialogComponent,
   ],
   template: `
     <div class="p-4">
@@ -321,10 +325,28 @@ export class AdsAccountsComponent implements OnInit, OnDestroy {
 
   bulkUnlinkSelected() {
     const ids = this.selectedAccounts.map((a) => a.id);
-    const confirmed = confirm(`Отвязать ${ids.length} аккаунтов?`);
-    if (!confirmed) return;
-    ids.forEach((id) => {
-      this.ads.unlinkAccount(id).subscribe({ next: () => {}, error: () => {} });
+    const ref = this.dialog.open(ConfirmActionDialogComponent, {
+      width: '480px',
+      data: {
+        title: 'Отвязать аккаунты',
+        message: `Отвязать ${ids.length} аккаунтов?`,
+        confirmText: 'Отвязать',
+        cancelText: 'Отмена',
+        confirmColor: 'warn',
+      },
+    });
+
+    ref.afterClosed().subscribe((res) => {
+      if (!res?.confirmed) return;
+      ids.forEach((id) => {
+        this.ads.unlinkAccount(id).subscribe({ next: () => {}, error: () => {} });
+      });
+      this.snack.open('Удаление запущено для выбранных аккаунтов', 'OK', {
+        duration: 3000,
+      });
+      this.adsState.notifyChanged();
+      this.selectedAccounts = [];
+      this.updatePagination();
     });
     this.snack.open('Удаление запущено для выбранных аккаунтов', 'OK', {
       duration: 3000,
