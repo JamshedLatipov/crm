@@ -29,7 +29,6 @@ import { EditLeadDialogComponent } from '../edit-lead-dialog/edit-lead-dialog.co
 import { ConvertToDealDialogComponent } from '../convert-to-deal-dialog/convert-to-deal-dialog.component';
 import { CommentsComponent } from '../../../shared/components/comments/comments.component';
 import { CommentEntityType } from '../../../shared/interfaces/comment.interface';
-import { LeadStatusComponent } from '../lead-status/lead-status.component';
 import { LeadPriorityComponent } from '../lead-priority/lead-priority.component';
 import { LeadActionsComponent } from '../lead-actions/lead-actions.component';
 import { TaskListWidgetComponent } from '../../../tasks/components/task-list-widget.component';
@@ -66,7 +65,6 @@ interface HistoryEntry {
     MatTooltipModule,
     MatSnackBarModule,
     CommentsComponent,
-    LeadStatusComponent,
     LeadPriorityComponent,
     LeadActionsComponent,
     TaskListWidgetComponent,
