@@ -47,6 +47,10 @@
                   <mat-icon>source</mat-icon>
                   <span>{{ getSourceLabel(lead.source) }}</span>
                 </div>
+                <!-- Current lead status -->
+                <div class="lead-status" *ngIf="lead.status">
+                  <app-lead-status [status]="lead.status" size="medium" [showIcon]="true"></app-lead-status>
+                </div>
               </div>
             </div>
 
