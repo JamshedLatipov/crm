@@ -5,6 +5,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { UsersService, User } from '../../../users/users.service';
 import { roleDisplay, departmentDisplay } from '../../utils';
 
@@ -17,7 +18,8 @@ import { roleDisplay, departmentDisplay } from '../../utils';
     MatFormFieldModule,
     MatSelectModule,
     MatIconModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    MatProgressBarModule
   ],
   providers: [
     {
@@ -141,4 +143,30 @@ export class UserSelectorComponent implements OnInit, ControlValueAccessor {
   // Используем утилиты для преобразования
   roleDisplay = roleDisplay;
   departmentDisplay = departmentDisplay;
+
+  /**
+   * Возвращает CSS класс для прогресс-бара по порогам нагрузки
+   * <70% -> 'workload-low' (green)
+   * 70-90% -> 'workload-mid' (yellow)
+   * >=90% -> 'workload-high' (red)
+   */
+  getWorkloadClass(pct: number | undefined | null): string {
+    const n = Number(pct ?? NaN);
+    if (Number.isNaN(n)) return '';
+    if (n >= 90) return 'workload-high';
+    if (n >= 70) return 'workload-mid';
+    return 'workload-low';
+  }
+
+  /** Returns a CSS color token to apply directly to the mat-progress-bar element.
+   * We use an inline CSS custom property (--workload-fill) on the mat-progress-bar
+   * so overlay-rendered options (which are outside component scope) still receive
+   * the color via inheritance. */
+  getWorkloadColor(pct: number | undefined | null): string {
+    const n = Number(pct ?? NaN);
+    if (Number.isNaN(n)) return '';
+    if (n >= 90) return 'var(--workload-high-color)';
+    if (n >= 70) return 'var(--workload-mid-color)';
+    return 'var(--workload-low-color)';
+  }
 }
