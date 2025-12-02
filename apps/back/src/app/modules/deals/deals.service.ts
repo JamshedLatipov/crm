@@ -131,14 +131,17 @@ export class DealsService {
       // assignmentService may return a Map (when called internally) or a plain object
       const assignmentsMapIsMap = assignmentsMapRaw instanceof Map;
       const assignmentsMap = assignmentsMapIsMap
-        ? assignmentsMapRaw as Map<string, any>
+        ? (assignmentsMapRaw as Map<string, any>)
         : new Map(Object.entries(assignmentsMapRaw || {}));
 
       // Debugging info if assignments appear missing
       try {
         const keys = Array.from(assignmentsMap.keys());
         // eslint-disable-next-line no-console
-        console.debug('attachAssignments: found assignment keys for deals:', keys.slice(0, 20));
+        console.debug(
+          'attachAssignments: found assignment keys for deals:',
+          keys.slice(0, 20)
+        );
       } catch (e) {
         // ignore
       }
@@ -260,6 +263,35 @@ export class DealsService {
       await this.automationService.onDealCreated(savedDeal, userId, userName);
     } catch (error) {
       console.warn('Failed to trigger automation on deal creation:', error);
+    }
+
+    // Если при создании передали assignedTo - создаём запись назначения через AssignmentService
+    if (dto.assignedTo) {
+      try {
+        const assigned = dto.assignedTo;
+        const assignedArray: number[] = Array.isArray(assigned)
+          ? assigned
+              .map((v: any) => Number(v))
+              .filter((n: number) => !Number.isNaN(n))
+          : [Number(assigned)].filter((n: number) => !Number.isNaN(n));
+
+        if (assignedArray.length > 0) {
+          const assignedBy = userId ? Number(userId) : 1;
+          await this.assignmentService.createAssignment({
+            entityType: 'deal',
+            entityId: savedDeal.id,
+            assignedTo: assignedArray,
+            assignedBy: Number(assignedBy),
+            reason: 'Assigned during deal creation',
+            notifyAssignees: true,
+          });
+        }
+      } catch (err) {
+        console.warn(
+          'Failed to apply explicit assignment during deal creation:',
+          err?.message || err
+        );
+      }
     }
 
     // Возвращаем сделку со всеми связями
@@ -401,7 +433,7 @@ export class DealsService {
           entityId: id,
           assignedTo: [assignedToPayload],
           assignedBy: Number(userId),
-          notifyAssignees: true
+          notifyAssignees: true,
         });
       } catch (err) {
         console.warn(
