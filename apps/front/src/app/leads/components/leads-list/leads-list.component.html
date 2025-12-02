@@ -149,18 +149,6 @@
             } @else {
               <span class="unassigned-text">Не назначен</span>
             }
-            <button
-              mat-icon-button
-              class="assign-btn"
-              (click)="quickAssign(lead); $event.stopPropagation()"
-              [matTooltip]="
-                lead.assignedTo ? 'Переназначить' : 'Назначить ответственного'
-              "
-            >
-              <mat-icon>{{
-                lead.assignedTo ? 'person_add' : 'person_add_alt_1'
-              }}</mat-icon>
-            </button>
           </div>
         </td>
       </ng-container>
