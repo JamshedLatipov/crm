@@ -22,7 +22,12 @@ import { CommentsComponent } from '../../../shared/components/comments/comments.
 import { CommentEntityType } from '../../../shared/interfaces/comment.interface';
 import { AssignUserDialogComponent } from '../assign-user-dialog.component';
 import { TaskListWidgetComponent } from '../../../tasks/components/task-list-widget.component';
-import { getCurrencySymbol, getCurrencyName, translateMetadataKey } from '../../../shared/utils';
+import {
+  getCurrencySymbol,
+  getCurrencyName,
+  translateMetadataKey,
+} from '../../../shared/utils';
+import { ConfirmActionDialogComponent } from '../../../shared/dialogs/confirm-action-dialog.component';
 
 @Component({
   selector: 'app-deal-detail',
@@ -36,14 +41,15 @@ import { getCurrencySymbol, getCurrencyName, translateMetadataKey } from '../../
     MatProgressSpinnerModule,
     MatTabsModule,
     DealStatusComponent,
-  DealActionsComponent,
+    DealActionsComponent,
+    ConfirmActionDialogComponent,
     DealHistoryComponent,
     DealHistoryStatsComponent,
     CommentsComponent,
-    TaskListWidgetComponent
+    TaskListWidgetComponent,
   ],
   templateUrl: `./deal-detail.component.html`,
-  styleUrls: [`./deal-detail.component.scss`]
+  styleUrls: [`./deal-detail.component.scss`],
 })
 export class DealDetailComponent implements OnInit {
   // Public properties
@@ -52,7 +58,7 @@ export class DealDetailComponent implements OnInit {
   assignedUserName = '';
   isLoading = false;
   error: string | null = null;
-  
+
   // Для компонента комментариев
   readonly CommentEntityType = CommentEntityType;
 
@@ -83,7 +89,7 @@ export class DealDetailComponent implements OnInit {
       },
       error: (error) => {
         console.error('Ошибка загрузки пользователей:', error);
-      }
+      },
     });
   }
 
@@ -91,12 +97,17 @@ export class DealDetailComponent implements OnInit {
     if (this.deal?.assignedTo) {
       // Преобразуем assignedTo в строку для сравнения
       const assignedToStr = String(this.deal.assignedTo);
-      const user = this.users.find(u => u.id === assignedToStr);
+      const user = this.users.find((u) => u.id === assignedToStr);
       if (user) {
         this.assignedUserName = user.name;
       } else {
         // Если пользователь не найден в локальном списке, показываем ID
-        console.warn('User not found for assignedTo:', assignedToStr, 'Available users:', this.users.map(u => u.id));
+        console.warn(
+          'User not found for assignedTo:',
+          assignedToStr,
+          'Available users:',
+          this.users.map((u) => u.id)
+        );
         this.assignedUserName = `ID: ${assignedToStr}`;
       }
     } else {
@@ -107,7 +118,7 @@ export class DealDetailComponent implements OnInit {
   loadDeal(id: string) {
     this.isLoading = true;
     this.error = null;
-    
+
     this.dealsService.getDealById(id).subscribe({
       next: (deal: Deal) => {
         this.deal = deal;
@@ -124,7 +135,7 @@ export class DealDetailComponent implements OnInit {
             },
             error: (err) => {
               console.warn('Failed to load stage for deal', sid, err);
-            }
+            },
           });
         }
         this.updateAssignedUserName();
@@ -134,7 +145,7 @@ export class DealDetailComponent implements OnInit {
         console.error('Ошибка загрузки сделки:', error);
         this.error = 'Не удалось загрузить сделку';
         this.isLoading = false;
-      }
+      },
     });
   }
 
@@ -150,40 +161,60 @@ export class DealDetailComponent implements OnInit {
       maxWidth: '95vw',
       maxHeight: '90vh',
       data: { deal: this.deal, mode: 'edit' },
-      disableClose: false
+      disableClose: false,
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result && this.deal) {
         this.loadDeal(this.deal.id);
-        this.snackBar.open('Сделка успешно обновлена', 'Закрыть', { duration: 3000 });
+        this.snackBar.open('Сделка успешно обновлена', 'Закрыть', {
+          duration: 3000,
+        });
       }
     });
   }
 
   markAsWon() {
     if (!this.deal) return;
-
-    const confirmed = confirm(`Отметить сделку "${this.deal.title}" как выигранной?`);
-    if (!confirmed) return;
-
-    // Call backend to mark deal as won
-    this.dealsService.winDeal(this.deal.id).subscribe({
-      next: (updated) => {
-        this.deal = updated;
-        this.updateAssignedUserName();
-        this.snackBar.open('Сделка отмечена как выигранная', 'Закрыть', { duration: 3000 });
+    const dialogRef = this.dialog.open(ConfirmActionDialogComponent, {
+      width: '520px',
+      data: {
+        title: 'Подтвердите действие',
+        message: `Отметить сделку "${this.deal.title}" как выигранной?`,
+        confirmText: 'Подтвердить',
+        cancelText: 'Отмена',
+        confirmColor: 'primary',
+        showInput: false,
       },
-      error: (err) => {
-        console.error('Ошибка при пометке сделки как выигранной:', err);
-        this.snackBar.open('Не удалось отметить сделку как выигранную', 'Закрыть', { duration: 3000 });
-      }
+    });
+
+    dialogRef.afterClosed().subscribe((result: any) => {
+      if (!result || !result.confirmed) return;
+
+      // Call backend to mark deal as won
+      this.dealsService.winDeal(this.deal!.id).subscribe({
+        next: (updated) => {
+          this.deal = updated;
+          this.updateAssignedUserName();
+          this.snackBar.open('Сделка отмечена как выигранная', 'Закрыть', {
+            duration: 3000,
+          });
+        },
+        error: (err) => {
+          console.error('Ошибка при пометке сделки как выигранной:', err);
+          this.snackBar.open(
+            'Не удалось отметить сделку как выигранную',
+            'Закрыть',
+            { duration: 3000 }
+          );
+        },
+      });
     });
   }
 
   isOverdue(): boolean {
     if (!this.deal) return false;
-    
+
     const expectedDate = new Date(this.deal.expectedCloseDate);
     const today = new Date();
     return expectedDate < today && this.deal.status === 'open';
@@ -195,10 +226,10 @@ export class DealDetailComponent implements OnInit {
 
   getMetadataItems(): { key: string; value: string }[] {
     if (!this.deal?.meta) return [];
-    
+
     return Object.entries(this.deal.meta).map(([key, value]) => ({
       key: translateMetadataKey(key),
-      value: String(value)
+      value: String(value),
     }));
   }
 
@@ -223,11 +254,11 @@ export class DealDetailComponent implements OnInit {
       width: '500px',
       data: {
         deal: this.deal,
-        currentUsers: this.users
-      }
+        currentUsers: this.users,
+      },
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result && result.userId) {
         this.assignDeal(result.userId, result.user);
       }
@@ -242,31 +273,37 @@ export class DealDetailComponent implements OnInit {
     this.dealsService.assignDeal(this.deal.id, userId).subscribe({
       next: (updatedDeal) => {
         console.log('assignDeal response:', updatedDeal);
-        console.log('updatedDeal.assignedTo:', updatedDeal.assignedTo, 'type:', typeof updatedDeal.assignedTo);
-        
+        console.log(
+          'updatedDeal.assignedTo:',
+          updatedDeal.assignedTo,
+          'type:',
+          typeof updatedDeal.assignedTo
+        );
+
         // Принудительно устанавливаем имя из переданного user объекта
         if (user) {
           this.assignedUserName = user.name;
-          console.log('Set assignedUserName from user object:', this.assignedUserName);
+          console.log(
+            'Set assignedUserName from user object:',
+            this.assignedUserName
+          );
         }
-        
+
         // Перезагружаем сделку полностью для получения актуальных данных
         this.loadDeal(this.deal.id);
-        
+
         this.snackBar.open(
-          `Ответственный успешно изменен на ${user?.name || userId}`, 
-          'Закрыть', 
+          `Ответственный успешно изменен на ${user?.name || userId}`,
+          'Закрыть',
           { duration: 3000 }
         );
       },
       error: (error) => {
         console.error('Ошибка при назначении ответственного:', error);
-        this.snackBar.open(
-          'Ошибка при назначении ответственного', 
-          'Закрыть', 
-          { duration: 3000 }
-        );
-      }
+        this.snackBar.open('Ошибка при назначении ответственного', 'Закрыть', {
+          duration: 3000,
+        });
+      },
     });
   }
 }
