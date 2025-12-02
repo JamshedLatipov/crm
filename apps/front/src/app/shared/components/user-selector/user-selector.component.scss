@@ -1,6 +1,6 @@
 .user-selector-field {
   width: 100%;
-  
+
   // Фиксируем высоту самого поля
   ::ng-deep {
     .mat-mdc-text-field-wrapper {
@@ -8,7 +8,7 @@
       .mat-mdc-form-field-flex {
         align-items: center;
       }
-      
+
       .mat-mdc-form-field-infix {
         padding-top: 16px;
         padding-bottom: 16px;
@@ -17,19 +17,19 @@
         overflow: hidden; // Обрезаем всё что выходит за границы
       }
     }
-    
+
     // Контролируем высоту значения
     .mat-mdc-select-value {
       max-height: 38px !important; // Строгое ограничение
       overflow: hidden !important;
       line-height: 1 !important;
     }
-    
+
     .mat-mdc-select-value-text {
       overflow: hidden !important;
       max-height: 38px !important;
     }
-    
+
     // Фиксируем trigger
     .mat-mdc-select-trigger {
       height: auto;
@@ -98,24 +98,56 @@
   }
 }
 
-// Переопределяем высоту mat-select-value для фиксации
-::ng-deep {
-  // Custom styling for mat-select panel
-  .mat-mdc-select-panel {
-    .mat-mdc-option {
-      min-height: auto !important;
-      padding: 10px 16px !important;
-      
-      &:hover {
-        background: var(--hover-color, #f8fafc) !important;
-      }
+// Workload progress styling
+.selected-user-workload {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
 
-      &.mat-mdc-option-active,
-      &.mdc-list-item--selected {
-        background: var(--selected-color, rgba(99, 102, 241, 0.08)) !important;
-      }
-    }
+  .selected-progress {
+    height: 6px;
+    width: 120px;
+    border-radius: 6px;
+    overflow: hidden;
   }
+
+  .selected-workload-text {
+    font-size: 11px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    opacity: 0.9;
+  }
+}
+
+.user-workload {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .option-progress {
+    height: 6px;
+    width: 160px;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .workload-text {
+    font-size: 12px;
+    color: var(--text-secondary);
+    opacity: 0.9;
+  }
+}
+
+/* Color styling for workload bars is defined globally in `apps/front/src/styles.scss` via
+   semantic variables (--workload-low-color / --workload-mid-color / --workload-high-color).
+   Keep component styles focused on layout only; a small runtime fallback for MDC DOM shape
+   ensures the primary portion fills vertically. */
+
+::ng-deep mat-progress-bar .mat-mdc-linear-progress-bar__primary-portion,
+::ng-deep mat-progress-bar .mat-progress-bar-fill {
+  height: 100% !important;
 }
 
 .loading-option {
@@ -125,7 +157,7 @@
   padding: 8px 0;
   color: var(--text-secondary);
   font-size: 14px;
-  
+
   mat-spinner {
     ::ng-deep circle {
       stroke: var(--primary-color);
@@ -156,19 +188,26 @@
 // Индикатор статуса - маленькая точка рядом с именем
 .status-indicator {
   display: inline-block;
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
-  
-  &.status-available {
-    background-color: #4caf50;
-    box-shadow: 0 0 4px rgba(76, 175, 80, 0.5);
+  /* Default color: uses per-element --workload-fill if provided (inline),
+     otherwise falls back to semantic workload variables defined in global styles. */
+  background-color: var(--workload-fill, var(--workload-low-color));
+  box-shadow: 0 0 4px var(--workload-fill, rgba(0, 0, 0, 0.08));
+
+  &.workload-low {
+    /* kept for users of class-based styling */
+    background-color: var(--workload-low-color);
   }
-  
-  &.status-busy {
-    background-color: #ff9800;
-    box-shadow: 0 0 4px rgba(255, 152, 0, 0.5);
+
+  &.workload-mid {
+    background-color: var(--workload-mid-color);
+  }
+
+  &.workload-high {
+    background-color: var(--workload-high-color);
   }
 }
 
@@ -189,7 +228,7 @@
     color: var(--text-secondary);
     opacity: 0.85;
   }
-  
+
   .user-email {
     opacity: 0.8;
   }
@@ -201,7 +240,7 @@
     .mat-mdc-option {
       min-height: auto !important;
       padding: 10px 16px !important;
-      
+
       &:hover {
         background: var(--hover-color, #f8fafc) !important;
       }

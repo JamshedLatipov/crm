@@ -174,7 +174,7 @@ export class Lead {
   updatedAt: Date;
 
   // Связи
-  @OneToMany(() => Assignment, assignment => assignment.entityId, {
+  @OneToMany(() => Assignment, assignment => assignment.leadId, {
     cascade: true
   })
   assignments?: Assignment[];

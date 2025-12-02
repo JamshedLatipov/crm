@@ -7,10 +7,14 @@ import {
   Param, 
   Query,
   ParseIntPipe,
+  DefaultValuePipe,
   HttpCode,
   HttpStatus
 } from '@nestjs/common';
 import { UserService } from '../../user/user.service';
+import { CurrentUser, CurrentUserPayload } from '../../user/current-user.decorator';
+import { JwtAuthGuard } from '../../user/jwt-auth.guard';
+import { UseGuards } from '@nestjs/common';
 import { AssignmentService } from '../services/assignment.service';
 
 export class CreateAssignmentDto {
@@ -33,6 +37,7 @@ export class BulkAssignmentDto {
   assignments: CreateAssignmentDto[];
 }
 
+@UseGuards(JwtAuthGuard)
 @Controller('assignments')
 export class AssignmentController {
   constructor(
@@ -90,13 +95,18 @@ export class AssignmentController {
   }
 
   @Post()
-  async createAssignment(@Body() dto: CreateAssignmentDto) {
-    return this.assignmentService.createAssignment(dto);
+  async createAssignment(@Body() dto: CreateAssignmentDto, @CurrentUser() user: CurrentUserPayload) {
+    // Ensure assignedBy comes from authenticated JWT, ignore any provided value in body
+    const payload = { ...dto, assignedBy: Number(user.sub) } as CreateAssignmentDto;
+    return this.assignmentService.createAssignment(payload as any);
   }
 
   @Post('bulk')
-  async createBulkAssignments(@Body() dto: BulkAssignmentDto) {
-    return this.assignmentService.createBulkAssignments(dto.assignments);
+  async createBulkAssignments(@Body() dto: BulkAssignmentDto, @CurrentUser() user: CurrentUserPayload) {
+    // Override assignedBy for all incoming assignments with current user id
+    const assignedBy = Number(user.sub);
+    const assignments = (dto.assignments || []).map(a => ({ ...a, assignedBy }));
+    return this.assignmentService.createBulkAssignments(assignments as any[]);
   }
 
   @Delete()
@@ -122,12 +132,23 @@ export class AssignmentController {
     return this.assignmentService.getAssignmentHistory(entityType, entityId, limit);
   }
 
+  @Post('current/batch')
+  async getCurrentAssignmentsForEntities(@Body() body: { entityType: string; entityIds: (string | number)[] }) {
+    const map = await this.assignmentService.getCurrentAssignmentsForEntities(body.entityType, body.entityIds || []);
+    // Convert Map to plain object for JSON serialization
+    const obj: Record<string, any> = {};
+    for (const [key, value] of map.entries()) {
+      obj[key] = value;
+    }
+    return obj;
+  }
+
   @Get('user/:userId')
   async getUserAssignments(
     @Param('userId', ParseIntPipe) userId: number,
     @Query('status') status?: string,
     @Query('entityType') entityType?: string,
-    @Query('limit', ParseIntPipe) limit = 100
+  @Query('limit', new DefaultValuePipe(100), ParseIntPipe) limit?: number
   ) {
     return this.assignmentService.getUserAssignments(userId, { status, entityType, limit });
   }

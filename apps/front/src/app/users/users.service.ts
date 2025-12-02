@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+import { mapBackendToManager } from '../shared/services/user.mappers';
 
 export interface User {
   id: string;
@@ -18,6 +19,14 @@ export interface User {
   isAvailable: boolean;
   skills: string[];
   territories: string[];
+  // Workload for deals and tasks (optional, provided by newer backend responses)
+  currentDealsCount?: number;
+  maxDealsCapacity?: number;
+  currentTasksCount?: number;
+  maxTasksCapacity?: number;
+  // Workload for leads (optional, provided by newer backend responses)
+  currentLeadsCount?: number;
+  maxLeadsCapacity?: number;
   // Optional fields present on raw /users responses used by various components
   sip_endpoint_id?: string; // snake_case from backend
   sipEndpointId?: string; // camelCase variant
@@ -49,16 +58,43 @@ export class UsersService {
   private readonly apiUrl = environment.apiBase;
 
   getAllManagers(): Observable<User[]> {
-    return this.http.get<User[]>(`${this.apiUrl}/users/managers`).pipe(
-      map(users => {
-        console.log('UsersService: Raw users from API:', users);
-        // Преобразуем ID в строку для единообразия
-        const transformed = users.map(user => ({
-          ...user,
-          id: String(user.id)
-        }));
-        console.log('UsersService: Transformed users:', transformed);
-        return transformed;
+    // Use the shared backend->manager mapper so workload fields (leads/deals/tasks)
+    // are normalized (handles snake_case and legacy fields like `workload`/`maxCapacity`).
+  return this.http.get<unknown[]>(`${this.apiUrl}/users/managers`).pipe(
+      map(list => {
+        const mapped = (list || []).map(item => {
+          const m = mapBackendToManager(item as Record<string, unknown>);
+          // Convert Manager -> User shape expected by various components
+          return {
+            id: String(m.id),
+            name: m.fullName || m.username || '',
+            email: m.email,
+            department: m.department,
+            avatar: undefined,
+            workload: m.currentLeadsCount || 0,
+            maxCapacity: m.maxLeadsCapacity || 0,
+            workloadPercentage: m.workloadPercentage || 0,
+            role: (m.roles && m.roles.length) ? m.roles[0] : '',
+            conversionRate: m.conversionRate || 0,
+            isAvailable: !!m.isAvailableForAssignment,
+            skills: m.skills || [],
+            territories: m.territories || [],
+            // keep new fields if present; fall back to leads workload/capacity when backend
+            // does not provide per-entity counts (so UI shows something instead of 0).
+            currentDealsCount: m.currentDealsCount ?? m.currentLeadsCount ?? 0,
+            maxDealsCapacity: m.maxDealsCapacity ?? m.maxLeadsCapacity ?? 0,
+            currentTasksCount: m.currentTasksCount ?? m.currentLeadsCount ?? 0,
+            maxTasksCapacity: m.maxTasksCapacity ?? m.maxLeadsCapacity ?? 0,
+            currentLeadsCount: m.currentLeadsCount,
+            maxLeadsCapacity: m.maxLeadsCapacity,
+            firstName: m.firstName,
+            lastName: m.lastName,
+            fullName: m.fullName,
+            username: m.username
+          } as User;
+        });
+        console.log('UsersService: Mapped managers -> users', mapped);
+        return mapped;
       })
     );
   }

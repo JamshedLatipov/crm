@@ -23,7 +23,13 @@
           <mat-tab-group class="contact-tabs">
             <mat-tab label="Детали">
               <div class="tab-content">
+                <!-- Contact Info Card -->
                 <mat-card class="info-card profile-card">
+                  <mat-card-header>
+                    <div mat-card-avatar class="card-avatar profile"><mat-icon>account_circle</mat-icon></div>
+                    <mat-card-title>Контактная информация</mat-card-title>
+                    <mat-card-subtitle>Основные данные пользователя</mat-card-subtitle>
+                  </mat-card-header>
                   <mat-card-content>
                     <div class="contact-grid">
                       <div class="contact-item">
@@ -34,6 +40,14 @@
                         </div>
                       </div>
 
+                      <div class="contact-item">
+                        <div class="contact-icon"><mat-icon>email</mat-icon></div>
+                        <div class="contact-details">
+                          <span class="contact-label">Email</span>
+                          <span class="contact-value">{{ currentUser()?.email || '-' }}</span>
+                        </div>
+                      </div>
+
                       <div class="contact-item" *ngIf="currentUser()?.phone">
                         <div class="contact-icon"><mat-icon>phone</mat-icon></div>
                         <div class="contact-details">
@@ -41,15 +55,24 @@
                           <span class="contact-value">{{ currentUser()?.phone }}</span>
                         </div>
                       </div>
+
+                      <div class="contact-item" *ngIf="currentUser()?.department">
+                        <div class="contact-icon"><mat-icon>apartment</mat-icon></div>
+                        <div class="contact-details">
+                          <span class="contact-label">Отдел</span>
+                          <span class="contact-value">{{ currentUser()?.department }}</span>
+                        </div>
+                      </div>
                     </div>
                   </mat-card-content>
                 </mat-card>
 
-                <!-- Additional Info Card: show all missing user fields -->
-                <mat-card class="info-card mt-4">
+                <!-- Additional Info Card -->
+                <mat-card class="info-card">
                   <mat-card-header>
                     <div mat-card-avatar class="card-avatar info"><mat-icon>info</mat-icon></div>
-                    <mat-card-title>Дополнительно</mat-card-title>
+                    <mat-card-title>Системная информация</mat-card-title>
+                    <mat-card-subtitle>Дополнительные данные</mat-card-subtitle>
                   </mat-card-header>
                   <mat-card-content>
                     <div class="contact-grid">
@@ -97,7 +120,19 @@
                           <span class="contact-value">{{ currentUser()?.sipEndpointId || '-' }}</span>
                         </div>
                       </div>
+                    </div>
+                  </mat-card-content>
+                </mat-card>
 
+                <!-- Performance Metrics Card -->
+                <mat-card class="info-card">
+                  <mat-card-header>
+                    <div mat-card-avatar class="card-avatar stats"><mat-icon>analytics</mat-icon></div>
+                    <mat-card-title>Показатели эффективности</mat-card-title>
+                    <mat-card-subtitle>Статистика работы</mat-card-subtitle>
+                  </mat-card-header>
+                  <mat-card-content>
+                    <div class="contact-grid">
                       <div class="contact-item">
                         <div class="contact-icon"><mat-icon>trending_up</mat-icon></div>
                         <div class="contact-details">
@@ -115,10 +150,10 @@
                       </div>
 
                       <div class="contact-item">
-                        <div class="contact-icon"><mat-icon>analytics</mat-icon></div>
+                        <div class="contact-icon"><mat-icon>percent</mat-icon></div>
                         <div class="contact-details">
                           <span class="contact-label">Конверсия</span>
-                          <span class="contact-value">{{ currentUser()?.conversionRate !== undefined ? (currentUser()?.conversionRate | number:'1.0-2') : '-' }}</span>
+                          <span class="contact-value">{{ currentUser()?.conversionRate !== undefined ? (currentUser()?.conversionRate | number:'1.0-2') + '%' : '-' }}</span>
                         </div>
                       </div>
 
@@ -126,7 +161,7 @@
                         <div class="contact-icon"><mat-icon>attach_money</mat-icon></div>
                         <div class="contact-details">
                           <span class="contact-label">Всего дохода</span>
-                          <span class="contact-value">{{ currentUser()?.totalRevenue !== undefined ? (currentUser()?.totalRevenue | number:'1.0-2') : '-' }}</span>
+                          <span class="contact-value">{{ currentUser()?.totalRevenue !== undefined ? (currentUser()?.totalRevenue | number:'1.0-2') + ' ₽' : '-' }}</span>
                         </div>
                       </div>
 
@@ -160,7 +195,166 @@
               <div class="tab-content">
                 <mat-card>
                   <mat-card-content>
-                    <p class="text-gray-500 text-center py-8">Аналитика производительности будет доступна в следующих версиях</p>
+                    <div *ngIf="performanceLoading()" class="loading-state">
+                      <mat-spinner diameter="30"></mat-spinner>
+                      <p>Загрузка аналитики...</p>
+                    </div>
+
+                    <div *ngIf="!performanceLoading() && performanceStats()" class="performance-grid">
+                      <div class="perf-item">
+                        <div class="perf-label">Всего назначений</div>
+                        <div class="perf-value">{{ performanceStats()?.totalAssignments ?? '-' }}</div>
+                      </div>
+
+                      <div class="perf-item">
+                        <div class="perf-label">Активных</div>
+                        <div class="perf-value">{{ performanceStats()?.activeAssignments ?? '-' }}</div>
+                      </div>
+
+                      <div class="perf-item">
+                        <div class="perf-label">Завершённых</div>
+                        <div class="perf-value">{{ performanceStats()?.completedAssignments ?? '-' }}</div>
+                      </div>
+
+                      <div class="perf-item">
+                        <div class="perf-label">Конверсия</div>
+                        <div class="perf-value">{{ performanceStats()?.conversionRate ? (performanceStats()?.conversionRate | number:'1.0-2') + '%' : '-' }}</div>
+                      </div>
+
+                      <div class="perf-item">
+                        <div class="perf-label">Доход</div>
+                        <div class="perf-value">{{ performanceStats()?.revenue ? (performanceStats()?.revenue | number:'1.0-2') + ' ₽' : '-' }}</div>
+                      </div>
+                    </div>
+
+                    <div *ngIf="!performanceLoading() && !performanceStats()" class="text-gray-500 text-center py-8">Аналитика недоступна</div>
+                  </mat-card-content>
+                </mat-card>
+              </div>
+            </mat-tab>
+
+            <mat-tab label="Назначения">
+              <div class="tab-content">
+                <!-- Leads Card -->
+                <mat-card class="info-card assignment-card">
+                  <div class="assignment-card-header">
+                    <div class="header-left">
+                      <div class="header-icon leads-icon">
+                        <mat-icon>people</mat-icon>
+                      </div>
+                      <div class="header-text">
+                        <h3>Лиды</h3>
+                        <span class="count">{{ assignedLeads().length }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <mat-card-content>
+                    <div *ngIf="assignedLeads().length === 0" class="empty-state">
+                      <mat-icon class="empty-icon">people_outline</mat-icon>
+                      <p class="empty-text">Нет назначенных лидов</p>
+                    </div>
+                    <div *ngIf="assignedLeads().length > 0" class="assignments-scroll">
+                      <div *ngFor="let l of assignedLeads()" (click)="goToLead(l.id)" class="assignment-item">
+                        <div class="assignment-avatar leads-avatar">
+                          <img *ngIf="l.avatar" [src]="l.avatar" alt="avatar" />
+                          <span *ngIf="!l.avatar">{{ getEntityInitials(l) }}</span>
+                        </div>
+                        <div class="assignment-content">
+                          <div class="assignment-title">{{ l.title || l.name || ('#' + l.id) }}</div>
+                          <div class="assignment-meta">
+                            <span class="meta-badge" *ngIf="l.status">
+                              <mat-icon>label</mat-icon>{{ l.status }}
+                            </span>
+                            <span class="meta-text" *ngIf="l.email">{{ l.email }}</span>
+                          </div>
+                        </div>
+                        <mat-icon class="assignment-arrow">chevron_right</mat-icon>
+                      </div>
+                    </div>
+                  </mat-card-content>
+                </mat-card>
+
+                <!-- Deals Card -->
+                <mat-card class="info-card assignment-card">
+                  <div class="assignment-card-header">
+                    <div class="header-left">
+                      <div class="header-icon deals-icon">
+                        <mat-icon>handshake</mat-icon>
+                      </div>
+                      <div class="header-text">
+                        <h3>Сделки</h3>
+                        <span class="count">{{ assignedDeals().length }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <mat-card-content>
+                    <div *ngIf="assignedDeals().length === 0" class="empty-state">
+                      <mat-icon class="empty-icon">handshake</mat-icon>
+                      <p class="empty-text">Нет назначенных сделок</p>
+                    </div>
+                    <div *ngIf="assignedDeals().length > 0" class="assignments-scroll">
+                      <div *ngFor="let d of assignedDeals()" (click)="goToDeal(d.id)" class="assignment-item">
+                        <div class="assignment-avatar deals-avatar">
+                          <img *ngIf="d.avatar" [src]="d.avatar" alt="avatar" />
+                          <span *ngIf="!d.avatar">{{ getEntityInitials(d) }}</span>
+                        </div>
+                        <div class="assignment-content">
+                          <div class="assignment-title">{{ d.title || ('#' + d.id) }}</div>
+                          <div class="assignment-meta">
+                            <span class="meta-badge" *ngIf="d.stage?.name">
+                              <mat-icon>timeline</mat-icon>{{ d.stage?.name }}
+                            </span>
+                            <span class="meta-badge" *ngIf="!d.stage?.name && d.status">
+                              <mat-icon>label</mat-icon>{{ d.status }}
+                            </span>
+                          </div>
+                        </div>
+                        <mat-icon class="assignment-arrow">chevron_right</mat-icon>
+                      </div>
+                    </div>
+                  </mat-card-content>
+                </mat-card>
+
+                <!-- Tasks Card -->
+                <mat-card class="info-card assignment-card">
+                  <div class="assignment-card-header">
+                    <div class="header-left">
+                      <div class="header-icon tasks-icon">
+                        <mat-icon>task</mat-icon>
+                      </div>
+                      <div class="header-text">
+                        <h3>Задачи</h3>
+                        <span class="count">{{ assignedTasks().length }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <mat-card-content>
+                    <div *ngIf="assignedLoading()" class="loading-state">
+                      <mat-spinner diameter="20"></mat-spinner>
+                      <span>Загрузка...</span>
+                    </div>
+                    <div *ngIf="!assignedLoading() && assignedTasks().length === 0" class="empty-state">
+                      <mat-icon class="empty-icon">task_alt</mat-icon>
+                      <p class="empty-text">Нет назначенных задач</p>
+                    </div>
+                    <div *ngIf="!assignedLoading() && assignedTasks().length > 0" class="assignments-scroll">
+                      <div *ngFor="let t of assignedTasks()" (click)="goToTask(t.id)" class="assignment-item">
+                        <div class="assignment-avatar tasks-avatar">
+                          <img *ngIf="t.avatar" [src]="t.avatar" alt="avatar" />
+                          <span *ngIf="!t.avatar">{{ getEntityInitials(t) }}</span>
+                        </div>
+                        <div class="assignment-content">
+                          <div class="assignment-title">{{ t.title || ('#' + t.id) }}</div>
+                          <div class="assignment-meta">
+                            <span class="meta-badge" *ngIf="t.status">
+                              <mat-icon>check_circle</mat-icon>{{ t.status }}
+                            </span>
+                            <span class="meta-text" *ngIf="t.dueDate">{{ t.dueDate }}</span>
+                          </div>
+                        </div>
+                        <mat-icon class="assignment-arrow">chevron_right</mat-icon>
+                      </div>
+                    </div>
                   </mat-card-content>
                 </mat-card>
               </div>

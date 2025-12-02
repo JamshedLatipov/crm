@@ -127,8 +127,14 @@ export class ContactsController {
 
   // Активность контактов
   @Get(':id/activity')
-  async getContactActivity(@Param('id') id: string) {
-    return this.contactsService.getContactActivity(id);
+  async getContactActivity(
+    @Param('id') id: string,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+  ) {
+    const parsedPage = page ? parseInt(page, 10) : undefined;
+    const parsedPageSize = pageSize ? parseInt(pageSize, 10) : undefined;
+    return this.contactsService.getContactActivity(id, parsedPage, parsedPageSize);
   }
 
   @Post(':id/activity')

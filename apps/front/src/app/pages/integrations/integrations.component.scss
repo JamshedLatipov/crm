@@ -4,31 +4,59 @@
 }
 
 .table-container {
-  background: white;
-  border-radius: 8px;
+  background: var(--surface-color);
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+  border: 1px solid var(--border-color);
+  padding: 8px; /* small inner padding to match other cards */
 }
 
 table {
   width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
 th.mat-header-cell {
-  background: #f9fafb;
-  color: #6b7280;
-  font-weight: 500;
-  font-size: 12px;
-  text-transform: uppercase;
-  padding: 16px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-weight: 700;
+  font-size: 13px;
+  text-transform: none;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-color);
 }
 
 td.mat-cell {
-  padding: 16px;
-  border-bottom: 1px solid #f3f4f6;
-  color: #111827;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+  color: var(--text-primary);
+  vertical-align: middle;
 }
 
 tr.mat-row:hover {
-  background: #f9fafb;
+  background: linear-gradient(180deg, rgba(102,126,234,0.02), transparent);
+}
+
+/* Make the sources tags match other tag styling */
+.table-container .px-2 {
+  display: inline-block;
+  padding: 6px 8px;
+  background: rgba(0,0,0,0.03);
+  border: 1px solid rgba(0,0,0,0.03);
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* Actions column alignment */
+.table-container td.mat-cell .mat-icon-button {
+  color: var(--text-secondary);
+}
+
+/* Empty state */
+.table-container .text-center {
+  padding: 28px;
+  color: var(--text-secondary);
 }

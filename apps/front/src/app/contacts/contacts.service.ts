@@ -98,8 +98,11 @@ export class ContactsService {
   }
 
   // === Активность ===
-  getContactActivity(id: string): Observable<ContactActivity[]> {
-    return this.http.get<ContactActivity[]>(`${this.apiUrl}/${id}/activity`);
+  getContactActivity(id: string, page?: number, pageSize?: number): Observable<{ items: ContactActivity[]; total: number }> {
+    const params: Record<string, string> = {};
+    if (page !== undefined) params['page'] = page.toString();
+    if (pageSize !== undefined) params['pageSize'] = pageSize.toString();
+    return this.http.get<{ items: ContactActivity[]; total: number }>(`${this.apiUrl}/${id}/activity`, { params });
   }
 
   addContactActivity(contactId: string, activity: {

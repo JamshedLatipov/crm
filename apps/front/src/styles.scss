@@ -70,6 +70,11 @@ body {
   --warning-light: rgba(245, 158, 11, 0.1);
   --success-light: rgba(16, 185, 129, 0.1);
   --error-light: rgba(239, 68, 68, 0.1);
+
+  /* Semantic workload colors (map to MDC/theme variables when available) */
+  --workload-low-color: var(--mdc-theme-primary, var(--success-color, #4caf50));
+  --workload-mid-color: var(--mdc-theme-secondary, var(--warning-color, #ffb300));
+  --workload-high-color: var(--mdc-theme-error, var(--error-color, #f44336));
 }
 ::ng-deep {
   .mat-mdc-dialog-surface {
@@ -206,6 +211,49 @@ textarea.mat-input-element:focus {
 .cdk-overlay-pane .mat-select-panel .mat-option {
   display: flex !important;
   align-items: center !important;
+}
+
+/* Global progress-bar overrides so overlay-mounted mat-select options inherit colors.
+   Targets both classic Material DOM and MDC-based DOM shapes. Keep specificity global
+   because mat-select renders its options into a cdk overlay (outside component scope). */
+/* Primary / filled portion */
+mat-progress-bar.workload-low .mat-progress-bar-fill,
+mat-progress-bar.workload-low .mat-mdc-linear-progress-bar__primary-portion,
+.mat-progress-bar.workload-low .mat-progress-bar-fill,
+.mat-mdc-linear-progress.workload-low .mat-mdc-linear-progress-bar__primary-portion {
+  background-color: var(--workload-low-color) !important;
+}
+
+mat-progress-bar.workload-mid .mat-progress-bar-fill,
+mat-progress-bar.workload-mid .mat-mdc-linear-progress-bar__primary-portion,
+.mat-progress-bar.workload-mid .mat-progress-bar-fill,
+.mat-mdc-linear-progress.workload-mid .mat-mdc-linear-progress-bar__primary-portion {
+  background-color: var(--workload-mid-color) !important;
+}
+
+mat-progress-bar.workload-high .mat-progress-bar-fill,
+mat-progress-bar.workload-high .mat-mdc-linear-progress-bar__primary-portion,
+.mat-progress-bar.workload-high .mat-progress-bar-fill,
+.mat-mdc-linear-progress.workload-high .mat-mdc-linear-progress-bar__primary-portion {
+  background-color: var(--workload-high-color) !important;
+}
+
+/* Ensure primary portion fills the bar vertically across implementations */
+mat-progress-bar .mat-progress-bar-fill,
+mat-progress-bar .mat-mdc-linear-progress-bar__primary-portion,
+.mat-progress-bar .mat-progress-bar-fill,
+.mat-mdc-linear-progress .mat-mdc-linear-progress-bar__primary-portion {
+  height: 100% !important;
+}
+
+/* Allow per-element workload color via --workload-fill; useful when mat-progress-bar
+   is rendered inside overlay panes (mat-select options). Component sets
+   [style.--workload-fill] to 'var(--workload-*-color)'. */
+.mat-progress-bar-fill,
+.mat-mdc-linear-progress-bar__primary-portion,
+mat-progress-bar .mat-progress-bar-fill,
+mat-progress-bar .mat-mdc-linear-progress-bar__primary-portion {
+  background-color: var(--workload-fill, var(--workload-low-color)) !important;
 }
 
 /* Call Script Preview Dialog Styles */

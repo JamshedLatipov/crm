@@ -4,16 +4,19 @@ import { AssignmentController } from './controllers/assignment.controller';
 import { AssignmentService } from './services/assignment.service';
 import { Assignment } from './entities/assignment.entity';
 import { User } from '../user/user.entity';
-import { UserService } from '../user/user.service';
+import { UserModule } from '../user/user.module';
 import { NotificationModule } from '../notifications/notification.module';
+import { UserActivityModule } from '../user-activity/user-activity.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Assignment, User]),
-    NotificationModule
+    NotificationModule,
+    UserActivityModule,
+    UserModule
   ],
   controllers: [AssignmentController],
-  providers: [AssignmentService, UserService],
+  providers: [AssignmentService],
   exports: [AssignmentService]
 })
 export class SharedModule {}

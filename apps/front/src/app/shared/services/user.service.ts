@@ -15,6 +15,12 @@ export interface Manager {
   roles: string[];
   currentLeadsCount: number;
   maxLeadsCapacity: number;
+  // Deals workload
+  currentDealsCount: number;
+  maxDealsCapacity: number;
+  // Tasks workload
+  currentTasksCount: number;
+  maxTasksCapacity: number;
   conversionRate: number;
   isAvailableForAssignment: boolean;
   fullName: string;

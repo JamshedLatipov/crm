@@ -47,6 +47,16 @@ export class CreateUserDto {
   maxLeadsCapacity?: number;
 
   @IsOptional()
+  @IsNumber()
+  @Min(0)
+  maxDealsCapacity?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  maxTasksCapacity?: number;
+
+  @IsOptional()
   @IsBoolean()
   isAvailableForAssignment?: boolean;
 
@@ -91,6 +101,16 @@ export class UpdateUserDto {
   @Min(0)
   @Max(100)
   maxLeadsCapacity?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  maxDealsCapacity?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  maxTasksCapacity?: number;
 
   @IsOptional()
   @IsBoolean()
@@ -145,6 +165,12 @@ export class UserResponseDto {
   territories?: string[];
   currentLeadsCount: number;
   maxLeadsCapacity: number;
+  // Deals workload
+  currentDealsCount: number;
+  maxDealsCapacity: number;
+  // Tasks workload
+  currentTasksCount: number;
+  maxTasksCapacity: number;
   conversionRate: number;
   totalRevenue: number;
   totalLeadsHandled: number;

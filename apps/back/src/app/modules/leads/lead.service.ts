@@ -12,6 +12,7 @@ import {
 import { Lead, LeadStatus, LeadSource, LeadPriority } from './lead.entity';
 import { Contact } from '../contacts/contact.entity';
 import { LeadActivity, ActivityType } from './entities/lead-activity.entity';
+import { ContactActivity, ActivityType as ContactActivityType } from '../contacts/contact-activity.entity';
 import { ChangeType } from './entities/lead-history.entity';
 import { LeadScoringService } from './services/lead-scoring.service';
 import { LeadDistributionService } from './services/lead-distribution.service';
@@ -30,6 +31,7 @@ import { PromoCompaniesService } from '../promo-companies/services/promo-compani
 interface CreateLeadData extends Partial<Lead> {
   contactId?: string;
   companyId?: string | { id: string; [key: string]: unknown };
+  assignedTo?: string | number | Array<string | number>; // Добавлено поле assignedTo
 }
 
 export interface LeadFilters {
@@ -70,8 +72,10 @@ export class LeadService {
     private readonly activityRepo: Repository<LeadActivity>,
     @InjectRepository(Deal)
     private readonly dealRepo: Repository<Deal>,
-    @InjectRepository(Contact)
-    private readonly contactRepo: Repository<Contact>,
+  @InjectRepository(Contact)
+  private readonly contactRepo: Repository<Contact>,
+  @InjectRepository(ContactActivity)
+  private readonly contactActivityRepo: Repository<ContactActivity>,
     private readonly scoringService: LeadScoringService,
     private readonly distributionService: LeadDistributionService,
     private readonly historyService: LeadHistoryService,
@@ -105,6 +109,36 @@ export class LeadService {
       where: { id: lead.id },
       relations: ['company']
     });
+
+    // If caller requested explicit assignment on create, create assignment(s)
+    if (data?.assignedTo) {
+      try {
+        const assigned = data?.assignedTo;
+        const assignedArray: number[] = Array.isArray(assigned)
+        ? assigned.map((v: any) => Number(v)).filter((n: number) => !Number.isNaN(n))
+        : [Number(assigned)].filter((n: number) => !Number.isNaN(n));
+        
+        if (assignedArray.length > 0) {
+          // Use provided userId as assignedBy if available, otherwise system user (1)
+          const assignedBy = userId ? Number(userId) : 1;
+          console.log('Lead created with ID:', assignedBy, assignedArray);
+          await this.assignmentService.createAssignment({
+            entityType: 'lead',
+            entityId: lead.id.toString(),
+            assignedTo: assignedArray,
+            assignedBy: Number(assignedBy),
+            reason: 'Assigned during lead creation',
+            notifyAssignees: true
+          });
+          // reflect assignment in returned lead object
+          if (fullLead) {
+            (fullLead as any).assignedTo = String(assignedArray[0]);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to apply explicit assignment during lead creation:', err?.message || err);
+      }
+    }
 
     // Записываем создание лида в историю
     await this.historyService.createHistoryEntry({
@@ -191,35 +225,51 @@ export class LeadService {
       .getMany();
 
     // Attach current assignment (assignedTo) for each lead to make frontend rendering simple
+    await this.attachAssignments(leads);
+
+    return {
+      leads,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  /**
+   * Attach current assignment info to a Lead or array of Leads.
+   * Adds `assignedTo` as a string user id when present.
+   */
+  private async attachAssignments(leadsOrLead: Lead[] | Lead | null): Promise<void> {
+    if (!leadsOrLead) return;
+    const leads = Array.isArray(leadsOrLead) ? leadsOrLead : [leadsOrLead];
+    if (leads.length === 0) return;
+
     try {
       const ids = leads.map(l => String(l.id));
       const assignmentsMap = await this.assignmentService.getCurrentAssignmentsForEntities('lead', ids);
 
-      const leadsWithAssignment = leads.map(lead => {
-        const assign = assignmentsMap.get(String(lead.id));
-        // attach assignedTo as string user id if exists
-        if (assign && assign.userId) {
-          // keep existing object shape and add assignedTo
-          return Object.assign(lead, { assignedTo: String(assign.userId) });
+      for (const lead of leads) {
+        let assign = assignmentsMap.get(String(lead.id));
+        if (!assign) {
+          try {
+            const single = await this.assignmentService.getCurrentAssignments('lead', String(lead.id));
+            if (single && single.length > 0) assign = single[0];
+          } catch (err) {
+            // ignore per-entity lookup errors
+          }
         }
-        return lead;
-      });
 
-      return {
-        leads: leadsWithAssignment,
-        total,
-        page,
-        totalPages: Math.ceil(total / limit),
-      };
+        if (assign && assign.userId) {
+          (lead as any).assignedTo = String(assign.userId);
+        } else {
+          (lead as any).assignedTo = null;
+        }
+      }
     } catch (err) {
-      // If assignment lookup fails for any reason, return leads without assignedTo but don't break the endpoint
       console.warn('Failed to attach assignments to leads:', err?.message || err);
-      return {
-        leads,
-        total,
-        page,
-        totalPages: Math.ceil(total / limit),
-      };
+      for (const lead of leads) {
+        (lead as any).assignedTo = null;
+      }
     }
   }
 
@@ -343,10 +393,13 @@ export class LeadService {
   }
 
   async findById(id: number): Promise<Lead | null> {
-    return this.leadRepo.findOne({
+    const lead = await this.leadRepo.findOne({
       where: { id },
       relations: ['company', 'deals'],
     });
+    if (!lead) return null;
+    await this.attachAssignments(lead);
+    return lead;
   }
 
   async update(id: number, data: Partial<Lead>, userId?: string, userName?: string): Promise<Lead> {
@@ -372,6 +425,13 @@ export class LeadService {
     delete (updateData as any).contact;
     delete (updateData as any).assignedToUser;
     delete (updateData as any).deals;
+
+    // assignedTo is stored in assignments table, not a column on Lead.
+    // If caller passed assignedTo in DTO, capture it and remove before DB update
+    const assignedToPayload = (data as any).assignedTo;
+    if ((updateData as any).assignedTo !== undefined) {
+      delete (updateData as any).assignedTo;
+    }
 
     await this.leadRepo.update(id, updateData as any);
 
@@ -419,9 +479,42 @@ export class LeadService {
       throw new Error('Lead not found after update');
     }
 
+    // If the client provided an assignedTo in the update DTO, handle assignment changes here.
+    // If assignedTo is undefined — no-op. If null -> unassign. Otherwise -> assign to provided user.
+    if (assignedToPayload !== undefined) {
+      try {
+        if (assignedToPayload === null) {
+          // Remove all current assignments for this lead
+          const current = await this.assignmentService.getCurrentAssignments('lead', id.toString());
+          if (current && current.length > 0) {
+            await this.assignmentService.removeAssignment({
+              entityType: 'lead',
+              entityId: id.toString(),
+              userIds: current.map(a => a.userId),
+              reason: 'Unassigned via lead update'
+            });
+          }
+        } else {
+          // Use assignLead helper to ensure history, counters and activity are updated
+          await this.assignLead(id, String(assignedToPayload), userId ? Number(userId) : undefined, userName);
+        }
+      } catch (err) {
+        console.warn('Failed to apply assignedTo during lead update:', err?.message || err);
+      }
+    }
+
     // Если изменился статус, обновляем вероятность конверсии
     if (data.status && data.status !== existingLead.status) {
       await this.scoringService.updateConversionProbability(id);
+      // If lead moved to a final state, complete assignments and decrement counters
+      const finalStatuses = [LeadStatus.CONVERTED, LeadStatus.REJECTED, LeadStatus.LOST];
+      if (finalStatuses.includes(data.status as LeadStatus)) {
+        try {
+          await this.assignmentService.completeAssignment('lead', id, 'Lead closed');
+        } catch (err) {
+          console.warn('Failed to complete assignments for lead:', err?.message || err);
+        }
+      }
     }
 
     return updatedLead;
@@ -528,7 +621,9 @@ export class LeadService {
       },
     });
 
-    return existingLead;
+    // Return the freshest lead data (with assignments attached) so callers get updated assignment info
+    const refreshed = await this.findById(id);
+    return refreshed || existingLead;
   }
 
   /**
@@ -1063,11 +1158,36 @@ export class LeadService {
           const savedContact = await this.contactRepo.save(newContact);
           foundContact = savedContact;
           console.log('convertToDeal - created contact from lead', { leadId: lead.id, contactId: savedContact.id });
+
+          // Log contact activity: contact created from lead
+          try {
+            await this.contactActivityRepo.save({
+              contactId: savedContact.id,
+              type: ContactActivityType.SYSTEM,
+              title: 'Контакт создан из лида',
+              description: `Контакт создан из лида #${lead.id} ${lead.name || ''}`.trim(),
+              metadata: { leadId: lead.id, leadName: lead.name }
+            });
+          } catch (err) {
+            console.warn('Failed to write contact activity for contact created from lead:', err?.message || err);
+          }
         }
 
         if (foundContact) {
           // @ts-ignore
           dealDto.contactId = foundContact.id;
+          // Log contact activity: lead was linked to this contact (matching by email/phone)
+          try {
+            await this.contactActivityRepo.save({
+              contactId: foundContact.id,
+              type: ContactActivityType.SYSTEM,
+              title: 'Лид привязан к контакту',
+              description: `Лид #${lead.id} привязан к контакту ${foundContact.id} ${foundContact.name || ''}`.trim(),
+              metadata: { leadId: lead.id, leadName: lead.name }
+            });
+          } catch (err) {
+            console.warn('Failed to write contact activity when linking lead to existing contact:', err?.message || err);
+          }
         }
       } catch (err) {
         console.warn('convertToDeal: failed to find/create contact for lead', err?.message || err);

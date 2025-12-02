@@ -24,15 +24,15 @@ import {
   LeadStatus,
 } from '../../models/lead.model';
 import { ChangeStatusDialogComponent } from '../change-status-dialog/change-status-dialog.component';
-import { AssignLeadDialogComponent } from '../assign-lead-dialog/assign-lead-dialog.component';
+import { AssignUserDialogComponent } from '../../../deals/components/assign-user-dialog.component';
 import { EditLeadDialogComponent } from '../edit-lead-dialog/edit-lead-dialog.component';
 import { ConvertToDealDialogComponent } from '../convert-to-deal-dialog/convert-to-deal-dialog.component';
 import { CommentsComponent } from '../../../shared/components/comments/comments.component';
 import { CommentEntityType } from '../../../shared/interfaces/comment.interface';
-import { LeadStatusComponent } from '../lead-status/lead-status.component';
 import { LeadPriorityComponent } from '../lead-priority/lead-priority.component';
 import { LeadActionsComponent } from '../lead-actions/lead-actions.component';
 import { TaskListWidgetComponent } from '../../../tasks/components/task-list-widget.component';
+import { AssignmentService } from '../../../services/assignment.service';
 import { PromoCompaniesService } from '../../../promo-companies/services/promo-companies.service';
 import { CreatePromoCompanyDialogComponent } from '../../../promo-companies/components/create-promo-company-dialog/create-promo-company-dialog.component';
 import { AssignPromoCompanyDialogComponent } from '../../../promo-companies/components/assign-promo-company-dialog/assign-promo-company-dialog.component';
@@ -65,7 +65,6 @@ interface HistoryEntry {
     MatTooltipModule,
     MatSnackBarModule,
     CommentsComponent,
-    LeadStatusComponent,
     LeadPriorityComponent,
     LeadActionsComponent,
     TaskListWidgetComponent,
@@ -81,6 +80,7 @@ export class LeadDetailComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
   private readonly promoCompaniesService = inject(PromoCompaniesService);
+  private readonly assignmentService = inject(AssignmentService);
 
   lead: Lead = {} as Lead;
   activities: LeadActivity[] = [];
@@ -154,7 +154,8 @@ export class LeadDetailComponent implements OnInit {
         this.lead = lead;
         console.log('LeadDetail: Lead loaded:', lead, 'lead.id:', lead.id, 'type:', typeof lead.id);
         this.loadActivities();
-        this.loadCurrentAssignments();
+        // Use assignment info from returned lead model instead of calling centralized assignment API
+        this.setAssignmentsFromLead();
       },
       error: (err) => {
         console.error('Error loading lead:', err);
@@ -163,17 +164,39 @@ export class LeadDetailComponent implements OnInit {
     });
   }
 
-  private loadCurrentAssignments(): void {
-    if (!this.lead?.id) return;
-    this.leadService.getCurrentAssignments(this.lead.id).subscribe({
-      next: (assignments) => {
-        this.currentAssignments = assignments;
-      },
-      error: (err) => {
-        console.error('Error loading assignments:', err);
-        this.currentAssignments = [];
-      },
-    });
+
+  // Populate currentAssignments from the lead model's assignedTo field returned by API
+  private setAssignmentsFromLead(): void {
+    if (!this.lead) {
+      this.currentAssignments = [];
+      return;
+    }
+
+    const assigned = (this.lead as any).assignedTo ?? this.lead.assignedTo;
+    if (assigned === null || assigned === undefined || assigned === '') {
+      this.currentAssignments = [];
+      return;
+    }
+
+    const userId = Number(assigned);
+    let resolvedName: string | undefined = undefined;
+    let resolvedEmail: string | undefined = undefined;
+
+    if (!Number.isNaN(userId)) {
+      const manager = this.managers.find((m) => String(m.id) === String(userId));
+      if (manager) {
+        resolvedName = manager.fullName || manager.username || undefined;
+        resolvedEmail = (manager as any).email || undefined;
+      }
+      this.currentAssignments = [
+        { userId: userId, userName: resolvedName, userEmail: resolvedEmail, assignedAt: new Date(), status: 'active' } as any,
+      ];
+    } else {
+      // If assigned is not numeric, keep as string id
+      this.currentAssignments = [
+        { userId: String(assigned) as any, userName: undefined, userEmail: undefined, assignedAt: new Date(), status: 'active' } as any,
+      ];
+    }
   }
 
   loadActivities(): void {
@@ -269,6 +292,8 @@ export class LeadDetailComponent implements OnInit {
     dialogRef.afterClosed().subscribe((result: Lead | undefined) => {
       if (result) {
         this.lead = result; // Обновляем данные лида
+  // Обновим назначения на странице из данных лида (assignedTo), чтобы показать актуального менеджера
+  this.setAssignmentsFromLead();
         console.log('Lead updated:', result);
       }
     });
@@ -342,20 +367,26 @@ export class LeadDetailComponent implements OnInit {
     if (this.isConverted) {
       return; // Конвертированные лиды нельзя редактировать
     }
-    
-    const dialogRef = this.dialog.open(AssignLeadDialogComponent, {
-      width: '700px',
+    // Open shared users dialog for changing assignee
+    const users = this.managers.map(m => ({ id: m.id?.toString(), name: m.fullName, email: (m as any).email, role: m.roles?.[0] }));
+    const dialogRef = this.dialog.open(AssignUserDialogComponent, {
+      width: '560px',
       maxWidth: '90vw',
       data: {
-        lead: this.lead,
-        currentAssignee: this.getCurrentAssignee(),
-      },
+        deal: { title: this.lead.name, assignedTo: this.getCurrentAssignee() } as any,
+        currentUsers: []
+      }
     });
 
-    dialogRef.afterClosed().subscribe((result: Lead | undefined) => {
-      if (result) {
-        this.lead = result; // Update current lead data
-        this.loadCurrentAssignments(); // Reload assignments
+    dialogRef.afterClosed().subscribe((result: any) => {
+      if (result && result.userId) {
+        this.leadService.assignLead(this.lead.id, result.userId).subscribe({
+          next: (updated) => {
+            this.lead = updated;
+            this.setAssignmentsFromLead();
+          },
+          error: (err) => console.error('Error assigning lead:', err)
+        });
       }
     });
   }
@@ -395,8 +426,26 @@ export class LeadDetailComponent implements OnInit {
     }
     
     const manager = this.managers.find(m => m.id?.toString() === activeAssignment.userId.toString());
-    console.log('Active assignment userId:', activeAssignment.userId, 'Resolved manager:', manager);
     return manager?.fullName || manager?.username || `ID: ${activeAssignment.userId}`;
+  }
+
+  getAssigneeInitials(): string {
+    const a = this.currentAssignments.length ? this.currentAssignments[0] : undefined;
+    const name = (a as any)?.userName;
+    if (!name) return '';
+    const parts = String(name).split(' ').filter(Boolean);
+    const initials = parts.map(p => p[0]).join('').toUpperCase().slice(0,2);
+    return initials;
+  }
+
+  getAssigneeEmail(): string | undefined {
+    const a = this.currentAssignments.length ? this.currentAssignments[0] : undefined;
+    return (a as any)?.userEmail;
+  }
+
+  getAssigneeWorkload(): string | undefined {
+    const a = this.currentAssignments.length ? this.currentAssignments[0] : undefined;
+    return (a as any)?.workload;
   }
 
   getActivityLabel(type: ActivityType): string {

@@ -219,7 +219,7 @@ import { User } from '../users/users.service';
             <!-- Assigned To Column -->
             <ng-container matColumnDef="assignedTo">
               <th mat-header-cell *matHeaderCellDef>Ответственный</th>
-              <td mat-cell *matCellDef="let deal"> <ng-container *ngIf="deal.assignedTo; else noAssignee"><span>{{ deal.assignedTo }}</span></ng-container><ng-template #noAssignee><span class="muted">Не назначен</span></ng-template></td>
+              <td mat-cell *matCellDef="let deal"> <ng-container *ngIf="deal.assignedTo; else noAssignee"><span>{{ deal.assignedUser?.fullName }}</span></ng-container><ng-template #noAssignee><span class="muted">Не назначен</span></ng-template></td>
             </ng-container>
 
             <!-- Actions Column -->

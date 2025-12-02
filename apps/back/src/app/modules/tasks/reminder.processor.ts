@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import { TaskReminder } from './reminder.entity';
 import { NotificationService } from '../shared/services/notification.service';
 import { NotificationChannel, NotificationType } from '../shared/entities/notification.entity';
+import { AssignmentService } from '../shared/services/assignment.service';
 
 @Injectable()
 export class ReminderProcessor {
@@ -14,6 +15,8 @@ export class ReminderProcessor {
     @InjectRepository(TaskReminder)
     private readonly reminderRepo: Repository<TaskReminder>,
     private readonly notificationService: NotificationService
+    ,
+    private readonly assignmentService: AssignmentService
   ) {}
 
   // start a simple poller
@@ -31,7 +34,6 @@ export class ReminderProcessor {
       const due = await this.reminderRepo
         .createQueryBuilder('r')
         .leftJoinAndSelect('r.task', 'task')
-        .leftJoinAndSelect('task.assignedTo', 'assignedTo')
         .where('r.active = true')
         .andWhere('r.remindAt <= :now', { now })
         .getMany();
@@ -41,29 +43,35 @@ export class ReminderProcessor {
       for (const r of due) {
         try {
           const task = r.task;
-          const assigned = (task as any)?.assignedTo;
-          // create an in-app notification for assigned user if present
-          if (assigned && assigned.id) {
-            await this.notificationService.createSystemNotification(
-              NotificationType.TASK_ASSIGNED as any,
-              `Напоминание: ${task.title}`,
-              `У вас запланированное действие: ${task.title}`,
-              String(assigned.id),
-              { taskId: task.id }
-            );
+          // Load current assignments for the task and notify the first assignee (if any)
+          try {
+            const assignments = await this.assignmentService.getCurrentAssignments('task', String(task.id));
+            const assigned = (assignments && assignments.length) ? assignments[0] : null;
 
-            // also create an EMAIL-channel notification so a mailer process can send it
-            if (assigned.email) {
-              await this.notificationService.create({
-                type: NotificationType.SYSTEM_REMINDER as any,
-                title: `Напоминание: ${task.title}`,
-                message: `У вас запланированное действие: ${task.title}`,
-                channel: NotificationChannel.EMAIL as any,
-                recipientId: String(assigned.id),
-                recipientEmail: assigned.email,
-                data: { taskId: task.id }
-              });
+            if (assigned && assigned.userId) {
+              await this.notificationService.createSystemNotification(
+                NotificationType.TASK_ASSIGNED as any,
+                `Напоминание: ${task.title}`,
+                `У вас запланированное действие: ${task.title}`,
+                String(assigned.userId),
+                { taskId: task.id }
+              );
+
+              if (assigned.userEmail) {
+                await this.notificationService.create({
+                  type: NotificationType.SYSTEM_REMINDER as any,
+                  title: `Напоминание: ${task.title}`,
+                  message: `У вас запланированное действие: ${task.title}`,
+                  channel: NotificationChannel.EMAIL as any,
+                  recipientId: String(assigned.userId),
+                  recipientEmail: assigned.userEmail,
+                  data: { taskId: task.id }
+                });
+              }
             }
+          } catch (e) {
+            // if assignment lookup fails, log and continue
+            this.logger.warn('Failed to load assignments for task reminder', e?.message || e);
           }
 
           // update reminder: if repeatMode not set -> deactivate, otherwise compute next remindAt (simple daily/weeky handling)

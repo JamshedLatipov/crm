@@ -2,6 +2,13 @@ import { MigrationInterface, QueryRunner } from "typeorm";
 
 export class SeedCallScriptsDemo1765000000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
+    // Ensure the 'Общие' category exists (some environments may not have it)
+    await queryRunner.query(`
+      INSERT INTO "call_script_categories" ("id","name","description","color","isActive","sortOrder","createdAt","updatedAt")
+      SELECT uuid_generate_v4(), 'Общие', 'Общие скрипты для различных ситуаций', '#2196F3', true, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+      WHERE NOT EXISTS (SELECT 1 FROM "call_script_categories" WHERE name = 'Общие');
+    `);
+
     // Insert a root script
     await queryRunner.query(`
       INSERT INTO "call_scripts" ("id", "title", "description", "categoryId", "steps", "questions", "tips", "isActive", "sortOrder", "createdAt", "updatedAt")

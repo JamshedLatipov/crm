@@ -1,21 +1,21 @@
 {
   "run": {
-    "command": "nx serve back --host 0.0.0.0 --watch",
-    "startTime": "2025-11-19T12:31:20.845Z",
-    "endTime": "2025-11-20T15:42:14.953Z",
+    "command": "nx build front",
+    "startTime": "2025-12-02T17:09:39.887Z",
+    "endTime": "2025-12-02T17:09:52.348Z",
     "inner": false
   },
   "tasks": [
     {
-      "taskId": "back:serve",
-      "target": "serve",
-      "projectName": "back",
-      "hash": "4217130301523868424",
-      "startTime": "2025-11-19T12:31:20.874Z",
-      "endTime": "2025-11-20T15:42:14.736Z",
+      "taskId": "front:build:production",
+      "target": "build",
+      "projectName": "front",
+      "hash": "18061393774522954251",
+      "startTime": "2025-12-02T17:09:39.920Z",
+      "endTime": "2025-12-02T17:09:52.332Z",
       "params": "",
       "cacheStatus": "cache-miss",
-      "status": 1
+      "status": 0
     }
   ]
 }

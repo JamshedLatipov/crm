@@ -37,7 +37,9 @@ import { PromoCompaniesModule } from '../promo-companies/promo-companies.module'
       LeadDistributionRule,
       Deal,
       // ensure Contact repository is available to LeadService
-      (require('../contacts/contact.entity').Contact)
+      (require('../contacts/contact.entity').Contact),
+      // also expose ContactActivity repository so LeadService can write contact activity when leads are linked
+      (require('../contacts/contact-activity.entity').ContactActivity)
     ]),
   CompaniesModule,
   // also import ContactsModule to reuse ContactsService if needed

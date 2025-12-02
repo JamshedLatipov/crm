@@ -36,6 +36,11 @@ export interface ManagerDto {
   territories: string[];
   fullName: string;
   roles: string[];
+  // Per-entity workload
+  currentDealsCount?: number;
+  maxDealsCapacity?: number;
+  currentTasksCount?: number;
+  maxTasksCapacity?: number;
 }
 
 @ApiTags('users')
@@ -221,6 +226,11 @@ export class UserController {
       workloadPercentage: user.workloadPercentage,
       role: this.getUserPrimaryRole(user.roles),
       roles: user.roles,
+      // include deals/tasks counts so frontend can display them
+      currentDealsCount: user.currentDealsCount,
+      maxDealsCapacity: user.maxDealsCapacity,
+      currentTasksCount: user.currentTasksCount,
+      maxTasksCapacity: user.maxTasksCapacity,
       conversionRate: Number(user.conversionRate) || 0,
       isAvailable: user.isAvailableForAssignment && user.isActive && !user.isOverloaded,
       skills: user.skills || [],

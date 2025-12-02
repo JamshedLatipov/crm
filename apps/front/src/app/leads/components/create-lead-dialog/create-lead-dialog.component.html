@@ -128,6 +128,20 @@
             </mat-select>
             <mat-icon matSuffix>priority_high</mat-icon>
           </mat-form-field>
+
+              <app-user-selector
+                formControlName="assignedTo"
+                label="Ответственный"
+                placeholder="Не назначен"
+                appearance="outline"
+                typeFor="lead"
+                [showEmail]="true"
+                [showStatus]="true"
+                [showDepartment]="true"
+                [showRole]="true"
+                icon="person"
+                class="full-width assigned-to-field">
+              </app-user-selector>
         </div>
 
         <mat-form-field appearance="outline" class="full-width">

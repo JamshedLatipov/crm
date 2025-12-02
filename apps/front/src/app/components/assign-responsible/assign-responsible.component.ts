@@ -1,4 +1,6 @@
 import { Component, inject, input, output, signal, computed } from '@angular/core';
+import { AuthService } from '../../auth/auth.service';
+import { AssignUsersDialogComponent } from '../../shared/components/assign-users-dialog/assign-users-dialog.component';
 import { CommonModule } from '@angular/common';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -39,132 +41,20 @@ export interface AssignmentData {
     MatChipsModule,
     MatAutocompleteModule,
     ReactiveFormsModule
+    ,
+    // Shared users dialog
+    AssignUsersDialogComponent
   ],
   template: `
-    <div class="assign-responsible">
-      <div class="assign-header">
-        <mat-icon>person_add</mat-icon>
-        <h3>Назначить ответственного</h3>
-      </div>
-
-      <div class="assign-content">
-        <!-- Поиск пользователей -->
-        <mat-form-field class="user-search">
-          <mat-label>Найти пользователя</mat-label>
-          <input 
-            matInput 
-            [formControl]="searchControl"
-            [matAutocomplete]="auto"
-            placeholder="Введите имя или email"
-          >
-          <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onUserSelected($event)">
-            @for (user of filteredUsers$ | async; track user.id) {
-              <mat-option [value]="user.id">
-                <div class="user-option">
-                  <div class="user-avatar">
-                    @if (user.avatar) {
-                      <img [src]="user.avatar" [alt]="user.name">
-                    } @else {
-                      <mat-icon>person</mat-icon>
-                    }
-                  </div>
-                  <div class="user-info">
-                    <div class="user-name">{{ user.name }}</div>
-                    <div class="user-details">{{ user.email }} • {{ user.role }}</div>
-                  </div>
-                </div>
-              </mat-option>
-            }
-          </mat-autocomplete>
-        </mat-form-field>
-
-        <!-- Выбранные пользователи -->
-        @if (selectedUsers().length > 0) {
-          <div class="selected-users">
-            <h4>Ответственные:</h4>
-            <div class="users-chips">
-              @for (user of selectedUsers(); track user.id) {
-                <mat-chip-row (removed)="removeUser(user.id)">
-                  <div class="chip-content">
-                    <div class="chip-avatar">
-                      @if (user.avatar) {
-                        <img [src]="user.avatar" [alt]="user.name">
-                      } @else {
-                        <mat-icon>person</mat-icon>
-                      }
-                    </div>
-                    <span>{{ user.name }}</span>
-                  </div>
-                  <button matChipRemove>
-                    <mat-icon>cancel</mat-icon>
-                  </button>
-                </mat-chip-row>
-              }
-            </div>
-          </div>
-        }
-
-        <!-- Причина назначения -->
-        <mat-form-field class="reason-field">
-          <mat-label>Причина назначения (опционально)</mat-label>
-          <textarea 
-            matInput 
-            [formControl]="reasonControl"
-            placeholder="Укажите причину назначения..."
-            rows="3"
-          ></textarea>
-        </mat-form-field>
-
-        <!-- Быстрый выбор по ролям -->
-        <div class="quick-assign">
-          <h4>Быстрое назначение:</h4>
-          <div class="role-buttons">
-            <button 
-              mat-button 
-              class="role-btn"
-              (click)="assignByRole('manager')"
-            >
-              <mat-icon>supervisor_account</mat-icon>
-              Менеджеры
-            </button>
-            <button 
-              mat-button 
-              class="role-btn"
-              (click)="assignByRole('admin')"
-            >
-              <mat-icon>admin_panel_settings</mat-icon>
-              Администраторы
-            </button>
-            <button 
-              mat-button 
-              class="role-btn"
-              (click)="assignByRole('support')"
-            >
-              <mat-icon>support_agent</mat-icon>
-              Поддержка
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div class="assign-actions">
-        <button 
-          mat-button 
-          color="primary" 
-          (click)="onCancel()"
-        >
-          Отмена
-        </button>
-        <button 
-          mat-raised-button 
-          color="primary" 
-          [disabled]="selectedUsers().length === 0"
-          (click)="onAssign()"
-        >
-          Назначить ({{ selectedUsers().length }})
-        </button>
-      </div>
-    </div>
+    <app-assign-users-dialog
+      [title]="'Назначить ответственного'"
+      [availableUsers]="availableUsers()"
+      [preselectedIds]="currentAssignees()"
+      [multi]="true"
+      [confirmLabel]="'Назначить'"
+      (assigned)="handleAssignedFromDialog($event)"
+      (cancelled)="onCancel()"
+    ></app-assign-users-dialog>
   `,
   styles: [`
     .assign-responsible {
@@ -320,6 +210,7 @@ export interface AssignmentData {
   `]
 })
 export class AssignResponsibleComponent {
+  private readonly auth = inject(AuthService);
   // Inputs
   public readonly entityType = input<'lead' | 'deal' | 'task' | 'notification'>('notification');
   public readonly entityId = input<string | number>();
@@ -390,7 +281,7 @@ export class AssignResponsibleComponent {
   onAssign(): void {
     const assignmentData: AssignmentData = {
       assignedTo: this.selectedUsers().map(user => user.id),
-      assignedBy: 'current-user', // Получать из AuthService
+      assignedBy: this.getAssignedBy(),
       assignedAt: new Date(),
       reason: this.reasonControl.value || undefined
     };
@@ -398,8 +289,26 @@ export class AssignResponsibleComponent {
     this.assigned.emit(assignmentData);
   }
 
+  private getAssignedBy(): string {
+    const userId = this.auth.getUserId();
+    return userId || 'system';
+  }
+
   onCancel(): void {
     this.cancelled.emit();
+  }
+
+  // Map result from shared dialog to existing AssignmentData shape
+  handleAssignedFromDialog(event: any): void {
+    const users = event?.users || [];
+    const assignmentData: AssignmentData = {
+      assignedTo: users.map((u: any) => u.id),
+      assignedBy: this.getAssignedBy(),
+      assignedAt: new Date(),
+      reason: event?.reason
+    };
+
+    this.assigned.emit(assignmentData);
   }
 
   private filterUsers(value: string): User[] {

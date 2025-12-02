@@ -1,4 +1,9 @@
-<app-page-layout title="Управление пользователями" subtitle="Всего: {{ userService.totalUsers() }} | Активных: {{ userService.activeUsers() }} | Доступных: {{ userService.availableUsers() }}">
+<app-page-layout
+  title="Управление пользователями"
+  subtitle="Всего: {{ userService.totalUsers() }} | Активных: {{
+    userService.activeUsers()
+  }} | Доступных: {{ userService.availableUsers() }}"
+>
   <div page-actions>
     <button
       mat-raised-button
@@ -17,9 +22,7 @@
       title="Выберите пользователей, чтобы открыть действия"
     >
       <mat-icon>more_vert</mat-icon>
-      Действия
-      @if (selectedUsers().length > 0) {
-        ({{ selectedUsers().length }})
+      Действия @if (selectedUsers().length > 0) { ({{ selectedUsers().length }})
       }
     </button>
   </div>
@@ -27,7 +30,6 @@
   <!-- Filters -->
   <div class="filters-section">
     <div class="filters-grid">
-      
       <!-- Status filter -->
       <!-- Status filter as tabs (replaces select) -->
       <div class="status-tabs">
@@ -35,7 +37,8 @@
           <app-status-tabs
             [tabs]="userTabs"
             [selected]="selectedStatus() || ''"
-            (selectedChange)="onStatusFilterChange($event)">
+            (selectedChange)="onStatusFilterChange($event)"
+          >
           </app-status-tabs>
         </div>
       </div>
@@ -168,6 +171,9 @@
             </td>
 
             <td class="workload-cell">
+              <div class="workload-text">
+                Лид: {{ user.currentLeadsCount }} / {{ user.maxLeadsCapacity }}
+              </div>
               <div class="workload-info">
                 <div class="workload-bar">
                   <div
@@ -177,8 +183,56 @@
                     "
                   ></div>
                 </div>
-                <div class="workload-text">
-                  {{ user.currentLeadsCount }} / {{ user.maxLeadsCapacity }}
+                <!-- Deals workload (lead-style) -->
+                <div class="workload-section">
+                  <div
+                    class="workload-text"
+                    [class.high]="
+                      user.currentDealsCount > (user.maxDealsCapacity || 0)
+                    "
+                  >
+                    Сделок: {{ user.currentDealsCount }} /
+                    {{ user.maxDealsCapacity }}
+                  </div>
+                  <div class="workload-bar">
+                    <div
+                      class="workload-progress"
+                      [style.width.%]="
+                        (user.currentDealsCount /
+                          (user.maxDealsCapacity || 1)) *
+                        100
+                      "
+                      [class.warning]="
+                        user.currentDealsCount > (user.maxDealsCapacity || 0)
+                      "
+                    ></div>
+                  </div>
+                </div>
+
+                <!-- Tasks workload (lead-style) -->
+                <div class="workload-section">
+                  <div
+                    class="workload-text"
+                    [class.high]="
+                      user.currentTasksCount > (user.maxTasksCapacity || 0)
+                    "
+                  >
+                    Задач: {{ user.currentTasksCount }} /
+                    {{ user.maxTasksCapacity }}
+                  </div>
+                  <div class="workload-bar">
+                    <div
+                      class="workload-progress"
+                      [style.width.%]="
+                        (user.currentTasksCount /
+                          (user.maxTasksCapacity || 1)) *
+                        100
+                      "
+                      [class.warning]="
+                        user.currentTasksCount > (user.maxTasksCapacity || 0)
+                      "
+                    ></div>
+                  </div>
                 </div>
               </div>
             </td>
