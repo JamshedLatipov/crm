@@ -27,6 +27,49 @@
     display: flex;
     align-items: center;
   }
+
+  .assignee-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 14px;
+    border-radius: 10px;
+    background: rgba(59, 130, 246, 0.18);
+    color: white;
+    border: 1px solid rgba(59, 130, 246, 0.28);
+
+    .avatar-initials {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:700;
+      color: white;
+      background: linear-gradient(135deg,#667eea,#764ba2);
+      font-size: 13px;
+      flex-shrink:0;
+    }
+
+    .assignee-text {
+      font-weight: 600;
+      font-size: 14px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 140px;
+    }
+
+    .assignee-right {
+      margin-left: 8px;
+      background: rgba(255,255,255,0.12);
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      color: white;
+    }
+  }
 }
 
 .action-btn {
@@ -36,6 +79,21 @@
   display: flex;
   align-items: center;
   gap: 8px;
+
+  &.edit {
+    padding: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding-left: 20px !important;
+  }
+
+  &.additional {
+    padding: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
 
   &:hover {
     transform: translateY(-2px);
@@ -117,7 +175,7 @@
 
   // Специальная кнопка конвертации
   &.convert-btn {
-    background: linear-gradient(135deg, #4CAF50, #45a049);
+    background: linear-gradient(135deg, #4caf50, #45a049);
     color: white;
     border: none;
 
@@ -126,7 +184,7 @@
     }
 
     &.header-context {
-      background: linear-gradient(135deg, #4CAF50, #45a049);
+      background: linear-gradient(135deg, #4caf50, #45a049);
     }
   }
 }
@@ -179,7 +237,7 @@
   .action-btn.size-small {
     padding: 6px 12px;
     min-height: 28px;
-    
+
     .button-text {
       display: none;
     }

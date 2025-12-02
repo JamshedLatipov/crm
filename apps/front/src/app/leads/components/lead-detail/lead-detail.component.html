@@ -55,23 +55,25 @@
             </div>
 
             <div class="header-actions">
-              <app-lead-actions
-                [lead]="lead"
-                layout="horizontal"
-                size="medium"
-                context="header"
-                (editLead)="editLead()"
-                (convertToDeal)="convertToDeal()"
-                (contactLead)="contactLead()"
-                (assignLead)="assignLead()"
-                (changeStatus)="quickChangeStatus()"
-                (createPromo)="createPromo()"
-                (assignPromo)="assignPromoCompany()"
-                (deleteLead)="deleteLead()"
-                *ngIf="!isConverted"
-              >
-              </app-lead-actions>
-            </div>
+                <app-lead-actions
+                  [lead]="lead"
+                  [managers]="managers"
+                  [assignments]="currentAssignments"
+                  layout="horizontal"
+                  size="medium"
+                  context="header"
+                  (editLead)="editLead()"
+                  (convertToDeal)="convertToDeal()"
+                  (contactLead)="contactLead()"
+                  (assignLead)="assignLead()"
+                  (changeStatus)="quickChangeStatus()"
+                  (createPromo)="createPromo()"
+                  (assignPromo)="assignPromoCompany()"
+                  (deleteLead)="deleteLead()"
+                  *ngIf="!isConverted"
+                >
+                </app-lead-actions>
+              </div>
           </div>
         </div>
       </div>
