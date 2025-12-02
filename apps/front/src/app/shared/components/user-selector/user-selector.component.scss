@@ -188,19 +188,26 @@
 // Индикатор статуса - маленькая точка рядом с именем
 .status-indicator {
   display: inline-block;
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+  /* Default color: uses per-element --workload-fill if provided (inline),
+     otherwise falls back to semantic workload variables defined in global styles. */
+  background-color: var(--workload-fill, var(--workload-low-color));
+  box-shadow: 0 0 4px var(--workload-fill, rgba(0, 0, 0, 0.08));
 
-  &.status-available {
-    background-color: #4caf50;
-    box-shadow: 0 0 4px rgba(76, 175, 80, 0.5);
+  &.workload-low {
+    /* kept for users of class-based styling */
+    background-color: var(--workload-low-color);
   }
 
-  &.status-busy {
-    background-color: #ff9800;
-    box-shadow: 0 0 4px rgba(255, 152, 0, 0.5);
+  &.workload-mid {
+    background-color: var(--workload-mid-color);
+  }
+
+  &.workload-high {
+    background-color: var(--workload-high-color);
   }
 }
 

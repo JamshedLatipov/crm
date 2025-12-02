@@ -18,14 +18,16 @@
             <ng-container *ngIf="showDepartment && selectedUser.department">{{ departmentDisplay(selectedUser.department) }}</ng-container>
           </span>
           <!-- Compact workload progress for selected user -->
-          <div class="selected-user-workload" *ngIf="selectedUser?.workloadPercentage !== undefined">
-            <mat-progress-bar class="selected-progress"
-                              mode="determinate"
-                              [value]="selectedUser.workloadPercentage"
-                              [ngClass]="getWorkloadClass(selectedUser.workloadPercentage)"
-                              [style.--workload-fill]="getWorkloadColor(selectedUser.workloadPercentage)">
-            </mat-progress-bar>
-            <span class="selected-workload-text">{{ selectedUser.workload }} / {{ selectedUser.maxCapacity }} ({{ selectedUser.workloadPercentage }}%)</span>
+          <div class="selected-user-workload" *ngIf="selectedUser">
+            <ng-container *ngIf="getWorkloadFor(selectedUser) as sw">
+              <mat-progress-bar class="selected-progress"
+                                mode="determinate"
+                                [value]="sw.workloadPercentage ?? 0"
+                                [ngClass]="getWorkloadClass(sw.workloadPercentage)"
+                                [style.--workload-fill]="getWorkloadColor(sw.workloadPercentage)">
+              </mat-progress-bar>
+              <span class="selected-workload-text">{{ sw.workload }} / {{ sw.maxCapacity }} ({{ sw.workloadPercentage ?? '-' }}%)</span>
+            </ng-container>
           </div>
         </div>
       </div>
@@ -44,10 +46,16 @@
       <div class="user-option">
         <div class="user-info">
           <div class="user-name">
-            <span class="status-indicator" 
-                  *ngIf="showStatus"
-                  [class.status-available]="user.isAvailable"
-                  [class.status-busy]="!user.isAvailable"></span>
+            <ng-container *ngIf="showStatus">
+              <ng-container *ngIf="getWorkloadFor(user) as uw">
+                <span
+                  class="status-indicator"
+                  [ngClass]="getWorkloadClass(uw.workloadPercentage)"
+                  [style.backgroundColor]="getWorkloadColor(uw.workloadPercentage)"
+                  [attr.title]="uw.workloadPercentage !== null ? (uw.workload + ' / ' + uw.maxCapacity + ' (' + uw.workloadPercentage + '%)') : ''"
+                ></span>
+              </ng-container>
+            </ng-container>
             {{ user.name }}
           </div>
 
@@ -61,14 +69,16 @@
             <span class="user-email" *ngIf="showEmail && user.email">{{ user.email }}</span>
           </div>
           <!-- Workload progress bar shown under meta for each option -->
-          <div class="user-workload" *ngIf="user.workloadPercentage !== undefined">
-            <mat-progress-bar class="option-progress"
-                              mode="determinate"
-                              [value]="user.workloadPercentage"
-                              [ngClass]="getWorkloadClass(user.workloadPercentage)"
-                              [style.--workload-fill]="getWorkloadColor(user.workloadPercentage)">
-            </mat-progress-bar>
-            <span class="workload-text">{{ user.workload }} / {{ user.maxCapacity }} • {{ user.workloadPercentage }}%</span>
+          <div class="user-workload" *ngIf="true">
+            <ng-container *ngIf="getWorkloadFor(user) as uw">
+              <mat-progress-bar class="option-progress"
+                                mode="determinate"
+                                [value]="uw.workloadPercentage ?? 0"
+                                [ngClass]="getWorkloadClass(uw.workloadPercentage)"
+                                [style.--workload-fill]="getWorkloadColor(uw.workloadPercentage)">
+              </mat-progress-bar>
+              <span class="workload-text">{{ uw.workload }} / {{ uw.maxCapacity }} • {{ uw.workloadPercentage ?? '-' }}%</span>
+            </ng-container>
           </div>
         </div>
       </div>
