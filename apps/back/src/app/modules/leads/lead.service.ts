@@ -31,6 +31,7 @@ import { PromoCompaniesService } from '../promo-companies/services/promo-compani
 interface CreateLeadData extends Partial<Lead> {
   contactId?: string;
   companyId?: string | { id: string; [key: string]: unknown };
+  assignedTo?: string | number | Array<string | number>; // Добавлено поле assignedTo
 }
 
 export interface LeadFilters {
@@ -108,6 +109,36 @@ export class LeadService {
       where: { id: lead.id },
       relations: ['company']
     });
+
+    // If caller requested explicit assignment on create, create assignment(s)
+    if (data?.assignedTo) {
+      try {
+        const assigned = data?.assignedTo;
+        const assignedArray: number[] = Array.isArray(assigned)
+        ? assigned.map((v: any) => Number(v)).filter((n: number) => !Number.isNaN(n))
+        : [Number(assigned)].filter((n: number) => !Number.isNaN(n));
+        
+        if (assignedArray.length > 0) {
+          // Use provided userId as assignedBy if available, otherwise system user (1)
+          const assignedBy = userId ? Number(userId) : 1;
+          console.log('Lead created with ID:', assignedBy, assignedArray);
+          await this.assignmentService.createAssignment({
+            entityType: 'lead',
+            entityId: lead.id.toString(),
+            assignedTo: assignedArray,
+            assignedBy: Number(assignedBy),
+            reason: 'Assigned during lead creation',
+            notifyAssignees: true
+          });
+          // reflect assignment in returned lead object
+          if (fullLead) {
+            (fullLead as any).assignedTo = String(assignedArray[0]);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to apply explicit assignment during lead creation:', err?.message || err);
+      }
+    }
 
     // Записываем создание лида в историю
     await this.historyService.createHistoryEntry({

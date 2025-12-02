@@ -128,6 +128,24 @@
             </mat-select>
             <mat-icon matSuffix>priority_high</mat-icon>
           </mat-form-field>
+
+          <mat-form-field appearance="outline" class="assigned-to-field">
+            <mat-label>Ответственный</mat-label>
+            <mat-select formControlName="assignedTo">
+              <mat-select-trigger>{{ displayAssignedUser(leadForm.get('assignedTo')?.value) }}</mat-select-trigger>
+              <mat-option [value]="null">Не назначен</mat-option>
+              <mat-option *ngFor="let user of users" [value]="user.id">
+                <div class="option-content user-option">
+                  <mat-icon class="user-icon">person</mat-icon>
+                  <span class="user-name">{{ user.firstName || user.username }} {{ user.lastName || '' }}</span>
+                  <span class="option-subtitle" *ngIf="!user.isAvailableForAssignment">&nbsp; (недоступен)</span>
+                  <span class="load-pill" [class.overloaded]="user.currentLeadsCount >= user.maxLeadsCapacity">{{ user.currentLeadsCount || 0 }} / {{ user.maxLeadsCapacity || '—' }}</span>
+                </div>
+              </mat-option>
+            </mat-select>
+            <mat-icon matSuffix>person</mat-icon>
+            <mat-hint>Выберите менеджера, ответственного за лид</mat-hint>
+          </mat-form-field>
         </div>
 
         <mat-form-field appearance="outline" class="full-width">

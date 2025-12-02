@@ -109,6 +109,44 @@
     font-size: 12px;
   }
 }
+.assigned-to-field {
+  /* Ensure the assigned-to field spans the full width of the row (both columns) */
+  grid-column: 1 / -1;
+}
+
+/* Allow any full-width form-field placed inside a .form-row to span both columns */
+.form-row .full-width {
+  grid-column: 1 / -1;
+}
+/* User option specifics to match assign dialog */
+.user-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  .user-icon {
+    margin-right: 0px !important;
+    margin-top: 0px !important;
+  }
+
+  .user-name { font-weight:600; font-size:14px; }
+  .user-sub { color:#757575; font-size:12px; }
+}
+
+.load-pill {
+  margin-left: auto;
+  background: #f3f4f6;
+  color: #111;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.load-pill.overloaded {
+  background: #fff0f0;
+  color: #b00020;
+}
 
 /* Buttons */
 .cancel-button {

@@ -16,6 +16,9 @@ export interface SimpleUser {
   email?: string;
   avatar?: string;
   role?: string;
+  // optional workload info
+  currentLeadsCount?: number;
+  maxLeadsCapacity?: number;
 }
 
 export interface AssignResult {
@@ -47,9 +50,24 @@ export interface AssignResult {
         <mat-form-field class="user-search">
           <mat-label>Найти пользователя</mat-label>
           <input matInput [formControl]="searchControl" [matAutocomplete]="auto" placeholder="Введите имя или email">
-          <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onUserSelected($event)">
+          <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayUser" (optionSelected)="onUserSelected($event)">
             @for (user of filteredUsers$ | async; track user.id) {
-              <mat-option [value]="user.id">{{ user.name }} — {{ user.email }}</mat-option>
+              <mat-option [value]="user.id">
+                <div class="option-content user-option">
+                    <img *ngIf="user.avatar" class="avatar" [src]="user.avatar" alt="{{ user.name }}" />
+                    <mat-icon *ngIf="!user.avatar" class="avatar-icon">person</mat-icon>
+
+                    <div class="user-meta">
+                      <div class="user-name">{{ user.name }}</div>
+                      <div class="user-sub">{{ user.email }} <span *ngIf="user.role">· {{ user.role }}</span></div>
+                    </div>
+
+                    <div class="user-load" [class.overloaded]="user.currentLeadsCount >= user.maxLeadsCapacity">
+                      {{ user.currentLeadsCount || 0 }} / {{ user.maxLeadsCapacity || '—' }}
+                    </div>
+
+                  </div>
+              </mat-option>
             }
           </mat-autocomplete>
         </mat-form-field>
@@ -88,6 +106,50 @@ export interface AssignResult {
       .dialog-body { padding: 16px; display:flex; flex-direction:column; gap:12px; }
       .users-chips { display:flex; flex-wrap:wrap; gap:8px; }
       .dialog-actions { display:flex; justify-content:flex-end; gap:8px; padding:12px 16px; }
+      /* Option layout */
+      .mat-autocomplete-panel .mat-option .option-content {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .user-option .avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      .user-option .avatar-icon {
+        width: 36px;
+        height: 36px;
+        background: #f0f0f0;
+        border-radius: 50%;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        color: #666;
+      }
+
+      .user-meta { display:flex; flex-direction:column; }
+      .user-name { font-weight: 600; font-size: 14px; color: #111; }
+      .user-sub { font-size: 12px; color: #6b6b6b; }
+
+      .user-load {
+        margin-left: auto;
+        background: #f1f3f4;
+        color: #333;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .user-load.overloaded {
+        background: #fdecea;
+        color: #b00020;
+        box-shadow: inset 0 0 0 1px rgba(176,0,32,0.08);
+      }
     `
   ]
 })
@@ -131,6 +193,13 @@ export class AssignUsersDialogComponent {
 
     this.dialogRef = this.matDialogRef;
   }
+
+  // Used to show nice labels in the autocomplete input (avoid icon text leaking)
+  displayUser = (id: string | null): string | null => {
+    if (!id) return null;
+    const u = this.availableUsersValue().find((x) => x.id === id);
+    return u ? `${u.name}${u.email ? ' · ' + u.email : ''}` : id;
+  };
 
   // Helpers to prefer dialog data when opened as dialog
   getTitle(): string {
