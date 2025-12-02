@@ -12,6 +12,7 @@ import {
 import { Lead, LeadStatus, LeadSource, LeadPriority } from './lead.entity';
 import { Contact } from '../contacts/contact.entity';
 import { LeadActivity, ActivityType } from './entities/lead-activity.entity';
+import { ContactActivity, ActivityType as ContactActivityType } from '../contacts/contact-activity.entity';
 import { ChangeType } from './entities/lead-history.entity';
 import { LeadScoringService } from './services/lead-scoring.service';
 import { LeadDistributionService } from './services/lead-distribution.service';
@@ -70,8 +71,10 @@ export class LeadService {
     private readonly activityRepo: Repository<LeadActivity>,
     @InjectRepository(Deal)
     private readonly dealRepo: Repository<Deal>,
-    @InjectRepository(Contact)
-    private readonly contactRepo: Repository<Contact>,
+  @InjectRepository(Contact)
+  private readonly contactRepo: Repository<Contact>,
+  @InjectRepository(ContactActivity)
+  private readonly contactActivityRepo: Repository<ContactActivity>,
     private readonly scoringService: LeadScoringService,
     private readonly distributionService: LeadDistributionService,
     private readonly historyService: LeadHistoryService,
@@ -1091,11 +1094,36 @@ export class LeadService {
           const savedContact = await this.contactRepo.save(newContact);
           foundContact = savedContact;
           console.log('convertToDeal - created contact from lead', { leadId: lead.id, contactId: savedContact.id });
+
+          // Log contact activity: contact created from lead
+          try {
+            await this.contactActivityRepo.save({
+              contactId: savedContact.id,
+              type: ContactActivityType.SYSTEM,
+              title: 'Контакт создан из лида',
+              description: `Контакт создан из лида #${lead.id} ${lead.name || ''}`.trim(),
+              metadata: { leadId: lead.id, leadName: lead.name }
+            });
+          } catch (err) {
+            console.warn('Failed to write contact activity for contact created from lead:', err?.message || err);
+          }
         }
 
         if (foundContact) {
           // @ts-ignore
           dealDto.contactId = foundContact.id;
+          // Log contact activity: lead was linked to this contact (matching by email/phone)
+          try {
+            await this.contactActivityRepo.save({
+              contactId: foundContact.id,
+              type: ContactActivityType.SYSTEM,
+              title: 'Лид привязан к контакту',
+              description: `Лид #${lead.id} привязан к контакту ${foundContact.id} ${foundContact.name || ''}`.trim(),
+              metadata: { leadId: lead.id, leadName: lead.name }
+            });
+          } catch (err) {
+            console.warn('Failed to write contact activity when linking lead to existing contact:', err?.message || err);
+          }
         }
       } catch (err) {
         console.warn('convertToDeal: failed to find/create contact for lead', err?.message || err);

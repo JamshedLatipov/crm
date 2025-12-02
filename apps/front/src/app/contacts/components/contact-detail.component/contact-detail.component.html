@@ -282,6 +282,28 @@
                         </div>
                       </div>
                     </div>
+                    <div class="load-more" *ngIf="activitiesHasMore">
+                      <button
+                        mat-stroked-button
+                        (click)="loadMoreActivity()"
+                        [disabled]="activitiesLoading"
+                        aria-label="Показать ещё активности"
+                      >
+                        <ng-container *ngIf="!activitiesLoading">
+                          <mat-icon>expand_more</mat-icon>
+                          Показать ещё
+                        </ng-container>
+
+                        <ng-container *ngIf="activitiesLoading">
+                          <mat-progress-spinner
+                            diameter="18"
+                            mode="indeterminate"
+                            color="primary"
+                            strokeWidth="3"
+                          ></mat-progress-spinner>
+                        </ng-container>
+                      </button>
+                    </div>
                   </div>
 
                   <div

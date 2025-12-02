@@ -67,12 +67,28 @@ export class ContactsService {
       company: resolvedCompany || undefined,
     });
     const saved = (await this.contactRepository.save(contact)) as unknown as Contact;
-    
+
+    // Log creation in contact_activities
+    try {
+      const activity = this.activityRepository.create({
+        contactId: saved.id,
+        type: ActivityType.SYSTEM,
+        title: 'Контакт создан',
+        description: `Контакт создан: ${saved.name || saved.id}`,
+        metadata: { createdBy: (dto as any).createdBy || null }
+      });
+      await this.activityRepository.save(activity);
+    } catch (err) {
+      console.warn('Failed to write contact creation activity:', err?.message || err);
+    }
+
     return saved;
   }
 
   async updateContact(id: string, dto: UpdateContactDto): Promise<Contact> {
     const contact = await this.getContactById(id);
+    // preserve snapshot for change detection
+    const beforeSnapshot = { ...(contact as any) };
 
     // Prevent assigning removed fields directly. Resolve company if companyId provided.
   const payload = { ...((dto as unknown) as Record<string, unknown>) };
@@ -104,7 +120,36 @@ export class ContactsService {
       contact.lastContactDate = new Date((payload.lastContactDate as any));
     }
 
-    return this.contactRepository.save(contact);
+    const saved = await this.contactRepository.save(contact);
+
+    // Write an activity record describing the update
+    try {
+      const changedKeys = Object.keys((dto as unknown) as Record<string, unknown>);
+      const changed = changedKeys.filter((k) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const before = (beforeSnapshot as any)[k];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const after = (dto as any)[k];
+        try {
+          return JSON.stringify(before) !== JSON.stringify(after);
+        } catch (e) {
+          return String(before) !== String(after);
+        }
+      });
+
+      const activity = this.activityRepository.create({
+        contactId: saved.id,
+        type: ActivityType.SYSTEM,
+        title: 'Контакт обновлён',
+        description: `Обновлены поля: ${changed.join(', ')}`,
+        metadata: { changedFields: changed }
+      });
+      await this.activityRepository.save(activity);
+    } catch (err) {
+      console.warn('Failed to write contact update activity:', err?.message || err);
+    }
+
+    return saved;
   }
 
   async deleteContact(id: string): Promise<void> {
@@ -284,11 +329,25 @@ export class ContactsService {
   }
 
   // === Активность контактов ===
-  async getContactActivity(contactId: string): Promise<ContactActivity[]> {
-    return this.activityRepository.find({
+  async getContactActivity(contactId: string, page?: number, pageSize?: number): Promise<{ items: ContactActivity[]; total: number }> {
+    if (page && pageSize) {
+      const skip = (page - 1) * pageSize;
+      const [items, total] = await this.activityRepository.findAndCount({
+        where: { contactId },
+        order: { createdAt: 'DESC' },
+        skip,
+        take: pageSize,
+      });
+
+      return { items, total };
+    }
+
+    const items = await this.activityRepository.find({
       where: { contactId },
       order: { createdAt: 'DESC' },
     });
+
+    return { items, total: items.length };
   }
 
   async addContactActivity(contactId: string, dto: CreateActivityDto): Promise<ContactActivity> {

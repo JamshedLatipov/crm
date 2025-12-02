@@ -10,6 +10,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
+import { FormsModule } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { ContactsService } from '../../contacts.service';
@@ -21,6 +22,7 @@ import { Contact, ContactType, ContactSource, ContactActivity, ActivityType, Dea
   imports: [
     CommonModule, 
     RouterModule,
+    FormsModule,
     MatCardModule, 
     MatIconModule, 
     MatButtonModule, 
@@ -43,6 +45,14 @@ export class ContactDetailComponent implements OnInit {
   // Activity data
   activities: ContactActivity[] = [];
   activitiesLoading = false;
+  // Inline add activity form
+  addingActivity = false;
+  newActivityTitle = '';
+  newActivityDescription = '';
+  // Pagination
+  activityPage = 1;
+  activityPageSize = 20;
+  activitiesHasMore = false;
   
   // Deals data
   deals: Deal[] = [];
@@ -83,17 +93,42 @@ export class ContactDetailComponent implements OnInit {
 
   private loadActivity(contactId: string): void {
     this.activitiesLoading = true;
-    this.contactsService.getContactActivity(contactId).subscribe({
-      next: (activities) => {
-        this.activities = activities;
+    const page = this.activityPage;
+    const size = this.activityPageSize;
+    this.contactsService.getContactActivity(contactId, page, size).subscribe({
+      next: (resp) => {
+        const activities = resp.items || [];
+        const normalized = activities.map((a) => ({
+          ...a,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          date: ((a as any).date as string) || ((a as any).createdAt as string) || '',
+        }));
+
+        if (page === 1) {
+          this.activities = normalized;
+        } else {
+          this.activities = this.activities.concat(normalized);
+        }
+
+        // Use total from server to determine if more pages exist
+        const total = typeof resp.total === 'number' ? resp.total : (this.activities.length);
+        this.activitiesHasMore = this.activities.length < total;
         this.activitiesLoading = false;
       },
       error: (error) => {
         console.error('Error loading activity:', error);
-        this.activities = [];
+        if (page === 1) this.activities = [];
+        this.activitiesHasMore = false;
         this.activitiesLoading = false;
       }
     });
+  }
+
+  loadMoreActivity(): void {
+    if (!this.contact) return;
+    if (!this.activitiesHasMore) return;
+    this.activityPage += 1;
+    this.loadActivity(this.contact.id);
   }
 
   private loadDeals(contactId: string): void {
@@ -212,10 +247,41 @@ export class ContactDetailComponent implements OnInit {
   }
 
   openAddActivityDialog(): void {
+    // show inline add form instead of dialog
     if (!this.contact) return;
-    
-    // TODO: Implement add activity dialog
-    this.showInfo('Диалог добавления активности в разработке');
+    this.addingActivity = true;
+  }
+
+  cancelAddActivity(): void {
+    this.addingActivity = false;
+    this.newActivityTitle = '';
+    this.newActivityDescription = '';
+  }
+
+  saveNewActivity(): void {
+    if (!this.contact) return;
+    const payload = {
+      type: ActivityType.SYSTEM,
+      title: this.newActivityTitle || 'Взаимодействие',
+      description: this.newActivityDescription || ''
+    } as any;
+
+    this.contactsService.addContactActivity(this.contact.id, payload).subscribe({
+      next: (activity) => {
+        // normalize createdAt -> date
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const normalized = { ...(activity as any), date: (activity as any).createdAt || (activity as any).date } as ContactActivity;
+        this.activities.unshift(normalized);
+        this.addingActivity = false;
+        this.newActivityTitle = '';
+        this.newActivityDescription = '';
+        this.showSuccess('Активность добавлена');
+      },
+      error: (err) => {
+        console.error('Error adding activity:', err);
+        this.showError('Ошибка добавления активности');
+      }
+    });
   }
 
   // Actions
@@ -232,7 +298,10 @@ export class ContactDetailComponent implements OnInit {
           description: 'Дата последнего контакта обновлена'
         }).subscribe({
           next: (activity) => {
-            this.activities.unshift(activity); // Добавляем в начало списка
+            // normalize createdAt -> date
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const normalized = { ...(activity as any), date: (activity as any).createdAt || (activity as any).date } as ContactActivity;
+            this.activities.unshift(normalized); // Добавляем в начало списка
           },
           error: (error) => console.error('Error adding activity:', error)
         });

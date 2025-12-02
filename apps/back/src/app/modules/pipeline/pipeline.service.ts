@@ -13,6 +13,7 @@ import { ContactsService } from '../contacts/contacts.service';
 import { ContactSource } from '../contacts/contact.entity';
 import { DataSource } from 'typeorm';
 import { CreateContactDto } from '../contacts/dto/create-contact.dto';
+import { ContactActivity, ActivityType as ContactActivityType } from '../contacts/contact-activity.entity';
 import { CompaniesService } from '../companies/services/companies.service';
 import { AssignmentService } from '../shared/services/assignment.service';
 import { CreateAutomationRuleDto, UpdateAutomationRuleDto } from './dto/automation.dto';
@@ -36,6 +37,8 @@ export class PipelineService {
   private leadService: LeadService,
     private companiesService: CompaniesService,
     private assignmentService: AssignmentService,
+    @InjectRepository(ContactActivity)
+    private readonly contactActivityRepo?: Repository<ContactActivity>,
   ) {}
 
   // Stages
@@ -210,7 +213,24 @@ export class PipelineService {
       isActive: true,
     };
 
-    return await this.contactsService.createContact(contactDto);
+    const saved = await this.contactsService.createContact(contactDto);
+
+    // Write explicit contact activity linking the contact to the lead
+    try {
+      if (this.contactActivityRepo) {
+        await this.contactActivityRepo.save({
+          contactId: saved.id,
+          type: ContactActivityType.SYSTEM,
+          title: 'Контакт создан из лида',
+          description: `Контакт создан из лида #${mainLead.id} ${mainLead.name || ''}`.trim(),
+          metadata: { leadId: mainLead.id, leadName: mainLead.name }
+        });
+      }
+    } catch (err) {
+      this.logger.warn('Failed to write contact activity for contact created from lead:', err?.message || err);
+    }
+
+    return saved;
   }
 
   // Automation Rules

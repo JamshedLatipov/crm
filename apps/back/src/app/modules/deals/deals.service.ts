@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/commo
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Deal, DealStatus } from './deal.entity';
+import { ContactActivity, ActivityType as ContactActivityType } from '../contacts/contact-activity.entity';
 import { CreateDealDto } from './dto/create-deal.dto';
 import { UpdateDealDto } from './dto/update-deal.dto';
 import { PipelineStage, StageType } from '../pipeline/pipeline.entity';
@@ -16,6 +17,8 @@ export class DealsService {
   constructor(
     @InjectRepository(Deal)
     private readonly dealRepository: Repository<Deal>,
+    @InjectRepository(ContactActivity)
+    private readonly contactActivityRepository: Repository<ContactActivity>,
     @InjectRepository(PipelineStage)
     private readonly stageRepository: Repository<PipelineStage>,
     private readonly historyService: DealHistoryService,
@@ -802,6 +805,21 @@ export class DealsService {
           'Дата связывания': new Date().toLocaleDateString('ru-RU')
         }
       });
+
+      // Also write a contact activity record so contact_activities reflects this action
+      try {
+        const deal = await this.dealRepository.findOne({ where: { id: dealId } });
+        const activity = this.contactActivityRepository.create({
+          contactId,
+          type: ContactActivityType.DEAL,
+          title: 'Сделка привязана',
+          description: `К контакту привязана сделка: ${deal ? deal.title : dealId}`,
+          metadata: { dealId, dealTitle: deal ? deal.title : null, linkedAt: new Date().toISOString(), by: userName || null }
+        });
+        await this.contactActivityRepository.save(activity);
+      } catch (err) {
+        console.warn('Failed to write contact activity for deal link:', err?.message || err);
+      }
     } else {
       // Отвязываем контакт (передаем null)
       await this.dealRepository
