@@ -23,7 +23,7 @@
     <!-- Заголовок -->
     <div class="page-header">
       <div class="header-background">
-        <div class="header-top">
+          <div class="header-top">
           <div class="breadcrumb">
             <button mat-button (click)="goBack()" class="breadcrumb-link">
               <mat-icon>arrow_back</mat-icon>
@@ -34,23 +34,14 @@
           </div>
 
           <div class="header-actions-top">
-            <button
-              mat-stroked-button
-              (click)="editDeal()"
-              class="action-btn edit-btn"
+            <app-deal-actions
+              [deal]="deal"
+              [users]="users"
+              (edit)="editDeal()"
+              (markWon)="markAsWon()"
+              (changeAssignee)="changeAssignee()"
             >
-              <mat-icon>edit</mat-icon>
-              <span>Редактировать</span>
-            </button>
-            <button
-              mat-raised-button
-              *ngIf="deal.status === 'open'"
-              (click)="markAsWon()"
-              class="action-btn win-btn"
-            >
-              <mat-icon>check_circle</mat-icon>
-              <span>Отметить выигранной</span>
-            </button>
+            </app-deal-actions>
           </div>
         </div>
 
@@ -97,15 +88,6 @@
                 </div>
               </div>
 
-              <div class="metric-card" *ngIf="assignedUserName">
-                <div class="metric-icon">
-                  <mat-icon>person</mat-icon>
-                </div>
-                <div class="metric-info">
-                  <div class="metric-label">Ответственный</div>
-                  <div class="metric-value">{{ assignedUserName }}</div>
-                </div>
-              </div>
 
               <div class="metric-card" *ngIf="deal.createdAt">
                 <div class="metric-icon">
@@ -336,26 +318,6 @@
                   </div>
                 </div>
 
-                <div class="timeline-item">
-                  <div class="timeline-icon user">
-                    <mat-icon>person_pin</mat-icon>
-                  </div>
-                  <div class="timeline-content">
-                    <span class="label">Ответственный</span>
-                    <div class="value">
-                      <div class="assignee-info">
-                        <span>{{ assignedUserName || deal.assignedTo || 'Не назначен' }}</span>
-                        <button 
-                          mat-icon-button 
-                          (click)="changeAssignee()"
-                          class="change-assignee-btn"
-                          matTooltip="Изменить ответственного">
-                          <mat-icon>edit</mat-icon>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
 
                 <div class="timeline-item">
                   <div class="timeline-icon date">

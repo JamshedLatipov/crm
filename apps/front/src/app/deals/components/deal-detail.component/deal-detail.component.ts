@@ -15,6 +15,7 @@ import { UsersService, User } from '../../../users/users.service';
 import { Deal } from '../../../pipeline/dtos';
 import { DealFormComponent } from '../deal-form.component/deal-form.component';
 import { DealStatusComponent } from '../../../shared/components';
+import { DealActionsComponent } from '../deal-actions/deal-actions.component';
 import { DealHistoryComponent } from '../deal-history.component';
 import { DealHistoryStatsComponent } from '../deal-history-stats.component';
 import { CommentsComponent } from '../../../shared/components/comments/comments.component';
@@ -35,6 +36,7 @@ import { getCurrencySymbol, getCurrencyName, translateMetadataKey } from '../../
     MatProgressSpinnerModule,
     MatTabsModule,
     DealStatusComponent,
+  DealActionsComponent,
     DealHistoryComponent,
     DealHistoryStatsComponent,
     CommentsComponent,
