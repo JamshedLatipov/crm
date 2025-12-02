@@ -164,8 +164,21 @@ export class DealDetailComponent implements OnInit {
   markAsWon() {
     if (!this.deal) return;
 
-    // TODO: Реализовать изменение статуса через API
-    this.snackBar.open('Функция пока не реализована', 'Закрыть', { duration: 3000 });
+    const confirmed = confirm(`Отметить сделку "${this.deal.title}" как выигранной?`);
+    if (!confirmed) return;
+
+    // Call backend to mark deal as won
+    this.dealsService.winDeal(this.deal.id).subscribe({
+      next: (updated) => {
+        this.deal = updated;
+        this.updateAssignedUserName();
+        this.snackBar.open('Сделка отмечена как выигранная', 'Закрыть', { duration: 3000 });
+      },
+      error: (err) => {
+        console.error('Ошибка при пометке сделки как выигранной:', err);
+        this.snackBar.open('Не удалось отметить сделку как выигранную', 'Закрыть', { duration: 3000 });
+      }
+    });
   }
 
   isOverdue(): boolean {
