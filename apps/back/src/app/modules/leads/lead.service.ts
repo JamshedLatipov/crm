@@ -426,6 +426,13 @@ export class LeadService {
     delete (updateData as any).assignedToUser;
     delete (updateData as any).deals;
 
+    // assignedTo is stored in assignments table, not a column on Lead.
+    // If caller passed assignedTo in DTO, capture it and remove before DB update
+    const assignedToPayload = (data as any).assignedTo;
+    if ((updateData as any).assignedTo !== undefined) {
+      delete (updateData as any).assignedTo;
+    }
+
     await this.leadRepo.update(id, updateData as any);
 
     // Записываем изменения в историю для каждого поля
@@ -470,6 +477,30 @@ export class LeadService {
     const updatedLead = await this.findById(id);
     if (!updatedLead) {
       throw new Error('Lead not found after update');
+    }
+
+    // If the client provided an assignedTo in the update DTO, handle assignment changes here.
+    // If assignedTo is undefined — no-op. If null -> unassign. Otherwise -> assign to provided user.
+    if (assignedToPayload !== undefined) {
+      try {
+        if (assignedToPayload === null) {
+          // Remove all current assignments for this lead
+          const current = await this.assignmentService.getCurrentAssignments('lead', id.toString());
+          if (current && current.length > 0) {
+            await this.assignmentService.removeAssignment({
+              entityType: 'lead',
+              entityId: id.toString(),
+              userIds: current.map(a => a.userId),
+              reason: 'Unassigned via lead update'
+            });
+          }
+        } else {
+          // Use assignLead helper to ensure history, counters and activity are updated
+          await this.assignLead(id, String(assignedToPayload), userId ? Number(userId) : undefined, userName);
+        }
+      } catch (err) {
+        console.warn('Failed to apply assignedTo during lead update:', err?.message || err);
+      }
     }
 
     // Если изменился статус, обновляем вероятность конверсии

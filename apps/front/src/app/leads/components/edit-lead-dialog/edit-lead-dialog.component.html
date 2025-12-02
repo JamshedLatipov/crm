@@ -13,11 +13,14 @@
         <mat-icon class="section-icon">person</mat-icon>
         <h3>Основная информация</h3>
       </div>
-      
+
       <div class="form-field-container">
         <mat-form-field appearance="outline" class="full-width required-field">
           <mat-label>Имя</mat-label>
-          <input matInput formControlName="name" placeholder="Введите имя контакта">
+          <input
+            matInput
+            formControlName="name"
+          />
           <mat-icon matSuffix>person</mat-icon>
           <mat-error *ngIf="editForm.get('name')?.hasError('required')">
             Имя обязательно
@@ -27,7 +30,11 @@
         <div class="form-row">
           <mat-form-field appearance="outline" class="form-field">
             <mat-label>Электронная почта</mat-label>
-            <input matInput type="email" formControlName="email" placeholder="example@company.com">
+            <input
+              matInput
+              type="email"
+              formControlName="email"
+            />
             <mat-icon matSuffix>email</mat-icon>
             <mat-error *ngIf="editForm.get('email')?.hasError('email')">
               Некорректный email
@@ -36,44 +43,60 @@
 
           <mat-form-field appearance="outline" class="form-field">
             <mat-label>Телефон</mat-label>
-            <input matInput formControlName="phone" placeholder="+7 (900) 123-45-67">
+            <input
+              matInput
+              formControlName="phone"
+            />
             <mat-icon matSuffix>phone</mat-icon>
           </mat-form-field>
         </div>
 
         <div class="form-row">
-          <app-company-autocomplete [control]="companyControl" [idControl]="companyIdControl" placeholder="Название компании"></app-company-autocomplete>
+          <app-company-autocomplete
+            [control]="companyControl"
+            [idControl]="companyIdControl"
+            placeholder="Название компании"
+          ></app-company-autocomplete>
 
           <mat-form-field appearance="outline" class="form-field">
             <mat-label>Должность</mat-label>
-            <input matInput formControlName="position" placeholder="Должность">
+            <input
+              matInput
+              formControlName="position"
+            />
             <mat-icon matSuffix>work</mat-icon>
           </mat-form-field>
         </div>
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Сайт</mat-label>
-          <input matInput formControlName="website" placeholder="https://company.com">
+          <input
+            matInput
+            formControlName="website"
+          />
           <mat-icon matSuffix>language</mat-icon>
         </mat-form-field>
 
         <div class="form-row">
           <mat-form-field appearance="outline" class="form-field">
             <mat-label>Отрасль</mat-label>
-            <input matInput formControlName="industry" placeholder="IT, Финансы, Торговля">
+            <input
+              matInput
+              formControlName="industry"
+            />
             <mat-icon matSuffix>category</mat-icon>
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="form-field">
             <mat-label>Страна</mat-label>
-            <input matInput formControlName="country" placeholder="Россия">
+            <input matInput formControlName="country" />
             <mat-icon matSuffix>public</mat-icon>
           </mat-form-field>
         </div>
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Город</mat-label>
-          <input matInput formControlName="city" placeholder="Москва">
+          <input matInput formControlName="city" />
           <mat-icon matSuffix>location_on</mat-icon>
         </mat-form-field>
       </div>
@@ -85,12 +108,15 @@
         <mat-icon class="section-icon">trending_up</mat-icon>
         <h3>Детали лида</h3>
       </div>
-      
+
       <div class="form-field-container">
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Приоритет</mat-label>
           <mat-select formControlName="priority">
-            <mat-option *ngFor="let priority of priorityOptions" [value]="priority.value">
+            <mat-option
+              *ngFor="let priority of priorityOptions"
+              [value]="priority.value"
+            >
               {{ priority.label }}
             </mat-option>
           </mat-select>
@@ -100,22 +126,31 @@
         <div class="form-row">
           <mat-form-field appearance="outline" class="form-field">
             <mat-label>Предполагаемая ценность</mat-label>
-            <input matInput type="number" formControlName="estimatedValue" placeholder="0">
-            <span matPrefix>₽&nbsp;</span>
+            <input
+              matInput
+              type="number"
+              formControlName="estimatedValue"
+            />
             <mat-icon matSuffix>attach_money</mat-icon>
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="form-field">
             <mat-label>Бюджет</mat-label>
-            <input matInput type="number" formControlName="budget" placeholder="0">
-            <span matPrefix>₽&nbsp;</span>
+            <input
+              matInput
+              type="number"
+              formControlName="budget"
+            />
             <mat-icon matSuffix>account_balance</mat-icon>
           </mat-form-field>
         </div>
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Временные рамки решения</mat-label>
-          <input matInput formControlName="decisionTimeframe" placeholder="В течение месяца">
+          <input
+            matInput
+            formControlName="decisionTimeframe"
+          />
           <mat-icon matSuffix>schedule</mat-icon>
         </mat-form-field>
       </div>
@@ -127,13 +162,20 @@
         <mat-icon class="section-icon">notes</mat-icon>
         <h3>Дополнительно</h3>
       </div>
-      
+
       <div class="form-field-container">
+        <app-user-selector
+          formControlName="assignedTo"
+          class="full-width"
+          [placeholder]="'-- Выберите ответственного --'"
+          [showEmail]="true"
+        ></app-user-selector>
+
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Заметки</mat-label>
-          <textarea matInput formControlName="notes" rows="3" 
-                    placeholder="Дополнительная информация о лиде..."></textarea>
+          <textarea matInput formControlName="notes" rows="3"></textarea>
           <mat-icon matSuffix>note</mat-icon>
+          <mat-hint>Дополнительная информация о лиде</mat-hint>
         </mat-form-field>
       </div>
     </div>
@@ -144,11 +186,18 @@
   <button mat-stroked-button (click)="onCancel()" class="cancel-button">
     Отмена
   </button>
-  <button mat-raised-button color="primary" 
-          (click)="onSave()" 
-          [disabled]="editForm.invalid || loading"
-          class="save-button">
-    <mat-spinner diameter="20" *ngIf="loading" class="button-spinner"></mat-spinner>
+  <button
+    mat-raised-button
+    color="primary"
+    (click)="onSave()"
+    [disabled]="editForm.invalid || loading"
+    class="save-button"
+  >
+    <mat-spinner
+      diameter="20"
+      *ngIf="loading"
+      class="button-spinner"
+    ></mat-spinner>
     <mat-icon *ngIf="!loading">save</mat-icon>
     <span>{{ loading ? 'Сохранение...' : 'Сохранить' }}</span>
   </button>

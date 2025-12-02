@@ -206,6 +206,8 @@ export interface UpdateLeadRequest {
   industry?: string;
   country?: string;
   city?: string;
+  // ID пользователя, ответственного за лид
+  assignedTo?: string | number;
   priority?: LeadPriority;
   promoCompanyId?: number; // ID промо-компании
   estimatedValue?: number;

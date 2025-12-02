@@ -12,6 +12,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { CompaniesService } from '../../../services/companies.service';
 import { CompanyAutocompleteComponent } from '../../../shared/components/company-autocomplete/company-autocomplete.component';
+import { UserSelectorComponent } from '../../../shared/components/user-selector/user-selector.component';
 import { Company } from '../../../pipeline/dtos';
 // rxjs operators not needed (autocomplete provided by shared component)
 import { Lead, LeadPriority, UpdateLeadRequest } from '../../models/lead.model';
@@ -33,6 +34,7 @@ import { LeadService } from '../../services/lead.service';
     MatProgressSpinnerModule,
     MatAutocompleteModule,
     CompanyAutocompleteComponent,
+    UserSelectorComponent,
   ],
   templateUrl: './edit-lead-dialog.component.html',
   styleUrls: ['./edit-lead-dialog.component.scss'],
@@ -94,6 +96,8 @@ export class EditLeadDialogComponent {
       budget: [0, [Validators.min(0)]],
       decisionTimeframe: [''],
       notes: [''],
+        // assignedTo — хранит id выбранного пользователя
+        assignedTo: [null],
     });
   }
 
@@ -114,6 +118,7 @@ export class EditLeadDialogComponent {
       budget: lead.budget || 0,
       decisionTimeframe: lead.decisionTimeframe || '',
       notes: lead.notes || '',
+      assignedTo: (lead as any).assignedTo ? ((lead as any).assignedTo.id ?? (lead as any).assignedTo) : null,
     });
   }
 
@@ -137,6 +142,7 @@ export class EditLeadDialogComponent {
         budget: formValue.budget || undefined,
         decisionTimeframe: formValue.decisionTimeframe || undefined,
         notes: formValue.notes || undefined,
+        assignedTo: formValue.assignedTo || undefined,
       };
 
       this.leadService.updateLead(this.data.lead.id, updateRequest).subscribe({

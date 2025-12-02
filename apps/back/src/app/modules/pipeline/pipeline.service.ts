@@ -162,8 +162,6 @@ export class PipelineService {
       throw new NotFoundException(`Lead ${leadId} not found`);
     }
 
-    console.log('Main lead data:', mainLead);
-
     // Получаем текущие назначения лида
     const currentAssignments = await this.assignmentService.getCurrentAssignments('lead', mainLead.id.toString());
     const assignedTo = currentAssignments.length > 0 ? currentAssignments[0].userId.toString() : undefined;

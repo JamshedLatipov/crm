@@ -277,10 +277,11 @@ export class LeadController {
   @ApiBody({ type: UpdateLeadDto })
   async update(
     @Param('id') id: number,
-    @Body() data: UpdateLeadDto
+    @Body() data: UpdateLeadDto,
+    @CurrentUser() user?: CurrentUserPayload
   ): Promise<Lead> {
     const existingLead = await this.leadService.findById(id);
-    const updatedLead = await this.leadService.update(id, data);
+    const updatedLead = await this.leadService.update(id, data, user.sub || String(1));
 
     // Trigger automation asynchronously
     const changes: Record<string, { old: any; new: any }> = {};
@@ -306,7 +307,9 @@ export class LeadController {
       });
     }
 
-    return updatedLead;
+    // Return freshest data for the lead (ensure assignments and relations attached)
+    const fresh = await this.leadService.findById(updatedLead.id);
+    return fresh || updatedLead;
   }
 
   @Patch(':id/assign')

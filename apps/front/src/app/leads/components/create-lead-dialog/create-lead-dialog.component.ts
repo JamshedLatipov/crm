@@ -16,6 +16,7 @@ import { LeadService } from '../../services/lead.service';
 import { LeadPriority, CreateLeadRequest } from '../../models/lead.model';
 import { CompanySelectorComponent } from '../../../shared/components/company-selector/company-selector.component';
 import { ContactSelectorComponent } from '../../../contacts/components/contact-selector.component';
+import { UserSelectorComponent } from '../../../shared/components/user-selector/user-selector.component';
 import { Contact } from '../../../contacts/contact.interfaces';
 import { PromoCompaniesService } from '../../../promo-companies/services/promo-companies.service';
 import { PromoCompany } from '../../../promo-companies/models/promo-company.model';
@@ -24,7 +25,7 @@ import { UserManagementService, User } from '../../../services/user-management.s
 @Component({
   selector: 'app-create-lead-dialog',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatChipsModule, MatIconModule, MatProgressSpinnerModule, MatOptionModule, MatAutocompleteModule, CompanySelectorComponent, ContactSelectorComponent],
+  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatChipsModule, MatIconModule, MatProgressSpinnerModule, MatOptionModule, MatAutocompleteModule, CompanySelectorComponent, ContactSelectorComponent, UserSelectorComponent],
   templateUrl: './create-lead-dialog.component.html',
   styleUrls: ['./create-lead-dialog.component.scss']
 })

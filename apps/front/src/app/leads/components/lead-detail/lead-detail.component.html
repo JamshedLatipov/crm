@@ -36,6 +36,10 @@
           <div class="lead-header-info">
             <div class="lead-main-info">
               <h1>{{ lead.name }}</h1>
+                <div class="assigned-manager" *ngIf="currentAssignments.length > 0">
+                  <mat-icon class="manager-icon">person_pin</mat-icon>
+                  <span class="manager-name">{{ getAssigneeName }}</span>
+                </div>
               <div class="lead-meta">
                 <div class="lead-score">
                   <span class="score-value">{{ lead.score }} очков</span>

@@ -156,7 +156,8 @@ export class LeadDetailComponent implements OnInit {
         this.lead = lead;
         console.log('LeadDetail: Lead loaded:', lead, 'lead.id:', lead.id, 'type:', typeof lead.id);
         this.loadActivities();
-        this.loadCurrentAssignments();
+        // Use assignment info from returned lead model instead of calling centralized assignment API
+        this.setAssignmentsFromLead();
       },
       error: (err) => {
         console.error('Error loading lead:', err);
@@ -165,24 +166,31 @@ export class LeadDetailComponent implements OnInit {
     });
   }
 
-  private loadCurrentAssignments(): void {
-    if (!this.lead?.id) return;
-    // Use centralized assignments API to load current assignments for this lead
-    this.assignmentService.getCurrentAssignments('lead', this.lead.id).subscribe({
-      next: (users) => {
-        // assignment service returns User[]; map to local Assignment shape
-        this.currentAssignments = users.map(u => ({
-          userId: u.id,
-          userName: u.name,
-          userEmail: u.email,
-          assignedAt: (u as any).assignedAt || new Date()
-        } as any));
-      },
-      error: (err) => {
-        console.error('Error loading assignments from central assignments API:', err);
-        this.currentAssignments = [];
-      }
-    });
+
+  // Populate currentAssignments from the lead model's assignedTo field returned by API
+  private setAssignmentsFromLead(): void {
+    if (!this.lead) {
+      this.currentAssignments = [];
+      return;
+    }
+
+    const assigned = (this.lead as any).assignedTo ?? this.lead.assignedTo;
+    if (assigned === null || assigned === undefined || assigned === '') {
+      this.currentAssignments = [];
+      return;
+    }
+
+    const userId = Number(assigned);
+    if (Number.isNaN(userId)) {
+      // If assigned is not numeric, keep as string id
+      this.currentAssignments = [
+        { userId: String(assigned) as any, userName: undefined, userEmail: undefined, assignedAt: new Date() } as any,
+      ];
+    } else {
+      this.currentAssignments = [
+        { userId: userId, userName: undefined, userEmail: undefined, assignedAt: new Date() } as any,
+      ];
+    }
   }
 
   loadActivities(): void {
@@ -278,6 +286,8 @@ export class LeadDetailComponent implements OnInit {
     dialogRef.afterClosed().subscribe((result: Lead | undefined) => {
       if (result) {
         this.lead = result; // Обновляем данные лида
+  // Обновим назначения на странице из данных лида (assignedTo), чтобы показать актуального менеджера
+  this.setAssignmentsFromLead();
         console.log('Lead updated:', result);
       }
     });
@@ -367,7 +377,7 @@ export class LeadDetailComponent implements OnInit {
         this.leadService.assignLead(this.lead.id, result.userId).subscribe({
           next: (updated) => {
             this.lead = updated;
-            this.loadCurrentAssignments();
+            this.setAssignmentsFromLead();
           },
           error: (err) => console.error('Error assigning lead:', err)
         });
