@@ -54,6 +54,7 @@ export class SidebarComponent {
     { icon: 'business', label: 'Промо-компании', route: '/promo-companies' },
     // { icon: 'campaign', label: 'Рекламные аккаунты', route: '/ads/accounts' },
     { icon: 'task', label: 'Задачи', route: '/tasks' },
+    { icon: 'group', label: 'Пользователи', route: '/users' },
     {
       icon: 'contact_support',
       label: 'Контакт центр',
@@ -73,7 +74,6 @@ export class SidebarComponent {
         },
       ],
     },
-    { icon: 'group', label: 'Пользователи', route: '/users' },
     {
       icon: 'assessment',
       label: 'Отчеты',
