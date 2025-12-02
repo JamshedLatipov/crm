@@ -603,11 +603,8 @@ export class LeadService {
       }
     });
 
-    // Обновляем счетчик лидов у пользователя
-    const userEntity = await this.userService.findById(userId);
-    if (userEntity) {
-      await this.userService.updateLeadCount(userEntity.id, 1);
-    }
+    // Note: counters are updated inside AssignmentService.createAssignment()
+    // so we no longer increment the user's lead counter here to avoid double counting.
 
     // Записываем активность
     await this.activityRepo.save({

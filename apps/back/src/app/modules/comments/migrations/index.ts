@@ -1,5 +1,5 @@
-import { AddTaskToCommentEntityType20251024013923 } from './20251024013923-AddTaskToCommentEntityType';
+import { SeedCommentsDemo1740000000004 } from './1740000000004-SeedCommentsDemo';
 
 export const COMMENTS_MIGRATIONS = [
-  AddTaskToCommentEntityType20251024013923,
+	SeedCommentsDemo1740000000004,
 ];
