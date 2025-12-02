@@ -1,6 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
+import { AssignmentService, AssignmentRequest } from '../services/assignment.service';
 import { 
   Deal, 
   CreateDealDto, 
@@ -29,6 +31,7 @@ export interface DealAssignment {
 export class DealsService {
   private readonly apiUrl = environment.apiBase + '/deals';
   private readonly http = inject(HttpClient);
+  private readonly assignmentService = inject(AssignmentService);
 
   // === CRUD операции ===
   // Can return either full array or a paged response { items, total }
@@ -109,10 +112,26 @@ export class DealsService {
 
   // Назначение сделки менеджеру
   assignDeal(id: string, managerId: string | string[]): Observable<Deal> {
-    // Нормализуем managerId - если массив, берем первый элемент
-    const normalizedManagerId = Array.isArray(managerId) ? managerId[0] : managerId;
-    console.log('DealsService.assignDeal:', { id, originalManagerId: managerId, normalizedManagerId });
-    return this.http.patch<Deal>(`${this.apiUrl}/${id}/assign`, { assignedTo: normalizedManagerId });
+    // Normalize managerId into array of numbers
+    const normalized = Array.isArray(managerId) ? managerId : [managerId];
+    const assignedTo = normalized.map(m => Number(m));
+
+    const assignedBy = Number(localStorage.getItem('userId')) || 0; // best-effort current user id
+
+    const req: AssignmentRequest = {
+      entityType: 'deal',
+      entityId: id,
+      assignedTo,
+      assignedBy,
+      notifyAssignees: true
+    };
+
+    console.log('DealsService.assignDeal -> using AssignmentService:', { id, assignedTo, assignedBy });
+
+    // Use AssignmentService to perform assignment, then fetch updated deal to preserve original return type
+    return this.assignmentService.assignResponsible(req).pipe(
+      switchMap(() => this.getDealById(id))
+    );
   }
 
   // Получение текущих назначений сделки

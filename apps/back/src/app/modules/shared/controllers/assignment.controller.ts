@@ -12,6 +12,9 @@ import {
   HttpStatus
 } from '@nestjs/common';
 import { UserService } from '../../user/user.service';
+import { CurrentUser, CurrentUserPayload } from '../../user/current-user.decorator';
+import { JwtAuthGuard } from '../../user/jwt-auth.guard';
+import { UseGuards } from '@nestjs/common';
 import { AssignmentService } from '../services/assignment.service';
 
 export class CreateAssignmentDto {
@@ -34,6 +37,7 @@ export class BulkAssignmentDto {
   assignments: CreateAssignmentDto[];
 }
 
+@UseGuards(JwtAuthGuard)
 @Controller('assignments')
 export class AssignmentController {
   constructor(
@@ -91,13 +95,18 @@ export class AssignmentController {
   }
 
   @Post()
-  async createAssignment(@Body() dto: CreateAssignmentDto) {
-    return this.assignmentService.createAssignment(dto);
+  async createAssignment(@Body() dto: CreateAssignmentDto, @CurrentUser() user: CurrentUserPayload) {
+    // Ensure assignedBy comes from authenticated JWT, ignore any provided value in body
+    const payload = { ...dto, assignedBy: Number(user.sub) } as CreateAssignmentDto;
+    return this.assignmentService.createAssignment(payload as any);
   }
 
   @Post('bulk')
-  async createBulkAssignments(@Body() dto: BulkAssignmentDto) {
-    return this.assignmentService.createBulkAssignments(dto.assignments);
+  async createBulkAssignments(@Body() dto: BulkAssignmentDto, @CurrentUser() user: CurrentUserPayload) {
+    // Override assignedBy for all incoming assignments with current user id
+    const assignedBy = Number(user.sub);
+    const assignments = (dto.assignments || []).map(a => ({ ...a, assignedBy }));
+    return this.assignmentService.createBulkAssignments(assignments as any[]);
   }
 
   @Delete()

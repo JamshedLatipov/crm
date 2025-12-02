@@ -185,15 +185,6 @@ export class DealsController {
     return this.dealsService.updateProbability(id, probability);
   }
 
-  @Patch(':id/assign')
-  async assignDeal(
-    @Param('id') id: string,
-    @Body() body: { assignedTo: string },
-    @CurrentUser() user: CurrentUserPayload
-  ) {
-    return this.dealsService.assignDeal(id, body.assignedTo, user.sub, user.username);
-  }
-
   // Связи с компаниями, контактами и лидами
   @Patch(':id/link-company')
   async linkToCompany(@Param('id') id: string, @Body('companyId') companyId: string) {
