@@ -181,14 +181,22 @@ export class LeadDetailComponent implements OnInit {
     }
 
     const userId = Number(assigned);
-    if (Number.isNaN(userId)) {
-      // If assigned is not numeric, keep as string id
+    let resolvedName: string | undefined = undefined;
+    let resolvedEmail: string | undefined = undefined;
+
+    if (!Number.isNaN(userId)) {
+      const manager = this.managers.find((m) => String(m.id) === String(userId));
+      if (manager) {
+        resolvedName = manager.fullName || manager.username || undefined;
+        resolvedEmail = (manager as any).email || undefined;
+      }
       this.currentAssignments = [
-        { userId: String(assigned) as any, userName: undefined, userEmail: undefined, assignedAt: new Date() } as any,
+        { userId: userId, userName: resolvedName, userEmail: resolvedEmail, assignedAt: new Date(), status: 'active' } as any,
       ];
     } else {
+      // If assigned is not numeric, keep as string id
       this.currentAssignments = [
-        { userId: userId, userName: undefined, userEmail: undefined, assignedAt: new Date() } as any,
+        { userId: String(assigned) as any, userName: undefined, userEmail: undefined, assignedAt: new Date(), status: 'active' } as any,
       ];
     }
   }
@@ -420,8 +428,26 @@ export class LeadDetailComponent implements OnInit {
     }
     
     const manager = this.managers.find(m => m.id?.toString() === activeAssignment.userId.toString());
-    console.log('Active assignment userId:', activeAssignment.userId, 'Resolved manager:', manager);
     return manager?.fullName || manager?.username || `ID: ${activeAssignment.userId}`;
+  }
+
+  getAssigneeInitials(): string {
+    const a = this.currentAssignments.length ? this.currentAssignments[0] : undefined;
+    const name = (a as any)?.userName;
+    if (!name) return '';
+    const parts = String(name).split(' ').filter(Boolean);
+    const initials = parts.map(p => p[0]).join('').toUpperCase().slice(0,2);
+    return initials;
+  }
+
+  getAssigneeEmail(): string | undefined {
+    const a = this.currentAssignments.length ? this.currentAssignments[0] : undefined;
+    return (a as any)?.userEmail;
+  }
+
+  getAssigneeWorkload(): string | undefined {
+    const a = this.currentAssignments.length ? this.currentAssignments[0] : undefined;
+    return (a as any)?.workload;
   }
 
   getActivityLabel(type: ActivityType): string {

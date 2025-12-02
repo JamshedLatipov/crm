@@ -621,7 +621,9 @@ export class LeadService {
       },
     });
 
-    return existingLead;
+    // Return the freshest lead data (with assignments attached) so callers get updated assignment info
+    const refreshed = await this.findById(id);
+    return refreshed || existingLead;
   }
 
   /**

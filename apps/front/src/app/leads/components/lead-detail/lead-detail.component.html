@@ -36,10 +36,6 @@
           <div class="lead-header-info">
             <div class="lead-main-info">
               <h1>{{ lead.name }}</h1>
-                <div class="assigned-manager" *ngIf="currentAssignments.length > 0">
-                  <mat-icon class="manager-icon">person_pin</mat-icon>
-                  <span class="manager-name">{{ getAssigneeName }}</span>
-                </div>
               <div class="lead-meta">
                 <div class="lead-score">
                   <span class="score-value">{{ lead.score }} очков</span>
@@ -72,21 +68,6 @@
               >
               </app-lead-actions>
             </div>
-          </div>
-        </div>
-
-        <div class="header-actions">
-          <app-lead-status
-            [status]="lead.status"
-            size="medium"
-            [showIcon]="true"
-          >
-          </app-lead-status>
-          
-          <!-- Уведомление о конвертированном лиде -->
-          <div class="converted-notice" *ngIf="isConverted">
-            <mat-icon class="converted-icon">check_circle</mat-icon>
-            <span class="converted-text">Лид конвертирован в сделку</span>
           </div>
         </div>
       </div>
@@ -195,7 +176,7 @@
                   <div class="contact-icon email">
                     <mat-icon>email</mat-icon>
                   </div>
-                    <div class="contact-details">
+                  <div class="contact-details">
                     <span class="contact-label">Электронная почта</span>
                     <a
                       [href]="'mailto:' + lead.email"
@@ -203,7 +184,7 @@
                     >
                       {{ lead.email }}
                     </a>
-                    </div>
+                  </div>
                 </div>
 
                 <div class="contact-item" *ngIf="lead.phone">
@@ -241,12 +222,12 @@
                   </div>
                 </div>
               </div>
-              
+
               <!-- Кнопка перехода к контакту -->
               <div class="contact-actions" *ngIf="lead.email || lead.phone">
-                <button 
-                  mat-raised-button 
-                  color="primary" 
+                <button
+                  mat-raised-button
+                  color="primary"
                   (click)="goToContact()"
                   class="contact-button"
                 >
@@ -299,14 +280,42 @@
                   </div>
                 </div>
 
-                <div class="timeline-item" *ngIf="currentAssignments.length > 0">
+                <div
+                  class="timeline-item assignee-item"
+                  *ngIf="currentAssignments.length > 0"
+                >
                   <div class="timeline-icon user">
                     <mat-icon>person_pin</mat-icon>
                   </div>
                   <div class="timeline-content">
                     <span class="label">Ответственный</span>
                     <div class="value">
-                      {{ getAssigneeName }}
+                      <button
+                        mat-button
+                        class="assignee-card"
+                        (click)="assignLead()"
+                        [disabled]="isConverted"
+                        [matTooltip]="
+                          getAssigneeName +
+                          (getAssigneeEmail() ? ' — ' + getAssigneeEmail() : '')
+                        "
+                        [attr.aria-label]="
+                          'Назначенный менеджер: ' + (getAssigneeName || '')
+                        "
+                      >
+                        <div class="assignee-details">
+                          <div class="name" [title]="getAssigneeName">
+                            {{ getAssigneeName }}
+                          </div>
+                        </div>
+                        <div class="assignee-right">
+                          <span
+                            class="workload-pill"
+                            *ngIf="getAssigneeWorkload()"
+                            >{{ getAssigneeWorkload() }}</span
+                          >
+                        </div>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -320,9 +329,16 @@
                     <div class="value promo-company-value">
                       <div class="promo-company-badge">
                         <mat-icon class="promo-icon">campaign</mat-icon>
-                        <span>{{ getPromoCompanyName(lead.promoCompanyId) }}</span>
-                        <button mat-icon-button class="remove-promo-btn" (click)="removePromoCompany()" 
-                                matTooltip="Отвязать от промо-компании" *ngIf="!isConverted">
+                        <span>{{
+                          getPromoCompanyName(lead.promoCompanyId)
+                        }}</span>
+                        <button
+                          mat-icon-button
+                          class="remove-promo-btn"
+                          (click)="removePromoCompany()"
+                          matTooltip="Отвязать от промо-компании"
+                          *ngIf="!isConverted"
+                        >
                           <mat-icon>close</mat-icon>
                         </button>
                       </div>
@@ -330,14 +346,22 @@
                   </div>
                 </div>
 
-                <div class="timeline-item" *ngIf="!lead.promoCompanyId && !isConverted">
+                <div
+                  class="timeline-item"
+                  *ngIf="!lead.promoCompanyId && !isConverted"
+                >
                   <div class="timeline-icon promo">
                     <mat-icon>campaign</mat-icon>
                   </div>
                   <div class="timeline-content">
                     <span class="label">Промо-компания</span>
                     <div class="value">
-                      <button mat-stroked-button color="primary" (click)="assignPromoCompany()" class="assign-promo-btn">
+                      <button
+                        mat-stroked-button
+                        color="primary"
+                        (click)="assignPromoCompany()"
+                        class="assign-promo-btn"
+                      >
                         <mat-icon>add</mat-icon>
                         Присвоить промо-компанию
                       </button>
@@ -449,7 +473,10 @@
         <!-- Уведомление для конвертированного лида -->
         <div class="readonly-notice" *ngIf="isConverted">
           <mat-icon>info</mat-icon>
-          <span>Этот лид конвертирован в сделку. Доступен только просмотр и добавление комментариев.</span>
+          <span
+            >Этот лид конвертирован в сделку. Доступен только просмотр и
+            добавление комментариев.</span
+          >
         </div>
 
         <mat-tab-group mat-stretch-tabs="true" class="history-tabs">

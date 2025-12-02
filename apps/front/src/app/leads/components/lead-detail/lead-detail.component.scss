@@ -159,6 +159,79 @@
       line-height: 1.2;
       text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
+
+    .assigned-manager {
+      margin-top: 6px;
+
+      .assignee-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.12);
+        color: white;
+        border: 1px solid rgba(255,255,255,0.08);
+        cursor: pointer;
+        transition: background 0.15s ease, transform 0.08s ease;
+
+        &:hover:not([disabled]) {
+          background: rgba(255,255,255,0.18);
+          transform: translateY(-1px);
+        }
+
+        .avatar {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: rgba(0,0,0,0.12);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 600;
+          color: white;
+          font-size: 13px;
+        }
+
+        .avatar-icon {
+          font-size: 20px;
+          color: white;
+        }
+
+        .assignee-info {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          line-height: 1;
+
+          .assignee-name {
+            font-weight: 600;
+            font-size: 15px;
+            color: white;
+          }
+
+          .assignee-meta {
+            font-size: 12px;
+            opacity: 0.9;
+            color: rgba(255,255,255,0.85);
+          }
+        }
+
+        .assignee-badge-right {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-left: 6px;
+
+          .workload-pill {
+            background: rgba(255,255,255,0.14);
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+          }
+        }
+      }
+    }
   }
 
   .lead-meta {
@@ -709,6 +782,93 @@
             }
           }
         }
+      }
+    }
+  }
+
+  // Styles for clickable assignee card inside timeline
+  .timeline-item.assignee-item {
+    .assignee-card {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  transition: background 0.12s ease, transform 0.06s ease, border-color 0.12s ease;
+  color: var(--text-primary);
+
+      &:hover:not([disabled]) {
+        background: rgba(102,126,234,0.06);
+        border-color: rgba(102,126,234,0.12);
+        transform: translateY(-1px);
+      }
+
+        .avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: linear-gradient(135deg,#667eea,#764ba2);
+        color: white;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-weight:700;
+        font-size:13px;
+        flex-shrink:0;
+      }
+
+        .assignee-details {
+        display:flex;
+        flex-direction:column;
+        align-items:flex-start;
+        min-width: 0;
+
+        .name {
+          font-weight:600;
+          font-size:13px;
+          color: var(--text-primary);
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          overflow: hidden;
+          max-width: 180px;
+        }
+
+        .meta {
+          font-size:12px;
+          color: var(--text-secondary);
+          max-width: 220px;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          overflow: hidden;
+        }
+      }
+
+      .assignee-right {
+        margin-left:auto;
+        display:flex;
+        align-items:center;
+        gap:8px;
+
+        .workload-pill {
+          background: rgba(0,0,0,0.06);
+          padding:4px 8px;
+          border-radius:12px;
+          font-size:12px;
+        }
+        .chev {
+          font-size:20px;
+          color: rgba(0,0,0,0.54);
+        }
+      }
+
+      &:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 4px rgba(102,126,234,0.14);
+        border-color: rgba(102,126,234,0.18);
       }
     }
   }
