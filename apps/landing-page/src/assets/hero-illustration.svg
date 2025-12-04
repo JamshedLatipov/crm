@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="520" viewBox="0 0 800 520" role="img" aria-label="Dashboard illustration">
+  <rect width="100%" height="100%" fill="#f8fafc" rx="20"/>
+  <g transform="translate(40,40)">
+    <rect x="0" y="0" width="420" height="120" rx="8" fill="#ffffff" stroke="#e6eef3"/>
+    <rect x="0" y="140" width="240" height="100" rx="8" fill="#ffffff" stroke="#e6eef3"/>
+    <rect x="260" y="140" width="160" height="220" rx="8" fill="#ffffff" stroke="#e6eef3"/>
+    <rect x="0" y="260" width="420" height="80" rx="8" fill="#ffffff" stroke="#e6eef3"/>
+    <circle cx="560" cy="120" r="64" fill="#06b6d4" opacity="0.95"/>
+    <rect x="520" y="200" width="170" height="120" rx="10" fill="#ffffff" stroke="#e6eef3"/>
+  </g>
+  <text x="60" y="30" font-family="Inter, Arial" font-size="18" fill="#374151" font-weight="600">Pipeline preview</text>
+</svg>

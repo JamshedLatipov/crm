@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-label="Contacts icon">
+  <rect width="96" height="96" rx="16" fill="#06b6d4"/>
+  <g fill="#042a2b" transform="translate(20,20)">
+    <circle cx="18" cy="18" r="12" fill="#fff"/>
+    <rect x="0" y="44" width="40" height="8" rx="4" fill="#fff"/>
+  </g>
+</svg>
