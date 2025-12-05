@@ -18,7 +18,7 @@ export default [
     ],
   },
   {
-    files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
+    files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx', '**/*.vue'],
     rules: {
       '@nx/enforce-module-boundaries': [
         'error',
@@ -33,23 +33,28 @@ export default [
           ],
         },
       ],
-      // Лучшие практики
-      'no-console': ['warn', { allow: ['warn', 'error'] }],
+      'no-console': [
+        'warn',
+        {
+          allow: ['warn', 'error'],
+        },
+      ],
       'no-debugger': 'warn',
       'no-alert': 'error',
       'no-var': 'error',
       'prefer-const': 'error',
       'prefer-arrow-callback': 'error',
       'prefer-template': 'error',
-      
-      // TypeScript специфичные правила
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        {
+          argsIgnorePattern: '^_',
+        },
+      ],
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/prefer-optional-chain': 'error',
       '@typescript-eslint/prefer-nullish-coalescing': 'error',
       '@typescript-eslint/no-non-null-assertion': 'warn',
-      
-      // Именование
       '@typescript-eslint/naming-convention': [
         'error',
         {
@@ -71,13 +76,19 @@ export default [
     files: ['**/*.ts', '**/*.tsx'],
     rules: {
       // TypeScript only rules
-      '@typescript-eslint/explicit-function-return-type': ['warn', {
-        allowExpressions: true,
-        allowTypedFunctionExpressions: true,
-      }],
-      '@typescript-eslint/explicit-member-accessibility': ['error', {
-        accessibility: 'no-public'
-      }],
+      '@typescript-eslint/explicit-function-return-type': [
+        'warn',
+        {
+          allowExpressions: true,
+          allowTypedFunctionExpressions: true,
+        },
+      ],
+      '@typescript-eslint/explicit-member-accessibility': [
+        'error',
+        {
+          accessibility: 'no-public',
+        },
+      ],
     },
   },
   {

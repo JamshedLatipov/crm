@@ -1,0 +1,79 @@
+.deal-actions {
+  display:flex;
+  align-items:center;
+  gap:12px;
+
+  .primary-actions {
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+
+  .assignee-pill {
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:6px 12px;
+    border-radius:10px;
+    background: rgba(59,130,246,0.18);
+    color: white;
+    border: 1px solid rgba(59,130,246,0.28);
+
+    mat-icon { color: white; }
+
+    .assignee-text {
+      font-weight:600;
+      font-size:14px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width:160px;
+    }
+  }
+
+  /* Restore header action button styles (same as before they were inline in deal-detail) */
+  .action-btn {
+    height: 40px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(10px);
+
+    mat-icon {
+      width: 20px;
+      height: 20px;
+      font-size: 20px;
+    }
+
+    &.edit-btn {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.25);
+        border-color: rgba(255, 255, 255, 0.45);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+      }
+    }
+
+    &.win-btn {
+      background: #4caf50;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+
+      &:hover {
+        background: #66bb6a;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+      }
+    }
+  }
+}

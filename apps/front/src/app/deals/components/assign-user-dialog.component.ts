@@ -759,12 +759,12 @@ export class AssignUserDialogComponent {
   users: User[] = [];
 
   constructor() {
-    // Используем переданные пользователи или загружаем их
+    // Use passed users for immediate UI, but always refresh from server so data is up-to-date
     if (this.data.currentUsers && this.data.currentUsers.length > 0) {
       this.users = this.data.currentUsers;
-    } else {
-      this.loadUsers();
     }
+    // Always load fresh manager list when dialog opens to ensure latest availability/workload
+    this.loadUsers();
   }
 
   get filteredUsers(): User[] {

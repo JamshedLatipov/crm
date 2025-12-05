@@ -24,13 +24,35 @@
     <div class="page-header">
       <div class="header-background">
         <div class="header-content">
-          <div class="breadcrumb">
-            <button mat-button (click)="goBack()" class="breadcrumb-link">
-              <mat-icon>arrow_back</mat-icon>
-              Лиды
-            </button>
-            <mat-icon class="separator">chevron_right</mat-icon>
-            <span class="current">{{ lead.name }}</span>
+          <div style="display: flex; justify-content: space-between;">
+            <div class="breadcrumb">
+              <button mat-button (click)="goBack()" class="breadcrumb-link">
+                <mat-icon>arrow_back</mat-icon>
+                Лиды
+              </button>
+              <mat-icon class="separator">chevron_right</mat-icon>
+              <span class="current">{{ lead.name }}</span>
+            </div>
+            <!-- Place header actions on the same row as breadcrumb -->
+            <div class="header-actions" *ngIf="!isConverted">
+              <app-lead-actions
+                [lead]="lead"
+                [managers]="managers"
+                [assignments]="currentAssignments"
+                layout="horizontal"
+                size="medium"
+                context="header"
+                (editLead)="editLead()"
+                (convertToDeal)="convertToDeal()"
+                (contactLead)="contactLead()"
+                (assignLead)="assignLead()"
+                (changeStatus)="quickChangeStatus()"
+                (createPromo)="createPromo()"
+                (assignPromo)="assignPromoCompany()"
+                (deleteLead)="deleteLead()"
+              >
+              </app-lead-actions>
+            </div>
           </div>
 
           <div class="lead-header-info">
@@ -47,27 +69,18 @@
                   <mat-icon>source</mat-icon>
                   <span>{{ getSourceLabel(lead.source) }}</span>
                 </div>
+                <!-- Current lead status -->
+                <div class="lead-status" *ngIf="lead.status">
+                  <app-lead-status
+                    [status]="lead.status"
+                    size="medium"
+                    [showIcon]="true"
+                  ></app-lead-status>
+                </div>
               </div>
             </div>
 
-            <div class="header-actions">
-              <app-lead-actions
-                [lead]="lead"
-                layout="horizontal"
-                size="medium"
-                context="header"
-                (editLead)="editLead()"
-                (convertToDeal)="convertToDeal()"
-                (contactLead)="contactLead()"
-                (assignLead)="assignLead()"
-                (changeStatus)="quickChangeStatus()"
-                (createPromo)="createPromo()"
-                (assignPromo)="assignPromoCompany()"
-                (deleteLead)="deleteLead()"
-                *ngIf="!isConverted"
-              >
-              </app-lead-actions>
-            </div>
+            <!-- actions moved to header row to align with breadcrumb -->
           </div>
         </div>
       </div>
@@ -276,46 +289,6 @@
                     <span class="label">Источник</span>
                     <div class="value highlight">
                       {{ getSourceLabel(lead.source) }}
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  class="timeline-item assignee-item"
-                  *ngIf="currentAssignments.length > 0"
-                >
-                  <div class="timeline-icon user">
-                    <mat-icon>person_pin</mat-icon>
-                  </div>
-                  <div class="timeline-content">
-                    <span class="label">Ответственный</span>
-                    <div class="value">
-                      <button
-                        mat-button
-                        class="assignee-card"
-                        (click)="assignLead()"
-                        [disabled]="isConverted"
-                        [matTooltip]="
-                          getAssigneeName +
-                          (getAssigneeEmail() ? ' — ' + getAssigneeEmail() : '')
-                        "
-                        [attr.aria-label]="
-                          'Назначенный менеджер: ' + (getAssigneeName || '')
-                        "
-                      >
-                        <div class="assignee-details">
-                          <div class="name" [title]="getAssigneeName">
-                            {{ getAssigneeName }}
-                          </div>
-                        </div>
-                        <div class="assignee-right">
-                          <span
-                            class="workload-pill"
-                            *ngIf="getAssigneeWorkload()"
-                            >{{ getAssigneeWorkload() }}</span
-                          >
-                        </div>
-                      </button>
                     </div>
                   </div>
                 </div>

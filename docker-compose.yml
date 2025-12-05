@@ -91,8 +91,9 @@ services:
       - ./asterisk-config/extconfig.conf:/etc/asterisk/extconfig.conf:ro
       - ./asterisk-config/sorcery.conf:/etc/asterisk/sorcery.conf:ro
       - ./asterisk-config/stun.conf:/etc/asterisk/stun.conf:ro
+      - ./asterisk-config/musiconhold.conf:/etc/asterisk/musiconhold.conf:ro
       - ./asterisk-config/ari.conf:/etc/asterisk/ari.conf
-      - ./data/asterisk/sounds:/var/lib/asterisk/sounds:rw
+      # - ./data/asterisk/sounds:/var/lib/asterisk/sounds:rw
       # - ./asterisk-config/logger.conf:/etc/asterisk/logger.conf:ro
     mem_limit: "512m"
     mem_reservation: "256m"

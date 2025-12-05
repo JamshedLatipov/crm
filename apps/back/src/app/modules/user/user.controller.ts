@@ -213,6 +213,30 @@ export class UserController {
     return await this.userService.exportUsers(format);
   }
 
+  @Post('bulk-delete')
+  @ApiOperation({ summary: 'Soft delete multiple users' })
+  @ApiResponse({ status: 200, description: 'Users deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Some users not found' })
+  async bulkDeleteUsers(@Body('userIds') userIds: number[]): Promise<{ message: string }> {
+    await this.userService.bulkDeleteUsers(userIds);
+    return { message: 'Users deleted successfully' };
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Soft delete user' })
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @ApiResponse({ status: 200, description: 'User deleted successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async deleteUser(@Param('id') id: string): Promise<{ message: string }> {
+    const numericId = parseInt(id, 10);
+    if (isNaN(numericId)) {
+      throw new NotFoundException(`Invalid user ID: ${id}`);
+    }
+    
+    await this.userService.deleteUser(numericId);
+    return { message: 'User deleted successfully' };
+  }
+
   private mapUserToManagerDto(user: User): ManagerDto {
     return {
       id: user.id.toString(),

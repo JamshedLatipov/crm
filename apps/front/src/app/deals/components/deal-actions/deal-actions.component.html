@@ -1,0 +1,36 @@
+<div class="deal-actions">
+  <div class="assignee-block" *ngIf="deal">
+    <button
+      mat-stroked-button
+      class="action-btn assign-btn assignee-pill"
+      (click)="onChangeAssignee()"
+      [matTooltip]="getAssignedName()"
+    >
+      <mat-icon>person_add</mat-icon>
+      <span class="assignee-text">{{ getAssignedName() }}</span>
+    </button>
+  </div>
+  
+  <div class="primary-actions">
+    <button
+      mat-stroked-button
+      color="primary"
+      class="action-btn edit-btn"
+      (click)="onEdit()"
+    >
+      <mat-icon>edit</mat-icon>
+      <span>Редактировать</span>
+    </button>
+
+    <button
+      mat-raised-button
+      color="accent"
+      *ngIf="deal?.status === 'open'"
+      (click)="onMarkWon()"
+      class="action-btn win-btn"
+    >
+      <mat-icon>check_circle</mat-icon>
+      <span>Отметить выигранной</span>
+    </button>
+  </div>
+</div>

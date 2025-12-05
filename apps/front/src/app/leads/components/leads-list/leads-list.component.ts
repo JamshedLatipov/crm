@@ -18,6 +18,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { ConfirmActionDialogComponent } from '../../../shared/dialogs/confirm-action-dialog.component';
 import { Router } from '@angular/router';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -65,6 +66,7 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
     MatProgressSpinnerModule,
     MatTooltipModule,
     MatMenuModule,
+  ConfirmActionDialogComponent,
     MatDialogModule,
     MatDividerModule,
     MatCheckboxModule,
@@ -460,7 +462,19 @@ export class LeadsListComponent implements OnInit {
   }
 
   deleteLead(lead: Lead): void {
-    if (confirm(`Вы уверены, что хотите удалить лид "${lead.name}"?`)) {
+    const ref = this.dialog.open(ConfirmActionDialogComponent, {
+      width: '480px',
+      data: {
+        title: 'Удалить лид',
+        message: `Вы уверены, что хотите удалить лид "${lead.name}"?`,
+        confirmText: 'Удалить',
+        cancelText: 'Отмена',
+        confirmColor: 'warn'
+      }
+    });
+
+    ref.afterClosed().subscribe((res) => {
+      if (!res?.confirmed) return;
       this.leadService.deleteLead(lead.id).subscribe({
         next: () => {
           this.loadLeads();
@@ -469,7 +483,7 @@ export class LeadsListComponent implements OnInit {
           console.error('Error deleting lead:', error);
         },
       });
-    }
+    });
   }
 
   convertToDeal(lead: Lead): void {

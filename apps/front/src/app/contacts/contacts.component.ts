@@ -15,6 +15,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { FormsModule } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { ConfirmActionDialogComponent } from '../shared/dialogs/confirm-action-dialog.component';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { ContactsService } from './contacts.service';
 import { StatusTabsComponent } from '../shared/components/status-tabs/status-tabs.component';
@@ -38,8 +39,8 @@ import { PageLayoutComponent } from '../shared/page-layout/page-layout.component
     MatInputModule,
     MatSelectModule,
     MatPaginatorModule,
-  MatMenuModule,
-  MatDividerModule,
+    MatMenuModule,
+    MatDividerModule,
     FormsModule,
     MatDialogModule,
     StatusTabsComponent,
@@ -53,7 +54,15 @@ export class ContactsComponent implements OnInit {
   stats: ContactsStats | null = null;
   loading = true;
   // Compact columns: email and phone merged into name cell to save width
-  displayedColumns = ['select', 'name', 'company', 'assignedTo', 'status', 'createdAt', 'tags', 'actions'];
+  displayedColumns = [
+    'select',
+    'name',
+    'company',
+    'status',
+    'createdAt',
+    'tags',
+    'actions',
+  ];
 
   // Filters
   searchQuery = '';
@@ -87,12 +96,17 @@ export class ContactsComponent implements OnInit {
   loadData(): void {
     this.loading = true;
     // Загружаем контакты и статистику параллельно
-    const listPromise = this.contactsService.listContacts({
-      search: this.searchQuery || undefined,
-      isActive: this.activeFilter === 'all' ? undefined : (this.activeFilter === 'active'),
-      page: this.currentPage,
-      pageSize: this.pageSize,
-    }).toPromise();
+    const listPromise = this.contactsService
+      .listContacts({
+        search: this.searchQuery || undefined,
+        isActive:
+          this.activeFilter === 'all'
+            ? undefined
+            : this.activeFilter === 'active',
+        page: this.currentPage,
+        pageSize: this.pageSize,
+      })
+      .toPromise();
 
     Promise.all([
       listPromise,
@@ -103,7 +117,10 @@ export class ContactsComponent implements OnInit {
         this.stats = stats || null;
         // If server supports total count, it should provide it; otherwise fall back to array length
         // Assume service returns contacts array; if it returns an object later, adjust accordingly
-        this.totalResults = (contacts && (contacts as any).total) ? (contacts as any).total : (contacts || []).length;
+        this.totalResults =
+          contacts && (contacts as any).total
+            ? (contacts as any).total
+            : (contacts || []).length;
         this.loading = false;
       })
       .catch((error) => {
@@ -122,7 +139,9 @@ export class ContactsComponent implements OnInit {
   }
 
   isAllSelected(): boolean {
-    return this.contacts.length > 0 && this.selected.size === this.contacts.length;
+    return (
+      this.contacts.length > 0 && this.selected.size === this.contacts.length
+    );
   }
 
   toggleSelectAll(checked: boolean): void {
@@ -159,36 +178,60 @@ export class ContactsComponent implements OnInit {
   deleteSelected(): void {
     const count = this.selected.size;
     if (count === 0) return;
-    if (!confirm(`Вы уверены, что хотите удалить ${count} выбранных контактов?`)) return;
+    const ref = this.dialog.open(ConfirmActionDialogComponent, {
+      width: '520px',
+      data: {
+        title: 'Удалить контакты',
+        message: `Вы уверены, что хотите удалить ${count} выбранных контактов?`,
+        confirmText: 'Удалить',
+        cancelText: 'Отмена',
+        confirmColor: 'warn',
+      },
+    });
 
-    const ids = Array.from(this.selected);
-    // delete in parallel and reload when done
-    Promise.all(ids.map((id) => this.contactsService.deleteContact(id).toPromise()))
-      .then(() => {
-        this.snackBar.open('Выбранные контакты удалены', 'Закрыть', { duration: 3000 });
-        this.selected.clear();
-        this.loadData();
-      })
-      .catch((error) => {
-        console.error('Error deleting selected contacts:', error);
-        this.snackBar.open('Ошибка при удалении выбранных контактов', 'Закрыть', { duration: 3000 });
-        this.loadData();
-      });
+    ref.afterClosed().subscribe((res) => {
+      if (!res?.confirmed) return;
+      const ids = Array.from(this.selected);
+      // delete in parallel and reload when done
+      Promise.all(ids.map((id) => this.contactsService.deleteContact(id).toPromise()))
+        .then(() => {
+          this.snackBar.open('Выбранные контакты удалены', 'Закрыть', { duration: 3000 });
+          this.selected.clear();
+          this.loadData();
+        })
+        .catch((error) => {
+          console.error('Error deleting selected contacts:', error);
+          this.snackBar.open('Ошибка при удалении выбранных контактов', 'Закрыть', { duration: 3000 });
+          this.loadData();
+        });
+    });
   }
 
   bulkActivateSelected(): void {
     const ids = Array.from(this.selected);
     if (ids.length === 0) return;
 
-  Promise.all(ids.map((id) => this.contactsService.updateContact(id, { isActive: true } as any).toPromise()))
+    Promise.all(
+      ids.map((id) =>
+        this.contactsService
+          .updateContact(id, { isActive: true } as any)
+          .toPromise()
+      )
+    )
       .then(() => {
-        this.snackBar.open(`Активированы ${ids.length} контактов`, 'Закрыть', { duration: 3000 });
+        this.snackBar.open(`Активированы ${ids.length} контактов`, 'Закрыть', {
+          duration: 3000,
+        });
         this.clearSelection();
         this.loadData();
       })
       .catch((error) => {
         console.error('Error activating selected contacts:', error);
-        this.snackBar.open('Ошибка при активации выбранных контактов', 'Закрыть', { duration: 3000 });
+        this.snackBar.open(
+          'Ошибка при активации выбранных контактов',
+          'Закрыть',
+          { duration: 3000 }
+        );
         this.loadData();
       });
   }
@@ -197,19 +240,39 @@ export class ContactsComponent implements OnInit {
     const ids = Array.from(this.selected);
     if (ids.length === 0) return;
 
-    if (!confirm(`Вы уверены, что хотите деактивировать ${ids.length} выбранных контактов?`)) return;
+    if (
+      !confirm(
+        `Вы уверены, что хотите деактивировать ${ids.length} выбранных контактов?`
+      )
+    )
+      return;
+    const ref = this.dialog.open(ConfirmActionDialogComponent, {
+      width: '520px',
+      data: {
+        title: 'Деактивировать контакты',
+        message: `Вы уверены, что хотите деактивировать ${ids.length} выбранных контактов?`,
+        confirmText: 'Деактивировать',
+        cancelText: 'Отмена',
+        confirmColor: 'warn',
+      },
+    });
 
-  Promise.all(ids.map((id) => this.contactsService.updateContact(id, { isActive: false } as any).toPromise()))
-      .then(() => {
-        this.snackBar.open(`Деактивированы ${ids.length} контактов`, 'Закрыть', { duration: 3000 });
-        this.clearSelection();
-        this.loadData();
-      })
-      .catch((error) => {
-        console.error('Error deactivating selected contacts:', error);
-        this.snackBar.open('Ошибка при деактивации выбранных контактов', 'Закрыть', { duration: 3000 });
-        this.loadData();
-      });
+    ref.afterClosed().subscribe((res) => {
+      if (!res?.confirmed) return;
+      Promise.all(
+        ids.map((id) => this.contactsService.updateContact(id, { isActive: false } as any).toPromise())
+      )
+        .then(() => {
+          this.snackBar.open(`Деактивированы ${ids.length} контактов`, 'Закрыть', { duration: 3000 });
+          this.clearSelection();
+          this.loadData();
+        })
+        .catch((error) => {
+          console.error('Error deactivating selected contacts:', error);
+          this.snackBar.open('Ошибка при деактивации выбранных контактов', 'Закрыть', { duration: 3000 });
+          this.loadData();
+        });
+    });
   }
 
   trackByContactId(index: number, contact: Contact): string {
@@ -222,9 +285,15 @@ export class ContactsComponent implements OnInit {
 
   // Действия с контактами
   openCreateDialog(): void {
-    import('./components/create-contact-dialog/create-contact-dialog.component').then((m) => {
-      const dialogRef = this.dialog.open(m.CreateContactDialogComponent, { width: '520px' });
-      interface CreatedContact { id: string }
+    import(
+      './components/create-contact-dialog/create-contact-dialog.component'
+    ).then((m) => {
+      const dialogRef = this.dialog.open(m.CreateContactDialogComponent, {
+        width: '520px',
+      });
+      interface CreatedContact {
+        id: string;
+      }
       dialogRef.afterClosed().subscribe((created: CreatedContact | null) => {
         if (created) {
           this.snackBar.open('Контакт создан', 'Закрыть', { duration: 2000 });
@@ -244,7 +313,19 @@ export class ContactsComponent implements OnInit {
   }
 
   deleteContact(contact: Contact): void {
-    if (confirm(`Вы уверены, что хотите удалить контакт "${contact.name}"?`)) {
+    const ref = this.dialog.open(ConfirmActionDialogComponent, {
+      width: '480px',
+      data: {
+        title: 'Удалить контакт',
+        message: `Вы уверены, что хотите удалить контакт "${contact.name}"?`,
+        confirmText: 'Удалить',
+        cancelText: 'Отмена',
+        confirmColor: 'warn',
+      }
+    });
+
+    ref.afterClosed().subscribe((res) => {
+      if (!res?.confirmed) return;
       this.contactsService.deleteContact(contact.id).subscribe({
         next: () => {
           this.snackBar.open('Контакт удален', 'Закрыть', { duration: 3000 });
@@ -257,7 +338,7 @@ export class ContactsComponent implements OnInit {
           });
         },
       });
-    }
+    });
   }
 
   goToDetail(contact: Contact): void {

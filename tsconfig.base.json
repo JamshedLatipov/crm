@@ -27,13 +27,13 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "@crm/shared": ["libs/shared/src/index.ts"],
       "@crm/back/*": ["apps/back/src/*"],
-      "@crm/front/*": ["apps/front/src/*"]
+      "@crm/front/*": ["apps/front/src/*"],
+      "@crm/shared": ["libs/shared/src/index.ts"]
     }
   },
   "exclude": [
-    "node_modules", 
+    "node_modules",
     "tmp",
     "dist",
     "coverage",

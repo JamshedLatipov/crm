@@ -14,6 +14,8 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSortModule, Sort } from '@angular/material/sort';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { ConfirmActionDialogComponent } from '../../shared/dialogs/confirm-action-dialog.component';
 import { TasksService } from '../tasks.service';
 import { AssignmentService } from '../../services/assignment.service';
 import { RouterModule, Router } from '@angular/router';
@@ -67,6 +69,9 @@ interface Task {
     TaskStatusComponent,
     TaskModalComponent,
     PageLayoutComponent
+    ,
+    MatDialogModule,
+    ConfirmActionDialogComponent
   ],
   templateUrl: './task-list.component.html',
   styleUrls: ['./task-list.component.scss']
@@ -103,7 +108,8 @@ export class TaskListComponent implements OnInit {
     private tasksService: TasksService,
     private router: Router,
     private taskModalService: TaskModalService,
-    private assignmentService: AssignmentService
+    private assignmentService: AssignmentService,
+    private dialog: MatDialog
   ) {}
 
   ngOnInit() {
@@ -280,11 +286,23 @@ export class TaskListComponent implements OnInit {
   }
   
   deleteTask(id: number) {
-    if (confirm('Вы уверены, что хотите удалить эту задачу?')) {
-      this.tasksService.delete(id).subscribe(() => {
-        this.loadTasks();
-      });
-    }
+    const ref = this.dialog.open(ConfirmActionDialogComponent, {
+      data: {
+        title: 'Удалить задачу',
+        message: 'Вы уверены, что хотите удалить эту задачу?',
+        confirmText: 'Удалить',
+        cancelText: 'Отмена',
+        confirmColor: 'warn'
+      }
+    });
+
+    ref.afterClosed().subscribe(res => {
+      if (res?.confirmed) {
+        this.tasksService.delete(id).subscribe(() => {
+          this.loadTasks();
+        });
+      }
+    });
   }
 
   // Return the display name for the assigned user using centralized assignments when available

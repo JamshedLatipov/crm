@@ -15,6 +15,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { ConfirmActionDialogComponent } from '../../../shared/dialogs/confirm-action-dialog.component';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCardModule } from '@angular/material/card';
@@ -45,6 +46,7 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
     MatCheckboxModule,
     MatSnackBarModule,
     MatDialogModule,
+  ConfirmActionDialogComponent,
     MatPaginatorModule,
     MatProgressSpinnerModule,
     MatCardModule,
@@ -53,6 +55,7 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
     StatusTabsComponent,
     PageLayoutComponent
   ],
+  // Note: ConfirmActionDialogComponent used programmatically via MatDialog
   templateUrl: './user-list.component.html',
   changeDetection: ChangeDetectionStrategy.Default,
   styleUrls: ['./user-list.component.scss'],
@@ -296,18 +299,31 @@ export class UserListComponent implements OnInit {
   }
 
   deleteUser(user: User): void {
-    if (confirm(`Вы уверены, что хотите удалить пользователя ${user.firstName} ${user.lastName}?`)) {
-      this.userService.deleteUser(user.id).subscribe({
-        next: () => {
-          this.snackBar.open('Пользователь удален', 'Закрыть', { duration: 3000 });
-        },
-        error: () => {
-          this.snackBar.open('Ошибка при удалении пользователя', 'Закрыть', {
-            duration: 5000
-          });
-        }
-      });
-    }
+    const ref = this.dialog.open(ConfirmActionDialogComponent, {
+      width: '480px',
+      data: {
+        title: 'Удалить пользователя',
+        message: `Вы уверены, что хотите удалить пользователя ${user.firstName} ${user.lastName}?`,
+        confirmText: 'Удалить',
+        cancelText: 'Отмена',
+        confirmColor: 'warn',
+      },
+    });
+
+    ref.afterClosed().subscribe((res) => {
+      if (res?.confirmed) {
+        this.userService.deleteUser(user.id).subscribe({
+          next: () => {
+            this.snackBar.open('Пользователь удален', 'Закрыть', { duration: 3000 });
+          },
+          error: () => {
+            this.snackBar.open('Ошибка при удалении пользователя', 'Закрыть', {
+              duration: 5000
+            });
+          }
+        });
+      }
+    });
   }
 
   // Bulk actions
@@ -337,16 +353,29 @@ export class UserListComponent implements OnInit {
 
   bulkDelete(): void {
     const userIds = this.selectedUsers().map(u => u.id);
-    if (confirm(`Вы уверены, что хотите удалить ${userIds.length} пользователей?`)) {
-      this.userService.bulkDeleteUsers(userIds).subscribe({
-        next: () => {
-          this.snackBar.open(`Удалены ${userIds.length} пользователей`, 'Закрыть', {
-            duration: 3000
-          });
-          this.selectedUsers.set([]);
-        }
-      });
-    }
+    const ref = this.dialog.open(ConfirmActionDialogComponent, {
+      width: '480px',
+      data: {
+        title: 'Удалить пользователей',
+        message: `Вы уверены, что хотите удалить ${userIds.length} пользователей?`,
+        confirmText: 'Удалить',
+        cancelText: 'Отмена',
+        confirmColor: 'warn',
+      },
+    });
+
+    ref.afterClosed().subscribe((res) => {
+      if (res?.confirmed) {
+        this.userService.bulkDeleteUsers(userIds).subscribe({
+          next: () => {
+            this.snackBar.open(`Удалены ${userIds.length} пользователей`, 'Закрыть', {
+              duration: 3000
+            });
+            this.selectedUsers.set([]);
+          }
+        });
+      }
+    });
   }
 
   // Utility methods

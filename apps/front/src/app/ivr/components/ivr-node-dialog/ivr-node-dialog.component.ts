@@ -1,10 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import {
-  MatDialogRef,
-  MAT_DIALOG_DATA,
-  MatDialogModule,
-} from '@angular/material/dialog';
+import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { ConfirmActionDialogComponent } from '../../../shared/dialogs/confirm-action-dialog.component';
 import { ReactiveFormsModule, FormBuilder } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -27,12 +24,14 @@ import { IvrApiService, IvrNodeDto } from '../../ivr.service';
     MatSelectModule,
     MatCheckboxModule,
     MatIconModule,
+    ConfirmActionDialogComponent,
   ],
   templateUrl: './ivr-node-dialog.component.html',
   styleUrls: ['./ivr-node-dialog.component.scss'],
 })
 export class IvrNodeDialogComponent {
   private dialogRef = inject(MatDialogRef<IvrNodeDialogComponent>);
+  private readonly dialog = inject(MatDialog);
   public readonly dialogData = inject(MAT_DIALOG_DATA) as
     | { node?: IvrNodeDto }
     | undefined;
@@ -97,12 +96,20 @@ export class IvrNodeDialogComponent {
   del() {
     const id = this.form.value.id;
     if (!id) return;
-    if (!confirm('Удалить этот элемент?')) return;
-    this.api.remove(id).subscribe({
-      next: () => {
-        this.dialogRef.close({ deletedId: id });
-      },
-      error: () => {},
+    const ref = this.dialog.open(ConfirmActionDialogComponent, {
+      width: '420px',
+      data: {
+        title: 'Удалить элемент',
+        message: 'Удалить этот элемент?',
+        confirmText: 'Удалить',
+        cancelText: 'Отмена',
+        confirmColor: 'warn'
+      }
+    });
+
+    ref.afterClosed().subscribe((res) => {
+      if (!res?.confirmed) return;
+      this.api.remove(id).subscribe({ next: () => this.dialogRef.close({ deletedId: id }), error: () => {} });
     });
   }
 
@@ -220,26 +227,49 @@ export class IvrNodeDialogComponent {
   }
 
   deleteMedia(id: string) {
-    if (!confirm('Удалить медиа?')) return;
-    this.api.deleteMedia(id).subscribe({
-      next: () => {
-        this.mediaList = this.mediaList.filter((m) => m.id !== id);
-        if (this.selectedMediaId === id) {
-          this.selectedMediaId = null;
-          this.form.patchValue({ payload: null });
-        }
-      },
-      error: () => {},
+    const ref = this.dialog.open(ConfirmActionDialogComponent, {
+      width: '420px',
+      data: {
+        title: 'Удалить медиа',
+        message: 'Удалить медиа?',
+        confirmText: 'Удалить',
+        cancelText: 'Отмена',
+        confirmColor: 'warn'
+      }
+    });
+
+    ref.afterClosed().subscribe((res) => {
+      if (!res?.confirmed) return;
+      this.api.deleteMedia(id).subscribe({
+        next: () => {
+          this.mediaList = this.mediaList.filter((m) => m.id !== id);
+          if (this.selectedMediaId === id) {
+            this.selectedMediaId = null;
+            this.form.patchValue({ payload: null });
+          }
+        },
+        error: () => {},
+      });
     });
   }
 
   onDelete() {
     const id = this.form.value.id;
     if (!id) return;
-    if (!confirm('Удалить этот узел?')) return;
-    this.api.remove(id).subscribe({
-      next: () => this.dialogRef.close({ deletedId: id }),
-      error: () => {},
+    const ref = this.dialog.open(ConfirmActionDialogComponent, {
+      width: '420px',
+      data: {
+        title: 'Удалить узел',
+        message: 'Удалить этот узел?',
+        confirmText: 'Удалить',
+        cancelText: 'Отмена',
+        confirmColor: 'warn'
+      }
+    });
+
+    ref.afterClosed().subscribe((res) => {
+      if (!res?.confirmed) return;
+      this.api.remove(id).subscribe({ next: () => this.dialogRef.close({ deletedId: id }), error: () => {} });
     });
   }
 

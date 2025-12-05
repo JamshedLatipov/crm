@@ -31,6 +31,7 @@ export class ContactsService {
     const whereClause = isActive === undefined ? {} : { isActive };
     return this.contactRepository.find({
       where: whereClause,
+      relations: ['company'],
       order: { createdAt: 'DESC' },
     });
   }

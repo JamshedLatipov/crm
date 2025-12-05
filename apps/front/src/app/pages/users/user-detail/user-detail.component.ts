@@ -12,6 +12,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatOptionModule } from '@angular/material/core';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
+import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { ConfirmActionDialogComponent } from '../../../shared/dialogs/confirm-action-dialog.component';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatBadgeModule } from '@angular/material/badge';
@@ -63,6 +65,9 @@ type TabType = 'overview' | 'performance' | 'activity';
     MatTabsModule,
   MatListModule,
     MatDividerModule
+    ,
+    MatDialogModule,
+    ConfirmActionDialogComponent
   ],
   templateUrl: './user-detail.component.html',
   styleUrls: ['./user-detail.component.scss'],
@@ -78,6 +83,7 @@ export class UserDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
 
   // Component state
   public readonly currentUser = signal<User | null>(null);
@@ -238,17 +244,30 @@ export class UserDetailComponent implements OnInit {
     const user = this.currentUser();
     if (!user) return;
 
-    if (confirm(`Вы уверены, что хотите удалить пользователя ${user.firstName} ${user.lastName}?`)) {
-      this.userService.deleteUser(user.id).subscribe({
-        next: () => {
-          this.showSuccess('Пользователь удален');
-          this.goBack();
-        },
-        error: () => {
-          this.showError('Ошибка при удалении пользователя');
-        }
-      });
-    }
+    const ref = this.dialog.open(ConfirmActionDialogComponent, {
+      width: '480px',
+      data: {
+        title: 'Удалить пользователя',
+        message: `Вы уверены, что хотите удалить пользователя ${user.firstName} ${user.lastName}?`,
+        confirmText: 'Удалить',
+        cancelText: 'Отмена',
+        confirmColor: 'warn',
+      }
+    });
+
+    ref.afterClosed().subscribe((res) => {
+      if (res?.confirmed) {
+        this.userService.deleteUser(user.id).subscribe({
+          next: () => {
+            this.showSuccess('Пользователь удален');
+            this.goBack();
+          },
+          error: () => {
+            this.showError('Ошибка при удалении пользователя');
+          }
+        });
+      }
+    });
   }
 
   goBack(): void {

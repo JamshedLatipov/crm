@@ -1,0 +1,24 @@
+[
+  {
+    "key": "walletStatus",
+    "name": "Wallet Status API",
+    "description": "Get wallet status by phone number",
+    "method": "GET",
+    "urlTemplate": "http://10.1.3.85:7556/api/Wallet/GetWalletStatus?username={{phone}}",
+    "headers": {},
+    "mapping": {
+      "data.username": "username",
+      "data.identification": "identification",
+      "data.status": "status"
+    },
+    "ui": {
+      "type": "details",
+      "title": "Статус кошелька",
+      "fields": [
+        { "key": "username", "label": "Телефон" },
+        { "key": "identification", "label": "Идентификация" },
+        { "key": "status", "label": "Статус" }
+      ]
+    }
+  }
+]

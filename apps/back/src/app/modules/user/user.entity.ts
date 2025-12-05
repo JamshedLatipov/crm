@@ -48,6 +48,9 @@ export class User {
   @Column({ nullable: true })
   avatar: string;
 
+  @Column({ type: 'timestamp', nullable: true })
+  deletedAt: Date | null;
+
   @Column({ type: 'json', nullable: true })
   skills: string[]; // Навыки/специализации
 
