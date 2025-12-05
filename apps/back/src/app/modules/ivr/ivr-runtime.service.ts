@@ -59,7 +59,7 @@ export class IvrRuntimeService implements OnModuleInit {
 
   private async getRootNode(): Promise<IvrNode | null> {
     if (this.rootNodeCache) return this.rootNodeCache;
-    const root = await this.repo.findOne({ where: { name: 'root', parentId: null } });
+    const root = await this.repo.findOne({ where: { parentId: null } });
     this.rootNodeCache = root;
     return root;
   }

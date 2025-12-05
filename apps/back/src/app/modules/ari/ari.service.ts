@@ -29,7 +29,7 @@ export class AriService {
     protocol: process.env.ARI_PROTOCOL === 'https' ? 'https' : 'http',
     username: process.env.ARI_USER || 'ariuser',
     password: process.env.ARI_PASSWORD || 'aripass',
-    app: process.env.ARI_APP || 'crm-app',
+    app: process.env.ARI_APP || 'test',
     autoReconnect: true,
     reconnectDelayMs: 3000,
   };

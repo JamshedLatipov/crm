@@ -93,7 +93,7 @@ services:
       - ./asterisk-config/stun.conf:/etc/asterisk/stun.conf:ro
       - ./asterisk-config/musiconhold.conf:/etc/asterisk/musiconhold.conf:ro
       - ./asterisk-config/ari.conf:/etc/asterisk/ari.conf
-      # - ./data/asterisk/sounds:/var/lib/asterisk/sounds:rw
+      - ./data/asterisk/sounds:/var/lib/asterisk/sounds:rw
       # - ./asterisk-config/logger.conf:/etc/asterisk/logger.conf:ro
     mem_limit: "512m"
     mem_reservation: "256m"
@@ -119,7 +119,8 @@ services:
       ARI_PORT: 8089
       ARI_USER: ariuser
       ARI_PASSWORD: aripass
-      ARI_APP: crm-app
+      ARI_APP: test
+      DISABLE_ARI: false
     ports:
       - "3000:3000"
     command: ["node", "dist/main.js"]
