@@ -1,8 +1,8 @@
 {
   "run": {
-    "command": "nx serve landing-page",
-    "startTime": "2025-12-03T17:09:17.221Z",
-    "endTime": "2025-12-04T08:25:39.450Z",
+    "command": "nx serve front --host 0.0.0.0",
+    "startTime": "2025-12-04T08:25:43.916Z",
+    "endTime": "2025-12-05T15:50:46.279Z",
     "inner": false
   },
   "tasks": []

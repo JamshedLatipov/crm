@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, IsNull } from 'typeorm';
 import { User } from './user.entity';
 import { AutoAssignCriteriaDto, ManagerStatsResponseDto, CreateUserDto, UpdateUserDto } from './dto/user.dto';
 import * as bcrypt from 'bcryptjs';
@@ -64,7 +64,7 @@ export class UserService {
   async findByIds(ids: number[]): Promise<User[]> {
     if (ids.length === 0) return [];
     return await this.userRepository.find({ 
-      where: { id: In(ids), deletedAt: null } 
+      where: { id: In(ids), deletedAt: IsNull() } 
     });
   }
 
@@ -283,8 +283,8 @@ export class UserService {
 
   async getAllUsers(): Promise<User[]> {
     return await this.userRepository.find({
-      where: { deletedAt: null },
-      order: { createdAt: 'DESC' }
+      where: { deletedAt: IsNull() },
+      order: { createdAt: 'DESC' },
     });
   }
 
