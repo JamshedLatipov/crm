@@ -43,7 +43,8 @@ export class UserService {
     const query = this.userRepository
       .createQueryBuilder('user')
       .where(`(${roleConditions})`, roleParams)
-      .andWhere('user.isActive = :isActive', { isActive: true });
+      .andWhere('user.isActive = :isActive', { isActive: true })
+      .andWhere('user.deletedAt IS NULL');
 
     if (availableOnly) {
       query.andWhere('user.isAvailableForAssignment = :isAvailable', { isAvailable: true })
@@ -57,13 +58,13 @@ export class UserService {
   }
 
   async findById(id: number): Promise<User | null> {
-    return await this.userRepository.findOne({ where: { id } });
+    return await this.userRepository.findOne({ where: { id, deletedAt: null } });
   }
 
   async findByIds(ids: number[]): Promise<User[]> {
     if (ids.length === 0) return [];
     return await this.userRepository.find({ 
-      where: { id: In(ids) } 
+      where: { id: In(ids), deletedAt: null } 
     });
   }
 
@@ -271,14 +272,18 @@ export class UserService {
   }
 
   async deleteUser(id: number): Promise<void> {
-    const result = await this.userRepository.delete(id);
-    if (result.affected === 0) {
+    const user = await this.findById(id);
+    if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
+    
+    user.deletedAt = new Date();
+    await this.userRepository.save(user);
   }
 
   async getAllUsers(): Promise<User[]> {
     return await this.userRepository.find({
+      where: { deletedAt: null },
       order: { createdAt: 'DESC' }
     });
   }
@@ -397,10 +402,20 @@ export class UserService {
   }
 
   async bulkDeleteUsers(userIds: number[]): Promise<void> {
-    const result = await this.userRepository.delete({ id: In(userIds) });
-    if (result.affected !== userIds.length) {
+    const users = await this.userRepository.find({
+      where: { id: In(userIds) }
+    });
+    
+    if (users.length !== userIds.length) {
       throw new NotFoundException('Some users not found');
     }
+    
+    const now = new Date();
+    users.forEach(user => {
+      user.deletedAt = now;
+    });
+    
+    await this.userRepository.save(users);
   }
 
   async changePassword(userId: number, newPassword: string): Promise<void> {
