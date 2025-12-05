@@ -1,0 +1,52 @@
+k6 load testing instructions
+
+Prerequisites:
+- Install k6: https://k6.io/docs/getting-started/installation
+  macOS (homebrew): brew install k6
+
+Files created:
+- load-tests/k6/wallet-status.js      -> test for GET /api/Wallet/GetWalletStatus (multiple scenarios)
+- load-tests/k6/call-info.js          -> test for GET /api/integrations/call-info/{phone}
+- load-tests/k6/full-system-test.js   -> comprehensive test for entire CRM system
+- load-tests/k6/instructions.txt      -> this file
+
+Quick start - Smoke test (validate everything works):
+BASE_URL=http://localhost:3000 k6 run --tag test_type=smoke load-tests/k6/full-system-test.js
+
+Full load test (smoke + load scenarios):
+BASE_URL=http://localhost:3000 k6 run load-tests/k6/full-system-test.js
+
+Stress test (find breaking point):
+BASE_URL=http://localhost:3000 k6 run --tag test_type=stress load-tests/k6/full-system-test.js
+
+Run with JSON output for analysis:
+BASE_URL=http://localhost:3000 k6 run --out json=results.json load-tests/k6/full-system-test.js
+
+Monitor during test:
+- Backend: CPU, memory, DB connections
+- Database: Query performance, connection pool
+- Redis: Memory usage, hit rates
+- RabbitMQ: Queue lengths, message rates
+
+Test scenarios:
+- Smoke: 2 VUs for 30s - validate endpoints work
+- Load: Ramp from 10 to 50 VUs over 6 minutes - normal load
+- Stress: Ramp from 50 to 150 VUs over 6 minutes - find limits
+
+Success criteria:
+- p95 latency < 1000ms for load, < 2000ms for stress
+- Error rate < 5%
+- System remains stable (no crashes, memory leaks)
+
+Tips:
+- Run tests on dedicated test environment, not production
+- Seed realistic test data before running
+- Monitor logs for errors during test
+- Use k6 cloud for distributed testing at scale
+- Analyze results with k6's built-in metrics and custom dashboards
+
+Next steps:
+- Run smoke test first to validate setup
+- Gradually increase load while monitoring system
+- Identify and fix bottlenecks (DB queries, connection limits, etc.)
+- Consider adding authentication if endpoints require it
