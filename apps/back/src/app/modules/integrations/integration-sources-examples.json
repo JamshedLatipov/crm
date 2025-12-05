@@ -25,19 +25,19 @@
       },
       "ui": {
         "type": "details",
-        "title": "Customer Profile",
+        "title": "Профиль клиента",
         "fields": [
-          { "key": "customerNo", "label": "Customer Number" },
-          { "key": "firstName", "label": "First Name" },
-          { "key": "lastName", "label": "Last Name" },
-          { "key": "middleName", "label": "Middle Name" },
-          { "key": "phone", "label": "Phone" },
-          { "key": "birthDate", "label": "Birth Date" },
-          { "key": "gender", "label": "Gender" },
-          { "key": "maritalStatus", "label": "Marital Status" },
-          { "key": "monthlyIncome", "label": "Monthly Income" },
-          { "key": "netSalary", "label": "Net Salary" },
-          { "key": "workplace", "label": "Workplace" }
+          { "key": "customerNo", "label": "Номер клиента" },
+          { "key": "firstName", "label": "Имя" },
+          { "key": "lastName", "label": "Фамилия" },
+          { "key": "middleName", "label": "Отчество" },
+          { "key": "phone", "label": "Телефон" },
+          { "key": "birthDate", "label": "Дата рождения" },
+          { "key": "gender", "label": "Пол" },
+          { "key": "maritalStatus", "label": "Семейное положение" },
+          { "key": "monthlyIncome", "label": "Месячный доход" },
+          { "key": "netSalary", "label": "Чистая зарплата" },
+          { "key": "workplace", "label": "Место работы" }
         ]
       }
     },
@@ -59,15 +59,15 @@
       },
       "ui": {
         "type": "table",
-        "title": "Customer Loans",
+        "title": "Кредиты клиента",
         "columns": [
-          { "key": "contractNo", "label": "Contract №" },
-          { "key": "amount", "label": "Amount" },
-          { "key": "startDate", "label": "Start Date" },
-          { "key": "endDate", "label": "End Date" },
-          { "key": "interestRate", "label": "Rate (%)" },
-          { "key": "status", "label": "Status" },
-          { "key": "debtAmount", "label": "Debt" }
+          { "key": "contractNo", "label": "Номер договора" },
+          { "key": "amount", "label": "Сумма" },
+          { "key": "startDate", "label": "Дата начала" },
+          { "key": "endDate", "label": "Дата окончания" },
+          { "key": "interestRate", "label": "Процентная ставка (%)" },
+          { "key": "status", "label": "Статус" },
+          { "key": "debtAmount", "label": "Сумма долга" }
         ]
       }
     },
@@ -88,14 +88,14 @@
       },
       "ui": {
         "type": "table",
-        "title": "Customer Deposits",
+        "title": "Депозиты клиента",
         "columns": [
-          { "key": "contractNo", "label": "Contract №" },
-          { "key": "amount", "label": "Amount" },
-          { "key": "productName", "label": "Product" },
-          { "key": "interestRate", "label": "Rate (%)" },
-          { "key": "openDate", "label": "Open Date" },
-          { "key": "endDate", "label": "End Date" }
+          { "key": "contractNo", "label": "Номер договора" },
+          { "key": "amount", "label": "Сумма" },
+          { "key": "productName", "label": "Продукт" },
+          { "key": "interestRate", "label": "Процентная ставка (%)" },
+          { "key": "openDate", "label": "Дата открытия" },
+          { "key": "endDate", "label": "Дата окончания" }
         ]
       }
     },
@@ -116,14 +116,14 @@
       },
       "ui": {
         "type": "table",
-        "title": "Customer Accounts",
+        "title": "Счета клиента",
         "columns": [
-          { "key": "accountNo", "label": "Account №" },
+          { "key": "accountNo", "label": "Номер счета" },
           { "key": "iban", "label": "IBAN" },
-          { "key": "balance", "label": "Balance" },
-          { "key": "currency", "label": "Currency" },
-          { "key": "productName", "label": "Product" },
-          { "key": "isClosed", "label": "Status" }
+          { "key": "balance", "label": "Баланс" },
+          { "key": "currency", "label": "Валюта" },
+          { "key": "productName", "label": "Продукт" },
+          { "key": "isClosed", "label": "Статус" }
         ]
       }
     }

@@ -156,7 +156,21 @@ export const MOCK_DATA = {
         ]
     },
     depositoapi_empty: [],
-    accountoapi_empty: []
+    accountoapi_empty: [],
+    walletstatus: {
+        isSuccess: true,
+        data: {
+            username: "992927140023",
+            identification: "Частично идентифицирован",
+            status: "Активный"
+        },
+        message: "Клиент найден"
+    },
+    walletstatus_empty: {
+        isSuccess: false,
+        data: null,
+        message: "Клиент не найден"
+    }
 };
 
 export function getMockDataByKey(key: string) {

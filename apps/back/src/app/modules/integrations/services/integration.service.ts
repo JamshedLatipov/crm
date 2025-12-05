@@ -112,15 +112,11 @@ export class IntegrationService {
         if (!mapping) return item; // No mapping? Return raw item
 
         const result: any = {};
-        // If mapping is provided, we only extract mapped fields? 
-        // Or do we keep all fields and just alias some?
-        // Let's assume we keep all fields but also apply mapping for standardized keys.
-        // Actually, for lists, we usually want the raw data + maybe some standardized keys.
-        
         Object.assign(result, item); // Copy all raw data
 
-        for (const [targetField, sourcePath] of Object.entries(mapping)) {
-            const value = this.getValue(item, sourcePath);
+        for (const sourceField in mapping) {
+            const targetField = mapping[sourceField];
+            const value = this.getValue(item, sourceField);
             if (value !== undefined) {
                 result[targetField] = value;
             }
