@@ -150,7 +150,12 @@ export class SoftphoneService {
   }
 
   sendDTMF(digit: string) {
-    try { this.currentSession?.sendDTMF?.(digit); } catch (err) { console.warn('sendDTMF failed', err); }
+    try { 
+      this.currentSession?.sendDTMF?.(digit, { duration: 160, interToneGap: 120 });
+      console.log('DTMF sent:', digit);
+    } catch (err) { 
+      console.warn('sendDTMF failed', err); 
+    }
   }
 
   hold() {

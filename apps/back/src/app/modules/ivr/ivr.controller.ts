@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Inject, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Inject, Param, Post, Put, Query } from '@nestjs/common';
 import { IvrService, CreateIvrNodeDto, UpdateIvrNodeDto } from './ivr.service';
 import { IvrRuntimeService } from './ivr-runtime.service';
 import { IvrLogService } from './ivr-log.service';
@@ -49,5 +49,11 @@ export class IvrController {
       queueEntersToday: queueEnters,
       missedCallsToday: missed,
     };
+  }
+
+  @Get('logs')
+  async logs(@Query('since') since?: string) {
+    const sinceDate = since ? new Date(since) : new Date(Date.now() - 24 * 60 * 60 * 1000);
+    return this.logSvc.getLogsSince(sinceDate);
   }
 }

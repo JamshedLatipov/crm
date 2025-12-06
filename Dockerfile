@@ -9,6 +9,8 @@ RUN npm run build:back
 # Stage 2: Production
 FROM node:20-alpine
 WORKDIR /app
+# Install ffmpeg for audio conversion
+RUN apk add --no-cache ffmpeg
 COPY --from=builder /app/dist/apps/back ./dist
 COPY --from=builder /app/package*.json ./
 RUN npm install --legacy-peer-deps

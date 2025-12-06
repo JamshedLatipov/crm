@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { IvrNode, IvrActionType } from './entities/ivr-node.entity';
 import { AriService } from '../ari/ari.service';
 
@@ -54,7 +54,7 @@ export class IvrService {
   }
 
   findRootTree() {
-    return this.repo.find({ where: { parentId: null }, order: { order: 'ASC' } });
+    return this.repo.find({ where: { parentId: IsNull() }, order: { order: 'ASC' } });
   }
 
   async findChildren(parentId: string) {

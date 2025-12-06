@@ -4,7 +4,10 @@ import { Repository } from 'typeorm';
 import { IvrMedia } from './entities/ivr-media.entity';
 import * as fs from 'fs';
 import * as path from 'path';
-import { spawn } from 'child_process';
+import { spawn, exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 
 @Injectable()
 export class IvrMediaService {
@@ -28,9 +31,16 @@ export class IvrMediaService {
 
     // determine ffmpeg binary: env override, ffmpeg-static package, node_modules/.bin, or plain 'ffmpeg'
     let ffmpegBin: string | undefined = process.env.FFMPEG_PATH;
+    if (ffmpegBin) {
+      this.logger.debug('Using FFMPEG_PATH from env: '+ffmpegBin);
+    }
+    
     try {
       const ff = require('ffmpeg-static');
-      if (ff) ffmpegBin = ff;
+      if (ff) { 
+        ffmpegBin = ff; 
+        this.logger.debug('Found ffmpeg-static: '+ffmpegBin);
+      }
     } catch (e) {
       this.logger.debug('ffmpeg-static not resolved: '+((e as Error).message || ''));
     }
@@ -42,8 +52,14 @@ export class IvrMediaService {
       for (const c of candidates) {
         const p = path.join(candDir, c);
         try {
-          if (fs.existsSync(p)) { ffmpegBin = p; this.logger.debug('Found ffmpeg in .bin: '+p); break; }
-        } catch (e) { this.logger.debug('check .bin candidate failed: '+((e as Error).message||'')); }
+          if (fs.existsSync(p)) { 
+            ffmpegBin = p; 
+            this.logger.debug('Found ffmpeg in .bin: '+p); 
+            break; 
+          }
+        } catch (e) { 
+          this.logger.debug('check .bin candidate failed: '+((e as Error).message||'')); 
+        }
       }
     }
 
@@ -55,12 +71,32 @@ export class IvrMediaService {
       ];
       for (const p of winCandidates) {
         try {
-          if (fs.existsSync(p)) { ffmpegBin = p; this.logger.debug('Found ffmpeg in Windows path: '+p); break; }
-        } catch (e) { this.logger.debug('check windows candidate failed: '+((e as Error).message||'')); }
+          if (fs.existsSync(p)) { 
+            ffmpegBin = p; 
+            this.logger.debug('Found ffmpeg in Windows path: '+p); 
+            break; 
+          }
+        } catch (e) { 
+          this.logger.debug('check windows candidate failed: '+((e as Error).message||'')); 
+        }
       }
     }
 
-    if (!ffmpegBin) ffmpegBin = 'ffmpeg';
+    if (!ffmpegBin) {
+      ffmpegBin = 'ffmpeg';
+      this.logger.debug('Using system ffmpeg: '+ffmpegBin);
+    }
+
+    this.logger.debug('Final ffmpeg binary: '+ffmpegBin);
+
+    // verify ffmpeg is available
+    try {
+      const { stdout } = await execAsync(`${ffmpegBin} -version`);
+      this.logger.debug('ffmpeg version check passed');
+    } catch (e) {
+      this.logger.error('ffmpeg not available: '+((e as Error).message || ''));
+      throw new Error('ffmpeg is not available for audio conversion');
+    }
 
     const run = (args: string[]) => new Promise<void>((resolve) => {
       try {
@@ -77,10 +113,25 @@ export class IvrMediaService {
     // Only run conversion if input exists
     try {
       if (fs.existsSync(input)) {
-        // create gsm (narrowband 8k mono)
-        await run(['-y','-i', input, '-ar','8000','-ac','1','-ab','12k', outGsm]);
-        // create 8k mono wav (PCM 16-bit) — Asterisk can use .wav
+        // create 8k mono wav (PCM 16-bit) — Asterisk can use .wav directly
         await run(['-y','-i', input, '-ar','8000','-ac','1','-acodec','pcm_s16le', outWav]);
+        
+        // Verify WAV conversion was successful
+        if (fs.existsSync(outWav)) {
+          this.logger.log(`WAV conversion successful: ${outWav}`);
+        } else {
+          this.logger.warn(`WAV conversion failed: ${outWav} not created`);
+        }
+
+        // Try GSM conversion, but don't fail if not available
+        try {
+          await run(['-y','-i', input, '-ar','8000','-ac','1','-c:a','libgsm', outGsm]);
+          if (fs.existsSync(outGsm)) {
+            this.logger.log(`GSM conversion successful: ${outGsm}`);
+          }
+        } catch (gsmError) {
+          this.logger.warn('GSM conversion not available, skipping: '+(gsmError as Error).message);
+        }
       } else {
         this.logger.warn('Uploaded file missing for conversion: '+input);
       }

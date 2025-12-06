@@ -614,6 +614,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     if (/[0-9*#]/.test(key)) {
       if (this.callActive()) {
         try {
+          console.log('Sending DTMF:', key);
           this.softphone.sendDTMF(key);
           this.dtmfSequence = (this.dtmfSequence + key).slice(-32); // keep last 32 keys
           this.status.set(`DTMF: ${key}`);

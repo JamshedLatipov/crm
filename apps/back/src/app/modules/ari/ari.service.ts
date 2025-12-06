@@ -131,15 +131,12 @@ export class AriService {
   }
 
   private logEvent(type: string, payload: unknown) {
-    const simplified: Record<string, unknown> = {
-      ...(payload as Record<string, unknown>),
-    };
-    if (simplified.channel && typeof simplified.channel === 'object') {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const ch: any = simplified.channel;
-      simplified.channel = { id: ch.id, state: ch.state, name: ch.name };
+    // Log all events for debugging
+    if (type === 'ChannelDtmfReceived') {
+      this.logger.warn(`[ARI] ${type} ${JSON.stringify(payload)}`);
+    } else {
+      this.logger.debug(`[ARI] ${type} ${JSON.stringify(payload)}`);
     }
-    this.logger.debug(`[ARI] ${type} ${JSON.stringify(simplified)}`);
   }
 
   async disconnect() {

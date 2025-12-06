@@ -48,6 +48,7 @@ callerid=Operator ${OPERATOR_NAME} <${EXTENSION}>
 auth=${OPERATOR_NAME}_auth
 aors=${OPERATOR_NAME}_aor
 direct_media=no
+dtmfmode=rfc4733
 rewrite_contact=yes
 
 [${OPERATOR_NAME}]

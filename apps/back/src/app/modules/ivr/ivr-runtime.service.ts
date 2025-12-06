@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { AriService } from '../ari/ari.service';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { IvrNode } from './entities/ivr-node.entity';
 import axios from 'axios';
 import { IvrLogService } from './ivr-log.service';
@@ -59,7 +59,7 @@ export class IvrRuntimeService implements OnModuleInit {
 
   private async getRootNode(): Promise<IvrNode | null> {
     if (this.rootNodeCache) return this.rootNodeCache;
-    const root = await this.repo.findOne({ where: { parentId: null } });
+    const root = await this.repo.findOne({ where: { parentId: IsNull() } });
     this.rootNodeCache = root;
     return root;
   }
@@ -141,11 +141,15 @@ export class IvrRuntimeService implements OnModuleInit {
             const m = await this.mediaRepo.findOne({ where: { id: node.payload } });
             if (m) mediaRef = m.filename.replace(/\.[^.]+$/, '');
           }
+          this.logger.debug(`Menu ${node.name}: starting playback ${mediaRef}, earlyDtmf=${node.allowEarlyDtmf}`);
           await this.safeChannelOp(channelId, () =>
             client.channels.play({ channelId, media: `sound:${mediaRef}` })
           );
           const stLocal = this.calls.get(channelId);
-          if (stLocal) stLocal.waitingForDigit = node.allowEarlyDtmf;
+          if (stLocal) {
+            stLocal.waitingForDigit = node.allowEarlyDtmf;
+            this.logger.debug(`Menu ${node.name}: set waitingForDigit=${stLocal.waitingForDigit}`);
+          }
         } else {
           this.setWaiting(channelId, true, node.timeoutMs);
         }
@@ -353,7 +357,11 @@ export class IvrRuntimeService implements OnModuleInit {
     if (!node) return;
     if (node.action === 'menu') {
       // Start waiting (and timer) only now if not already flagged
-      if (!st.waitingForDigit) this.setWaiting(channelId, true, node.timeoutMs);
+      this.logger.debug(`Menu playback finished for ${node.name}, waitingForDigit=${st.waitingForDigit}`);
+      if (!st.waitingForDigit) {
+        this.setWaiting(channelId, true, node.timeoutMs);
+        this.logger.debug(`Menu ${node.name}: started waiting with timeout ${node.timeoutMs}ms`);
+      }
       // If early DTMF enabled we may have st.waitingForDigit=true already but timer was still deferred; ensure timer starts now
       if (st.waitingForDigit && st.pendingTimeoutMs) {
         st.digitTimer = this.startDigitTimeout(
@@ -362,27 +370,47 @@ export class IvrRuntimeService implements OnModuleInit {
           st.pendingTimeoutMs
         );
         st.pendingTimeoutMs = undefined;
+        this.logger.debug(`Menu ${node.name}: started deferred timer`);
       }
     } else if (node.action === 'playback') {
-      // After playback: return to parent menu if exists; else keep call (no hangup)
+      // After playback: check if this node has children (auto-advance to first child)
       await this.safeLog({
         channelId,
         nodeId: node.id,
         nodeName: node.name,
         event: 'PLAYBACK_FINISHED',
       });
-      const current = await this.repo.findOne({ where: { id: node.id } });
-      if (current?.parentId) {
-        const parent = await this.repo.findOne({
-          where: { id: current.parentId },
-        });
-        if (parent && parent.action === 'menu') {
-          const st2 = this.calls.get(channelId);
-          if (st2) {
-            st2.currentNodeId = parent.id;
-            st2.waitingForDigit = false;
+      const children = await this.repo.find({
+        where: { parentId: node.id },
+        order: { order: 'ASC' }
+      });
+      this.logger.debug(`Playback finished for node ${node.name}, found ${children.length} children`);
+      if (children.length > 0) {
+        // Auto-advance to first child
+        const nextNode = children[0];
+        this.logger.debug(`Auto-advancing from ${node.name} to ${nextNode.name}`);
+        const st2 = this.calls.get(channelId);
+        if (st2) {
+          st2.currentNodeId = nextNode.id;
+          st2.history.push(node.id);
+        }
+        await this.executeNode(nextNode, channelId);
+      } else {
+        this.logger.debug(`No children found for ${node.name}, checking parent`);
+        // Return to parent menu if exists; else keep call (no hangup)
+        const current = await this.repo.findOne({ where: { id: node.id } });
+        if (current?.parentId) {
+          const parent = await this.repo.findOne({
+            where: { id: current.parentId },
+          });
+          if (parent && parent.action === 'menu') {
+            const st2 = this.calls.get(channelId);
+            if (st2) {
+              st2.currentNodeId = parent.id;
+              st2.waitingForDigit = false;
+            }
+            await this.executeNode(parent, channelId);
           }
-          await this.executeNode(parent, channelId);
         }
       }
     }
@@ -392,21 +420,28 @@ export class IvrRuntimeService implements OnModuleInit {
     const d = evt as AriDtmfEvent;
     const channelId = d.channel?.id;
     const digit = d.digit;
-    if (!channelId || !digit) return;
+    this.logger.debug(`DTMF received: channel=${channelId}, digit=${digit}`);
+    if (!channelId || !digit) {
+      this.logger.debug('DTMF ignored: missing channelId or digit');
+      return;
+    }
     const st = this.calls.get(channelId);
     if (!st) return;
     const node = await this.repo.findOne({ where: { id: st.currentNodeId } });
-    if (!node) return;
+    if (!node) {
+      this.logger.debug('DTMF ignored: node not found');
+      return;
+    }
     // Accept digits if waiting OR menu prompt still playing (early DTMF)
+    const acceptEarly = node.action === 'menu' && node.allowEarlyDtmf && st.activePlaybacks.size > 0;
+    this.logger.debug(`DTMF check: waitingForDigit=${st.waitingForDigit}, acceptEarly=${acceptEarly}, nodeAction=${node.action}, allowEarlyDtmf=${node.allowEarlyDtmf}, activePlaybacks=${st.activePlaybacks.size}`);
     if (
       !st.waitingForDigit &&
-      !(
-        node.action === 'menu' &&
-        node.allowEarlyDtmf &&
-        st.activePlaybacks.size > 0
-      )
-    )
+      !acceptEarly
+    ) {
+      this.logger.debug('DTMF ignored: not waiting and not early DTMF');
       return;
+    }
     // Stop any active playbacks (early interruption)
     if (st.activePlaybacks.size > 0) {
       const client = this.ari.getClient();
