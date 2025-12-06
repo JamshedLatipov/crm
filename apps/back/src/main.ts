@@ -34,7 +34,7 @@ async function bootstrap() {
   // Enable ClassSerializerInterceptor globally to respect class-transformer decorators
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
   Logger.log(
     `🚀 Application is running on: http://localhost:${port}/${globalPrefix}`
   );

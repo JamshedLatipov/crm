@@ -14,7 +14,12 @@ export class AriModule implements OnModuleInit, OnModuleDestroy {
       // ARI integration disabled by env flag
       return;
     }
-    await this.ari.connect();
+    try {
+      await this.ari.connect();
+    } catch (error) {
+      console.error(`Failed to connect to ARI: ${(error as Error).message}`);
+      // Do not throw; allow app to start without ARI
+    }
   }
   async onModuleDestroy() {
     if (process.env.DISABLE_ARI === 'true') return;

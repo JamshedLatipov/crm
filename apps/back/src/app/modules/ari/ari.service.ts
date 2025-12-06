@@ -125,7 +125,7 @@ export class AriService {
       this.logger.log('Subscribed ARI application to all event sources');
     } catch (err) {
       this.logger.warn(
-        `Failed to subscribe to all event sources: ${(err as Error).message}`
+        `Failed to subscribe to all event sources: ${(err as Error).message} ${this.config.app}`
       );
     }
   }

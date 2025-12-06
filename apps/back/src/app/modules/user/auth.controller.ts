@@ -4,7 +4,7 @@ import { LoginDto, RegisterDto } from './auth.dto';
 import { ApiTags, ApiBody, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Request } from 'express';
 import { JwtAuthGuard } from './jwt-auth.guard';
-import { CurrentUser } from './current-user.decorator';
+import { CurrentUser, CurrentUserPayload } from './current-user.decorator';
 import { User } from './user.entity';
 
 @ApiTags('auth')
@@ -33,7 +33,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Выход из системы' })
-  async logout(@CurrentUser() user: User, @Req() request: Request) {
+  async logout(@CurrentUser() user: CurrentUserPayload, @Req() request: Request) {
     return this.authService.logout(user, request);
   }
 }

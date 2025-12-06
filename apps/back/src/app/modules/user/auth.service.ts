@@ -8,6 +8,7 @@ import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
 import { UserActivityService } from '../user-activity/user-activity.service';
 import { Request } from 'express';
+import { CurrentUserPayload } from './current-user.decorator';
 
 @Injectable()
 export class AuthService {
@@ -65,10 +66,10 @@ export class AuthService {
     return this.userRepo.save(user);
   }
 
-  async logout(user: User, request?: Request) {
+  async logout(user: CurrentUserPayload, request?: Request) {
     // Log logout activity
     if (request) {
-      await this.userActivityService.logLogout(user.id.toString());
+      await this.userActivityService.logLogout(user.sub);
     }
 
     return { message: 'Successfully logged out' };
