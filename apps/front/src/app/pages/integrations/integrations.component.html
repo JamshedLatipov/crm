@@ -7,51 +7,42 @@
   </div>
 
   <div class="table-container">
-    <table mat-table [dataSource]="configs()" class="w-full">
-      
-      <ng-container matColumnDef="name">
-        <th mat-header-cell *matHeaderCellDef> Название </th>
-        <td mat-cell *matCellDef="let element"> {{element.name}} </td>
-      </ng-container>
+    @if (configs().length > 0) {
+    <crm-table
+      [columns]="columns"
+      [data]="configs()"
+      [pageSize]="10"
+      [templates]="tableTemplates"
+    ></crm-table>
+    }
 
-      <ng-container matColumnDef="isActive">
-        <th mat-header-cell *matHeaderCellDef> Активно </th>
-        <td mat-cell *matCellDef="let element">
-          <mat-slide-toggle 
-            [checked]="element.isActive"
-            (change)="toggleActive(element)"
-            color="primary">
-          </mat-slide-toggle>
-        </td>
-      </ng-container>
+    <ng-template #isActiveTemplate let-row>
+      <mat-slide-toggle
+        [checked]="row.isActive"
+        (change)="toggleActive(row)"
+        color="primary"
+      >
+      </mat-slide-toggle>
+    </ng-template>
 
-      <ng-container matColumnDef="sources">
-        <th mat-header-cell *matHeaderCellDef> Источники </th>
-        <td mat-cell *matCellDef="let element">
-          <div class="flex gap-2">
-            <span *ngFor="let source of element.sources" 
-                  class="px-2 py-1 bg-gray-100 rounded text-xs">
-              {{source.key}}
-            </span>
-          </div>
-        </td>
-      </ng-container>
+    <ng-template #sourcesTemplate let-row>
+      <div class="flex gap-2">
+        @for (source of row.sources; track source) {
+        <span class="px-2 py-1 bg-gray-100 rounded text-xs">{{
+          source.key
+        }}</span>
+        }
+      </div>
+    </ng-template>
 
-      <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef> Действия </th>
-        <td mat-cell *matCellDef="let element">
-          <button mat-icon-button color="primary" (click)="editConfig(element)">
-            <mat-icon>edit</mat-icon>
-          </button>
-        </td>
-      </ng-container>
+    <ng-template #actionsTemplate let-row>
+      <button mat-icon-button color="primary" (click)="editConfig(row)">
+        <mat-icon>edit</mat-icon>
+      </button>
+    </ng-template>
 
-      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-    </table>
-
-    <div *ngIf="configs().length === 0" class="p-8 text-center text-gray-500">
-      Нет настроенных интеграций
-    </div>
+    @if (configs().length === 0) {
+    <div class="p-8 text-center text-gray-500">Нет настроенных интеграций</div>
+    }
   </div>
 </app-page-layout>

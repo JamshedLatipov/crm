@@ -24,13 +24,35 @@
     <div class="page-header">
       <div class="header-background">
         <div class="header-content">
-          <div class="breadcrumb">
-            <button mat-button (click)="goBack()" class="breadcrumb-link">
-              <mat-icon>arrow_back</mat-icon>
-              Лиды
-            </button>
-            <mat-icon class="separator">chevron_right</mat-icon>
-            <span class="current">{{ lead.name }}</span>
+          <div style="display: flex; justify-content: space-between;">
+            <div class="breadcrumb">
+              <button mat-button (click)="goBack()" class="breadcrumb-link">
+                <mat-icon>arrow_back</mat-icon>
+                Лиды
+              </button>
+              <mat-icon class="separator">chevron_right</mat-icon>
+              <span class="current">{{ lead.name }}</span>
+            </div>
+            <!-- Place header actions on the same row as breadcrumb -->
+            <div class="header-actions" *ngIf="!isConverted">
+              <app-lead-actions
+                [lead]="lead"
+                [managers]="managers"
+                [assignments]="currentAssignments"
+                layout="horizontal"
+                size="medium"
+                context="header"
+                (editLead)="editLead()"
+                (convertToDeal)="convertToDeal()"
+                (contactLead)="contactLead()"
+                (assignLead)="assignLead()"
+                (changeStatus)="quickChangeStatus()"
+                (createPromo)="createPromo()"
+                (assignPromo)="assignPromoCompany()"
+                (deleteLead)="deleteLead()"
+              >
+              </app-lead-actions>
+            </div>
           </div>
 
           <div class="lead-header-info">
@@ -47,42 +69,18 @@
                   <mat-icon>source</mat-icon>
                   <span>{{ getSourceLabel(lead.source) }}</span>
                 </div>
+                <!-- Current lead status -->
+                <div class="lead-status" *ngIf="lead.status">
+                  <app-lead-status
+                    [status]="lead.status"
+                    size="medium"
+                    [showIcon]="true"
+                  ></app-lead-status>
+                </div>
               </div>
             </div>
 
-            <div class="header-actions">
-              <app-lead-actions
-                [lead]="lead"
-                layout="horizontal"
-                size="medium"
-                context="header"
-                (editLead)="editLead()"
-                (convertToDeal)="convertToDeal()"
-                (contactLead)="contactLead()"
-                (assignLead)="assignLead()"
-                (changeStatus)="quickChangeStatus()"
-                (createPromo)="createPromo()"
-                (assignPromo)="assignPromoCompany()"
-                (deleteLead)="deleteLead()"
-                *ngIf="!isConverted"
-              >
-              </app-lead-actions>
-            </div>
-          </div>
-        </div>
-
-        <div class="header-actions">
-          <app-lead-status
-            [status]="lead.status"
-            size="medium"
-            [showIcon]="true"
-          >
-          </app-lead-status>
-          
-          <!-- Уведомление о конвертированном лиде -->
-          <div class="converted-notice" *ngIf="isConverted">
-            <mat-icon class="converted-icon">check_circle</mat-icon>
-            <span class="converted-text">Лид конвертирован в сделку</span>
+            <!-- actions moved to header row to align with breadcrumb -->
           </div>
         </div>
       </div>
@@ -191,7 +189,7 @@
                   <div class="contact-icon email">
                     <mat-icon>email</mat-icon>
                   </div>
-                    <div class="contact-details">
+                  <div class="contact-details">
                     <span class="contact-label">Электронная почта</span>
                     <a
                       [href]="'mailto:' + lead.email"
@@ -199,7 +197,7 @@
                     >
                       {{ lead.email }}
                     </a>
-                    </div>
+                  </div>
                 </div>
 
                 <div class="contact-item" *ngIf="lead.phone">
@@ -237,12 +235,12 @@
                   </div>
                 </div>
               </div>
-              
+
               <!-- Кнопка перехода к контакту -->
               <div class="contact-actions" *ngIf="lead.email || lead.phone">
-                <button 
-                  mat-raised-button 
-                  color="primary" 
+                <button
+                  mat-raised-button
+                  color="primary"
                   (click)="goToContact()"
                   class="contact-button"
                 >
@@ -295,18 +293,6 @@
                   </div>
                 </div>
 
-                <div class="timeline-item" *ngIf="currentAssignments.length > 0">
-                  <div class="timeline-icon user">
-                    <mat-icon>person_pin</mat-icon>
-                  </div>
-                  <div class="timeline-content">
-                    <span class="label">Ответственный</span>
-                    <div class="value">
-                      {{ getAssigneeName }}
-                    </div>
-                  </div>
-                </div>
-
                 <div class="timeline-item" *ngIf="lead.promoCompanyId">
                   <div class="timeline-icon promo">
                     <mat-icon>campaign</mat-icon>
@@ -316,9 +302,16 @@
                     <div class="value promo-company-value">
                       <div class="promo-company-badge">
                         <mat-icon class="promo-icon">campaign</mat-icon>
-                        <span>{{ getPromoCompanyName(lead.promoCompanyId) }}</span>
-                        <button mat-icon-button class="remove-promo-btn" (click)="removePromoCompany()" 
-                                matTooltip="Отвязать от промо-компании" *ngIf="!isConverted">
+                        <span>{{
+                          getPromoCompanyName(lead.promoCompanyId)
+                        }}</span>
+                        <button
+                          mat-icon-button
+                          class="remove-promo-btn"
+                          (click)="removePromoCompany()"
+                          matTooltip="Отвязать от промо-компании"
+                          *ngIf="!isConverted"
+                        >
                           <mat-icon>close</mat-icon>
                         </button>
                       </div>
@@ -326,14 +319,22 @@
                   </div>
                 </div>
 
-                <div class="timeline-item" *ngIf="!lead.promoCompanyId && !isConverted">
+                <div
+                  class="timeline-item"
+                  *ngIf="!lead.promoCompanyId && !isConverted"
+                >
                   <div class="timeline-icon promo">
                     <mat-icon>campaign</mat-icon>
                   </div>
                   <div class="timeline-content">
                     <span class="label">Промо-компания</span>
                     <div class="value">
-                      <button mat-stroked-button color="primary" (click)="assignPromoCompany()" class="assign-promo-btn">
+                      <button
+                        mat-stroked-button
+                        color="primary"
+                        (click)="assignPromoCompany()"
+                        class="assign-promo-btn"
+                      >
                         <mat-icon>add</mat-icon>
                         Присвоить промо-компанию
                       </button>
@@ -445,7 +446,10 @@
         <!-- Уведомление для конвертированного лида -->
         <div class="readonly-notice" *ngIf="isConverted">
           <mat-icon>info</mat-icon>
-          <span>Этот лид конвертирован в сделку. Доступен только просмотр и добавление комментариев.</span>
+          <span
+            >Этот лид конвертирован в сделку. Доступен только просмотр и
+            добавление комментариев.</span
+          >
         </div>
 
         <mat-tab-group mat-stretch-tabs="true" class="history-tabs">

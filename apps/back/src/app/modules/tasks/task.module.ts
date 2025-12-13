@@ -12,12 +12,20 @@ import { UserModule } from '../user/user.module';
 import { TaskType } from './entities/task-type.entity';
 import { TaskTypeService } from './services/task-type.service';
 import { TaskTypeController } from './controllers/task-type.controller';
+import { SharedModule } from '../shared/shared.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Task, TaskHistory, TaskComment, TaskReminder, TaskType]),
+    TypeOrmModule.forFeature([
+      Task,
+      TaskHistory,
+      TaskComment,
+      TaskReminder,
+      TaskType,
+    ]),
     NotificationModule,
     UserModule,
+    SharedModule
   ],
   providers: [TaskService, ReminderProcessor, TaskTypeService],
   controllers: [TaskController, TaskTypeController],

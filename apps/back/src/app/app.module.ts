@@ -24,7 +24,12 @@ import { INTEGRATIONS_MIGRATIONS } from './modules/integrations/migrations';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    TypeOrmModule.forRoot({
+  // NOTE: project policy changed — migration lists now include only seeder
+  // migrations (data/seed insertions). Structural/schema migrations were
+  // removed from module migration exports so that schema changes are
+  // performed via `synchronize` during development or applied manually in
+  // controlled deployments. Keep `migrations` here for seed runners only.
+  TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST || 'localhost',
       port: parseInt(process.env.DB_PORT || '5432', 10),

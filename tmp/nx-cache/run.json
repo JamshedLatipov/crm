@@ -10,9 +10,9 @@
       "taskId": "back:build",
       "target": "build",
       "projectName": "back",
-      "hash": "12749383927536881699",
-      "startTime": "2025-12-11T22:21:38.144Z",
-      "endTime": "2025-12-11T22:21:45.218Z",
+      "hash": "4217130301523868424",
+      "startTime": "2025-11-19T12:31:20.874Z",
+      "endTime": "2025-11-20T15:42:14.736Z",
       "params": "",
       "cacheStatus": "cache-miss",
       "status": 0

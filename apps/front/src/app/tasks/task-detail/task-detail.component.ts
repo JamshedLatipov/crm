@@ -15,10 +15,12 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { ConfirmActionDialogComponent } from '../../shared/dialogs/confirm-action-dialog.component';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TasksService, TaskDto, TaskHistory } from '../tasks.service';
 import { AuthService } from '../../auth/auth.service';
 import { UsersService, User } from '../../users/users.service';
+import { AssignmentService } from '../../services/assignment.service';
 import { HumanDatePipe } from '../../shared/pipes/human-date.pipe';
 import { TaskDueDateComponent } from '../components/task-due-date/task-due-date.component';
 import { AssignUserDialogComponent } from '../../deals/components/assign-user-dialog.component';
@@ -58,7 +60,8 @@ export interface Status {
     MatTooltipModule,
     MatTabsModule,
     MatMenuModule,
-    MatDialogModule,
+  MatDialogModule,
+  ConfirmActionDialogComponent,
     HumanDatePipe,
     TaskDueDateComponent,
     CommentsComponent,
@@ -76,6 +79,7 @@ export class TaskDetailComponent implements OnInit {
   private auth = inject(AuthService);
   private usersService = inject(UsersService);
   private dialog = inject(MatDialog);
+  private assignmentService = inject(AssignmentService);
 
   // Enum для использования в шаблоне
   readonly CommentEntityType = CommentEntityType;
@@ -179,9 +183,20 @@ export class TaskDetailComponent implements OnInit {
 
   deleteTask() {
     if (!this.taskId) return;
+    const ref = this.dialog.open(ConfirmActionDialogComponent, {
+      width: '480px',
+      data: {
+        title: 'Удалить задачу',
+        message: 'Вы уверены, что хотите удалить эту задачу?',
+        confirmText: 'Удалить',
+        cancelText: 'Отмена',
+        confirmColor: 'warn'
+      }
+    });
 
-    if (confirm('Вы уверены, что хотите удалить эту задачу?')) {
-      this.tasksService.delete(this.taskId).subscribe({
+    ref.afterClosed().subscribe((res) => {
+      if (!res?.confirmed) return;
+      this.tasksService.delete(this.taskId!).subscribe({
         next: () => {
           this.snackBar.open('Задача удалена', 'OK', { duration: 3000 });
           this.router.navigate(['/tasks']);
@@ -193,7 +208,7 @@ export class TaskDetailComponent implements OnInit {
           });
         },
       });
-    }
+    });
   }
 
   goBack() {
@@ -226,27 +241,62 @@ export class TaskDetailComponent implements OnInit {
 
   private doAssignTask(managerId: string) {
     if (!this.taskId) return;
+    // Use centralized assignments table for task assignment
+    const currentUserId = Number(this.auth.getUserId() || 0);
 
-    const updateData: Partial<TaskDto> = managerId
-      ? { assignedToId: Number(managerId) }
-      : { assignedToId: undefined };
+    if (managerId) {
+      const req = {
+        entityType: 'task' as const,
+        entityId: this.taskId!,
+        assignedTo: [Number(managerId)],
+        assignedBy: currentUserId,
+        reason: undefined,
+        notifyAssignees: true,
+      };
 
-    this.tasksService.update(this.taskId, updateData).subscribe({
-      next: (updatedTask) => {
-        this.task.set(updatedTask);
-        this.snackBar.open(
-          managerId ? 'Исполнитель назначен' : 'Назначение снято',
-          'OK',
-          { duration: 2000 }
-        );
-      },
-      error: (err) => {
-        console.error('Error assigning task:', err);
-        this.snackBar.open('Ошибка изменения исполнителя', 'OK', {
-          duration: 3000,
-        });
-      },
-    });
+      this.assignmentService.assignResponsible(req).subscribe({
+        next: (res) => {
+          // refresh task and history to reflect assignment
+          this.loadTask();
+          this.loadHistory();
+          this.snackBar.open('Исполнитель назначен', 'OK', { duration: 2000 });
+        },
+        error: (err) => {
+          console.error('Error assigning task via assignments:', err);
+          this.snackBar.open('Ошибка назначения исполнителя', 'OK', { duration: 3000 });
+        }
+      });
+    } else {
+      // Unassign: try to remove active assignments for this task (if any)
+      // First fetch current assignments for this task to get user ids
+      this.assignmentService.getCurrentAssignments('task', this.taskId!).subscribe({
+        next: (users) => {
+          const userIds = users.map(u => u.id.toString());
+          if (userIds.length === 0) {
+            // nothing to unassign, still clear task locally
+            this.tasksService.update(this.taskId!, { assignedToId: undefined }).subscribe({ next: () => this.loadTask() });
+            this.snackBar.open('Назначение снято', 'OK', { duration: 2000 });
+            return;
+          }
+
+          this.assignmentService.unassignResponsible('task', this.taskId!, userIds).subscribe({
+            next: () => {
+              this.loadTask();
+              this.loadHistory();
+              this.snackBar.open('Назначение снято', 'OK', { duration: 2000 });
+            },
+            error: (err) => {
+              console.error('Error unassigning via assignments:', err);
+              this.snackBar.open('Ошибка снятия назначения', 'OK', { duration: 3000 });
+            }
+          });
+        },
+        error: (err) => {
+          console.error('Error loading current assignments for unassign:', err);
+          this.snackBar.open('Не удалось получить текущие назначения', 'OK', { duration: 3000 });
+        }
+      });
+    }
   }
 
   completeTask() {

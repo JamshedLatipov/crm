@@ -1,0 +1,102 @@
+{
+  "customerOapi": {
+    "description": "Customer Information API Response Example",
+    "endpoint": "GET /by-phone/{phone}",
+    "exampleResponse": [
+      {
+        "CUSTOMER_NO": 12345,
+        "MUSTERI_ADI": "Иван",
+        "MUSTERI_SOYADI": "Иванов",
+        "BABA_ADI": "Иванович",
+        "TELEFON": "+992900010203",
+        "DOGUM_TAR": "1990-01-15",
+        "CINSIYET_LP": 1,
+        "MEDENI_LP": 1,
+        "AYLIK_GELIR": 5000.00,
+        "AYLIQ_EMEK_HAQQI": 4500.00,
+        "IS_YERI": "ООО Пример",
+        "addresses": [
+          {
+            "REGION": "Душанбе",
+            "DISTRICT": "Центральный",
+            "STREET": "Рудаки",
+            "HOUSE": "123",
+            "APARTMENT": "45"
+          }
+        ],
+        "customerPhones": [
+          {
+            "CONTACT": "Иван Иванов",
+            "PHONE": "+992900010203",
+            "TYPE": "Мобильный"
+          }
+        ],
+        "identities": [
+          {
+            "BELGE_NO": "A123456789",
+            "VKIMLIK_TIP": "Паспорт",
+            "VADI": "Иван",
+            "VSOYADI": "Иванов",
+            "VBABA_ADI": "Иванович"
+          }
+        ]
+      }
+    ]
+  },
+  "loanOapi": {
+    "description": "Loan Information API Response Example",
+    "endpoint": "GET /by-phone/{phone}",
+    "exampleResponse": [
+      {
+        "contractNo": "LN100200300",
+        "contractAmount": 15000.00,
+        "beginDate": "2023-01-22",
+        "endDate": "2024-01-22",
+        "term": 12,
+        "interestRate": 28.0,
+        "loanStatusForBr": "ACTIVE",
+        "customerNo": 145678,
+        "productName": "Потребительский кредит",
+        "totalDebtAmount": 12000.50,
+        "nextPaymentDate": "2023-12-22",
+        "nextPaymentAmount": 1500.00
+      }
+    ]
+  },
+  "depositOapi": {
+    "description": "Deposit Information API Response Example",
+    "endpoint": "GET /by-phone/{phone}",
+    "exampleResponse": [
+      {
+        "contractNo": "DP-2025-000112",
+        "customerNo": 445566,
+        "contractAmount": 30000.00,
+        "productName": "Time Deposit 12M",
+        "rate": 13.5,
+        "openDate": "2025-01-05",
+        "endDate": "2026-01-05",
+        "totalIntCalcAmount": 4050.00,
+        "ccyId": 972,
+        "status": 1
+      }
+    ]
+  },
+  "accountOapi": {
+    "description": "Account Information API Response Example",
+    "endpoint": "GET /by-phone/{phone}",
+    "exampleResponse": [
+      {
+        "accountNo": "01-123456-1",
+        "iban": "TJ970000000000000001234567890",
+        "customerNo": 123456,
+        "balance": 1200.50,
+        "ccyId": 972,
+        "productName": "Current Account",
+        "isClosed": false,
+        "createdDate": "2020-01-15",
+        "creditTurnover": 50000.00,
+        "debetTurnover": 48500.00
+      }
+    ]
+  }
+}

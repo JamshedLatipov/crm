@@ -18,6 +18,12 @@ export interface User {
   territories?: string[];
   currentLeadsCount: number;
   maxLeadsCapacity: number;
+  // Deals workload
+  currentDealsCount: number;
+  maxDealsCapacity: number;
+  // Tasks workload
+  currentTasksCount: number;
+  maxTasksCapacity: number;
   conversionRate: number;
   totalRevenue: number;
   totalLeadsHandled: number;
@@ -42,6 +48,8 @@ export interface CreateUserRequest {
   skills?: string[];
   territories?: string[];
   maxLeadsCapacity?: number;
+  maxDealsCapacity?: number;
+  maxTasksCapacity?: number;
   managerID?: number;
   isAvailableForAssignment?: boolean;
 }
@@ -58,6 +66,8 @@ export interface UpdateUserRequest {
   skills?: string[];
   territories?: string[];
   maxLeadsCapacity?: number;
+  maxDealsCapacity?: number;
+  maxTasksCapacity?: number;
   managerID?: number;
   isActive?: boolean;
   isAvailableForAssignment?: boolean;

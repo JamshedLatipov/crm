@@ -180,6 +180,8 @@ export interface CreateLeadRequest {
   city?: string;
   source: LeadSource;
   priority?: LeadPriority;
+  // ID пользователя, ответственного за лид (по возможности числовой ID)
+  assignedTo?: string | number;
   promoCompanyId?: number; // ID промо-компании
   estimatedValue?: number;
   budget?: number;
@@ -204,6 +206,8 @@ export interface UpdateLeadRequest {
   industry?: string;
   country?: string;
   city?: string;
+  // ID пользователя, ответственного за лид
+  assignedTo?: string | number;
   priority?: LeadPriority;
   promoCompanyId?: number; // ID промо-компании
   estimatedValue?: number;

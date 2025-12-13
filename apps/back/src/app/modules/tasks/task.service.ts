@@ -12,6 +12,7 @@ import { TaskType } from './entities/task-type.entity';
 import { TaskTypeService } from './services/task-type.service';
 import { NotificationService } from '../shared/services/notification.service';
 import { NotificationType, NotificationChannel, NotificationPriority } from '../shared/entities/notification.entity';
+import { AssignmentService } from '../shared/services/assignment.service';
 
 @Injectable()
 export class TaskService {
@@ -24,6 +25,7 @@ export class TaskService {
     private readonly commentRepo: Repository<TaskComment>,
     private readonly taskTypeService: TaskTypeService,
     private readonly notificationService: NotificationService,
+    private readonly assignmentService: AssignmentService,
   ) {}
   async addComment(taskId: number, authorId: number, text: string): Promise<TaskComment> {
     const comment = this.commentRepo.create({
@@ -56,9 +58,7 @@ export class TaskService {
       dueDate: data.dueDate,
     };
     
-    if (data.assignedToId) {
-      taskData.assignedTo = { id: data.assignedToId } as User;
-    }
+    // Assignments are now handled via AssignmentService. We'll create assignment after task is saved.
 
     if (data.leadId) {
       taskData.lead = { id: data.leadId } as Lead;
@@ -99,53 +99,98 @@ export class TaskService {
       user: userId ? { id: userId } as User : null,
     });
     
-    // Отправляем уведомление о создании задачи
-    if (task.assignedTo?.id) {
-      await this.notificationService.createTaskNotification(
-        NotificationType.TASK_CREATED,
-        `Новая задача: ${task.title}`,
-        `Вам назначена новая задача: ${task.title}`,
-        {
-          taskId: task.id,
-          taskTitle: task.title,
-          taskStatus: task.status,
-          assignedTo: task.assignedTo?.id.toString(),
-          assignedBy: userId?.toString(),
-        },
-        task.assignedTo.id.toString(),
-        [NotificationChannel.IN_APP],
-        NotificationPriority.MEDIUM
-      );
+    // If an assignee was provided, create centralized assignment (AssignmentService will handle notifications)
+    if (data.assignedToId) {
+      try {
+        await this.assignmentService.createAssignment({
+          entityType: 'task',
+          entityId: task.id,
+          assignedTo: [data.assignedToId],
+          assignedBy: userId || null,
+          reason: data['assignReason'] || undefined,
+          notifyAssignees: true
+        });
+      } catch (e) {
+        // don't block task creation on assignment failure
+        console.warn('Failed to create assignment for task during create:', e?.message || e);
+      }
     }
     
     return this.findById(task.id);
   }
 
+  /**
+   * Attach current assignment info to a Task or array of Tasks.
+   * This centralizes the logic for batch lookup + per-entity fallback.
+   */
+  private async attachAssignments(tasksOrTask: Task[] | Task | null): Promise<void> {
+    if (!tasksOrTask) return;
+    const tasks = Array.isArray(tasksOrTask) ? tasksOrTask : [tasksOrTask];
+    if (tasks.length === 0) return;
+
+    try {
+      const ids = tasks.map(t => t.id);
+      const map = await this.assignmentService.getCurrentAssignmentsForEntities('task', ids);
+
+      for (const t of tasks) {
+        let a = map.get(String(t.id));
+        if (!a) {
+          try {
+            const single = await this.assignmentService.getCurrentAssignments('task', String(t.id));
+            if (single && single.length > 0) a = single[0];
+          } catch (e) {
+            // ignore per-entity lookup errors
+          }
+        }
+
+        if (a) {
+          (t as any).assignedTo = a.user || { id: a.userId, fullName: a.userName, email: a.userEmail };
+          (t as any).assignedToId = a.userId;
+        } else {
+          (t as any).assignedTo = null;
+          (t as any).assignedToId = null;
+        }
+      }
+    } catch (e) {
+      // ignore assignment lookup errors
+      for (const t of tasks) {
+        (t as any).assignedTo = null;
+        (t as any).assignedToId = null;
+      }
+    }
+  }
+
   async findAll(): Promise<Task[]> {
-    return this.taskRepo.find({ relations: ['assignedTo', 'lead', 'deal', 'taskType'] });
+    const tasks = await this.taskRepo.find({ relations: ['lead', 'deal', 'taskType'] });
+    await this.attachAssignments(tasks);
+    return tasks;
   }
 
   async findByLeadId(leadId: number): Promise<Task[]> {
-    return this.taskRepo.find({ 
+    const tasks = await this.taskRepo.find({ 
       where: { leadId },
-      relations: ['assignedTo', 'lead', 'taskType'],
+      relations: ['lead', 'taskType'],
       order: { dueDate: 'ASC' }
     });
+    await this.attachAssignments(tasks);
+    return tasks;
   }
 
   async findByDealId(dealId: string): Promise<Task[]> {
-    return this.taskRepo.find({ 
+    const tasks = await this.taskRepo.find({ 
       where: { dealId },
-      relations: ['assignedTo', 'deal', 'taskType'],
+      relations: ['deal', 'taskType'],
       order: { dueDate: 'ASC' }
     });
+    await this.attachAssignments(tasks);
+    return tasks;
   }
 
   async findById(id: number): Promise<Task | null> {
-    return this.taskRepo.findOne({ 
-      where: { id }, 
-      relations: ['assignedTo', 'lead', 'deal', 'taskType'] 
-    });
+    const task = await this.taskRepo.findOne({ where: { id }, relations: ['lead', 'deal', 'taskType'] });
+    if (!task) return null;
+    await this.attachAssignments(task);
+    return task;
   }
 
   async update(id: number, data: UpdateTaskDto, userId?: number): Promise<Task> {
@@ -171,9 +216,7 @@ export class TaskService {
       updateData.dueDate = data.dueDate;
     }
     
-    if (data.assignedToId !== undefined) {
-      updateData.assignedTo = data.assignedToId ? { id: data.assignedToId } as User : null;
-    }
+    // Assignments are handled by AssignmentService; we'll manage them after updating the task record
 
     if (data.leadId !== undefined) {
       updateData.leadId = data.leadId;
@@ -213,12 +256,19 @@ export class TaskService {
           changes.dueDate = { old: oldDate, new: newDate };
         }
       }
-      if (data.assignedToId !== undefined && originalTask.assignedTo?.id !== data.assignedToId) {
-        changes.assignedToId = { 
-          old: originalTask.assignedTo?.id || null, 
-          new: data.assignedToId || null 
-        };
-      }
+        if (data.assignedToId !== undefined) {
+          // Determine previous assigned user via AssignmentService
+          try {
+            const prev = await this.assignmentService.getCurrentAssignments('task', String(id));
+            const prevId = (prev && prev.length) ? prev[0].userId : null;
+            if (prevId !== data.assignedToId) {
+              changes.assignedToId = { old: prevId || null, new: data.assignedToId || null };
+            }
+          } catch (e) {
+            // ignore assignment lookup errors
+            changes.assignedToId = { old: null, new: data.assignedToId || null };
+          }
+        }
       if (data.leadId !== undefined && originalTask.leadId !== data.leadId) {
         changes.leadId = { old: originalTask.leadId || null, new: data.leadId || null };
       }
@@ -243,9 +293,16 @@ export class TaskService {
     // Отправляем уведомление об обновлении задачи
     if (Object.keys(changes).length > 0) {
       const recipientIds = new Set<string>();
-      if (updated.assignedTo?.id) recipientIds.add(updated.assignedTo.id.toString());
-      if (userId && userId !== updated.assignedTo?.id) recipientIds.add(userId.toString());
-      
+      try {
+        const current = await this.assignmentService.getCurrentAssignments('task', String(updated.id));
+        if (current && current.length) {
+          recipientIds.add(String(current[0].userId));
+        }
+      } catch (e) {
+        // ignore
+      }
+      if (userId) recipientIds.add(userId.toString());
+
       for (const recipientId of recipientIds) {
         await this.notificationService.createTaskNotification(
           NotificationType.TASK_UPDATED,
@@ -255,7 +312,7 @@ export class TaskService {
             taskId: updated.id,
             taskTitle: updated.title,
             taskStatus: updated.status,
-            assignedTo: updated.assignedTo?.id?.toString(),
+            assignedTo: Array.from(recipientIds).join(','),
             assignedBy: userId?.toString(),
             changes,
           },
@@ -263,6 +320,15 @@ export class TaskService {
           [NotificationChannel.IN_APP],
           NotificationPriority.LOW
         );
+      }
+    }
+
+    // If status changed to done/completed, complete assignments for this task
+    if (data.status !== undefined && (data.status === 'done' || data.status === 'completed')) {
+      try {
+        await this.assignmentService.completeAssignment('task', id, 'Task completed');
+      } catch (err) {
+        console.warn('Failed to complete assignments for task:', err?.message || err);
       }
     }
     
@@ -281,9 +347,14 @@ export class TaskService {
     
     // Отправляем уведомление об удалении задачи
     const recipientIds = new Set<string>();
-    if (task.assignedTo?.id) recipientIds.add(task.assignedTo.id.toString());
-    if (userId && userId !== task.assignedTo?.id) recipientIds.add(userId.toString());
-    
+    try {
+      const current = await this.assignmentService.getCurrentAssignments('task', String(task.id));
+      if (current && current.length) recipientIds.add(String(current[0].userId));
+    } catch (e) {
+      // ignore
+    }
+    if (userId) recipientIds.add(String(userId));
+
     for (const recipientId of recipientIds) {
       await this.notificationService.createTaskNotification(
         NotificationType.TASK_DELETED,
@@ -293,7 +364,7 @@ export class TaskService {
           taskId: task.id,
           taskTitle: task.title,
           taskStatus: task.status,
-          assignedTo: task.assignedTo?.id?.toString(),
+          assignedTo: Array.from(recipientIds).join(','),
           assignedBy: userId?.toString(),
         },
         recipientId,

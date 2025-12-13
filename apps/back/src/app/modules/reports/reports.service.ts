@@ -5,6 +5,7 @@ import { Lead, LeadStatus } from '../leads/lead.entity';
 import { Deal, DealStatus } from '../deals/deal.entity';
 import { Task } from '../tasks/task.entity';
 import { PipelineStage } from '../pipeline/pipeline.entity';
+import { AssignmentService } from '../shared/services/assignment.service';
 
 @Injectable()
 export class ReportsService {
@@ -17,6 +18,7 @@ export class ReportsService {
     private taskRepo: Repository<Task>,
     @InjectRepository(PipelineStage)
     private stageRepo: Repository<PipelineStage>,
+    private readonly assignmentService: AssignmentService,
   ) {}
 
   // 4.1 Leads: new leads count, conversion to deals, sources
@@ -122,10 +124,13 @@ export class ReportsService {
       .andWhere('task.updatedAt >= :since', { since })
       .getMany();
 
-    // group by assignedTo (user id stored in assignedTo) — simple counts
+    // group by current assignee using centralized assignments table
+    const ids = completed.map(t => String((t as any).id));
+    const map = await this.assignmentService.getCurrentAssignmentsForEntities('task', ids);
+
     const byManager: Record<string, number> = {};
     completed.forEach(t => {
-      const key = String((t as any).assignedTo) || 'unassigned';
+      const key = (map && map[String(t.id)]) ? String(map[String(t.id)].userId) : 'unassigned';
       byManager[key] = (byManager[key] || 0) + 1;
     });
 

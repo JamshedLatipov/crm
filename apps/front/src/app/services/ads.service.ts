@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { environment } from '@crm/front/environments/environment';
 
 export interface Campaign {
@@ -36,11 +36,20 @@ export class AdsService {
   }
 
   getCampaignMetrics(campaignId: number): Observable<ApiResponse<CampaignMetric[]>> {
+    // Guard against invalid ids (NaN) — avoid sending malformed requests to the backend
+    if (!Number.isFinite(campaignId) || campaignId <= 0) {
+      console.warn('[AdsService] getCampaignMetrics called with invalid id:', campaignId);
+      return of({ success: true, data: [] });
+    }
     return this.http.get<ApiResponse<CampaignMetric[]>>(`${this.baseUrl}/campaigns/${campaignId}/metrics`);
   }
 
   updateCampaign(campaignId: number, data: Partial<Campaign>): Observable<ApiResponse<Campaign>> {
     return this.http.patch<ApiResponse<Campaign>>(`${this.baseUrl}/campaigns/${campaignId}`, data);
+  }
+
+  createCampaign(data: Partial<Campaign>): Observable<ApiResponse<Campaign>> {
+    return this.http.post<ApiResponse<Campaign>>(`${this.baseUrl}/campaigns`, data);
   }
 
   pauseCampaign(campaignId: number): Observable<ApiResponse<Campaign>> {

@@ -116,19 +116,8 @@ export class SoftphoneService {
       mediaConstraints: { audio: true, video: false },
       extraHeaders: ['X-Custom-Header: CRM Call'],
       'pcConfig': {
-        // Replace the STUN/TURN URLs below with your reachable host IP or public IP.
-        // TURN credentials should match turnserver/data config (user=webrtc:webrtcpass).
-        'iceServers': [
-          { urls: [`stun:192.168.90.129:3478`] },
-          {
-            urls: [
-              `turn:192.168.90.129:3478?transport=udp`,
-              `turn:192.168.90.129:3478?transport=tcp`
-            ],
-            username: 'webrtc',
-            credential: 'webrtcpass'
-          }
-        ],
+        // ICE servers disabled for local testing
+        'iceServers': [],
         'rtcpMuxPolicy': 'require'
       }
     };

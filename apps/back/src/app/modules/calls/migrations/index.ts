@@ -1,16 +1,8 @@
-import { CreateCdrTable1691337600000 } from './1691337600000-CreateCdrTable';
-import { CreatePjsipRealtimeTables1691337600001 } from './1691337600001-CreatePjsipRealtimeTables';
-import { DropUnusedTables1691337600002 } from '../migrations/1691337600002-DropUnusedTables';
-import { AddMicroSipAccount1691337600004 } from './1691337600004-AddMicroSipAccount';
-import { AddWebRtcOperator11691337601001 } from './1691337601001-AddWebRtcOperator1';
-import { AddWebRtcOperator21691337601002 } from './1691337601002-AddWebRtcOperator2';
+import { AddWebRtcOperator11691337601001 } from "./1691337601001-AddWebRtcOperator1";
+import { AddWebRtcOperator21691337601002 } from "./1691337601002-AddWebRtcOperator2";
+import { AddWebRtcOperator31691337601003 } from "./1691337601003-AddSipOperator1";
+import { AddWebRtcOperator41691337601004 } from "./1691337601004-AddSipOperator2";
+import { CreateSupportQueueAndMembers1769999999999 } from "./1769999999999-CreateSupportQueueAndMembers";
 
-export const CALLS_MIGRATIONS = [
-  CreateCdrTable1691337600000,
-  CreatePjsipRealtimeTables1691337600001,
-  DropUnusedTables1691337600002,
-  AddMicroSipAccount1691337600004,
-  // WebRTC operators migrations
-  AddWebRtcOperator11691337601001,
-  AddWebRtcOperator21691337601002,
-];
+// Calls module: structural migrations removed; no seed migrations present.
+export const CALLS_MIGRATIONS = [AddWebRtcOperator21691337601002, AddWebRtcOperator11691337601001, AddWebRtcOperator31691337601003, AddWebRtcOperator41691337601004, CreateSupportQueueAndMembers1769999999999];

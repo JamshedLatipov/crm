@@ -1,0 +1,131 @@
+{
+  "integrationSources": [
+    {
+      "key": "customerOapi",
+      "name": "Customer Information API",
+      "description": "Get customer details by phone number",
+      "method": "GET",
+      "urlTemplate": "http://10.1.3.85:7553/customerOapi/by-phone/{{phone}}",
+      "headers": {},
+      "mapping": {
+        "CUSTOMER_NO": "customerNo",
+        "MUSTERI_ADI": "firstName",
+        "MUSTERI_SOYADI": "lastName",
+        "BABA_ADI": "middleName",
+        "TELEFON": "phone",
+        "DOGUM_TAR": "birthDate",
+        "CINSIYET_LP": "gender",
+        "MEDENI_LP": "maritalStatus",
+        "AYLIK_GELIR": "monthlyIncome",
+        "AYLIQ_EMEK_HAQQI": "netSalary",
+        "IS_YERI": "workplace",
+        "addresses": "addresses",
+        "customerPhones": "phones",
+        "identities": "documents"
+      },
+      "ui": {
+        "type": "details",
+        "title": "Профиль клиента",
+        "fields": [
+          { "key": "customerNo", "label": "Номер клиента" },
+          { "key": "firstName", "label": "Имя" },
+          { "key": "lastName", "label": "Фамилия" },
+          { "key": "middleName", "label": "Отчество" },
+          { "key": "phone", "label": "Телефон" },
+          { "key": "birthDate", "label": "Дата рождения" },
+          { "key": "gender", "label": "Пол" },
+          { "key": "maritalStatus", "label": "Семейное положение" },
+          { "key": "monthlyIncome", "label": "Месячный доход" },
+          { "key": "netSalary", "label": "Чистая зарплата" },
+          { "key": "workplace", "label": "Место работы" }
+        ]
+      }
+    },
+    {
+      "key": "loanOapi",
+      "name": "Loan Information API",
+      "description": "Get customer loans by phone number",
+      "method": "GET",
+      "urlTemplate": "http://10.1.3.85:7555/loanOapi/by-phone/{{phone}}",
+      "headers": {},
+      "mapping": {
+        "contractNo": "contractNo",
+        "contractAmount": "amount",
+        "beginDate": "startDate",
+        "endDate": "endDate",
+        "interestRate": "interestRate",
+        "loanStatusForBr": "status",
+        "totalDebtAmount": "debtAmount"
+      },
+      "ui": {
+        "type": "table",
+        "title": "Кредиты клиента",
+        "columns": [
+          { "key": "contractNo", "label": "Номер договора" },
+          { "key": "amount", "label": "Сумма" },
+          { "key": "startDate", "label": "Дата начала" },
+          { "key": "endDate", "label": "Дата окончания" },
+          { "key": "interestRate", "label": "Процентная ставка (%)" },
+          { "key": "status", "label": "Статус" },
+          { "key": "debtAmount", "label": "Сумма долга" }
+        ]
+      }
+    },
+    {
+      "key": "depositOapi",
+      "name": "Deposit Information API",
+      "description": "Get customer deposits by phone number",
+      "method": "GET",
+      "urlTemplate": "http://10.1.3.85:7554/depositOapi/by-phone/{{phone}}",
+      "headers": {},
+      "mapping": {
+        "contractNo": "contractNo",
+        "contractAmount": "amount",
+        "productName": "productName",
+        "rate": "interestRate",
+        "openDate": "openDate",
+        "endDate": "endDate"
+      },
+      "ui": {
+        "type": "table",
+        "title": "Депозиты клиента",
+        "columns": [
+          { "key": "contractNo", "label": "Номер договора" },
+          { "key": "amount", "label": "Сумма" },
+          { "key": "productName", "label": "Продукт" },
+          { "key": "interestRate", "label": "Процентная ставка (%)" },
+          { "key": "openDate", "label": "Дата открытия" },
+          { "key": "endDate", "label": "Дата окончания" }
+        ]
+      }
+    },
+    {
+      "key": "accountOapi",
+      "name": "Account Information API",
+      "description": "Get customer accounts by phone number",
+      "method": "GET",
+      "urlTemplate": "http://10.1.3.85:7552/accountOapi/by-phone/{{phone}}",
+      "headers": {},
+      "mapping": {
+        "accountNo": "accountNo",
+        "iban": "iban",
+        "balance": "balance",
+        "ccyId": "currency",
+        "productName": "productName",
+        "isClosed": "isClosed"
+      },
+      "ui": {
+        "type": "table",
+        "title": "Счета клиента",
+        "columns": [
+          { "key": "accountNo", "label": "Номер счета" },
+          { "key": "iban", "label": "IBAN" },
+          { "key": "balance", "label": "Баланс" },
+          { "key": "currency", "label": "Валюта" },
+          { "key": "productName", "label": "Продукт" },
+          { "key": "isClosed", "label": "Статус" }
+        ]
+      }
+    }
+  ]
+}

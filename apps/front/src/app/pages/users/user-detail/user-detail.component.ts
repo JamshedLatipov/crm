@@ -1,4 +1,6 @@
 import { Component, signal, inject, OnInit, ChangeDetectionStrategy, computed } from '@angular/core';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -10,6 +12,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatOptionModule } from '@angular/material/core';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
+import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { ConfirmActionDialogComponent } from '../../../shared/dialogs/confirm-action-dialog.component';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatBadgeModule } from '@angular/material/badge';
@@ -17,7 +21,12 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatListModule } from '@angular/material/list';
 import { UserManagementService, User } from '../../../services/user-management.service';
+import { AssignmentService } from '../../../services/assignment.service';
+import { LeadService } from '../../../leads/services/lead.service';
+import { DealsService } from '../../../pipeline/deals.service';
+import { TasksService } from '../../../tasks/tasks.service';
 import { ReferenceDataService } from '../../../services/reference-data.service';
 import { PasswordResetSnackbarComponent } from '../../../shared/components/password-reset-snackbar/password-reset-snackbar.component';
 import { UserHeaderComponent } from '../components/user-header/user-header.component';
@@ -54,7 +63,11 @@ type TabType = 'overview' | 'performance' | 'activity';
     MatMenuModule,
     MatTooltipModule,
     MatTabsModule,
+  MatListModule,
     MatDividerModule
+    ,
+    MatDialogModule,
+    ConfirmActionDialogComponent
   ],
   templateUrl: './user-detail.component.html',
   styleUrls: ['./user-detail.component.scss'],
@@ -62,10 +75,15 @@ type TabType = 'overview' | 'performance' | 'activity';
 })
 export class UserDetailComponent implements OnInit {
   protected readonly userService = inject(UserManagementService);
+  protected readonly assignmentService = inject(AssignmentService);
+  protected readonly leadService = inject(LeadService);
+  protected readonly dealsService = inject(DealsService);
+  protected readonly tasksService = inject(TasksService);
   protected readonly referenceDataService = inject(ReferenceDataService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
 
   // Component state
   public readonly currentUser = signal<User | null>(null);
@@ -124,6 +142,15 @@ export class UserDetailComponent implements OnInit {
 
   // Whether the inline skill selector is visible
   public readonly showSkillSelector = signal<boolean>(false);
+
+  // Assigned entities
+  public readonly assignedLeads = signal<any[]>([]);
+  public readonly assignedDeals = signal<any[]>([]);
+  public readonly assignedTasks = signal<any[]>([]);
+  public readonly assignedLoading = signal<boolean>(false);
+  // Performance analytics
+  public readonly performanceLoading = signal<boolean>(false);
+  public readonly performanceStats = signal<any | null>(null);
 
   openSkillSelector(): void {
     this.showSkillSelector.set(true);
@@ -217,21 +244,59 @@ export class UserDetailComponent implements OnInit {
     const user = this.currentUser();
     if (!user) return;
 
-    if (confirm(`Вы уверены, что хотите удалить пользователя ${user.firstName} ${user.lastName}?`)) {
-      this.userService.deleteUser(user.id).subscribe({
-        next: () => {
-          this.showSuccess('Пользователь удален');
-          this.goBack();
-        },
-        error: () => {
-          this.showError('Ошибка при удалении пользователя');
-        }
-      });
-    }
+    const ref = this.dialog.open(ConfirmActionDialogComponent, {
+      width: '480px',
+      data: {
+        title: 'Удалить пользователя',
+        message: `Вы уверены, что хотите удалить пользователя ${user.firstName} ${user.lastName}?`,
+        confirmText: 'Удалить',
+        cancelText: 'Отмена',
+        confirmColor: 'warn',
+      }
+    });
+
+    ref.afterClosed().subscribe((res) => {
+      if (res?.confirmed) {
+        this.userService.deleteUser(user.id).subscribe({
+          next: () => {
+            this.showSuccess('Пользователь удален');
+            this.goBack();
+          },
+          error: () => {
+            this.showError('Ошибка при удалении пользователя');
+          }
+        });
+      }
+    });
   }
 
   goBack(): void {
     this.router.navigate(['/users']);
+  }
+
+  goToDeal(dealId: string | number): void {
+    if (!dealId) return;
+    this.router.navigate(['/deals', 'view', String(dealId)]);
+  }
+
+  goToTask(taskId: number): void {
+    if (!taskId) return;
+    this.router.navigate(['/tasks', 'view', taskId]);
+  }
+
+  goToLead(leadId: number): void {
+    if (!leadId) return;
+    this.router.navigate(['/leads', 'view', leadId]);
+  }
+
+  // For avatars/initials in assignment lists — try title/name, fallback to id
+  getEntityInitials(entity: any): string {
+    if (!entity) return '?';
+    const text = (entity.title || entity.name || String(entity.id || '')).toString().trim();
+    if (!text) return '?';
+    const parts = text.split(/\s+/).filter(Boolean);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[1][0]).toUpperCase();
   }
 
   // Utility methods
@@ -573,6 +638,8 @@ export class UserDetailComponent implements OnInit {
         if (user) {
           this.currentUser.set(user);
           this.loadManagerInfo(user.managerID);
+          // load assigned entities (leads, deals, tasks)
+          this.loadAssignedEntities(user.id);
         } else {
           this.showError('Пользователь не найден');
           this.goBack();
@@ -581,6 +648,80 @@ export class UserDetailComponent implements OnInit {
       error: () => {
         this.showError('Ошибка при загрузке пользователя');
         this.goBack();
+      }
+    });
+  }
+
+  private loadAssignedEntities(userId: number): void {
+    this.assignedLoading.set(true);
+
+    // Leads via manager endpoint
+    this.leadService.getLeadsByManager(String(userId)).pipe(
+      catchError(() => of([]))
+    ).subscribe({
+      next: (leads) => this.assignedLeads.set(leads || []),
+      error: () => this.assignedLeads.set([])
+    });
+
+    // Deals via manager endpoint
+    this.dealsService.getDealsByManager(String(userId)).pipe(
+      catchError(() => of([]))
+    ).subscribe({
+      next: (deals) => this.assignedDeals.set(deals || []),
+      error: () => this.assignedDeals.set([])
+    });
+
+    // Tasks: fetch user's task assignments then load tasks
+    this.assignmentService.getUserAssignments(userId, 'task').pipe(
+      catchError(() => of([]))
+    ).subscribe({
+      next: (assignments) => {
+        const ids = (assignments || []).map((a: any) => Number(a.entityId)).filter(Boolean);
+        if (ids.length === 0) {
+          this.assignedTasks.set([]);
+          this.assignedLoading.set(false);
+          // still load analytics even if there are no tasks
+          this.loadPerformanceAnalytics(userId);
+          return;
+        }
+
+        const calls = ids.map((id: number) => this.tasksService.get(id).pipe(catchError(() => of(null))));
+        forkJoin(calls).subscribe({
+          next: (tasks) => {
+            this.assignedTasks.set((tasks || []).filter(Boolean));
+            this.assignedLoading.set(false);
+            // load analytics in parallel
+            this.loadPerformanceAnalytics(userId);
+          },
+          error: () => {
+            this.assignedTasks.set([]);
+            this.assignedLoading.set(false);
+            this.loadPerformanceAnalytics(userId);
+          }
+        });
+      },
+      error: () => {
+        this.assignedTasks.set([]);
+        this.assignedLoading.set(false);
+        this.loadPerformanceAnalytics(userId);
+      }
+    });
+  }
+
+  private loadPerformanceAnalytics(userId: number): void {
+    this.performanceLoading.set(true);
+
+    this.assignmentService.getAssignmentStatistics('30d', 'user').pipe(
+      catchError(() => of([]))
+    ).subscribe({
+      next: (rows: any[]) => {
+        const found = (rows || []).find((r: any) => Number(r.userId) === Number(userId) || String(r.userId) === String(userId));
+        this.performanceStats.set(found || null);
+        this.performanceLoading.set(false);
+      },
+      error: () => {
+        this.performanceStats.set(null);
+        this.performanceLoading.set(false);
       }
     });
   }

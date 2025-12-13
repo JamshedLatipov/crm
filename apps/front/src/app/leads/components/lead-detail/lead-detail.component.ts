@@ -24,18 +24,20 @@ import {
   LeadStatus,
 } from '../../models/lead.model';
 import { ChangeStatusDialogComponent } from '../change-status-dialog/change-status-dialog.component';
-import { AssignLeadDialogComponent } from '../assign-lead-dialog/assign-lead-dialog.component';
+import { AssignUserDialogComponent } from '../../../deals/components/assign-user-dialog.component';
 import { EditLeadDialogComponent } from '../edit-lead-dialog/edit-lead-dialog.component';
 import { ConvertToDealDialogComponent } from '../convert-to-deal-dialog/convert-to-deal-dialog.component';
 import { CommentsComponent } from '../../../shared/components/comments/comments.component';
 import { CommentEntityType } from '../../../shared/interfaces/comment.interface';
-import { LeadStatusComponent } from '../lead-status/lead-status.component';
 import { LeadPriorityComponent } from '../lead-priority/lead-priority.component';
 import { LeadActionsComponent } from '../lead-actions/lead-actions.component';
+import { LeadStatusComponent } from '../lead-status/lead-status.component';
 import { TaskListWidgetComponent } from '../../../tasks/components/task-list-widget.component';
+import { AssignmentService } from '../../../services/assignment.service';
 import { PromoCompaniesService } from '../../../promo-companies/services/promo-companies.service';
 import { CreatePromoCompanyDialogComponent } from '../../../promo-companies/components/create-promo-company-dialog/create-promo-company-dialog.component';
 import { AssignPromoCompanyDialogComponent } from '../../../promo-companies/components/assign-promo-company-dialog/assign-promo-company-dialog.component';
+import { ConfirmActionDialogComponent } from '../../../shared/dialogs/confirm-action-dialog.component';
 
 interface HistoryEntry {
   field: string;
@@ -65,10 +67,11 @@ interface HistoryEntry {
     MatTooltipModule,
     MatSnackBarModule,
     CommentsComponent,
-    LeadStatusComponent,
     LeadPriorityComponent,
     LeadActionsComponent,
+    LeadStatusComponent,
     TaskListWidgetComponent,
+    ConfirmActionDialogComponent,
   ],
   templateUrl: './lead-detail.component.html',
   styleUrls: ['./lead-detail.component.scss'],
@@ -81,6 +84,7 @@ export class LeadDetailComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
   private readonly promoCompaniesService = inject(PromoCompaniesService);
+  private readonly assignmentService = inject(AssignmentService);
 
   lead: Lead = {} as Lead;
   activities: LeadActivity[] = [];
@@ -152,9 +156,17 @@ export class LeadDetailComponent implements OnInit {
     this.leadService.getLeadById(id).subscribe({
       next: (lead) => {
         this.lead = lead;
-        console.log('LeadDetail: Lead loaded:', lead, 'lead.id:', lead.id, 'type:', typeof lead.id);
+        console.log(
+          'LeadDetail: Lead loaded:',
+          lead,
+          'lead.id:',
+          lead.id,
+          'type:',
+          typeof lead.id
+        );
         this.loadActivities();
-        this.loadCurrentAssignments();
+        // Use assignment info from returned lead model instead of calling centralized assignment API
+        this.setAssignmentsFromLead();
       },
       error: (err) => {
         console.error('Error loading lead:', err);
@@ -163,17 +175,52 @@ export class LeadDetailComponent implements OnInit {
     });
   }
 
-  private loadCurrentAssignments(): void {
-    if (!this.lead?.id) return;
-    this.leadService.getCurrentAssignments(this.lead.id).subscribe({
-      next: (assignments) => {
-        this.currentAssignments = assignments;
-      },
-      error: (err) => {
-        console.error('Error loading assignments:', err);
-        this.currentAssignments = [];
-      },
-    });
+  // Populate currentAssignments from the lead model's assignedTo field returned by API
+  private setAssignmentsFromLead(): void {
+    if (!this.lead) {
+      this.currentAssignments = [];
+      return;
+    }
+
+    const assigned = (this.lead as any).assignedTo ?? this.lead.assignedTo;
+    if (assigned === null || assigned === undefined || assigned === '') {
+      this.currentAssignments = [];
+      return;
+    }
+
+    const userId = Number(assigned);
+    let resolvedName: string | undefined = undefined;
+    let resolvedEmail: string | undefined = undefined;
+
+    if (!Number.isNaN(userId)) {
+      const manager = this.managers.find(
+        (m) => String(m.id) === String(userId)
+      );
+      if (manager) {
+        resolvedName = manager.fullName || manager.username || undefined;
+        resolvedEmail = (manager as any).email || undefined;
+      }
+      this.currentAssignments = [
+        {
+          userId: userId,
+          userName: resolvedName,
+          userEmail: resolvedEmail,
+          assignedAt: new Date(),
+          status: 'active',
+        } as any,
+      ];
+    } else {
+      // If assigned is not numeric, keep as string id
+      this.currentAssignments = [
+        {
+          userId: String(assigned) as any,
+          userName: undefined,
+          userEmail: undefined,
+          assignedAt: new Date(),
+          status: 'active',
+        } as any,
+      ];
+    }
   }
 
   loadActivities(): void {
@@ -257,18 +304,20 @@ export class LeadDetailComponent implements OnInit {
     if (this.isConverted) {
       return; // Конвертированные лиды нельзя редактировать
     }
-    
+
     const dialogRef = this.dialog.open(EditLeadDialogComponent, {
       width: '800px',
       maxWidth: '90vw',
       data: {
-        lead: this.lead
+        lead: this.lead,
       },
     });
 
     dialogRef.afterClosed().subscribe((result: Lead | undefined) => {
       if (result) {
         this.lead = result; // Обновляем данные лида
+        // Обновим назначения на странице из данных лида (assignedTo), чтобы показать актуального менеджера
+        this.setAssignmentsFromLead();
         console.log('Lead updated:', result);
       }
     });
@@ -287,7 +336,7 @@ export class LeadDetailComponent implements OnInit {
       error: (err) => {
         console.error('Error creating contact from lead:', err);
         alert('Ошибка при создании контакта из лида');
-      }
+      },
     });
   }
 
@@ -321,7 +370,7 @@ export class LeadDetailComponent implements OnInit {
     if (this.isConverted) {
       return; // Конвертированные лиды нельзя редактировать
     }
-    
+
     const dialogRef = this.dialog.open(ChangeStatusDialogComponent, {
       width: '600px',
       maxWidth: '90vw',
@@ -342,20 +391,34 @@ export class LeadDetailComponent implements OnInit {
     if (this.isConverted) {
       return; // Конвертированные лиды нельзя редактировать
     }
-    
-    const dialogRef = this.dialog.open(AssignLeadDialogComponent, {
-      width: '700px',
+    // Open shared users dialog for changing assignee
+    const users = this.managers.map((m) => ({
+      id: m.id?.toString(),
+      name: m.fullName,
+      email: (m as any).email,
+      role: m.roles?.[0],
+    }));
+    const dialogRef = this.dialog.open(AssignUserDialogComponent, {
+      width: '560px',
       maxWidth: '90vw',
       data: {
-        lead: this.lead,
-        currentAssignee: this.getCurrentAssignee(),
+        deal: {
+          title: this.lead.name,
+          assignedTo: this.getCurrentAssignee(),
+        } as any,
+        currentUsers: [],
       },
     });
 
-    dialogRef.afterClosed().subscribe((result: Lead | undefined) => {
-      if (result) {
-        this.lead = result; // Update current lead data
-        this.loadCurrentAssignments(); // Reload assignments
+    dialogRef.afterClosed().subscribe((result: any) => {
+      if (result && result.userId) {
+        this.leadService.assignLead(this.lead.id, result.userId).subscribe({
+          next: (updated) => {
+            this.lead = updated;
+            this.setAssignmentsFromLead();
+          },
+          error: (err) => console.error('Error assigning lead:', err),
+        });
       }
     });
   }
@@ -366,17 +429,30 @@ export class LeadDetailComponent implements OnInit {
       alert('Конвертированные лиды нельзя удалить');
       return;
     }
-    
-    if (confirm(`Вы уверены, что хотите удалить лид "${this.lead.name}"?`)) {
-      this.leadService.deleteLead(this.lead.id).subscribe({
-        next: () => {
-          this.router.navigate(['/leads/list']);
-        },
-        error: (error: unknown) => {
-          console.error('Error deleting lead:', error);
-        },
-      });
-    }
+
+    const dialogRef = this.dialog.open(ConfirmActionDialogComponent, {
+      width: '480px',
+      data: {
+        title: 'Удалить лид',
+        message: `Вы уверены, что хотите удалить лид "${this.lead.name}"?`,
+        confirmText: 'Удалить',
+        cancelText: 'Отмена',
+        confirmColor: 'warn',
+      },
+    });
+
+    dialogRef.afterClosed().subscribe((res) => {
+      if (res?.confirmed) {
+        this.leadService.deleteLead(this.lead.id).subscribe({
+          next: () => {
+            this.router.navigate(['/leads/list']);
+          },
+          error: (error: unknown) => {
+            console.error('Error deleting lead:', error);
+          },
+        });
+      }
+    });
   }
 
   close(): void {
@@ -384,19 +460,55 @@ export class LeadDetailComponent implements OnInit {
   }
 
   getCurrentAssignee(): string | undefined {
-    const activeAssignment = this.currentAssignments.find(a => a.status === 'active');
+    const activeAssignment = this.currentAssignments.find(
+      (a) => a.status === 'active'
+    );
     return activeAssignment ? activeAssignment.userId.toString() : undefined;
   }
 
   get getAssigneeName(): string {
-    const activeAssignment = this.currentAssignments.length ? this.currentAssignments[0] : undefined;
+    const activeAssignment = this.currentAssignments.length
+      ? this.currentAssignments[0]
+      : undefined;
     if (!activeAssignment) {
       return 'Не назначен';
     }
-    
-    const manager = this.managers.find(m => m.id?.toString() === activeAssignment.userId.toString());
-    console.log('Active assignment userId:', activeAssignment.userId, 'Resolved manager:', manager);
-    return manager?.fullName || manager?.username || `ID: ${activeAssignment.userId}`;
+
+    const manager = this.managers.find(
+      (m) => m.id?.toString() === activeAssignment.userId.toString()
+    );
+    return (
+      manager?.fullName || manager?.username || `ID: ${activeAssignment.userId}`
+    );
+  }
+
+  getAssigneeInitials(): string {
+    const a = this.currentAssignments.length
+      ? this.currentAssignments[0]
+      : undefined;
+    const name = (a as any)?.userName;
+    if (!name) return '';
+    const parts = String(name).split(' ').filter(Boolean);
+    const initials = parts
+      .map((p) => p[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+    return initials;
+  }
+
+  getAssigneeEmail(): string | undefined {
+    const a = this.currentAssignments.length
+      ? this.currentAssignments[0]
+      : undefined;
+    return (a as any)?.userEmail;
+  }
+
+  getAssigneeWorkload(): string | undefined {
+    const a = this.currentAssignments.length
+      ? this.currentAssignments[0]
+      : undefined;
+    return (a as any)?.workload;
   }
 
   getActivityLabel(type: ActivityType): string {
@@ -423,7 +535,7 @@ export class LeadDetailComponent implements OnInit {
       [ActivityType.DOWNLOAD_COMPLETED]: 'Загрузка завершена',
       [ActivityType.NOTE_ADDED]: 'Заметка добавлена',
       [ActivityType.STATUS_CHANGED]: 'Статус изменен',
-      [ActivityType.ASSIGNED]: 'Назначено'
+      [ActivityType.ASSIGNED]: 'Назначено',
     };
     return labels[type] || type;
   }
@@ -438,12 +550,12 @@ export class LeadDetailComponent implements OnInit {
       alert('Этот лид уже конвертирован в сделку');
       return;
     }
-    
+
     const dialogRef = this.dialog.open(ConvertToDealDialogComponent, {
       width: '800px',
       maxWidth: '90vw',
       data: {
-        lead: this.lead
+        lead: this.lead,
       },
     });
 
@@ -459,68 +571,103 @@ export class LeadDetailComponent implements OnInit {
   createPromo(): void {
     const dialogRef = this.dialog.open(CreatePromoCompanyDialogComponent, {
       width: '600px',
-      data: {}
+      data: {},
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         // Add the current lead to the created promo company
-        this.promoCompaniesService.addLeads(result.id, { leadIds: [+this.lead.id] }).subscribe({
-          next: () => {
-            console.log('Lead added to promo company:', result);
-            this.snackBar.open('Лид добавлен в промо-компанию', 'Закрыть', { duration: 3000 });
-            // Reload lead to show updated promo company
-            this.loadLead(this.lead.id);
-          },
-          error: (error) => {
-            console.error('Error adding lead to promo company:', error);
-            this.snackBar.open('Ошибка добавления лида в промо-компанию', 'Закрыть', { duration: 3000 });
-          }
-        });
+        this.promoCompaniesService
+          .addLeads(result.id, { leadIds: [+this.lead.id] })
+          .subscribe({
+            next: () => {
+              console.log('Lead added to promo company:', result);
+              this.snackBar.open('Лид добавлен в промо-компанию', 'Закрыть', {
+                duration: 3000,
+              });
+              // Reload lead to show updated promo company
+              this.loadLead(this.lead.id);
+            },
+            error: (error) => {
+              console.error('Error adding lead to promo company:', error);
+              this.snackBar.open(
+                'Ошибка добавления лида в промо-компанию',
+                'Закрыть',
+                { duration: 3000 }
+              );
+            },
+          });
       }
     });
   }
 
   getPromoCompanyName(promoCompanyId: number): string {
-    const company = this.promoCompanies.find(c => c.id === promoCompanyId);
+    const company = this.promoCompanies.find((c) => c.id === promoCompanyId);
     return company?.name || `ID: ${promoCompanyId}`;
   }
 
   removePromoCompany(): void {
     if (!this.lead.promoCompanyId) return;
-    
-    if (confirm('Вы уверены, что хотите отвязать лид от промо-компании?')) {
-      this.leadService.removeLeadFromPromoCompany(this.lead.id).subscribe({
-        next: () => {
-          this.snackBar.open('Лид отвязан от промо-компании', 'Закрыть', { duration: 3000 });
-          this.lead.promoCompanyId = undefined;
-        },
-        error: (error) => {
-          console.error('Error removing lead from promo company:', error);
-          this.snackBar.open('Ошибка отвязки лида от промо-компании', 'Закрыть', { duration: 3000 });
-        }
-      });
-    }
+
+    const dialogRef2 = this.dialog.open(ConfirmActionDialogComponent, {
+      width: '480px',
+      data: {
+        title: 'Отвязать промо-компанию',
+        message: 'Вы уверены, что хотите отвязать лид от промо-компании?',
+        confirmText: 'Отвязать',
+        cancelText: 'Отмена',
+        confirmColor: 'warn',
+      },
+    });
+
+    dialogRef2.afterClosed().subscribe((res) => {
+      if (res?.confirmed) {
+        this.leadService.removeLeadFromPromoCompany(this.lead.id).subscribe({
+          next: () => {
+            this.snackBar.open('Лид отвязан от промо-компании', 'Закрыть', {
+              duration: 3000,
+            });
+            this.lead.promoCompanyId = undefined;
+          },
+          error: (error) => {
+            console.error('Error removing lead from promo company:', error);
+            this.snackBar.open(
+              'Ошибка отвязки лида от промо-компании',
+              'Закрыть',
+              { duration: 3000 }
+            );
+          },
+        });
+      }
+    });
   }
 
   assignPromoCompany(): void {
     const dialogRef = this.dialog.open(AssignPromoCompanyDialogComponent, {
       width: '500px',
-      data: { currentPromoCompanyId: this.lead.promoCompanyId }
+      data: { currentPromoCompanyId: this.lead.promoCompanyId },
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.leadService.assignLeadToPromoCompany(this.lead.id, result).subscribe({
-          next: () => {
-            this.snackBar.open('Промо-компания присвоена лиду', 'Закрыть', { duration: 3000 });
-            this.lead.promoCompanyId = result;
-          },
-          error: (error) => {
-            console.error('Error assigning promo company to lead:', error);
-            this.snackBar.open('Ошибка присвоения промо-компании', 'Закрыть', { duration: 3000 });
-          }
-        });
+        this.leadService
+          .assignLeadToPromoCompany(this.lead.id, result)
+          .subscribe({
+            next: () => {
+              this.snackBar.open('Промо-компания присвоена лиду', 'Закрыть', {
+                duration: 3000,
+              });
+              this.lead.promoCompanyId = result;
+            },
+            error: (error) => {
+              console.error('Error assigning promo company to lead:', error);
+              this.snackBar.open(
+                'Ошибка присвоения промо-компании',
+                'Закрыть',
+                { duration: 3000 }
+              );
+            },
+          });
       }
     });
   }

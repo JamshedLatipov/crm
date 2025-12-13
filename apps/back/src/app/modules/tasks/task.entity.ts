@@ -1,9 +1,9 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
-import { User } from '../../modules/user/user.entity';
 import { Lead } from '../leads/lead.entity';
 import { Deal } from '../deals/deal.entity';
 import { TaskComment } from './task-comment.entity';
 import { TaskType } from './entities/task-type.entity';
+import { Assignment } from '../shared/entities/assignment.entity';
 
 @Entity('tasks')
 export class Task {
@@ -16,8 +16,10 @@ export class Task {
   @Column({ nullable: true })
   description: string;
 
-  @ManyToOne(() => User, { nullable: true })
-  assignedTo: User;
+  // Assigned users are now stored in the centralized `assignments` table.
+  // We expose a relation to Assignment so tasks can load related assignments if needed.
+  @OneToMany(() => Assignment, assignment => assignment.taskId, { lazy: true })
+  assignments?: Assignment[];
 
   @OneToMany(() => TaskComment, comment => comment.task, { cascade: true })
   comments: TaskComment[];

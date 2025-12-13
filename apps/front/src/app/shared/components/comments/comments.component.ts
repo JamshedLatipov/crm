@@ -10,6 +10,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { ConfirmActionDialogComponent } from '../../dialogs/confirm-action-dialog.component';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { Subscription } from 'rxjs';
 import { CommentsService } from '../../services/comments.service';
@@ -41,7 +43,9 @@ interface CommentGroup {
     MatMenuModule,
     MatDividerModule,
     MatPaginatorModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    MatDialogModule,
+    ConfirmActionDialogComponent,
   ],
   templateUrl: './comments.component.html',
   styleUrls: ['./comments.component.scss']
@@ -54,6 +58,7 @@ export class CommentsComponent implements OnInit, OnDestroy {
   private readonly commentsService = inject(CommentsService);
   private readonly authService = inject(AuthService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
   private subscription = new Subscription();
 
   // Состояние
@@ -219,28 +224,37 @@ export class CommentsComponent implements OnInit, OnDestroy {
   }
 
   deleteComment(comment: Comment) {
-    if (!confirm('Вы уверены, что хотите удалить этот комментарий?')) {
-      return;
-    }
-
-    const sub = this.commentsService.deleteComment(comment.id).subscribe({
-      next: () => {
-        this.snackBar.open('Комментарий удален', 'Закрыть', {
-          duration: 2000,
-          panelClass: ['success-snackbar']
-        });
-        this.loadComments();
-      },
-      error: (error) => {
-        console.error('Ошибка удаления комментария:', error);
-        this.snackBar.open('Ошибка удаления комментария', 'Закрыть', {
-          duration: 3000,
-          panelClass: ['error-snackbar']
-        });
+    const ref = this.dialog.open(ConfirmActionDialogComponent, {
+      width: '420px',
+      data: {
+        title: 'Удалить комментарий',
+        message: 'Вы уверены, что хотите удалить этот комментарий?',
+        confirmText: 'Удалить',
+        cancelText: 'Отмена',
+        confirmColor: 'warn'
       }
     });
 
-    this.subscription.add(sub);
+    ref.afterClosed().subscribe((res) => {
+      if (!res?.confirmed) return;
+      const sub = this.commentsService.deleteComment(comment.id).subscribe({
+        next: () => {
+          this.snackBar.open('Комментарий удален', 'Закрыть', {
+            duration: 2000,
+            panelClass: ['success-snackbar']
+          });
+          this.loadComments();
+        },
+        error: (error) => {
+          console.error('Ошибка удаления комментария:', error);
+          this.snackBar.open('Ошибка удаления комментария', 'Закрыть', {
+            duration: 3000,
+            panelClass: ['error-snackbar']
+          });
+        }
+      });
+      this.subscription.add(sub);
+    });
   }
 
   canEditComment(comment: Comment): boolean {
@@ -259,27 +273,39 @@ export class CommentsComponent implements OnInit, OnDestroy {
   }
 
   deleteGroup(group: CommentGroup) {
-    if (!confirm(`Вы уверены, что хотите удалить все ${group.comments.length} сообщений пользователя ${group.userName}?`)) {
-      return;
-    }
+    const ref = this.dialog.open(ConfirmActionDialogComponent, {
+      width: '480px',
+      data: {
+        title: 'Удалить сообщения',
+        message: `Вы уверены, что хотите удалить все ${group.comments.length} сообщений пользователя ${group.userName}?`,
+        confirmText: 'Удалить',
+        cancelText: 'Отмена',
+        confirmColor: 'warn'
+      }
+    });
 
-    // Удаляем все комментарии группы
-    const deletePromises = group.comments.map(comment => 
-      this.commentsService.deleteComment(comment.id).toPromise()
-    );
+    ref.afterClosed().subscribe((res) => {
+      if (!res?.confirmed) return;
+      // Удаляем все комментарии группы
+      const deletePromises = group.comments.map((comment) =>
+        this.commentsService.deleteComment(comment.id).toPromise()
+      );
 
-    Promise.all(deletePromises).then(() => {
-      this.snackBar.open('Сообщения удалены', 'Закрыть', {
-        duration: 2000,
-        panelClass: ['success-snackbar']
-      });
-      this.loadComments();
-    }).catch((error) => {
-      console.error('Ошибка удаления сообщений:', error);
-      this.snackBar.open('Ошибка удаления сообщений', 'Закрыть', {
-        duration: 3000,
-        panelClass: ['error-snackbar']
-      });
+      Promise.all(deletePromises)
+        .then(() => {
+          this.snackBar.open('Сообщения удалены', 'Закрыть', {
+            duration: 2000,
+            panelClass: ['success-snackbar'],
+          });
+          this.loadComments();
+        })
+        .catch((error) => {
+          console.error('Ошибка удаления сообщений:', error);
+          this.snackBar.open('Ошибка удаления сообщений', 'Закрыть', {
+            duration: 3000,
+            panelClass: ['error-snackbar'],
+          });
+        });
     });
   }
 

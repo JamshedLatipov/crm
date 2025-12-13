@@ -361,6 +361,48 @@
             </div>
           </div>
 
+          <div class="capacity-section">
+            <label class="capacity-label">
+              Сделки (максимум):
+              <span class="capacity-value">{{ userForm.get('maxDealsCapacity')?.value }} сделок</span>
+            </label>
+            <mat-slider
+              min="1"
+              max="100"
+              step="1"
+              discrete
+              [displayWith]="formatLabel"
+              class="capacity-slider"
+            >
+              <input matSliderThumb formControlName="maxDealsCapacity">
+            </mat-slider>
+            <div class="capacity-hints">
+              <span>1 (очень мало)</span>
+              <span>100 (максимум)</span>
+            </div>
+          </div>
+
+          <div class="capacity-section">
+            <label class="capacity-label">
+              Задачи (максимум):
+              <span class="capacity-value">{{ userForm.get('maxTasksCapacity')?.value }} задач</span>
+            </label>
+            <mat-slider
+              min="1"
+              max="200"
+              step="1"
+              discrete
+              [displayWith]="formatLabel"
+              class="capacity-slider"
+            >
+              <input matSliderThumb formControlName="maxTasksCapacity">
+            </mat-slider>
+            <div class="capacity-hints">
+              <span>1 (обычно PM)</span>
+              <span>200 (много задач)</span>
+            </div>
+          </div>
+
           <mat-form-field appearance="outline" class="modern-field">
             <mat-label>Руководитель</mat-label>
             <mat-select formControlName="managerID">

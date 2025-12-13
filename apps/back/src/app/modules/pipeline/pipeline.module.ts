@@ -5,6 +5,7 @@ import { AutomationService } from './automation.service';
 import { PipelineController } from './pipeline.controller';
 import { AutomationController } from './automation.controller';
 import { PipelineStage, PipelineLead, AutomationRule } from './pipeline.entity';
+import { ContactActivity } from '../contacts/contact-activity.entity';
 import { Deal } from '../deals/deal.entity';
 import { ContactsModule } from '../contacts/contacts.module';
 import { LeadModule } from '../leads/lead.module';
@@ -15,7 +16,7 @@ import { TaskModule } from '../tasks/task.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([PipelineStage, PipelineLead, Deal, AutomationRule]),
+  TypeOrmModule.forFeature([PipelineStage, PipelineLead, Deal, AutomationRule, ContactActivity]),
     ContactsModule,
     forwardRef(() => LeadModule),
     forwardRef(() => DealsModule),

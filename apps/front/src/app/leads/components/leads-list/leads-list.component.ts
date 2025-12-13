@@ -18,6 +18,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { ConfirmActionDialogComponent } from '../../../shared/dialogs/confirm-action-dialog.component';
 import { Router } from '@angular/router';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -25,6 +26,7 @@ import { StatusTabsComponent } from '../../../shared/components/status-tabs/stat
 
 import { LeadService } from '../../services/lead.service';
 import { UserService, Manager } from '../../../shared/services/user.service';
+import { AssignmentService } from '../../../services/assignment.service';
 import {
   Lead,
   LeadStatus,
@@ -38,7 +40,7 @@ import { CreateLeadDialogComponent } from '../create-lead-dialog.component';
 import { EditLeadDialogComponent } from '../edit-lead-dialog.component';
 // LeadDetailComponent is now routed; don't import here
 import { ChangeStatusDialogComponent } from '../change-status-dialog.component';
-import { AssignLeadDialogComponent } from '../assign-lead-dialog.component';
+import { AssignUserDialogComponent } from '../../../deals/components/assign-user-dialog.component';
 import { QuickAssignDialogComponent } from '../quick-assign-dialog.component';
 import { ConvertToDealDialogComponent } from '../convert-to-deal-dialog/convert-to-deal-dialog.component';
 import { leadStatusDisplay, leadSourceDisplay, leadPriorityDisplay } from '../../../shared/utils';
@@ -64,6 +66,7 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
     MatProgressSpinnerModule,
     MatTooltipModule,
     MatMenuModule,
+  ConfirmActionDialogComponent,
     MatDialogModule,
     MatDividerModule,
     MatCheckboxModule,
@@ -76,6 +79,7 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
 export class LeadsListComponent implements OnInit {
   private leadService = inject(LeadService);
   private userService = inject(UserService);
+  private assignmentService = inject(AssignmentService);
   private promoCompaniesService = inject(PromoCompaniesService);
   private router = inject(Router);
   private dialog = inject(MatDialog);
@@ -127,6 +131,9 @@ export class LeadsListComponent implements OnInit {
 
   // Managers cache
   managers: Manager[] = [];
+
+  // Map of entityId -> current assignment (from centralized assignments API)
+  currentAssignmentsMap = signal<Record<string, { id: number; name: string; email?: string; assignedAt?: string }>>({});
 
   // Expose LeadStatus to template for comparisons
   readonly LeadStatus = LeadStatus;
@@ -211,6 +218,18 @@ export class LeadsListComponent implements OnInit {
         next: (response) => {
           this.leads.set(response.leads);
           this.totalResults = response.total;
+          // Fetch current assignments for the loaded leads in batch
+          const ids = response.leads.map(l => l.id).filter(Boolean);
+          if (ids.length) {
+            this.assignmentService.getCurrentAssignmentsForEntities('lead', ids).subscribe({
+              next: (map) => this.currentAssignmentsMap.set(map || {}),
+              error: (err) => {
+                console.error('Error loading assignments for leads list:', err);
+              }
+            });
+          } else {
+            this.currentAssignmentsMap.set({});
+          }
           this.loading.set(false);
         },
         error: (error: unknown) => {
@@ -376,18 +395,22 @@ export class LeadsListComponent implements OnInit {
   }
 
   assignLead(lead: Lead): void {
-    const dialogRef = this.dialog.open(AssignLeadDialogComponent, {
-      width: '700px',
+    // Open deals' AssignUserDialogComponent to change assignee (reuses deals modal)
+    const dialogRef = this.dialog.open(AssignUserDialogComponent, {
+      width: '560px',
       maxWidth: '90vw',
       data: {
-        lead,
-        currentAssignee: lead.assignedTo,
-      },
+        deal: { title: lead.name, assignedTo: lead.assignedTo } as any,
+        currentUsers: []
+      }
     });
 
-    dialogRef.afterClosed().subscribe((result: Lead | undefined) => {
-      if (result) {
-        this.loadLeads(); // Refresh the list
+    dialogRef.afterClosed().subscribe((result: any) => {
+      if (result && result.userId) {
+        this.leadService.assignLead(lead.id, result.userId).subscribe({
+          next: () => this.loadLeads(),
+          error: (err) => console.error('Error assigning lead:', err)
+        });
       }
     });
   }
@@ -439,7 +462,19 @@ export class LeadsListComponent implements OnInit {
   }
 
   deleteLead(lead: Lead): void {
-    if (confirm(`Вы уверены, что хотите удалить лид "${lead.name}"?`)) {
+    const ref = this.dialog.open(ConfirmActionDialogComponent, {
+      width: '480px',
+      data: {
+        title: 'Удалить лид',
+        message: `Вы уверены, что хотите удалить лид "${lead.name}"?`,
+        confirmText: 'Удалить',
+        cancelText: 'Отмена',
+        confirmColor: 'warn'
+      }
+    });
+
+    ref.afterClosed().subscribe((res) => {
+      if (!res?.confirmed) return;
       this.leadService.deleteLead(lead.id).subscribe({
         next: () => {
           this.loadLeads();
@@ -448,7 +483,7 @@ export class LeadsListComponent implements OnInit {
           console.error('Error deleting lead:', error);
         },
       });
-    }
+    });
   }
 
   convertToDeal(lead: Lead): void {
@@ -508,5 +543,17 @@ export class LeadsListComponent implements OnInit {
   getPromoCompanyName(promoCompanyId: number): string {
     const company = this.promoCompanies.find(c => c.id === promoCompanyId);
     return company?.name || `ID: ${promoCompanyId}`;
+  }
+
+  // Return the display name for the assigned manager using centralized assignments when available
+  getAssignedManagerName(lead: Lead): string {
+    const map = this.currentAssignmentsMap();
+    const assigned = map && map[lead.id as any];
+    if (assigned && assigned.name) return assigned.name;
+
+    // Fallback to legacy assignedTo field
+    if (lead.assignedTo) return this.getManagerName(lead.assignedTo);
+
+    return '';
   }
 }
