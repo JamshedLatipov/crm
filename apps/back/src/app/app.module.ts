@@ -54,7 +54,7 @@ import { INTEGRATIONS_MIGRATIONS } from './modules/integrations/migrations';
         ...USER_ACTIVITY_MIGRATIONS,
         ...INTEGRATIONS_MIGRATIONS,
       ],
-      migrationsRun: false,
+      migrationsRun: true,
     }),
     ClientsModule.register([
       {
