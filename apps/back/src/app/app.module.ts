@@ -36,6 +36,10 @@ import { INTEGRATIONS_MIGRATIONS } from './modules/integrations/migrations';
       username: process.env.DB_USER || 'postgres',
       password: process.env.DB_PASS || 'postgres',
       database: process.env.DB_NAME || 'crm',
+      // Disable automatic schema synchronization in the containerized runtime
+      // to avoid runtime attempts to add non-nullable columns to tables
+      // with existing data. Migrations are used for data seeding and schema
+      // changes in controlled deployments.
       synchronize: true,
       autoLoadEntities: true,
       migrations: [

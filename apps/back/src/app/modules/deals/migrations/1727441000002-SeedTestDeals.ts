@@ -18,8 +18,12 @@ export class SeedTestDeals1727441000002 implements MigrationInterface {
 
     const [stage1, stage2, stage3, stage4] = stages;
 
-    // Создаем тестовые сделки
-    await queryRunner.query(`
+    // Создаем тестовые сделки. Если старое JSON-поле `contact` удалено,
+    // вставляем строки без него (используется `contactId` или NULL).
+    const hasContactColumn = await queryRunner.hasColumn('deals', 'contact');
+
+    if (hasContactColumn) {
+      await queryRunner.query(`
       INSERT INTO "deals" (
         "title", 
         "contact", 
@@ -29,8 +33,7 @@ export class SeedTestDeals1727441000002 implements MigrationInterface {
         "expectedCloseDate", 
         "stageId", 
         "status", 
-        "assignedTo", 
-        "notes"
+          "notes"
       ) VALUES
       (
         'Внедрение CRM для ООО "Рога и Копыта"',
@@ -41,7 +44,7 @@ export class SeedTestDeals1727441000002 implements MigrationInterface {
         '2025-10-15',
         '${stage3?.id || stage1?.id}',
         'open',
-        'admin',
+        
         'Крупный клиент, требует индивидуальную интеграцию'
       ),
       (
@@ -53,7 +56,7 @@ export class SeedTestDeals1727441000002 implements MigrationInterface {
         '2025-10-30',
         '${stage2?.id || stage1?.id}',
         'open',
-        'admin',
+        
         'Интересуется IP-телефонией для офиса на 50 сотрудников'
       ),
       (
@@ -65,7 +68,7 @@ export class SeedTestDeals1727441000002 implements MigrationInterface {
         '2025-11-15',
         '${stage1?.id}',
         'open',
-        'admin',
+        
         'Стартап, ограниченный бюджет, но перспективный'
       ),
       (
@@ -77,7 +80,7 @@ export class SeedTestDeals1727441000002 implements MigrationInterface {
         '2025-09-30',
         '${stage4?.id || stage1?.id}',
         'open',
-        'admin',
+        
         'Готовы к подписанию контракта, согласовываем детали'
       ),
       (
@@ -89,13 +92,84 @@ export class SeedTestDeals1727441000002 implements MigrationInterface {
         '2025-12-01',
         '${stage1?.id}',
         'open',
-        'admin',
+        
         'Малый бизнес, рассматривают базовый пакет'
       )
     `);
+    } else {
+      // Поле contact удалено — вставляем без него (contactId останется NULL)
+      await queryRunner.query(`
+      INSERT INTO "deals" (
+        "title", 
+        "amount", 
+        "currency", 
+        "probability", 
+        "expectedCloseDate", 
+        "stageId", 
+        "status", 
+        "notes"
+      ) VALUES
+      (
+        'Внедрение CRM для ООО "Рога и Копыта"',
+        350000.00,
+        'TJS',
+        80,
+        '2025-10-15',
+        '${stage3?.id || stage1?.id}',
+        'open',
+        'Крупный клиент, требует индивидуальную интеграцию'
+      ),
+      (
+        'Продажа телефонной системы',
+        150000.00,
+        'TJS',
+        60,
+        '2025-10-30',
+        '${stage2?.id || stage1?.id}',
+        'open',
+        'Интересуется IP-телефонией для офиса на 50 сотрудников'
+      ),
+      (
+        'Консультационные услуги',
+        75000.00,
+        'TJS',
+        40,
+        '2025-11-15',
+        '${stage1?.id}',
+        'open',
+        'Стартап, ограниченный бюджет, но перспективный'
+      ),
+      (
+        'Модернизация существующей системы',
+        500000.00,
+        'TJS',
+        90,
+        '2025-09-30',
+        '${stage4?.id || stage1?.id}',
+        'open',
+        'Готовы к подписанию контракта, согласовываем детали'
+      ),
+      (
+        'Пробная лицензия',
+        25000.00,
+        'TJS',
+        25,
+        '2025-12-01',
+        '${stage1?.id}',
+        'open',
+        'Малый бизнес, рассматривают базовый пакет'
+      )
+    `);
+    }
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DELETE FROM "deals" WHERE "assignedTo" = 'admin'`);
+    await queryRunner.query(`DELETE FROM "deals" WHERE title IN (
+      'Внедрение CRM для ООО "Рога и Копыта"',
+      'Продажа телефонной системы',
+      'Консультационные услуги',
+      'Модернизация существующей системы',
+      'Пробная лицензия'
+    )`);
   }
 }

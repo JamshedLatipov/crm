@@ -2,6 +2,7 @@ import { MigrationInterface, QueryRunner } from "typeorm";
 
 export class AddWebRtcOperator41691337601004 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
+    console.log('[migration] AddWebRtcOperator4 up starting');
     // AOR for operator4 (WebRTC)
     await queryRunner.query(`
       INSERT INTO ps_aors (id, max_contacts, remove_existing)
@@ -9,6 +10,7 @@ export class AddWebRtcOperator41691337601004 implements MigrationInterface {
       ON CONFLICT (id) DO UPDATE
       SET max_contacts = 1, remove_existing = 'yes';
     `);
+    console.log('[migration] AddWebRtcOperator4 inserted ps_aors');
 
     // Auth for operator4
     await queryRunner.query(`
@@ -17,6 +19,7 @@ export class AddWebRtcOperator41691337601004 implements MigrationInterface {
       ON CONFLICT (id) DO UPDATE
       SET auth_type = 'userpass', username = 'operator4', password = '123';
     `);
+    console.log('[migration] AddWebRtcOperator4 inserted ps_auths');
 
     // Endpoint for operator4 (WebRTC)
     await queryRunner.query(`
@@ -47,6 +50,7 @@ export class AddWebRtcOperator41691337601004 implements MigrationInterface {
         force_rport = 'yes',
         rtp_symmetric = 'yes';
     `);
+    console.log('[migration] AddWebRtcOperator4 inserted ps_endpoints');
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

@@ -2,6 +2,7 @@ import { MigrationInterface, QueryRunner } from "typeorm";
 
 export class AddMicroSipAccount1691337600004 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
+    console.log('[migration] AddMicroSipAccount up starting');
     // Добавляем AOR для MicroSIP
     await queryRunner.query(`
       INSERT INTO ps_aors (id, max_contacts, remove_existing) 
@@ -9,6 +10,7 @@ export class AddMicroSipAccount1691337600004 implements MigrationInterface {
       ON CONFLICT (id) DO UPDATE 
       SET max_contacts = 5, remove_existing = 'yes';
     `);
+    console.log('[migration] AddMicroSipAccount inserted ps_aors');
 
     // Добавляем Auth для MicroSIP
     await queryRunner.query(`
@@ -17,6 +19,7 @@ export class AddMicroSipAccount1691337600004 implements MigrationInterface {
       ON CONFLICT (id) DO UPDATE 
       SET auth_type = 'userpass', username = 'microsip', password = 'password123';
     `);
+    console.log('[migration] AddMicroSipAccount inserted ps_auths');
 
     // Добавляем Endpoint для MicroSIP
     await queryRunner.query(`
@@ -47,6 +50,7 @@ export class AddMicroSipAccount1691337600004 implements MigrationInterface {
         force_rport = 'yes',
         rtp_symmetric = 'yes';
     `);
+    console.log('[migration] AddMicroSipAccount inserted ps_endpoints');
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
