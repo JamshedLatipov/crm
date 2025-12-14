@@ -1,44 +1,78 @@
-    <div class="space-y-4">
-      <div class="flex items-center justify-between">
-        <h3 class="text-lg font-medium text-[var(--text-primary)]">Сценарии разговора</h3>
-        <button class="text-[var(--primary-color)] hover:text-[var(--primary-color-dark)] transition-colors" (click)="toggleScripts.emit()">
-          <span class="material-icons">{{ showScripts() ? 'expand_less' : 'expand_more' }}</span>
-        </button>
-      </div>
+<div class="scripts-panel">
+    <div class="header">
+    <h3>Call Scenarios</h3>
+    <div class="search-wrap">
+      <input placeholder="Search scenarios..." [ngModel]="search()" (ngModelChange)="search.set($event)" class="search-input" />
+    </div>
+  </div>
 
-      <div *ngIf="showScripts()" class="space-y-3">
-        <div *ngFor="let script of scripts(); trackBy: trackByScriptId" class="bg-[var(--surface-color)] border border-[var(--border-color)] rounded-lg p-4">
-          <div class="flex items-start justify-between mb-3">
-            <h4 class="font-medium text-[var(--text-primary)]">{{ script.title }}</h4>
-            <button class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors" (click)="toggleScript(script.id)">
-              <span class="material-icons text-sm">{{ script.expanded ? 'expand_less' : 'expand_more' }}</span>
-            </button>
+  <div class="tabs">
+    <button [class.active]="activeTab() === 'all'" (click)="activeTab.set('all')">All</button>
+    <button [class.active]="activeTab() === 'recent'" (click)="activeTab.set('recent')">Recent</button>
+    <button [class.active]="activeTab() === 'bookmarked'" (click)="activeTab.set('bookmarked')">Bookmarked</button>
+  </div>
+
+  <div class="content">
+    <div class="debug-info" *ngIf="(scriptsForTemplate() || []).length === 0">
+      <div class="no-scripts">No scripts loaded (debug): {{ (scriptsForTemplate() || []).length }}</div>
+    </div>
+    <div class="recently-used" *ngIf="activeTab() === 'recent'">
+      <div class="section-title">Recently Used</div>
+      <ul>
+        <li *ngFor="let s of (scriptsForTemplate() || []) | slice:0:3" class="recent-item">
+          <span class="title">{{ s.title }}</span>
+          <button class="bookmark" (click)="toggleBookmark(s)">
+            <span class="material-icons">bookmark_border</span>
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    <div class="folders">
+      <ng-container *ngFor="let cat of categoriesKeys()">
+        <div class="folder">
+          <div class="folder-header" (click)="toggleCategory(cat)">
+            <span class="material-icons">folder</span>
+            <span class="folder-title">{{ cat }}</span>
+            <div class="spacer"></div>
+            <button class="bookmark-all" (click)="$event.stopPropagation()"> <span class="material-icons">bookmark_border</span> </button>
           </div>
 
-          <div *ngIf="script.expanded" class="space-y-3">
-            <p class="text-[var(--text-secondary)] text-sm">{{ script.description }}</p>
+          <div class="folder-items" *ngIf="expandedCategories()[cat]">
+            <ng-container *ngFor="let script of categories()[cat]; trackBy: trackByScriptId">
+              <ng-template #scriptNode let-s let-level="level" let-isLast="isLast">
+                <div class="script-item" [class.has-children]="s.children?.length" [style.--level]="level || 0">
+                  <div class="script-row" (click)="s.children?.length ? toggleNode(s.id) : null" [class.clickable]="s.children?.length">
+                    <div class="script-left">
+                      <span class="tree-icon" *ngIf="s.children?.length">
+                        <span class="material-icons">{{ isNodeExpanded(s.id) ? 'expand_more' : 'chevron_right' }}</span>
+                      </span>
+                      <span class="tree-icon placeholder" *ngIf="!s.children?.length"></span>
+                      <span class="script-icon material-icons">{{ s.children?.length ? 'folder_open' : 'description' }}</span>
+                      <div class="script-info">
+                        <div class="script-title">{{ s.title }}</div>
+                        <div class="script-sub" *ngIf="s.description">{{ s.description }}</div>
+                      </div>
+                    </div>
+                    <div class="script-right">
+                      <button class="bookmark" (click)="toggleBookmark(s); $event.stopPropagation()">
+                        <span class="material-icons">{{ s.bookmarked ? 'bookmark' : 'bookmark_border' }}</span>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="children" *ngIf="s.children?.length && isNodeExpanded(s.id)">
+                    <ng-container *ngFor="let child of s.children; let childLast = last; trackBy: trackByScriptId">
+                      <ng-container *ngTemplateOutlet="scriptNode; context: { $implicit: child, level: (level || 0) + 1, isLast: childLast }"></ng-container>
+                    </ng-container>
+                  </div>
+                </div>
+              </ng-template>
 
-            <div *ngIf="script.steps && script.steps.length > 0" class="space-y-2">
-              <h5 class="font-medium text-[var(--text-primary)] text-sm">Шаги:</h5>
-              <ol class="list-decimal list-inside space-y-1 text-sm text-[var(--text-secondary)]">
-                <li *ngFor="let step of script.steps">{{ step }}</li>
-              </ol>
-            </div>
-
-            <div *ngIf="script.questions && script.questions.length > 0" class="space-y-2">
-              <h5 class="font-medium text-[var(--text-primary)] text-sm">Вопросы:</h5>
-              <ul class="list-disc list-inside space-y-1 text-sm text-[var(--text-secondary)]">
-                <li *ngFor="let question of script.questions">{{ question }}</li>
-              </ul>
-            </div>
-
-            <div *ngIf="script.tips && script.tips.length > 0" class="space-y-2">
-              <h5 class="font-medium text-[var(--text-primary)] text-sm">Советы:</h5>
-              <ul class="list-disc list-inside space-y-1 text-sm text-[var(--text-secondary)]">
-                <li *ngFor="let tip of script.tips">{{ tip }}</li>
-              </ul>
-            </div>
+              <ng-container *ngTemplateOutlet="scriptNode; context: { $implicit: script, level: 0, isLast: false }"></ng-container>
+            </ng-container>
           </div>
         </div>
-      </div>
+      </ng-container>
     </div>
+  </div>
+</div>

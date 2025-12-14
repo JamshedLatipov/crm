@@ -165,10 +165,10 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     try {
       const saved = localStorage.getItem('softphone.expanded');
       if (saved !== null) this.expanded = saved === '1';
-  const savedAuto = localStorage.getItem('softphone.autoExpandOnIncoming');
-  if (savedAuto !== null) this.autoExpandOnIncoming = savedAuto === '1';
-  const savedMissed = localStorage.getItem('softphone.missedCount');
-  if (savedMissed !== null) this.missedCallCount = Number(savedMissed) || 0;
+      const savedAuto = localStorage.getItem('softphone.autoExpandOnIncoming');
+      if (savedAuto !== null) this.autoExpandOnIncoming = savedAuto === '1';
+      const savedMissed = localStorage.getItem('softphone.missedCount');
+      if (savedMissed !== null) this.missedCallCount = Number(savedMissed) || 0;
     } catch {
       // ignore
     }
@@ -204,9 +204,11 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
           this.handleCallFailed(ev.payload as JsSIPSessionEvent);
           break;
         case 'transferResult':
-          this.status.set(ev.payload?.ok
-            ? 'Transfer initiated'
-            : 'Transfer result: ' + (ev.payload?.error || 'unknown'));
+          this.status.set(
+            ev.payload?.ok
+              ? 'Transfer initiated'
+              : 'Transfer result: ' + (ev.payload?.error || 'unknown')
+          );
           break;
         case 'transferFailed':
           this.status.set('Transfer failed');
@@ -226,7 +228,13 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
           // Session resumed from hold
           this.onHold.set(false);
           this.holdInProgress.set(false);
-          this.status.set(this.callActive() ? 'Call in progress' : this.isRegistered() ? 'Registered!' : 'Disconnected');
+          this.status.set(
+            this.callActive()
+              ? 'Call in progress'
+              : this.isRegistered()
+              ? 'Registered!'
+              : 'Disconnected'
+          );
           try {
             this.applyHoldState(false);
           } catch (e) {
@@ -239,28 +247,46 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
           this.currentSession = sess;
 
           // determine direction
-          const dir = (ev.payload && ev.payload.direction) || (sess && sess.direction) || 'outgoing';
+          const dir =
+            (ev.payload && ev.payload.direction) ||
+            (sess && sess.direction) ||
+            'outgoing';
 
           if (dir === 'incoming' || dir === 'inbound') {
             this.incoming.set(true);
             this.activeTab = 'info';
 
             // try to extract caller display or remote identity
-            const from = (sess && (sess.remote_identity?.uri || sess.remote_identity?.display_name)) || (ev.payload && ev.payload.from) || null;
-            this.incomingFrom.set(typeof from === 'string' ? from : from?.toString?.() ?? null);
-            this.status.set(`Incoming call${this.incomingFrom() ? ' from ' + this.incomingFrom() : ''}`);
+            const from =
+              (sess &&
+                (sess.remote_identity?.uri ||
+                  sess.remote_identity?.display_name)) ||
+              (ev.payload && ev.payload.from) ||
+              null;
+            this.incomingFrom.set(
+              typeof from === 'string' ? from : from?.toString?.() ?? null
+            );
+            this.status.set(
+              `Incoming call${
+                this.incomingFrom() ? ' from ' + this.incomingFrom() : ''
+              }`
+            );
             this.logger.info('Incoming call from:', this.incomingFrom());
 
             // Auto-expand if user prefers
             try {
-              if (this.autoExpandOnIncoming && !this.expanded) this.toggleExpand();
+              if (this.autoExpandOnIncoming && !this.expanded)
+                this.toggleExpand();
             } catch {
               /* ignore */
             }
 
             // Start incoming ringtone immediately
             try {
-              this.ringtone.startRingback(RINGBACK_INCOMING_LEVEL, RINGTONE_SRC);
+              this.ringtone.startRingback(
+                RINGBACK_INCOMING_LEVEL,
+                RINGTONE_SRC
+              );
             } catch (e) {
               this.logger.warn('Failed to start incoming ringtone', e);
             }
@@ -269,11 +295,17 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
             try {
               if (typeof Notification !== 'undefined') {
                 if (Notification.permission === 'granted') {
-                  new Notification('Incoming call', { body: this.incomingFrom() || 'Unknown caller', tag: 'softphone-incoming' });
+                  new Notification('Incoming call', {
+                    body: this.incomingFrom() || 'Unknown caller',
+                    tag: 'softphone-incoming',
+                  });
                 } else if (Notification.permission !== 'denied') {
                   Notification.requestPermission().then((perm) => {
                     if (perm === 'granted') {
-                      new Notification('Incoming call', { body: this.incomingFrom() || 'Unknown caller', tag: 'softphone-incoming' });
+                      new Notification('Incoming call', {
+                        body: this.incomingFrom() || 'Unknown caller',
+                        tag: 'softphone-incoming',
+                      });
                     }
                   });
                 }
@@ -289,7 +321,11 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
               const pc = sess.connection as RTCPeerConnection;
               try {
                 pc.addEventListener('track', (ev2: any) => {
-                  try { this.audioSvc.attachTrackEvent(ev2); } catch (ee) { this.logger.warn('audioSvc attachTrackEvent failed', ee); }
+                  try {
+                    this.audioSvc.attachTrackEvent(ev2);
+                  } catch (ee) {
+                    this.logger.warn('audioSvc attachTrackEvent failed', ee);
+                  }
                 });
               } catch (e) {
                 this.logger.warn('addEventListener(track) failed', e);
@@ -305,7 +341,11 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
               }
 
               // initialize audio element reference
-              try { this.audioSvc.initAudioElement(REMOTE_AUDIO_ELEMENT_ID); } catch (e) { this.logger.warn('initAudioElement failed', e); }
+              try {
+                this.audioSvc.initAudioElement(REMOTE_AUDIO_ELEMENT_ID);
+              } catch (e) {
+                this.logger.warn('initAudioElement failed', e);
+              }
             }
           } catch (e) {
             this.logger.warn('attachSession track handler failed', e);
@@ -315,7 +355,11 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
         }
         case 'track': {
           // forward to audio service for consistency
-          try { this.audioSvc.attachTrackEvent((ev && ev.payload) || ev); } catch (e) { this.logger.warn('track event forward failed', e); }
+          try {
+            this.audioSvc.attachTrackEvent((ev && ev.payload) || ev);
+          } catch (e) {
+            this.logger.warn('track event forward failed', e);
+          }
           break;
         }
       }
@@ -330,6 +374,8 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
         }
       }, 50);
     }
+
+    this.toggleScripts();
   }
 
   // Toggle scripts panel visibility and load scripts when opening
@@ -340,12 +386,38 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       if (opening) {
         // load active scripts once when opened
         try {
-          this.callScripts.getActiveCallScripts().subscribe((list) => {
-            this.scripts.set(list || []);
-          }, (err) => {
-            this.logger.warn('Failed to load call scripts', err);
-            this.scripts.set([]);
-          });
+          this.logger.info('Requesting active call scripts (tree) from API');
+          this.callScripts.getCallScriptsTree(true).subscribe(
+            (list) => {
+              this.logger.info('Call scripts tree response received', {
+                count: (list || []).length,
+              });
+              try {
+                const mapNode = (s: any) => ({
+                  id: s.id,
+                  title: s.title,
+                  description: s.description,
+                  steps: s.steps,
+                  questions: s.questions,
+                  tips: s.tips,
+                  category: s.category?.name || s.category || null,
+                  bookmarked: false,
+                  recentlyUsed: false,
+                  children: (s.children || []).map((c: any) => mapNode(c)),
+                });
+                const mapped = (list || []).map((s: any) => mapNode(s));
+                this.scripts.set(mapped as any);
+                this.logger.debug('Mapped scripts (tree)', mapped);
+              } catch (mapErr) {
+                this.logger.warn('Mapping call scripts tree failed', mapErr);
+                this.scripts.set(list || ([] as any));
+              }
+            },
+            (err) => {
+              this.logger.error('Failed to load call scripts tree', err);
+              this.scripts.set([]);
+            }
+          );
         } catch (e) {
           this.logger.warn('callScripts.getActiveCallScripts failed', e);
         }
@@ -389,9 +461,24 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
         // brief local summary
         try {
           const senders = pc.getSenders?.() ?? [];
-          this.logger.debug('PC senders:', senders.map(s => ({ kind: s.track?.kind, enabled: s.track?.enabled, id: s.track?.id, label: s.track?.label })));
+          this.logger.debug(
+            'PC senders:',
+            senders.map((s) => ({
+              kind: s.track?.kind,
+              enabled: s.track?.enabled,
+              id: s.track?.id,
+              label: s.track?.label,
+            }))
+          );
           const receivers = pc.getReceivers?.() ?? [];
-          this.logger.debug('PC receivers:', receivers.map(r => ({ kind: r.track?.kind, id: r.track?.id, label: r.track?.label })));
+          this.logger.debug(
+            'PC receivers:',
+            receivers.map((r) => ({
+              kind: r.track?.kind,
+              id: r.track?.id,
+              label: r.track?.label,
+            }))
+          );
         } catch (e) {
           this.logger.warn('failed to enumerate senders/receivers', e);
         }
@@ -407,16 +494,22 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     }
     // Persist initial call metadata (note/type/script) when call is confirmed
     try {
-      const callId = (this.currentSession && (this.currentSession.id || this.currentSession.call_id)) || null;
-      this.callHistoryService.saveCallLog(callId, {
-        note: this.callNote(),
-        callType: this.callType(),
-        scriptBranch: this.selectedScriptBranch(),
-      }).then(() => {
-        this.logger.info('Initial call log saved');
-      }).catch((err) => {
-        this.logger.warn('saveCallLog initial failed', err);
-      });
+      const callId =
+        (this.currentSession &&
+          (this.currentSession.id || this.currentSession.call_id)) ||
+        null;
+      this.callHistoryService
+        .saveCallLog(callId, {
+          note: this.callNote(),
+          callType: this.callType(),
+          scriptBranch: this.selectedScriptBranch(),
+        })
+        .then(() => {
+          this.logger.info('Initial call log saved');
+        })
+        .catch((err) => {
+          this.logger.warn('saveCallLog initial failed', err);
+        });
     } catch (e) {
       this.logger.warn('saveCallLog (confirmed) failed', e);
     }
@@ -435,13 +528,19 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     if (wasMissed) {
       try {
         this.missedCallCount = (this.missedCallCount || 0) + 1;
-        localStorage.setItem('softphone.missedCount', String(this.missedCallCount));
+        localStorage.setItem(
+          'softphone.missedCount',
+          String(this.missedCallCount)
+        );
       } catch {
         /* ignore */
       }
     }
     // Preserve session id for final logging, then clear incoming state and session so UI resets
-    const _endedCallId = (this.currentSession && (this.currentSession.id || this.currentSession.call_id)) || null;
+    const _endedCallId =
+      (this.currentSession &&
+        (this.currentSession.id || this.currentSession.call_id)) ||
+      null;
     this.incoming.set(false);
     this.incomingFrom.set(null);
     this.currentSession = null;
@@ -450,24 +549,31 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     if (causeStr.toLowerCase().includes('busy') || causeStr === '486') {
       this.ringtone.playOneShot(BUSY_RINGTONE_SRC, 0.8, 1000);
     }
-    this.status.set(this.isRegistered()
-      ? 'Registered!'
-      : `Call ended: ${e.data?.cause || 'Normal clearing'}`);
+    this.status.set(
+      this.isRegistered()
+        ? 'Registered!'
+        : `Call ended: ${e.data?.cause || 'Normal clearing'}`
+    );
 
     // Save final call log with duration and disposition
     try {
-      const duration = this.callStart ? Math.floor((Date.now() - this.callStart) / 1000) : undefined;
-      this.callHistoryService.saveCallLog(_endedCallId, {
-        note: this.callNote(),
-        callType: this.callType(),
-        scriptBranch: this.selectedScriptBranch(),
-        duration: duration as any,
-        disposition: causeStr || null,
-      }).then(() => {
-        this.logger.info('Final call log saved');
-      }).catch((err) => {
-        this.logger.warn('saveCallLog final failed', err);
-      });
+      const duration = this.callStart
+        ? Math.floor((Date.now() - this.callStart) / 1000)
+        : undefined;
+      this.callHistoryService
+        .saveCallLog(_endedCallId, {
+          note: this.callNote(),
+          callType: this.callType(),
+          scriptBranch: this.selectedScriptBranch(),
+          duration: duration as any,
+          disposition: causeStr || null,
+        })
+        .then(() => {
+          this.logger.info('Final call log saved');
+        })
+        .catch((err) => {
+          this.logger.warn('saveCallLog final failed', err);
+        });
     } catch (err) {
       this.logger.warn('saveCallLog (ended) failed', err);
     }
@@ -484,9 +590,11 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     this.incoming.set(false);
     this.incomingFrom.set(null);
     this.currentSession = null;
-    this.status.set(this.isRegistered()
-      ? 'Registered!'
-      : `Call failed: ${e.data?.cause || 'Unknown reason'}`);
+    this.status.set(
+      this.isRegistered()
+        ? 'Registered!'
+        : `Call failed: ${e.data?.cause || 'Unknown reason'}`
+    );
   }
 
   registrationFailed(e: JsSIPRegisterEvent) {
@@ -523,7 +631,6 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     const ss = String(diff % 60).padStart(2, '0');
     this.callDuration.set(`${mm}:${ss}`);
   }
-
 
   private extractNumber(s: string) {
     if (!s) return '';
@@ -622,7 +729,8 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     if (!this.callActive() || !this.currentSession) return;
     try {
       const newMuted = !this.muted();
-      const pc: RTCPeerConnection | undefined = this.currentSession['connection'];
+      const pc: RTCPeerConnection | undefined =
+        this.currentSession['connection'];
       if (pc) {
         pc.getSenders()?.forEach((sender) => {
           if (sender.track && sender.track.kind === 'audio') {
@@ -711,7 +819,9 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     const active = document.activeElement as HTMLElement | null;
     const inEditable = !!(
       active &&
-      (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)
+      (active.tagName === 'INPUT' ||
+        active.tagName === 'TEXTAREA' ||
+        active.isContentEditable)
     );
 
     const text = e.clipboardData?.getData('text') || '';
@@ -726,7 +836,6 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     e.preventDefault();
     this.applyClipboardNumber(text);
   }
-
 
   // Initiate transfer via backend
   async transfer(type: 'blind' | 'attended' = 'blind') {
@@ -804,18 +913,26 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
 
       // Mute or restore remote audio element to avoid hearing hold music/tones locally
       try {
-        const audio = document.getElementById(REMOTE_AUDIO_ELEMENT_ID) as HTMLAudioElement | null;
+        const audio = document.getElementById(
+          REMOTE_AUDIO_ELEMENT_ID
+        ) as HTMLAudioElement | null;
         if (audio) {
           if (hold) {
             // store previous volume so we can restore it
-            try { (audio as any).dataset.__preHoldVolume = String(audio.volume ?? 1); } catch {}
+            try {
+              (audio as any).dataset.__preHoldVolume = String(
+                audio.volume ?? 1
+              );
+            } catch {}
             audio.muted = true;
             audio.volume = 0;
           } else {
             const prev = (audio as any).dataset?.__preHoldVolume;
             if (prev !== undefined) {
               audio.volume = Number(prev) || 1;
-              try { delete (audio as any).dataset.__preHoldVolume; } catch {}
+              try {
+                delete (audio as any).dataset.__preHoldVolume;
+              } catch {}
             } else {
               audio.volume = 1;
             }
@@ -823,7 +940,8 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
             // try to resume playback if it was paused
             try {
               const p = audio.play();
-              if (p && typeof (p as any).then === 'function') (p as Promise<void>).catch(() => {});
+              if (p && typeof (p as any).then === 'function')
+                (p as Promise<void>).catch(() => {});
             } catch {}
           }
         }
