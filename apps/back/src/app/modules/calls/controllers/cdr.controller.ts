@@ -1,4 +1,5 @@
 import { Controller, Get, Param, Query, Post, Body } from '@nestjs/common';
+import { CurrentUser, CurrentUserPayload } from '../../user/current-user.decorator';
 import { CdrService, CdrFilterDto } from '../services/cdr.service';
 import { SaveCallLogDto } from '../dto/save-call-log.dto';
 import { ApiOkResponse, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
@@ -54,10 +55,11 @@ export class CdrController {
   }
 
   @Post('log')
-  async saveLog(@Body() body: SaveCallLogDto) {
+  async saveLog(@Body() body: SaveCallLogDto, @CurrentUser() user: CurrentUserPayload) {
     const rec = await this.cdrService.createCallLog({
       callId: body.callId ?? null,
       clientCallId: body.clientCallId ?? null,
+      createdBy: user?.sub ?? null,
       sipCallId: body.sipCallId ?? null,
       note: body.note ?? null,
       callType: body.callType ?? null,

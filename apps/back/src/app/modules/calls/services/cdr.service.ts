@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { Cdr } from '../entities/cdr.entity';
 import { CallLog } from '../entities/call-log.entity';
+import { CallScript } from '../../call-scripts/entities/call-script.entity';
 
 export interface CdrFilterDto {
   fromDate?: string; // ISO
@@ -104,10 +105,23 @@ export class CdrService {
   }
 
   async listCallLog(limit = 50, offset = 0) {
-    return this.callLogRepo.find({
-      take: limit,
-      skip: offset,
-      order: { createdAt: 'DESC' },
-    });
+    const qb = this.callLogRepo
+      .createQueryBuilder('cl')
+      // cast script id to text to compare with varchar scriptBranch
+      .leftJoin(CallScript, 's', 'cl.scriptBranch = s.id::text')
+      .orderBy('cl.createdAt', 'DESC')
+      .take(limit)
+      .skip(offset);
+
+    // select entity fields and script title
+    const rawAndEntities = await qb.select(['cl', 's.title']).getRawAndEntities();
+    const entities = rawAndEntities.entities as CallLog[];
+    const raw = rawAndEntities.raw as any[];
+
+    // merge script title into returned records as `scriptTitle`
+    return entities.map((e, i) => ({
+      ...e,
+      scriptTitle: raw[i]?.s_title ?? null,
+    }));
   }
 }

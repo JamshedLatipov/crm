@@ -19,6 +19,9 @@ export class CallLog {
   @Column({ type: 'varchar', length: 255, nullable: true })
   sipCallId: string | null;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  createdBy: string | null;
+
   @Column({ type: 'varchar', length: 64, nullable: true })
   asteriskUniqueId: string | null;
 
