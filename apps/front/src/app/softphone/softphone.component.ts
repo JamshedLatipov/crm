@@ -32,6 +32,7 @@ import {
 import { SoftphoneCallHistoryComponent } from './components/softphone-call-history/softphone-call-history.component';
 import { CallHistoryItem } from './components/softphone-call-history/softphone-call-history.types';
 import { CallInfoCardComponent } from '../integrations';
+import { SoftphoneCallHistoryService } from './components/softphone-call-history/softphone-call-history.service';
 
 // Define custom interfaces to avoid 'any' types
 interface JsSIPSessionEvent {
@@ -90,6 +91,8 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   private callStart: number | null = null;
   callDuration = signal('00:00');
   private durationTimer: number | null = null;
+  // Remember whether microphone was muted before placing on hold
+  private preHoldMuted: boolean | null = null;
 
   // Ringback tone (WebAudio) while outgoing call is ringing
   // ringback state moved to RingtoneService
@@ -107,59 +110,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   transferTarget = '';
 
   // Call history data
-  callHistory = signal<CallHistoryItem[]>([
-    {
-      id: '1',
-      number: '+7 (999) 123-45-67',
-      timestamp: new Date(Date.now() - 1000 * 60 * 5), // 5 minutes ago
-      duration: '02:34',
-      status: 'completed',
-      type: 'outgoing',
-      notes: 'Обсудили условия контракта',
-      contactName: 'Иванов Иван',
-      contactId: 'contact-1'
-    },
-    {
-      id: '2',
-      number: '+7 (999) 987-65-43',
-      timestamp: new Date(Date.now() - 1000 * 60 * 15), // 15 minutes ago
-      duration: '00:00',
-      status: 'missed',
-      type: 'incoming',
-      contactName: 'Петрова Анна',
-      contactId: 'contact-2'
-    },
-    {
-      id: '3',
-      number: '+7 (999) 555-12-34',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-      duration: '01:45',
-      status: 'completed',
-      type: 'incoming',
-      notes: 'Заказ оформлен',
-      contactName: 'Сидоров Алексей',
-      contactId: 'contact-3'
-    },
-    {
-      id: '4',
-      number: '+7 (999) 777-88-99',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
-      duration: '00:00',
-      status: 'failed',
-      type: 'outgoing'
-    },
-    {
-      id: '5',
-      number: '+7 (999) 111-22-33',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2), // 2 days ago
-      duration: '05:12',
-      status: 'completed',
-      type: 'outgoing',
-      notes: 'Техническая поддержка',
-      contactName: 'Кузнецова Мария',
-      contactId: 'contact-4'
-    }
-  ]);
+  callHistory = signal<CallHistoryItem[]>([]);
 
   // Asterisk host is read from environment config (moved from hardcoded value)
   private readonly asteriskHost = environment.asteriskHost || '127.0.0.1';
@@ -172,6 +123,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   private readonly callsApi = inject(CallsApiService);
   private readonly softphone = inject(SoftphoneService);
   private readonly ringtone = inject(RingtoneService);
+  private readonly callHistoryService = inject(SoftphoneCallHistoryService);
 
   constructor() {
     // Автоподстановка сохранённых SIP реквизитов оператора
@@ -244,16 +196,26 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
           this.status.set('Transfer failed');
           break;
         case 'hold':
-          // Session confirmed placed on hold
+          // Session confirmed placed on hold (remote or local)
           this.onHold.set(true);
           this.holdInProgress.set(false);
           this.status.set('Call on hold');
+          try {
+            this.applyHoldState(true);
+          } catch (e) {
+            console.warn('applyHoldState on hold failed', e);
+          }
           break;
         case 'unhold':
           // Session resumed from hold
           this.onHold.set(false);
           this.holdInProgress.set(false);
           this.status.set(this.callActive() ? 'Call in progress' : this.isRegistered() ? 'Registered!' : 'Disconnected');
+          try {
+            this.applyHoldState(false);
+          } catch (e) {
+            console.warn('applyHoldState on unhold failed', e);
+          }
           break;
           break;
         case 'newRTCSession': {
@@ -385,6 +347,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     const wasMissed = this.incoming() && !this.callActive();
     this.callActive.set(false);
     this.ringtone.stopRingback();
+    // Stop local timer but keep the displayed elapsed time until we reconcile with CDR
     this.stopCallTimer();
     this.onHold.set(false);
     // If missed, increment counter
@@ -452,7 +415,6 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       this.durationTimer = null;
     }
     this.callStart = null;
-    this.callDuration.set('00:00');
   }
   private updateDuration() {
     if (!this.callStart) return;
@@ -460,6 +422,15 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     const mm = String(Math.floor(diff / 60)).padStart(2, '0');
     const ss = String(diff % 60).padStart(2, '0');
     this.callDuration.set(`${mm}:${ss}`);
+  }
+
+
+  private extractNumber(s: string) {
+    if (!s) return '';
+    // extract continuous digits and optional leading +
+    const m = s.match(/\+?\d+/g);
+    if (!m) return s.replace(/\D/g, '');
+    return m.join('');
   }
 
   connect() {
@@ -550,23 +521,16 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   toggleMute() {
     if (!this.callActive() || !this.currentSession) return;
     try {
-      const pc: RTCPeerConnection | undefined =
-        this.currentSession['connection'];
+      const newMuted = !this.muted();
+      const pc: RTCPeerConnection | undefined = this.currentSession['connection'];
       if (pc) {
         pc.getSenders()?.forEach((sender) => {
           if (sender.track && sender.track.kind === 'audio') {
-            sender.track.enabled = this.muted(); // if currently muted flag true -> enabling
+            sender.track.enabled = !newMuted;
           }
         });
       }
-      this.muted.set(!this.muted());
-      // After flipping flag, correct actual track state (above used previous value)
-      if (pc) {
-        pc.getSenders()?.forEach((sender) => {
-          if (sender.track && sender.track.kind === 'audio')
-            sender.track.enabled = !this.muted();
-        });
-      }
+      this.muted.set(newMuted);
       this.status.set(this.muted() ? 'Microphone muted' : 'Call in progress');
     } catch (e) {
       console.error('Mute toggle failed', e);
@@ -700,5 +664,74 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   onViewContact(contactId: string) {
     console.log('View contact:', contactId);
     // TODO: Navigate to contact page
+  }
+
+  // Apply hold state locally: disable outgoing audio senders and pause/resume remote audio playback
+  private applyHoldState(hold: boolean) {
+    try {
+      // Remember/restore microphone muted state around hold
+      const pc: RTCPeerConnection | undefined = this.currentSession?.connection;
+
+      if (hold) {
+        // store whether user had microphone muted before placing on hold
+        this.preHoldMuted = this.preHoldMuted ?? this.muted();
+      }
+
+      // Disable or enable local audio senders
+      try {
+        if (pc) {
+          pc.getSenders()?.forEach((sender) => {
+            if (sender.track && sender.track.kind === 'audio') {
+              try {
+                sender.track.enabled = !hold;
+              } catch (e) {
+                // Some browsers may not allow changing track state; ignore
+              }
+            }
+          });
+        }
+      } catch (e) {
+        console.warn('applyHoldState: manipulating senders failed', e);
+      }
+
+      // Update component muted state: when placed on hold we show muted, on resume restore previous state
+      if (hold) {
+        this.muted.set(true);
+      } else {
+        this.muted.set(this.preHoldMuted ?? false);
+        this.preHoldMuted = null;
+      }
+
+      // Mute or restore remote audio element to avoid hearing hold music/tones locally
+      try {
+        const audio = document.getElementById(REMOTE_AUDIO_ELEMENT_ID) as HTMLAudioElement | null;
+        if (audio) {
+          if (hold) {
+            // store previous volume so we can restore it
+            try { (audio as any).dataset.__preHoldVolume = String(audio.volume ?? 1); } catch {}
+            audio.muted = true;
+            audio.volume = 0;
+          } else {
+            const prev = (audio as any).dataset?.__preHoldVolume;
+            if (prev !== undefined) {
+              audio.volume = Number(prev) || 1;
+              try { delete (audio as any).dataset.__preHoldVolume; } catch {}
+            } else {
+              audio.volume = 1;
+            }
+            audio.muted = false;
+            // try to resume playback if it was paused
+            try {
+              const p = audio.play();
+              if (p && typeof (p as any).then === 'function') (p as Promise<void>).catch(() => {});
+            } catch {}
+          }
+        }
+      } catch (e) {
+        console.warn('applyHoldState: remote audio handling failed', e);
+      }
+    } catch (e) {
+      console.warn('applyHoldState failed', e);
+    }
   }
 }

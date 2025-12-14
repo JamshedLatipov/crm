@@ -153,11 +153,30 @@ export class SoftphoneService {
     try { this.currentSession?.sendDTMF?.(digit); } catch (err) { console.warn('sendDTMF failed', err); }
   }
 
-  hold() {
-    try { this.currentSession?.hold?.({ useUpdate: true }); } catch (err) { console.warn('hold failed', err); }
+  /**
+   * Place the current session on hold. By default use re-INVITE (useUpdate=false)
+   * as some SIP backends (e.g. Asterisk) may not handle UPDATE-based hold correctly.
+   * Emit a local event immediately so UI updates without waiting for the remote/SDK event.
+   */
+  hold(useUpdate = false) {
+    try {
+      this.events$.next({ type: 'hold' });
+      this.currentSession?.hold?.({ useUpdate });
+    } catch (err) {
+      console.warn('hold failed', err);
+    }
   }
-  unhold() {
-    try { this.currentSession?.unhold?.({ useUpdate: true }); } catch (err) { console.warn('unhold failed', err); }
+
+  /**
+   * Resume the current session from hold. Defaults to re-INVITE.
+   */
+  unhold(useUpdate = false) {
+    try {
+      this.events$.next({ type: 'unhold' });
+      this.currentSession?.unhold?.({ useUpdate });
+    } catch (err) {
+      console.warn('unhold failed', err);
+    }
   }
 
   getCurrentSession() { return this.currentSession; }
