@@ -57,6 +57,8 @@ export class CdrController {
   async saveLog(@Body() body: SaveCallLogDto) {
     const rec = await this.cdrService.createCallLog({
       callId: body.callId ?? null,
+      clientCallId: body.clientCallId ?? null,
+      sipCallId: body.sipCallId ?? null,
       note: body.note ?? null,
       callType: body.callType ?? null,
       scriptBranch: body.scriptBranch ?? null,

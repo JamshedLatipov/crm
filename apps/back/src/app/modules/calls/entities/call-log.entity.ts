@@ -13,6 +13,18 @@ export class CallLog {
   @Column({ type: 'varchar', length: 255, nullable: true })
   callId: string | null;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  clientCallId: string | null;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  sipCallId: string | null;
+
+  @Column({ type: 'varchar', length: 64, nullable: true })
+  asteriskUniqueId: string | null;
+
+  @Column({ type: 'varchar', length: 32, nullable: false, default: 'awaiting_cdr' })
+  status: string;
+
   @Column({ type: 'text', nullable: true })
   note: string | null;
 
@@ -30,4 +42,7 @@ export class CallLog {
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  updatedAt: Date | null;
 }

@@ -513,27 +513,6 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     } catch (err) {
       this.logger.warn('peer connection inspection failed', err);
     }
-    // Persist initial call metadata (note/type/script) when call is confirmed
-    try {
-      const callId =
-        (this.currentSession &&
-          (this.currentSession.id || this.currentSession.call_id)) ||
-        null;
-      this.callHistoryService
-        .saveCallLog(callId, {
-          note: this.callNote(),
-          callType: this.callType(),
-          scriptBranch: this.selectedScriptBranch(),
-        })
-        .then(() => {
-          this.logger.info('Initial call log saved');
-        })
-        .catch((err) => {
-          this.logger.warn('saveCallLog initial failed', err);
-        });
-    } catch (e) {
-      this.logger.warn('saveCallLog (confirmed) failed', e);
-    }
   }
 
   private handleCallEnded(e: JsSIPSessionEvent) {
@@ -557,11 +536,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
         /* ignore */
       }
     }
-    // Preserve session id for final logging, then clear incoming state and session so UI resets
-    const _endedCallId =
-      (this.currentSession &&
-        (this.currentSession.id || this.currentSession.call_id)) ||
-      null;
+
     this.incoming.set(false);
     this.incomingFrom.set(null);
     this.currentSession = null;
@@ -575,29 +550,6 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
         ? 'Registered!'
         : `Call ended: ${e.data?.cause || 'Normal clearing'}`
     );
-
-    // Save final call log with duration and disposition
-    try {
-      const duration = this.callStart
-        ? Math.floor((Date.now() - this.callStart) / 1000)
-        : undefined;
-      this.callHistoryService
-        .saveCallLog(_endedCallId, {
-          note: this.callNote(),
-          callType: this.callType(),
-          scriptBranch: this.selectedScriptBranch(),
-          duration: duration as any,
-          disposition: causeStr || null,
-        })
-        .then(() => {
-          this.logger.info('Final call log saved');
-        })
-        .catch((err) => {
-          this.logger.warn('saveCallLog final failed', err);
-        });
-    } catch (err) {
-      this.logger.warn('saveCallLog (ended) failed', err);
-    }
   }
 
   private handleCallFailed(e: JsSIPSessionEvent) {
@@ -651,6 +603,31 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     const mm = String(Math.floor(diff / 60)).padStart(2, '0');
     const ss = String(diff % 60).padStart(2, '0');
     this.callDuration.set(`${mm}:${ss}`);
+  }
+
+  // Generate a lightweight client-side id to correlate frontend logs with Asterisk
+  private generateClientCallId(): string {
+    return `c-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  }
+
+  // Unified extraction of an identifier to use when saving call logs.
+  // Prefer client-generated id (attached to session), fall back to session id or call_id.
+  private getSessionCallKey(session: JsSIPSession | null): string | null {
+    try {
+      if (!session) return null;
+      const s = session as any;
+      if (s.__clientCallId) return String(s.__clientCallId);
+      if (s.call_id) return String(s.call_id);
+      if (s.id) return String(s.id);
+      // attempt to read SIP Call-ID from request headers
+      try {
+        const hdr = s.request?.getHeader?.('Call-ID') ?? s.request?.headers?.['call-id']?.[0]?.raw;
+        if (hdr) return String(hdr);
+      } catch {}
+      return null;
+    } catch (e) {
+      return null;
+    }
   }
 
   private extractNumber(s: string) {
@@ -729,12 +706,24 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
 
     this.status.set(`Calling ${this.callee}...`);
     try {
+      // generate a client-side id we can correlate with Asterisk via SIP header
+      const clientCallId = this.generateClientCallId();
+      const opts = {
+        extraHeaders: [`X-Client-Call-ID: ${clientCallId}`, 'X-Custom-Header: CRM Call'],
+        mediaConstraints: { audio: true, video: false },
+        pcConfig: { iceServers: [], rtcpMuxPolicy: 'require' },
+      };
+
       const session = this.softphone.call(
-        `sip:${this.callee}@${this.asteriskHost}`
+        `sip:${this.callee}@${this.asteriskHost}`,
+        opts
       );
+      try {
+        (session as any).__clientCallId = clientCallId;
+      } catch {}
       this.currentSession = session;
       this.callActive.set(true);
-      this.logger.info('Call session created:', session);
+      this.logger.info('Call session created:', session, { clientCallId });
     } catch (error) {
       this.logger.error('Error initiating call:', error);
       this.status.set('Ошибка при совершении вызова');
@@ -752,10 +741,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     createTask?: boolean;
   }) {
     try {
-      const callId =
-        (this.currentSession &&
-          (this.currentSession.id || this.currentSession.call_id)) ||
-        null;
+      const callId = this.getSessionCallKey(this.currentSession);
       const noteToSave = payload?.note ?? this.callNote();
       const branch = payload?.branchId ?? this.selectedScriptBranch();
 

@@ -90,7 +90,15 @@ export class CdrService {
    * Persist auxiliary call log / metadata record
    */
   async createCallLog(data: Partial<CallLog>): Promise<CallLog> {
-    const ent = this.callLogRepo.create(data as any);
+    // determine initial status: if duration/disposition provided - completed, else awaiting_cdr when call identifier present
+    const status =
+      typeof data.duration === 'number' || data.disposition
+        ? 'completed'
+        : data.clientCallId || data.callId || data.sipCallId
+        ? 'awaiting_cdr'
+        : 'completed';
+    const now = new Date();
+    const ent = this.callLogRepo.create({ ...data, status, updatedAt: now } as any);
     const saved = await this.callLogRepo.save(ent as any);
     return Array.isArray(saved) ? saved[0] : (saved as CallLog);
   }
