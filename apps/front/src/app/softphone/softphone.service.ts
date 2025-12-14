@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Subject } from 'rxjs';
 import * as JsSIP from 'jssip';
 import { CallsApiService } from '../services/calls.service';
+import { SoftphoneLoggerService } from './softphone-logger.service';
 
 export type SoftphoneEvent = { type: string; payload?: any };
 
@@ -12,10 +13,11 @@ export class SoftphoneService {
   private currentSession: any = null;
   public events$ = new Subject<SoftphoneEvent>();
   private callsApi = inject(CallsApiService);
+  private readonly logger = inject(SoftphoneLoggerService);
 
   connect(sipUser: string, sipPassword: string, asteriskHost = '127.0.0.1') {
     if (this.ua) {
-      try { this.ua.stop(); } catch (err) { console.warn('ua.stop failed', err); }
+      try { this.ua.stop(); } catch (err) { this.logger.warn('ua.stop failed', err); }
       this.ua = null;
     }
 
@@ -44,7 +46,7 @@ export class SoftphoneService {
       this.events$.next({ type: 'newRTCSession', payload: { session, direction: session.direction } });
     });
 
-    try { this.ua.start(); } catch (err) { console.warn('UA start failed', err); }
+    try { this.ua.start(); } catch (err) { this.logger.warn('UA start failed', err); }
     this.events$.next({ type: 'connecting' });
   }
 
@@ -67,15 +69,15 @@ export class SoftphoneService {
         // Diagnostic hooks: log ICE state changes and configuration
         try {
           pc.addEventListener('iceconnectionstatechange', () => {
-            try { console.log('session PC iceConnectionState:', pc.iceConnectionState); } catch {}
+            try { this.logger.debug('session PC iceConnectionState:', pc.iceConnectionState); } catch {}
           });
-          try { console.log('session PC configuration:', pc.getConfiguration ? pc.getConfiguration() : undefined); } catch {}
+          try { this.logger.debug('session PC configuration:', pc.getConfiguration ? pc.getConfiguration() : undefined); } catch {}
         } catch (e) {
-          console.warn('pc diagnostic hooks failed', e);
+          this.logger.warn('pc diagnostic hooks failed', e);
         }
       }
     } catch (err) {
-      console.warn('attachSession track handler failed', err);
+      this.logger.warn('attachSession track handler failed', err);
     }
   }
 
@@ -99,7 +101,7 @@ export class SoftphoneService {
       this.events$.next({ type: 'answered', payload: { session: s } });
       return s;
     } catch (err) {
-      console.warn('answer failed', err);
+      this.logger.warn('answer failed', err);
       this.events$.next({ type: 'answerFailed', payload: err });
       throw err;
     }
@@ -116,7 +118,7 @@ export class SoftphoneService {
       s.terminate?.({ status_code: statusCode });
       this.events$.next({ type: 'rejected', payload: { session: s } });
     } catch (err) {
-      console.warn('reject failed', err);
+      this.logger.warn('reject failed', err);
       this.events$.next({ type: 'rejectFailed', payload: err });
       throw err;
     }
@@ -157,18 +159,18 @@ export class SoftphoneService {
       this.events$.next({ type: 'transferResult', payload: resp });
       return resp;
     } catch (err) {
-      console.error('Transfer failed', err);
+      this.logger.error('Transfer failed', err);
       this.events$.next({ type: 'transferFailed', payload: err });
       throw err;
     }
   }
 
   hangup() {
-    try { this.currentSession?.terminate?.(); } catch (err) { console.warn('hangup failed', err); }
+    try { this.currentSession?.terminate?.(); } catch (err) { this.logger.warn('hangup failed', err); }
   }
 
   sendDTMF(digit: string) {
-    try { this.currentSession?.sendDTMF?.(digit); } catch (err) { console.warn('sendDTMF failed', err); }
+    try { this.currentSession?.sendDTMF?.(digit); } catch (err) { this.logger.warn('sendDTMF failed', err); }
   }
 
   /**
@@ -181,7 +183,7 @@ export class SoftphoneService {
       this.events$.next({ type: 'hold' });
       this.currentSession?.hold?.({ useUpdate });
     } catch (err) {
-      console.warn('hold failed', err);
+      this.logger.warn('hold failed', err);
     }
   }
 
@@ -193,7 +195,7 @@ export class SoftphoneService {
       this.events$.next({ type: 'unhold' });
       this.currentSession?.unhold?.({ useUpdate });
     } catch (err) {
-      console.warn('unhold failed', err);
+      this.logger.warn('unhold failed', err);
     }
   }
 

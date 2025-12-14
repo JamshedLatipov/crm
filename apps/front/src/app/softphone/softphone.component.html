@@ -106,54 +106,16 @@
         </div>
       </div>
 
-      <!-- Dial Tab Content -->
-      <div *ngIf="activeTab === 'dial' && !callActive()" class="dialer-section">
-        <div class="number-input">
-          <input
-            [(ngModel)]="callee"
-            [title]="callee"
-            placeholder="Введите номер"
-            class="number-display"
-          />
-          <div class="input-actions">
-            <button
-              *ngIf="callee"
-              (click)="removeLast()"
-              class="action-button"
-              title="Удалить последний символ"
-            >
-              <span class="material-icons">backspace</span>
-            </button>
-            <button
-              *ngIf="callee"
-              (click)="clearNumber()"
-              class="action-button"
-              title="Очистить номер"
-            >
-              <span class="material-icons">close</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="dialpad">
-          <button
-            *ngFor="let key of ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#']"
-            (click)="pressKey(key)"
-            class="dial-button"
-          >
-            {{ key }}
-          </button>
-        </div>
-
-        <button
-          (click)="call()"
-          [disabled]="!callee"
-          class="call-button"
-        >
-          <span class="material-icons">call</span>
-          Позвонить
-        </button>
-      </div>
+      <!-- Dial Tab Content (extracted to component) -->
+      <app-softphone-dial-tab
+        *ngIf="activeTab === 'dial' && !callActive()"
+        [callee]="callee"
+        (calleeChange)="callee = $event"
+        (pressKey)="pressKey($event)"
+        (call)="call()"
+        (removeLast)="removeLast()"
+        (clearNumber)="clearNumber()"
+      ></app-softphone-dial-tab>
 
       <!-- Call Info (when active call) -->
       <app-softphone-call-info
@@ -195,12 +157,8 @@
               [operatorId]="sipUser"
             />
 
-      <!-- Info Tab -->
-      <div *ngIf="activeTab === 'info'" class="info-tab-content" style="overflow-y: auto; max-height: 400px;">
-        <app-call-info-card
-            [phone]="incoming() ? incomingFrom() : callee"
-        ></app-call-info-card>
-      </div>
+      <!-- Info Tab (extracted to component) -->
+      <app-softphone-info-tab *ngIf="activeTab === 'info'" [phone]="incoming() ? incomingFrom() : callee"></app-softphone-info-tab>
 
       <!-- Call Actions -->
       <app-softphone-call-actions

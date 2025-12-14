@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { SoftphoneLoggerService } from './softphone-logger.service';
 
 // Sound constants (public path)
 export const RINGTONE_SRC = '/sounds/ring.mp3'; // incoming
@@ -17,6 +18,7 @@ export class RingtoneService {
   private ringbackTimer: number | null = null;
 
   private busyAudioEl: HTMLAudioElement | null = null;
+  private readonly logger = inject(SoftphoneLoggerService);
 
   startRingback(level = RINGBACK_DEFAULT_LEVEL, src?: string) {
     try {
@@ -32,30 +34,30 @@ export class RingtoneService {
           const playPromise = ringtoneEl.play();
           if (playPromise && typeof (playPromise as unknown as { then?: unknown }).then === 'function') {
             (playPromise as Promise<void>)
-              .then(() => {
+                .then(() => {
                 try {
                   (ringtoneEl as HTMLAudioElement & { __playingForSoftphone?: boolean }).__playingForSoftphone = true;
                 } catch (e) {
-                  console.warn('mark ringtone playing failed', e);
+                  this.logger.warn('mark ringtone playing failed', e);
                 }
               })
               .catch((err) => {
-                console.warn('ringtone play blocked', err);
+                this.logger.warn('ringtone play blocked', err);
               });
           } else {
             try {
               (ringtoneEl as HTMLAudioElement & { __playingForSoftphone?: boolean }).__playingForSoftphone = true;
             } catch (e) {
-              console.warn('mark ringtone playing failed', e);
+              this.logger.warn('mark ringtone playing failed', e);
             }
           }
           return;
-        } catch (e) {
-          console.warn('ringtone play attempt failed', e);
+          } catch (e) {
+          this.logger.warn('ringtone play attempt failed', e);
         }
       }
     } catch (err) {
-      console.warn('Ringback start failed', err);
+      this.logger.warn('Ringback start failed', err);
     }
   }
 
@@ -67,12 +69,12 @@ export class RingtoneService {
           ringtoneEl.pause();
           ringtoneEl.currentTime = 0;
         } catch (e) {
-          console.warn('stop ringtone failed', e);
+          this.logger.warn('stop ringtone failed', e);
         }
         try {
           delete (ringtoneEl as HTMLAudioElement & { __playingForSoftphone?: boolean }).__playingForSoftphone;
         } catch (e) {
-          console.warn('cleanup ringtone flag failed', e);
+          this.logger.warn('cleanup ringtone flag failed', e);
         }
       }
       if (this.ringbackTimer) {
@@ -83,12 +85,12 @@ export class RingtoneService {
         try {
           this.ringbackOsc.stop();
         } catch (err) {
-          console.warn('ringbackOsc.stop failed', err);
+          this.logger.warn('ringbackOsc.stop failed', err);
         }
         try {
           this.ringbackOsc.disconnect();
         } catch (err) {
-          console.warn('ringbackOsc.disconnect failed', err);
+          this.logger.warn('ringbackOsc.disconnect failed', err);
         }
         this.ringbackOsc = null;
       }
@@ -96,7 +98,7 @@ export class RingtoneService {
         try {
           this.ringbackGain.disconnect();
         } catch (err) {
-          console.warn('ringbackGain.disconnect failed', err);
+          this.logger.warn('ringbackGain.disconnect failed', err);
         }
         this.ringbackGain = null;
       }
@@ -104,12 +106,12 @@ export class RingtoneService {
         try {
           this.ringbackCtx.close();
         } catch (err) {
-          console.warn('ringbackCtx.close failed', err);
+          this.logger.warn('ringbackCtx.close failed', err);
         }
         this.ringbackCtx = null;
       }
     } catch (err) {
-      console.warn('Ringback stop failed', err);
+      this.logger.warn('Ringback stop failed', err);
     }
   }
 
@@ -119,12 +121,12 @@ export class RingtoneService {
         try {
           this.busyAudioEl.pause();
         } catch (err) {
-          console.warn('busyAudioEl.pause failed', err);
+          this.logger.warn('busyAudioEl.pause failed', err);
         }
         try {
           this.busyAudioEl.remove();
         } catch (err) {
-          console.warn('busyAudioEl.remove failed', err);
+          this.logger.warn('busyAudioEl.remove failed', err);
         }
         this.busyAudioEl = null;
       }
@@ -137,17 +139,17 @@ export class RingtoneService {
         try {
           audio.pause();
         } catch (err) {
-          console.warn('audio.pause cleanup failed', err);
+          this.logger.warn('audio.pause cleanup failed', err);
         }
         try {
           audio.removeEventListener('ended', cleanup);
         } catch (err) {
-          console.warn('removeEventListener failed', err);
+          this.logger.warn('removeEventListener failed', err);
         }
         try {
           audio.remove();
         } catch (err) {
-          console.warn('audio.remove cleanup failed', err);
+          this.logger.warn('audio.remove cleanup failed', err);
         }
         if (this.busyAudioEl === audio) this.busyAudioEl = null;
       };
@@ -157,13 +159,13 @@ export class RingtoneService {
       const p = audio.play();
       if (p && typeof (p as unknown as { then?: unknown }).then === 'function') {
         (p as Promise<void>).catch((err) => {
-          console.warn('busy audio.play blocked', err);
+          this.logger.warn('busy audio.play blocked', err);
           setTimeout(() => this.stopRingback(), durationMs);
         });
       }
       setTimeout(cleanup, durationMs);
     } catch (err) {
-      console.warn('playOneShot failed', err);
+      this.logger.warn('playOneShot failed', err);
     }
   }
 }

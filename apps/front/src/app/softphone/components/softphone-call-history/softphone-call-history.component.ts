@@ -9,6 +9,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatPaginatorModule, MatPaginator } from '@angular/material/paginator';
 import { SoftphoneCallHistoryService } from '../../services/softphone-call-history.service';
+import { SoftphoneLoggerService } from '../../softphone-logger.service';
 import { CdrRecord, CdrQuery, CdrResponse } from '../../types/cdr.types';
 import { environment } from '../../../../environments/environment';
 import { endOfToday, startOfToday } from 'date-fns';
@@ -32,6 +33,7 @@ import { endOfToday, startOfToday } from 'date-fns';
 })
 export class SoftphoneCallHistoryComponent implements OnInit, OnChanges {
   private historyService = inject(SoftphoneCallHistoryService);
+  private readonly logger = inject(SoftphoneLoggerService);
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
 
@@ -126,7 +128,7 @@ export class SoftphoneCallHistoryComponent implements OnInit, OnChanges {
       }
     } catch (err) {
       this.error.set(err instanceof Error ? err.message : 'Не удалось загрузить историю звонков');
-      console.error('Error loading call history:', err);
+      this.logger.error('Error loading call history:', err);
     } finally {
       this.isLoading.set(false);
     }
@@ -290,7 +292,7 @@ export class SoftphoneCallHistoryComponent implements OnInit, OnChanges {
 
   callNumber(number: string): void {
     // Emit event to parent component to initiate call
-    console.log('Calling number:', number);
+    this.logger.info('Calling number:', number);
     // TODO: Implement call functionality - emit event to softphone
     // For now, just log the action
     alert(`Звонок на номер ${number}...`);
@@ -298,7 +300,7 @@ export class SoftphoneCallHistoryComponent implements OnInit, OnChanges {
 
   showCallDetails(call: CdrRecord): void {
     // Show detailed call information in a modal or expanded view
-    console.log('Call details:', call);
+    this.logger.info('Call details:', call);
 
     const details = `
 Детали звонка:

@@ -11,6 +11,8 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs';
 import { CallsApiService } from '../calls/calls.service';
 import { SoftphoneService } from './softphone.service';
+import { SoftphoneAudioService } from './softphone-audio.service';
+import { SoftphoneLoggerService } from './softphone-logger.service';
 import {
   RingtoneService,
   OUTGOING_RINGTONE_SRC,
@@ -29,6 +31,8 @@ import {
   SoftphoneCallActionsComponent,
   SoftphoneScriptsPanelComponent,
 } from './components';
+import { SoftphoneDialTabComponent } from './components/softphone-dial-tab.component';
+import { SoftphoneInfoTabComponent } from './components/softphone-info-tab.component';
 import { SoftphoneCallHistoryComponent } from './components/softphone-call-history/softphone-call-history.component';
 import { CallHistoryItem } from './components/softphone-call-history/softphone-call-history.types';
 import { CallInfoCardComponent } from '../integrations';
@@ -72,8 +76,9 @@ type JsSIPSession = any;
     SoftphoneCallInfoComponent,
     SoftphoneCallActionsComponent,
     SoftphoneScriptsPanelComponent,
+    SoftphoneDialTabComponent,
+    SoftphoneInfoTabComponent,
     SoftphoneCallHistoryComponent,
-    CallInfoCardComponent,
   ],
 })
 export class SoftphoneComponent implements OnInit, OnDestroy {
@@ -123,6 +128,8 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   private readonly callsApi = inject(CallsApiService);
   private readonly softphone = inject(SoftphoneService);
   private readonly ringtone = inject(RingtoneService);
+  private readonly audioSvc = inject(SoftphoneAudioService);
+  private readonly logger = inject(SoftphoneLoggerService);
   private readonly callHistoryService = inject(SoftphoneCallHistoryService);
 
   constructor() {
@@ -203,7 +210,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
           try {
             this.applyHoldState(true);
           } catch (e) {
-            console.warn('applyHoldState on hold failed', e);
+            this.logger.warn('applyHoldState on hold failed', e);
           }
           break;
         case 'unhold':
@@ -214,7 +221,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
           try {
             this.applyHoldState(false);
           } catch (e) {
-            console.warn('applyHoldState on unhold failed', e);
+            this.logger.warn('applyHoldState on unhold failed', e);
           }
           break;
           break;
@@ -233,7 +240,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
             const from = (sess && (sess.remote_identity?.uri || sess.remote_identity?.display_name)) || (ev.payload && ev.payload.from) || null;
             this.incomingFrom.set(typeof from === 'string' ? from : from?.toString?.() ?? null);
             this.status.set(`Incoming call${this.incomingFrom() ? ' from ' + this.incomingFrom() : ''}`);
-            console.log('Incoming call from:', this.incomingFrom());
+            this.logger.info('Incoming call from:', this.incomingFrom());
 
             // Auto-expand if user prefers
             try {
@@ -246,7 +253,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
             try {
               this.ringtone.startRingback(RINGBACK_INCOMING_LEVEL, RINGTONE_SRC);
             } catch (e) {
-              console.warn('Failed to start incoming ringtone', e);
+              this.logger.warn('Failed to start incoming ringtone', e);
             }
 
             // Desktop notification
@@ -263,97 +270,43 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
                 }
               }
             } catch (e) {
-              console.warn('Notification failed', e);
+              this.logger.warn('Notification failed', e);
             }
           }
 
-          // Attach track handler and attach any existing receivers
+          // Attach track handler and attach any existing receivers using audio service
           try {
             if (sess?.connection) {
               const pc = sess.connection as RTCPeerConnection;
               try {
                 pc.addEventListener('track', (ev2: any) => {
-                  try {
-                    if (ev2.track?.kind === 'audio') {
-                      const audio = document.getElementById(REMOTE_AUDIO_ELEMENT_ID) as HTMLAudioElement | null;
-                      if (audio) {
-                        try {
-                          audio.srcObject = ev2.streams && ev2.streams[0] ? ev2.streams[0] : new MediaStream([ev2.track]);
-                          console.log('Attached remote track via track event');
-                          const p = audio.play();
-                          if (p && typeof (p as any).then === 'function') (p as Promise<void>).catch(() => {});
-                        } catch (e) {
-                          console.warn('apply remote track failed', e);
-                        }
-                      }
-                    }
-                  } catch (ee) {
-                    console.warn('track handler failed', ee);
-                  }
+                  try { this.audioSvc.attachTrackEvent(ev2); } catch (ee) { this.logger.warn('audioSvc attachTrackEvent failed', ee); }
                 });
               } catch (e) {
-                console.warn('addEventListener(track) failed', e);
+                this.logger.warn('addEventListener(track) failed', e);
               }
 
               try {
-                const receivers = (pc.getReceivers?.() ?? []) as RTCRtpReceiver[];
-                for (const r of receivers) {
-                  try {
-                    if (r.track && r.track.kind === 'audio') {
-                      const audio = document.getElementById(REMOTE_AUDIO_ELEMENT_ID) as HTMLAudioElement | null;
-                      if (audio) {
-                        try {
-                          audio.srcObject = new MediaStream([r.track]);
-                          console.log('Attached remote track from existing receiver');
-                          const p = audio.play();
-                          if (p && typeof (p as any).then === 'function') (p as Promise<void>).catch(() => {});
-                        } catch (er) {
-                          console.warn('attach existing receiver failed', er);
-                        }
-                      }
-                      break;
-                    }
-                  } catch (_) {
-                    // ignore per-receiver errors
-                  }
+                // attempt to attach already-present receivers
+                if (!this.audioSvc.attachReceiversFromPC(pc)) {
+                  // nothing attached from receivers
                 }
               } catch (e) {
-                console.warn('getReceivers attach failed', e);
+                this.logger.warn('audioSvc attachReceiversFromPC failed', e);
               }
+
+              // initialize audio element reference
+              try { this.audioSvc.initAudioElement(REMOTE_AUDIO_ELEMENT_ID); } catch (e) { this.logger.warn('initAudioElement failed', e); }
             }
           } catch (e) {
-            console.warn('attachSession track handler failed', e);
+            this.logger.warn('attachSession track handler failed', e);
           }
 
           break;
         }
         case 'track': {
-          // JsSIP/SoftphoneService forwards RTCPeerConnection 'track' events here
-          try {
-            const payload = (ev && ev.payload) || ev;
-            const trEvent = (payload && (payload.payload ?? payload)) || payload;
-            const audioEl = document.getElementById(REMOTE_AUDIO_ELEMENT_ID) as HTMLAudioElement | null;
-            if (!audioEl) {
-              console.warn('track event: remote audio element not found');
-              break;
-            }
-            try {
-              audioEl.autoplay = true;
-              (audioEl as any).playsInline = true;
-            } catch {}
-            if (trEvent?.streams && trEvent.streams[0]) {
-              audioEl.srcObject = trEvent.streams[0];
-              console.log('Attached remote stream from track event');
-            } else if (trEvent?.track) {
-              audioEl.srcObject = new MediaStream([trEvent.track]);
-              console.log('Attached remote track from track event');
-            } else {
-              console.warn('track event had no streams or track');
-            }
-            try { audioEl.play().catch(() => {}); } catch {}
-          } catch (e) {
-            console.warn('handling track event failed', e);
-          }
+          // forward to audio service for consistency
+          try { this.audioSvc.attachTrackEvent((ev && ev.payload) || ev); } catch (e) { this.logger.warn('track event forward failed', e); }
           break;
         }
       }
@@ -377,7 +330,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
 
   // Унифицированные хендлеры событий звонка
   private handleCallProgress(e: JsSIPSessionEvent) {
-    console.log('Call is in progress', e);
+    this.logger.info('Call is in progress', e);
     this.status.set('Ringing...');
     // Use outgoing ringtone while dialing
     if (this.incoming()) {
@@ -391,7 +344,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   }
 
   private handleCallConfirmed(e: JsSIPSessionEvent) {
-    console.log('Call confirmed', e);
+    this.logger.info('Call confirmed', e);
     this.status.set('Call in progress');
     this.callActive.set(true);
     this.activeTab = 'info'; // Switch to info tab when call connects
@@ -401,48 +354,29 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     try {
       const pc: RTCPeerConnection | undefined = this.currentSession?.connection;
       if (pc) {
-        const senders = pc.getSenders?.() ?? [];
-        console.log('PC senders:', senders.map(s => ({ kind: s.track?.kind, enabled: s.track?.enabled, id: s.track?.id, readyState: s.track?.readyState, label: s.track?.label })));
-        const receivers = pc.getReceivers?.() ?? [];
-        console.log('PC receivers:', receivers.map(r => ({ kind: r.track?.kind, id: r.track?.id, readyState: r.track?.readyState, label: r.track?.label })));
-        // also print a brief getStats summary
+        // brief local summary
         try {
-          pc.getStats().then((stats) => {
-            const summary: any = { outbound: [], inbound: [] };
-            stats.forEach((report) => {
-              if (report.type === 'outbound-rtp') summary.outbound.push({ id: report.id, kind: report.kind, packetsSent: report.packetsSent, bytesSent: report.bytesSent });
-              if (report.type === 'inbound-rtp') summary.inbound.push({ id: report.id, kind: report.kind, packetsReceived: report.packetsReceived, bytesReceived: report.bytesReceived, jitter: report.jitter });
-            });
-            console.log('PC stats summary:', summary);
-          }).catch((err) => console.warn('getStats failed', err));
-        } catch (err) {
-          console.warn('getStats invocation failed', err);
-        }
-        // Additional diagnostic logs to inspect ICE/SDP state when troubleshooting one-way audio
-        try {
-          try {
-            console.log('PC iceConnectionState:', pc.iceConnectionState);
-          } catch {}
-          try {
-            console.log('PC configuration:', pc.getConfiguration ? pc.getConfiguration() : undefined);
-          } catch {}
-          try {
-            console.log('PC localDescription (excerpt):', pc.localDescription?.sdp?.substring(0, 1200));
-          } catch {}
-          try {
-            console.log('PC remoteDescription (excerpt):', pc.remoteDescription?.sdp?.substring(0, 1200));
-          } catch {}
+          const senders = pc.getSenders?.() ?? [];
+          this.logger.debug('PC senders:', senders.map(s => ({ kind: s.track?.kind, enabled: s.track?.enabled, id: s.track?.id, label: s.track?.label })));
+          const receivers = pc.getReceivers?.() ?? [];
+          this.logger.debug('PC receivers:', receivers.map(r => ({ kind: r.track?.kind, id: r.track?.id, label: r.track?.label })));
         } catch (e) {
-          console.warn('PC diagnostic logging failed', e);
+          this.logger.warn('failed to enumerate senders/receivers', e);
+        }
+        // centralized diagnostics
+        try {
+          this.audioSvc.logPCDiagnostics(pc);
+        } catch (e) {
+          this.logger.warn('audioSvc.logPCDiagnostics failed', e);
         }
       }
     } catch (err) {
-      console.warn('peer connection inspection failed', err);
+      this.logger.warn('peer connection inspection failed', err);
     }
   }
 
   private handleCallEnded(e: JsSIPSessionEvent) {
-    console.log('Call ended with cause:', e.data?.cause);
+    this.logger.info('Call ended with cause:', e.data?.cause);
     // detect missed incoming calls (incoming shown but never answered)
     const wasMissed = this.incoming() && !this.callActive();
     this.callActive.set(false);
@@ -474,7 +408,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   }
 
   private handleCallFailed(e: JsSIPSessionEvent) {
-    console.log('Call failed with cause:', e);
+    this.logger.info('Call failed with cause:', e);
     this.callActive.set(false);
     this.stopCallTimer();
     // stop any ringback and play busy/error tone to signal failure
@@ -490,12 +424,12 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   }
 
   registrationFailed(e: JsSIPRegisterEvent) {
-    console.error('Registration failed:', e);
+    this.logger.error('Registration failed:', e);
     this.status.set('Registration failed: ' + e.cause);
     // Log detailed error information
     this.ringtone.stopRingback();
     if (e.response) {
-      console.error('SIP response:', e.response);
+      this.logger.error('SIP response:', e.response);
     }
   }
 
@@ -570,7 +504,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       this.status.set('Call answered');
       this.ringtone.stopRingback();
     } catch (err) {
-      console.error('Answer failed', err);
+      this.logger.error('Answer failed', err);
       this.status.set('Answer failed');
     }
   }
@@ -584,7 +518,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       this.status.set('Call rejected');
       this.ringtone.stopRingback();
     } catch (err) {
-      console.error('Reject failed', err);
+      this.logger.error('Reject failed', err);
       this.status.set('Reject failed');
     }
   }
@@ -606,9 +540,9 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       );
       this.currentSession = session;
       this.callActive.set(true);
-      console.log('Call session created:', session);
+      this.logger.info('Call session created:', session);
     } catch (error) {
-      console.error('Error initiating call:', error);
+      this.logger.error('Error initiating call:', error);
       this.status.set('Ошибка при совершении вызова');
     }
   }
@@ -633,7 +567,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       this.muted.set(newMuted);
       this.status.set(this.muted() ? 'Microphone muted' : 'Call in progress');
     } catch (e) {
-      console.error('Mute toggle failed', e);
+      this.logger.error('Mute toggle failed', e);
     }
   }
 
@@ -652,7 +586,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
         this.softphone.unhold();
       }
     } catch (e) {
-      console.error('Hold toggle failed', e);
+      this.logger.error('Hold toggle failed', e);
       this.holdInProgress.set(false);
     }
   }
@@ -667,7 +601,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
         stream.getTracks().forEach((track) => track.stop());
       })
       .catch((error) => {
-        console.error('Microphone access denied:', error);
+        this.logger.error('Microphone access denied:', error);
         this.microphoneError.set(true);
         this.status.set('Для звонков необходим доступ к микрофону');
       });
@@ -682,7 +616,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
           this.dtmfSequence = (this.dtmfSequence + key).slice(-32); // keep last 32 keys
           this.status.set(`DTMF: ${key}`);
         } catch (e) {
-          console.warn('DTMF send failed', e);
+          this.logger.warn('DTMF send failed', e);
         }
         return; // do not modify callee while in call
       } else {
@@ -742,7 +676,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       this.status.set('Transferring...');
       await this.softphone.transfer(this.transferTarget, type);
     } catch (err) {
-      console.error('Transfer request failed', err);
+      this.logger.error('Transfer request failed', err);
       this.status.set('Transfer request failed');
     }
   }
@@ -762,7 +696,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
 
   // Handle view contact from history
   onViewContact(contactId: string) {
-    console.log('View contact:', contactId);
+    this.logger.debug('View contact:', contactId);
     // TODO: Navigate to contact page
   }
 
@@ -791,7 +725,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
           });
         }
       } catch (e) {
-        console.warn('applyHoldState: manipulating senders failed', e);
+        this.logger.warn('applyHoldState: manipulating senders failed', e);
       }
 
       // Update component muted state: when placed on hold we show muted, on resume restore previous state
@@ -828,10 +762,10 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
           }
         }
       } catch (e) {
-        console.warn('applyHoldState: remote audio handling failed', e);
+        this.logger.warn('applyHoldState: remote audio handling failed', e);
       }
     } catch (e) {
-      console.warn('applyHoldState failed', e);
+      this.logger.warn('applyHoldState failed', e);
     }
   }
 }
