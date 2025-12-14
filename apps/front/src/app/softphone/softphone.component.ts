@@ -10,6 +10,7 @@ import { environment } from '../../environments/environment';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs';
 import { CallsApiService } from '../calls/calls.service';
+import { CallScriptsService } from '../shared/services/call-scripts.service';
 import { SoftphoneService } from './softphone.service';
 import { SoftphoneAudioService } from './softphone-audio.service';
 import { SoftphoneLoggerService } from './softphone-logger.service';
@@ -116,6 +117,13 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
 
   // Call history data
   callHistory = signal<CallHistoryItem[]>([]);
+  // Call scripts UI
+  scripts = signal<any[]>([]);
+  showScripts = signal(false);
+  // Per-call metadata to persist
+  callNote = signal<string>('');
+  callType = signal<string | null>(null);
+  selectedScriptBranch = signal<string | null>(null);
 
   // Asterisk host is read from environment config (moved from hardcoded value)
   private readonly asteriskHost = environment.asteriskHost || '127.0.0.1';
@@ -127,6 +135,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   // inject calls API and softphone service per repo preference
   private readonly callsApi = inject(CallsApiService);
   private readonly softphone = inject(SoftphoneService);
+  private readonly callScripts = inject(CallScriptsService);
   private readonly ringtone = inject(RingtoneService);
   private readonly audioSvc = inject(SoftphoneAudioService);
   private readonly logger = inject(SoftphoneLoggerService);
@@ -323,6 +332,29 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Toggle scripts panel visibility and load scripts when opening
+  toggleScripts() {
+    try {
+      const opening = !this.showScripts();
+      this.showScripts.set(opening);
+      if (opening) {
+        // load active scripts once when opened
+        try {
+          this.callScripts.getActiveCallScripts().subscribe((list) => {
+            this.scripts.set(list || []);
+          }, (err) => {
+            this.logger.warn('Failed to load call scripts', err);
+            this.scripts.set([]);
+          });
+        } catch (e) {
+          this.logger.warn('callScripts.getActiveCallScripts failed', e);
+        }
+      }
+    } catch (e) {
+      this.logger.warn('toggleScripts failed', e);
+    }
+  }
+
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
@@ -373,6 +405,21 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     } catch (err) {
       this.logger.warn('peer connection inspection failed', err);
     }
+    // Persist initial call metadata (note/type/script) when call is confirmed
+    try {
+      const callId = (this.currentSession && (this.currentSession.id || this.currentSession.call_id)) || null;
+      this.callHistoryService.saveCallLog(callId, {
+        note: this.callNote(),
+        callType: this.callType(),
+        scriptBranch: this.selectedScriptBranch(),
+      }).then(() => {
+        this.logger.info('Initial call log saved');
+      }).catch((err) => {
+        this.logger.warn('saveCallLog initial failed', err);
+      });
+    } catch (e) {
+      this.logger.warn('saveCallLog (confirmed) failed', e);
+    }
   }
 
   private handleCallEnded(e: JsSIPSessionEvent) {
@@ -393,7 +440,8 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
         /* ignore */
       }
     }
-    // Clear incoming state and session so UI resets when caller hangs up
+    // Preserve session id for final logging, then clear incoming state and session so UI resets
+    const _endedCallId = (this.currentSession && (this.currentSession.id || this.currentSession.call_id)) || null;
     this.incoming.set(false);
     this.incomingFrom.set(null);
     this.currentSession = null;
@@ -405,6 +453,24 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     this.status.set(this.isRegistered()
       ? 'Registered!'
       : `Call ended: ${e.data?.cause || 'Normal clearing'}`);
+
+    // Save final call log with duration and disposition
+    try {
+      const duration = this.callStart ? Math.floor((Date.now() - this.callStart) / 1000) : undefined;
+      this.callHistoryService.saveCallLog(_endedCallId, {
+        note: this.callNote(),
+        callType: this.callType(),
+        scriptBranch: this.selectedScriptBranch(),
+        duration: duration as any,
+        disposition: causeStr || null,
+      }).then(() => {
+        this.logger.info('Final call log saved');
+      }).catch((err) => {
+        this.logger.warn('saveCallLog final failed', err);
+      });
+    } catch (err) {
+      this.logger.warn('saveCallLog (ended) failed', err);
+    }
   }
 
   private handleCallFailed(e: JsSIPSessionEvent) {

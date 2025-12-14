@@ -92,4 +92,13 @@ export class SoftphoneCallHistoryService {
       }>(`${this.apiUrl}/statistics`, { params })
     );
   }
+
+  /**
+   * Save call log / metadata for a specific call
+   * Posts to `/api/cdr/log` with optional callId and payload
+   */
+  saveCallLog(callId: string | null, payload: { note?: string; callType?: string | null; scriptBranch?: string | null; duration?: number; disposition?: string | null }): Promise<any> {
+    const body = { callId, ...payload };
+    return firstValueFrom(this.http.post(`${this.apiUrl}/log`, body));
+  }
 }

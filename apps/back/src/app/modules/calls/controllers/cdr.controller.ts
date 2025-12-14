@@ -1,5 +1,6 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query, Post, Body } from '@nestjs/common';
 import { CdrService, CdrFilterDto } from '../services/cdr.service';
+import { SaveCallLogDto } from '../dto/save-call-log.dto';
 import { ApiOkResponse, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Cdr } from '../entities/cdr.entity';
 
@@ -50,5 +51,18 @@ export class CdrController {
   @ApiOkResponse({ type: Cdr, description: 'Single CDR (nullable if not found)' })
   one(@Param('id') id: string) {
     return this.cdrService.findOne(id);
+  }
+
+  @Post('log')
+  async saveLog(@Body() body: SaveCallLogDto) {
+    const rec = await this.cdrService.createCallLog({
+      callId: body.callId ?? null,
+      note: body.note ?? null,
+      callType: body.callType ?? null,
+      scriptBranch: body.scriptBranch ?? null,
+      duration: typeof body.duration === 'number' ? body.duration : null,
+      disposition: body.disposition ?? null,
+    });
+    return { ok: true, id: rec.id };
   }
 }

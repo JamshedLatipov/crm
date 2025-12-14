@@ -215,6 +215,9 @@
       <!-- Scripts Panel -->
       <app-softphone-scripts-panel
         [callActive]="callActive()"
+        [showScripts]="showScripts()"
+        [scripts]="scripts()"
+        (toggleScripts)="toggleScripts()"
       />
     </div>
   </div>
