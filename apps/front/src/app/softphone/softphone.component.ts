@@ -38,6 +38,7 @@ import { SoftphoneCallHistoryComponent } from './components/softphone-call-histo
 import { CallHistoryItem } from './components/softphone-call-history/softphone-call-history.types';
 import { CallInfoCardComponent } from '../integrations';
 import { SoftphoneCallHistoryService } from './components/softphone-call-history/softphone-call-history.service';
+import { TaskModalService } from '../tasks/services/task-modal.service';
 
 // Define custom interfaces to avoid 'any' types
 interface JsSIPSessionEvent {
@@ -140,6 +141,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   private readonly audioSvc = inject(SoftphoneAudioService);
   private readonly logger = inject(SoftphoneLoggerService);
   private readonly callHistoryService = inject(SoftphoneCallHistoryService);
+  private readonly taskModal = inject(TaskModalService);
 
   constructor() {
     // Автоподстановка сохранённых SIP реквизитов оператора
@@ -172,7 +174,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     } catch {
       // ignore
     }
-  
+
     // Subscribe to softphone events coming from the service
     this.softphone.events$.pipe(takeUntil(this.destroy$)).subscribe((ev) => {
       switch (ev.type) {
@@ -741,6 +743,67 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
 
   hangup() {
     this.softphone.hangup();
+  }
+
+  // Manual CDR / call log registration triggered from scripts panel
+  manualRegisterCall(payload?: {
+    branchId?: string | null;
+    note?: string;
+    createTask?: boolean;
+  }) {
+    try {
+      const callId =
+        (this.currentSession &&
+          (this.currentSession.id || this.currentSession.call_id)) ||
+        null;
+      const noteToSave = payload?.note ?? this.callNote();
+      const branch = payload?.branchId ?? this.selectedScriptBranch();
+
+      this.callHistoryService
+        .saveCallLog(callId, {
+          note: noteToSave,
+          callType: this.callType(),
+          scriptBranch: branch,
+        })
+        .then(() => this.logger.info('Manual CDR registered'))
+        .catch((err) =>
+          this.logger.warn('Manual CDR registration failed', err)
+        );
+
+      // If requested, open task modal with prefilled title/description
+      if (payload?.createTask) {
+        // find script title by id
+        const findTitle = (
+          list: any[] | undefined,
+          id?: string | null
+        ): string | null => {
+          if (!list || !id) return null;
+          for (const s of list) {
+            if (s.id === id) return s.title;
+            const found = findTitle(s.children, id);
+            if (found) return found;
+          }
+          return null;
+        };
+        const scriptsList = this.scripts() || [];
+        const title = findTitle(scriptsList, branch) || 'Task from script';
+        try {
+          this.taskModal.openModal({ mode: 'create', title, note: noteToSave });
+        } catch (e) {
+          this.logger.warn('Opening task modal failed', e);
+        }
+      }
+    } catch (e) {
+      this.logger.warn('manualRegisterCall failed', e);
+    }
+  }
+
+  onSelectedBranch(id: string | null) {
+    try {
+      this.selectedScriptBranch.set(id);
+    } catch (e) {
+      this.logger.warn('onSelectedBranch failed', e);
+    }
   }
 
   // Toggle local audio track enabled state

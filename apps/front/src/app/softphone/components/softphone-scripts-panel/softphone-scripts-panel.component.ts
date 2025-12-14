@@ -1,7 +1,11 @@
-import { Component, input, output, OnChanges, SimpleChanges, ChangeDetectionStrategy, signal, inject, effect } from '@angular/core';
+import { Component, input, output, OnChanges, SimpleChanges, ChangeDetectionStrategy, signal, inject, effect, computed } from '@angular/core';
+import { TaskModalService } from '../../../tasks/services/task-modal.service';
 import { CallScriptsService } from '../../../shared/services/call-scripts.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatSlideToggle } from '@angular/material/slide-toggle';
 
 export interface Script {
   id: string;
@@ -19,7 +23,7 @@ export interface Script {
 @Component({
   selector: 'app-softphone-scripts-panel',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MatButtonModule, MatIconModule, MatSlideToggle],
   templateUrl: './softphone-scripts-panel.component.html',
   styleUrls: ['./softphone-scripts-panel.component.scss'],
   // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection
@@ -29,11 +33,21 @@ export class SoftphoneScriptsPanelComponent implements OnChanges {
   callActive = input<boolean>(false);
   showScripts = input<boolean>(false);
   scripts = input<Script[]>([]);
+  selectedBranch = input<string | null>(null);
+  // Local selection and UI state
+  localSelected = signal<string | null>(null);
+  branchNote = signal('');
+  createTaskToggle = signal(false);
   // local writable copy of scripts (parent input may be readonly)
   localScripts = signal<Script[]>([]);
   private readonly callScriptsSvc = inject(CallScriptsService);
+  private readonly taskModal = inject(TaskModalService);
 
   toggleScripts = output<void>();
+  // Emit when user selects a branch (leaf script)
+  selectBranch = output<string | null>();
+  // Emit when user requests manual CDR/register log — includes branchId, note and createTask flag
+  registerCdr = output<{ branchId?: string | null; note?: string; createTask?: boolean }>();
 
   // Local UI state
   activeTab = signal<'all' | 'recent' | 'bookmarked'>('all');
@@ -59,7 +73,104 @@ export class SoftphoneScriptsPanelComponent implements OnChanges {
         this.expandedNodes.set(toExpand);
       }
     });
+    // Auto-open task modal when toggle enabled for selected branch
+    effect(() => {
+      const shouldOpen = this.createTaskToggle();
+      const sel = this.localSelected();
+      if (shouldOpen && sel) {
+        // find title for selected branch
+        const findTitle = (list: Script[] | undefined, id: string | null): string | null => {
+          if (!list || !id) return null;
+          for (const s of list) {
+            if (s.id === id) return s.title;
+            const found = findTitle(s.children, id);
+            if (found) return found;
+          }
+          return null;
+        };
+        const title = findTitle(this.localScripts(), sel) || 'Task from script';
+        // Open modal prefilled
+        try {
+          this.taskModal.openModal({ mode: 'create', title, });
+        } catch (e) {
+          // ignore
+        }
+      }
+    });
+    // Keep localSelected in sync with parent-provided selectedBranch
+    effect(() => {
+      try {
+        this.localSelected.set(this.selectedBranch());
+      } catch {
+        // ignore
+      }
+    });
   }
+
+  // Computed list of leaf scripts (branches) for selector — stable across change detection
+  branches = computed(() => {
+    const out: { id: string; title: string }[] = [];
+    const collect = (s: Script) => {
+      if (!s.children || s.children.length === 0) {
+        out.push({ id: s.id, title: s.title });
+      } else {
+        s.children.forEach((c) => collect(c));
+      }
+    };
+    (this.localScripts() || []).forEach((s) => collect(s));
+    return out;
+  });
+
+  // Called from template when user selects branch option
+  onSelectBranch(id: string | null) {
+    try {
+      this.selectBranch.emit(id);
+    } catch {
+      // ignore
+    }
+  }
+
+  selectLeaf(script: Script) {
+    try {
+      // toggle selection if same clicked
+      const cur = this.localSelected();
+      const newId = cur === script.id ? null : script.id;
+      this.localSelected.set(newId);
+      // reset note and toggle when deselected
+      if (!newId) {
+        this.branchNote.set('');
+        this.createTaskToggle.set(false);
+      }
+      this.selectBranch.emit(newId);
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  saveForSelected() {
+    try {
+      const bid = this.localSelected();
+      this.registerCdr.emit({ branchId: bid, note: this.branchNote(), createTask: this.createTaskToggle() });
+      // clear local UI after save
+      this.localSelected.set(null);
+      this.branchNote.set('');
+      this.createTaskToggle.set(false);
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  cancelSelection() {
+    try {
+      this.localSelected.set(null);
+      this.branchNote.set('');
+      this.createTaskToggle.set(false);
+    } catch {
+      // ignore
+    }
+  }
+
+  
 
   trackByScriptId(index: number, script: Script): string {
     return script.id;

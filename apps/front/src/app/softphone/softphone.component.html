@@ -226,6 +226,9 @@
           [callActive]="callActive()"
           [showScripts]="showScripts()"
           [scripts]="scripts()"
+          [selectedBranch]="selectedScriptBranch()"
+          (selectBranch)="onSelectedBranch($event)"
+          (registerCdr)="manualRegisterCall()"
           (toggleScripts)="toggleScripts()"
         />
       </ng-container>

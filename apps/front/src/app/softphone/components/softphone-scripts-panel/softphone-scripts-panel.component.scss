@@ -6,10 +6,8 @@
 }
 
 .header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   margin-bottom: 12px;
+  width: 100%;
 }
 
 .header h3 {
@@ -177,6 +175,11 @@
 
   &:hover {
     background: rgba(0, 0, 0, 0.02);
+  }
+
+  &.selected {
+    background: rgba(25, 118, 210, 0.08);
+    border: 1px solid rgba(25, 118, 210, 0.12);
   }
 }
 

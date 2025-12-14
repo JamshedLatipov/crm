@@ -2,12 +2,13 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { map, firstValueFrom } from 'rxjs';
 import { CdrQuery, CdrRecord, CdrResponse } from './cdr.types';
+import { environment } from '@crm/front/environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class SoftphoneCallHistoryService {
-  private apiUrl = '/api/cdr'; // Adjust based on your API endpoint
+  private apiUrl = environment.apiBase + '/cdr'; // Adjust based on your API endpoint
 
   constructor(private http: HttpClient) {}
 
@@ -97,7 +98,16 @@ export class SoftphoneCallHistoryService {
    * Save call log / metadata for a specific call
    * Posts to `/api/cdr/log` with optional callId and payload
    */
-  saveCallLog(callId: string | null, payload: { note?: string; callType?: string | null; scriptBranch?: string | null; duration?: number; disposition?: string | null }): Promise<any> {
+  saveCallLog(
+    callId: string | null,
+    payload: {
+      note?: string;
+      callType?: string | null;
+      scriptBranch?: string | null;
+      duration?: number;
+      disposition?: string | null;
+    }
+  ): Promise<any> {
     const body = { callId, ...payload };
     return firstValueFrom(this.http.post(`${this.apiUrl}/log`, body));
   }
