@@ -60,9 +60,19 @@ export class SoftphoneService {
 
     try {
       if (session.connection) {
-        (session.connection as RTCPeerConnection).addEventListener('track', (ev: any) => {
+        const pc = session.connection as RTCPeerConnection;
+        pc.addEventListener('track', (ev: any) => {
           this.events$.next({ type: 'track', payload: ev });
         });
+        // Diagnostic hooks: log ICE state changes and configuration
+        try {
+          pc.addEventListener('iceconnectionstatechange', () => {
+            try { console.log('session PC iceConnectionState:', pc.iceConnectionState); } catch {}
+          });
+          try { console.log('session PC configuration:', pc.getConfiguration ? pc.getConfiguration() : undefined); } catch {}
+        } catch (e) {
+          console.warn('pc diagnostic hooks failed', e);
+        }
       }
     } catch (err) {
       console.warn('attachSession track handler failed', err);
@@ -75,7 +85,13 @@ export class SoftphoneService {
   answer(session?: any, options?: any) {
     const s = session ?? this.currentSession;
     if (!s) throw new Error('No session to answer');
-    const defaultOptions = { mediaConstraints: { audio: true, video: false } };
+    const defaultOptions = {
+      mediaConstraints: { audio: true, video: false },
+      pcConfig: {
+        iceServers: [],
+        rtcpMuxPolicy: 'require'
+      }
+    };
     try {
       s.answer(options ?? defaultOptions);
       // re-attach to ensure events are bound
@@ -116,7 +132,9 @@ export class SoftphoneService {
       mediaConstraints: { audio: true, video: false },
       extraHeaders: ['X-Custom-Header: CRM Call'],
       'pcConfig': {
-        // ICE servers disabled for local testing
+        // Provide a default STUN server so the browser can gather srflx candidates
+        // and ICE has a better chance to complete across NATs. For production
+        // consider configuring a project TURN server and placing it in env.
         'iceServers': [],
         'rtcpMuxPolicy': 'require'
       }

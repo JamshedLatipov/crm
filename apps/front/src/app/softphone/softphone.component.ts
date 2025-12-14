@@ -221,54 +221,43 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
         case 'newRTCSession': {
           const sess = ev.payload?.session as JsSIPSession;
           this.currentSession = sess;
-          // if session direction indicates incoming, show incoming UI
-          const dir =
-            (ev.payload && ev.payload.direction) ||
-            (sess && sess.direction) ||
-            'outgoing';
+
+          // determine direction
+          const dir = (ev.payload && ev.payload.direction) || (sess && sess.direction) || 'outgoing';
+
           if (dir === 'incoming' || dir === 'inbound') {
             this.incoming.set(true);
-            this.activeTab = 'info'; // Switch to info tab on incoming call
+            this.activeTab = 'info';
+
             // try to extract caller display or remote identity
-            const from =
-              (sess &&
-                (sess.remote_identity?.uri ||
-                  sess.remote_identity?.display_name)) ||
-              (ev.payload && ev.payload.from) ||
-              null;
-            this.incomingFrom.set(
-              typeof from === 'string' ? from : from?.toString?.() ?? null
-            );
-            this.status.set(`Incoming call${
-              this.incomingFrom() ? ' from ' + this.incomingFrom() : ''
-            }`);
+            const from = (sess && (sess.remote_identity?.uri || sess.remote_identity?.display_name)) || (ev.payload && ev.payload.from) || null;
+            this.incomingFrom.set(typeof from === 'string' ? from : from?.toString?.() ?? null);
+            this.status.set(`Incoming call${this.incomingFrom() ? ' from ' + this.incomingFrom() : ''}`);
             console.log('Incoming call from:', this.incomingFrom());
+
             // Auto-expand if user prefers
             try {
               if (this.autoExpandOnIncoming && !this.expanded) this.toggleExpand();
             } catch {
               /* ignore */
             }
-            // Start incoming ringtone immediately and show desktop notification (if permitted)
+
+            // Start incoming ringtone immediately
             try {
               this.ringtone.startRingback(RINGBACK_INCOMING_LEVEL, RINGTONE_SRC);
             } catch (e) {
               console.warn('Failed to start incoming ringtone', e);
             }
+
+            // Desktop notification
             try {
               if (typeof Notification !== 'undefined') {
                 if (Notification.permission === 'granted') {
-                  new Notification('Incoming call', {
-                    body: this.incomingFrom() || 'Unknown caller',
-                    tag: 'softphone-incoming',
-                  });
+                  new Notification('Incoming call', { body: this.incomingFrom() || 'Unknown caller', tag: 'softphone-incoming' });
                 } else if (Notification.permission !== 'denied') {
                   Notification.requestPermission().then((perm) => {
                     if (perm === 'granted') {
-                      new Notification('Incoming call', {
-                        body: this.incomingFrom() || 'Unknown caller',
-                        tag: 'softphone-incoming',
-                      });
+                      new Notification('Incoming call', { body: this.incomingFrom() || 'Unknown caller', tag: 'softphone-incoming' });
                     }
                   });
                 }
@@ -277,24 +266,93 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
               console.warn('Notification failed', e);
             }
           }
+
+          // Attach track handler and attach any existing receivers
           try {
             if (sess?.connection) {
-              (sess.connection as RTCPeerConnection).addEventListener(
-                'track',
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                (ev2: any) => {
-                  if (ev2.track?.kind === 'audio') {
-                    const audio: HTMLAudioElement | null =
-                      document.getElementById(
-                        REMOTE_AUDIO_ELEMENT_ID
-                      ) as HTMLAudioElement;
-                    if (audio) audio.srcObject = ev2.streams[0];
+              const pc = sess.connection as RTCPeerConnection;
+              try {
+                pc.addEventListener('track', (ev2: any) => {
+                  try {
+                    if (ev2.track?.kind === 'audio') {
+                      const audio = document.getElementById(REMOTE_AUDIO_ELEMENT_ID) as HTMLAudioElement | null;
+                      if (audio) {
+                        try {
+                          audio.srcObject = ev2.streams && ev2.streams[0] ? ev2.streams[0] : new MediaStream([ev2.track]);
+                          console.log('Attached remote track via track event');
+                          const p = audio.play();
+                          if (p && typeof (p as any).then === 'function') (p as Promise<void>).catch(() => {});
+                        } catch (e) {
+                          console.warn('apply remote track failed', e);
+                        }
+                      }
+                    }
+                  } catch (ee) {
+                    console.warn('track handler failed', ee);
+                  }
+                });
+              } catch (e) {
+                console.warn('addEventListener(track) failed', e);
+              }
+
+              try {
+                const receivers = (pc.getReceivers?.() ?? []) as RTCRtpReceiver[];
+                for (const r of receivers) {
+                  try {
+                    if (r.track && r.track.kind === 'audio') {
+                      const audio = document.getElementById(REMOTE_AUDIO_ELEMENT_ID) as HTMLAudioElement | null;
+                      if (audio) {
+                        try {
+                          audio.srcObject = new MediaStream([r.track]);
+                          console.log('Attached remote track from existing receiver');
+                          const p = audio.play();
+                          if (p && typeof (p as any).then === 'function') (p as Promise<void>).catch(() => {});
+                        } catch (er) {
+                          console.warn('attach existing receiver failed', er);
+                        }
+                      }
+                      break;
+                    }
+                  } catch (_) {
+                    // ignore per-receiver errors
                   }
                 }
-              );
+              } catch (e) {
+                console.warn('getReceivers attach failed', e);
+              }
             }
-          } catch {
-            // ignore
+          } catch (e) {
+            console.warn('attachSession track handler failed', e);
+          }
+
+          break;
+        }
+        case 'track': {
+          // JsSIP/SoftphoneService forwards RTCPeerConnection 'track' events here
+          try {
+            const payload = (ev && ev.payload) || ev;
+            const trEvent = (payload && (payload.payload ?? payload)) || payload;
+            const audioEl = document.getElementById(REMOTE_AUDIO_ELEMENT_ID) as HTMLAudioElement | null;
+            if (!audioEl) {
+              console.warn('track event: remote audio element not found');
+              break;
+            }
+            try {
+              audioEl.autoplay = true;
+              (audioEl as any).playsInline = true;
+            } catch {}
+            if (trEvent?.streams && trEvent.streams[0]) {
+              audioEl.srcObject = trEvent.streams[0];
+              console.log('Attached remote stream from track event');
+            } else if (trEvent?.track) {
+              audioEl.srcObject = new MediaStream([trEvent.track]);
+              console.log('Attached remote track from track event');
+            } else {
+              console.warn('track event had no streams or track');
+            }
+            try { audioEl.play().catch(() => {}); } catch {}
+          } catch (e) {
+            console.warn('handling track event failed', e);
           }
           break;
         }
@@ -339,6 +397,48 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     this.activeTab = 'info'; // Switch to info tab when call connects
     this.startCallTimer();
     this.ringtone.stopRingback();
+    // Debug: list RTCPeerConnection senders/receivers and track state for diagnosing one-way audio
+    try {
+      const pc: RTCPeerConnection | undefined = this.currentSession?.connection;
+      if (pc) {
+        const senders = pc.getSenders?.() ?? [];
+        console.log('PC senders:', senders.map(s => ({ kind: s.track?.kind, enabled: s.track?.enabled, id: s.track?.id, readyState: s.track?.readyState, label: s.track?.label })));
+        const receivers = pc.getReceivers?.() ?? [];
+        console.log('PC receivers:', receivers.map(r => ({ kind: r.track?.kind, id: r.track?.id, readyState: r.track?.readyState, label: r.track?.label })));
+        // also print a brief getStats summary
+        try {
+          pc.getStats().then((stats) => {
+            const summary: any = { outbound: [], inbound: [] };
+            stats.forEach((report) => {
+              if (report.type === 'outbound-rtp') summary.outbound.push({ id: report.id, kind: report.kind, packetsSent: report.packetsSent, bytesSent: report.bytesSent });
+              if (report.type === 'inbound-rtp') summary.inbound.push({ id: report.id, kind: report.kind, packetsReceived: report.packetsReceived, bytesReceived: report.bytesReceived, jitter: report.jitter });
+            });
+            console.log('PC stats summary:', summary);
+          }).catch((err) => console.warn('getStats failed', err));
+        } catch (err) {
+          console.warn('getStats invocation failed', err);
+        }
+        // Additional diagnostic logs to inspect ICE/SDP state when troubleshooting one-way audio
+        try {
+          try {
+            console.log('PC iceConnectionState:', pc.iceConnectionState);
+          } catch {}
+          try {
+            console.log('PC configuration:', pc.getConfiguration ? pc.getConfiguration() : undefined);
+          } catch {}
+          try {
+            console.log('PC localDescription (excerpt):', pc.localDescription?.sdp?.substring(0, 1200));
+          } catch {}
+          try {
+            console.log('PC remoteDescription (excerpt):', pc.remoteDescription?.sdp?.substring(0, 1200));
+          } catch {}
+        } catch (e) {
+          console.warn('PC diagnostic logging failed', e);
+        }
+      }
+    } catch (err) {
+      console.warn('peer connection inspection failed', err);
+    }
   }
 
   private handleCallEnded(e: JsSIPSessionEvent) {
