@@ -153,7 +153,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     }
   }
   // UI tab state
-  activeTab: 'dial' | 'history' | 'info' = 'dial';
+  activeTab: 'dial' | 'history' | 'info' | 'scenarios' = 'dial';
   // Expand/collapse softphone UI
   expanded = true;
   // Missed calls counter shown on minimized badge
@@ -172,6 +172,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     } catch {
       // ignore
     }
+  
     // Subscribe to softphone events coming from the service
     this.softphone.events$.pipe(takeUntil(this.destroy$)).subscribe((ev) => {
       switch (ev.type) {
@@ -376,6 +377,24 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     }
 
     this.toggleScripts();
+  }
+
+  // Select visible tab and manage scripts panel state
+  selectTab(tab: 'dial' | 'history' | 'info' | 'scenarios') {
+    try {
+      this.activeTab = tab;
+      if (tab === 'scenarios') {
+        // open scripts panel and load scripts if not already open
+        if (!this.showScripts()) this.toggleScripts();
+      } else {
+        // hide scripts panel when leaving scenarios tab
+        try {
+          this.showScripts.set(false);
+        } catch {}
+      }
+    } catch (e) {
+      this.logger.warn('selectTab failed', e);
+    }
   }
 
   // Toggle scripts panel visibility and load scripts when opening

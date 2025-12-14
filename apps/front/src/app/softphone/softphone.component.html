@@ -48,7 +48,7 @@
       <div class="tab-navigation">
         <div class="tab-buttons">
           <button
-            (click)="activeTab = 'dial'"
+            (click)="selectTab('dial')"
             [class.active]="activeTab === 'dial'"
             class="tab-button"
           >
@@ -56,7 +56,7 @@
             <span>Звонок</span>
           </button>
           <button
-            (click)="activeTab = 'history'"
+            (click)="selectTab('history')"
             [class.active]="activeTab === 'history'"
             class="tab-button"
           >
@@ -64,7 +64,15 @@
             <span>История</span>
           </button>
           <button
-            (click)="activeTab = 'info'"
+            (click)="selectTab('scenarios')"
+            [class.active]="activeTab === 'scenarios'"
+            class="tab-button"
+          >
+            <span class="material-icons">menu_book</span>
+            <span>Сценарии</span>
+          </button>
+          <button
+            (click)="selectTab('info')"
             [class.active]="activeTab === 'info'"
             class="tab-button"
           >
@@ -213,12 +221,14 @@
       </div>
 
       <!-- Scripts Panel -->
-      <app-softphone-scripts-panel
-        [callActive]="callActive()"
-        [showScripts]="showScripts()"
-        [scripts]="scripts()"
-        (toggleScripts)="toggleScripts()"
-      />
+      <ng-container *ngIf="activeTab === 'scenarios'">
+        <app-softphone-scripts-panel
+          [callActive]="callActive()"
+          [showScripts]="showScripts()"
+          [scripts]="scripts()"
+          (toggleScripts)="toggleScripts()"
+        />
+      </ng-container>
     </div>
   </div>
 </div>
