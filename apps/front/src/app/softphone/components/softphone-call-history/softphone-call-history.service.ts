@@ -111,4 +111,12 @@ export class SoftphoneCallHistoryService {
     const body = { callId, ...payload };
     return firstValueFrom(this.http.post(`${this.apiUrl}/log`, body));
   }
+
+  /**
+   * List auxiliary call logs saved by frontend
+   */
+  listCallLogs(limit = 50, offset = 0) {
+    const params = new HttpParams().set('limit', String(limit)).set('offset', String(offset));
+    return this.http.get<any>(`${this.apiUrl}/logs`, { params });
+  }
 }

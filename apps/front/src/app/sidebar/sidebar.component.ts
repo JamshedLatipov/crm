@@ -65,6 +65,7 @@ export class SidebarComponent {
           label: 'Онлайн мониторинг',
           route: '/contact-center/monitoring',
         },
+        { icon: 'history', label: 'Логи звонков', route: '/contact-center/logs' },
         { icon: 'call', label: 'Звонки', route: '/contact-center/calls' },
         { icon: 'dialpad', label: 'IVR', route: '/contact-center/ivr' },
         {

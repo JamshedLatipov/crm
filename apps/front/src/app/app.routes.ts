@@ -56,6 +56,7 @@ export const appRoutes: Route[] = [
         children: [
             { path: '', redirectTo: 'monitoring', pathMatch: 'full' },
             { path: 'calls', component: ContactCenterCallsComponent },
+            { path: 'logs', loadComponent: () => import('./contact-center/call-logs/call-logs.component').then(m => m.CallLogsComponent) },
             { path: 'monitoring', component: OnlineMonitoringComponent },
             { path: 'ivr', component: IvrAdminComponent },
             { path: 'scripts', component: CallScriptsManagerComponent },

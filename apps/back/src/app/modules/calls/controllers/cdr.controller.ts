@@ -67,4 +67,12 @@ export class CdrController {
     });
     return { ok: true, id: rec.id };
   }
+
+  @Get('logs')
+  @ApiOperation({ summary: 'List saved call logs (metadata created from frontend)' })
+  async listCallLogs(@Query('limit') limit = '50', @Query('offset') offset = '0') {
+    const lim = Math.min(500, Number(limit) || 50);
+    const off = Math.max(0, Number(offset) || 0);
+    return this.cdrService.listCallLog(lim, off);
+  }
 }
