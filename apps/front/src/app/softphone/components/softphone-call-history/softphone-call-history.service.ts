@@ -36,7 +36,7 @@ export class SoftphoneCallHistoryService {
    * Get a single CDR record by ID
    */
   getById(id: string): Promise<CdrRecord> {
-    return firstValueFrom(this.http.get<CdrRecord>(`${this.apiUrl}/${id}`));
+    return firstValueFrom(this.http.get<CdrRecord>(`${this.apiUrl}/unique/${id}`));
   }
 
   /**

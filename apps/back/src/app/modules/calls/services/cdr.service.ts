@@ -99,7 +99,11 @@ export class CdrService {
         ? 'awaiting_cdr'
         : 'completed';
     const now = new Date();
-    const ent = this.callLogRepo.create({ ...data, status, updatedAt: now } as any);
+    const ent = this.callLogRepo.create({
+      ...data,
+      status,
+      updatedAt: now,
+    } as any);
     const saved = await this.callLogRepo.save(ent as any);
     return Array.isArray(saved) ? saved[0] : (saved as CallLog);
   }
@@ -114,7 +118,9 @@ export class CdrService {
       .skip(offset);
 
     // select entity fields and script title
-    const rawAndEntities = await qb.select(['cl', 's.title']).getRawAndEntities();
+    const rawAndEntities = await qb
+      .select(['cl', 's.title'])
+      .getRawAndEntities();
     const entities = rawAndEntities.entities as CallLog[];
     const raw = rawAndEntities.raw as any[];
 
