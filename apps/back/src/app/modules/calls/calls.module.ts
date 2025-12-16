@@ -11,7 +11,7 @@ import { PsAorService } from './services/ps-aor.service';
 import { PsAuthService } from './services/ps-auth.service';
 import { CdrService } from './services/cdr.service';
 import { ReconciliationService } from './services/reconciliation.service';
-import { AriReconciliationService } from './services/ari-reconciliation.service';
+// import { AriReconciliationService } from './services/ari-reconciliation.service';
 import { CdrController } from './controllers/cdr.controller';
 import { PsEndpointController } from './controllers/ps-endpoint.controller';
 import { PsAorController } from './controllers/ps-aor.controller';
@@ -49,7 +49,7 @@ import { QueueLog } from './entities/queuelog.entity';
     // ARI-based near-realtime reconciliation
     // AriReconciliationService will subscribe to ARI events and update call_logs quickly
     // to reduce latency between frontend saveCallLog and Asterisk CDR
-    AriReconciliationService,
+    // AriReconciliationService,
   ],
   controllers: [
     PsEndpointController,

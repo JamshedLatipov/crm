@@ -53,7 +53,8 @@ export class AriService {
       );
       this.subscribeAllEvents();
       this.client.start(this.config.app);
-      await this.subscribeAllEventSources();
+      // REST-based subscription disabled: rely on websocket/core events only
+      this.logger.log('Skipping ARI REST subscribe; using websocket/core events only');
       this.connected = true;
       this.logger.log('ARI connected and application started');
     } catch (err) {
