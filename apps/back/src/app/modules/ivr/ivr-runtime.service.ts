@@ -152,8 +152,9 @@ export class IvrRuntimeService implements OnModuleInit {
             });
             if (m) mediaRef = m.filename.replace(/\.[^.]+$/, '');
           }
+          // play from custom sounds folder so project-provided audio is used
           await this.safeChannelOp(channelId, () =>
-            client.channels.play({ channelId, media: `sound:${mediaRef}` })
+            client.channels.play({ channelId, media: `sound:custom/${mediaRef}` })
           );
         }
         break;
@@ -167,8 +168,9 @@ export class IvrRuntimeService implements OnModuleInit {
             });
             if (m) mediaRef = m.filename.replace(/\.[^.]+$/, '');
           }
+          // play menu prompt from custom sounds
           await this.safeChannelOp(channelId, () =>
-            client.channels.play({ channelId, media: `sound:${mediaRef}` })
+            client.channels.play({ channelId, media: `sound:custom/${mediaRef}` })
           );
           const stLocal = this.calls.get(channelId);
           if (stLocal) stLocal.waitingForDigit = node.allowEarlyDtmf;
