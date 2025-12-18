@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { Cdr } from '../entities/cdr.entity';
 import { CallLog } from '../entities/call-log.entity';
+import { CallScript } from '../../call-scripts/entities/call-script.entity';
 
 export interface CdrFilterDto {
   fromDate?: string; // ISO
@@ -90,16 +91,43 @@ export class CdrService {
    * Persist auxiliary call log / metadata record
    */
   async createCallLog(data: Partial<CallLog>): Promise<CallLog> {
-    const ent = this.callLogRepo.create(data as any);
+    // determine initial status: if duration/disposition provided - completed, else awaiting_cdr when call identifier present
+    const status =
+      typeof data.duration === 'number' || data.disposition
+        ? 'completed'
+        : data.clientCallId || data.callId || data.sipCallId
+        ? 'awaiting_cdr'
+        : 'completed';
+    const now = new Date();
+    const ent = this.callLogRepo.create({
+      ...data,
+      status,
+      updatedAt: now,
+    } as any);
     const saved = await this.callLogRepo.save(ent as any);
     return Array.isArray(saved) ? saved[0] : (saved as CallLog);
   }
 
   async listCallLog(limit = 50, offset = 0) {
-    return this.callLogRepo.find({
-      take: limit,
-      skip: offset,
-      order: { createdAt: 'DESC' },
-    });
+    const qb = this.callLogRepo
+      .createQueryBuilder('cl')
+      // cast script id to text to compare with varchar scriptBranch
+      .leftJoin(CallScript, 's', 'cl.scriptBranch = s.id::text')
+      .orderBy('cl.createdAt', 'DESC')
+      .take(limit)
+      .skip(offset);
+
+    // select entity fields and script title
+    const rawAndEntities = await qb
+      .select(['cl', 's.title'])
+      .getRawAndEntities();
+    const entities = rawAndEntities.entities as CallLog[];
+    const raw = rawAndEntities.raw as any[];
+
+    // merge script title into returned records as `scriptTitle`
+    return entities.map((e, i) => ({
+      ...e,
+      scriptTitle: raw[i]?.s_title ?? null,
+    }));
   }
 }

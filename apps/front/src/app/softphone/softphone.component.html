@@ -9,22 +9,15 @@
   >
     <span class="material-icons">call</span>
     <!-- Active call indicator -->
-    <span
-      *ngIf="callActive()"
-      class="active-call-indicator"
-    ></span>
+    <span *ngIf="callActive()" class="active-call-indicator"></span>
     <!-- Missed call badge -->
-    <span
-      *ngIf="missedCallCount"
-      class="missed-call-badge"
-    >{{ missedCallCount > 99 ? '99+' : missedCallCount }}</span>
+    <span *ngIf="missedCallCount" class="missed-call-badge">{{
+      missedCallCount > 99 ? '99+' : missedCallCount
+    }}</span>
   </button>
 
   <!-- Expanded panel -->
-  <div
-    *ngIf="expanded"
-    class="expanded-panel"
-  >
+  <div *ngIf="expanded" class="expanded-panel">
     <div class="panel-header">
       <div class="header-content">
         <div class="status-bar">
@@ -83,31 +76,24 @@
       </div>
 
       <!-- Incoming call alert -->
-      <div
-        *ngIf="incoming()"
-        class="incoming-call-alert"
-      >
+      <div *ngIf="incoming()" class="incoming-call-alert">
         <div class="incoming-call-header">
           <div class="incoming-call-info">
             <span class="material-icons call-type-icon">call</span>
             <div>
               <div class="caller-name">Входящий звонок</div>
-              <div class="caller-number">{{ incomingFrom() || 'Неизвестный абонент' }}</div>
+              <div class="caller-number">
+                {{ incomingFrom() || 'Неизвестный абонент' }}
+              </div>
             </div>
           </div>
         </div>
         <div class="incoming-call-actions">
-          <button
-            (click)="answerIncoming()"
-            class="answer-button"
-          >
+          <button (click)="answerIncoming()" class="answer-button">
             <span class="material-icons">call</span>
             Принять
           </button>
-          <button
-            (click)="rejectIncoming()"
-            class="reject-button"
-          >
+          <button (click)="rejectIncoming()" class="reject-button">
             <span class="material-icons">call_end</span>
             Отклонить
           </button>
@@ -141,16 +127,31 @@
             <button
               (click)="clearDtmf()"
               class="action-button"
-              style="margin-left: 0.5rem; width: 1.5rem; height: 1.5rem;"
+              style="margin-left: 0.5rem; width: 1.5rem; height: 1.5rem"
               title="Очистить"
             >
-              <span class="material-icons" style="font-size: 1rem;">close</span>
+              <span class="material-icons" style="font-size: 1rem">close</span>
             </button>
           </span>
         </div>
         <div class="dtmf-pad">
           <button
-            *ngFor="let key of ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#']"
+            *ngFor="
+              let key of [
+                '1',
+                '2',
+                '3',
+                '4',
+                '5',
+                '6',
+                '7',
+                '8',
+                '9',
+                '*',
+                '0',
+                '#'
+              ]
+            "
             (click)="pressKey(key)"
             class="dtmf-button"
           >
@@ -160,13 +161,16 @@
       </div>
 
       <!-- Call History Tab -->
-                  <app-softphone-call-history
-              *ngIf="activeTab === 'history'"
-              [operatorId]="sipUser"
-            />
+      <app-softphone-call-history
+        *ngIf="activeTab === 'history'"
+        [operatorId]="sipUser"
+      />
 
       <!-- Info Tab (extracted to component) -->
-      <app-softphone-info-tab *ngIf="activeTab === 'info'" [phone]="incoming() ? incomingFrom() : callee"></app-softphone-info-tab>
+      <app-softphone-info-tab
+        *ngIf="activeTab === 'info'"
+        [phone]="incoming() ? incomingFrom() : callee"
+      ></app-softphone-info-tab>
 
       <!-- Call Actions -->
       <app-softphone-call-actions
@@ -190,12 +194,16 @@
           rows="4"
           class="notes-textarea"
           placeholder="Добавьте заметку о звонке..."
+          [ngModel]="callNote()"
+          (ngModelChange)="callNote.set($event)"
         ></textarea>
       </div>
 
       <!-- Transfer Section (during active call) -->
       <div *ngIf="callActive()" class="transfer-section">
-        <label class="transfer-label" for="transfer-target">Перевод звонка</label>
+        <label class="transfer-label" for="transfer-target"
+          >Перевод звонка</label
+        >
         <div class="transfer-controls">
           <input
             id="transfer-target"
@@ -204,10 +212,7 @@
             class="transfer-input"
           />
           <div class="transfer-buttons">
-            <button
-              (click)="transfer('blind')"
-              class="transfer-button blind"
-            >
+            <button (click)="transfer('blind')" class="transfer-button blind">
               Слепой
             </button>
             <button
@@ -226,6 +231,9 @@
           [callActive]="callActive()"
           [showScripts]="showScripts()"
           [scripts]="scripts()"
+          [selectedBranch]="selectedScriptBranch()"
+          (selectBranch)="onSelectedBranch($event)"
+          (registerCdr)="manualRegisterCall($event)"
           (toggleScripts)="toggleScripts()"
         />
       </ng-container>

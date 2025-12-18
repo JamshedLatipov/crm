@@ -38,6 +38,7 @@ import { SoftphoneCallHistoryComponent } from './components/softphone-call-histo
 import { CallHistoryItem } from './components/softphone-call-history/softphone-call-history.types';
 import { CallInfoCardComponent } from '../integrations';
 import { SoftphoneCallHistoryService } from './components/softphone-call-history/softphone-call-history.service';
+import { TaskModalService } from '../tasks/services/task-modal.service';
 
 // Define custom interfaces to avoid 'any' types
 interface JsSIPSessionEvent {
@@ -140,6 +141,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   private readonly audioSvc = inject(SoftphoneAudioService);
   private readonly logger = inject(SoftphoneLoggerService);
   private readonly callHistoryService = inject(SoftphoneCallHistoryService);
+  private readonly taskModal = inject(TaskModalService);
 
   constructor() {
     // Автоподстановка сохранённых SIP реквизитов оператора
@@ -172,7 +174,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     } catch {
       // ignore
     }
-  
+
     // Subscribe to softphone events coming from the service
     this.softphone.events$.pipe(takeUntil(this.destroy$)).subscribe((ev) => {
       switch (ev.type) {
@@ -511,27 +513,6 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     } catch (err) {
       this.logger.warn('peer connection inspection failed', err);
     }
-    // Persist initial call metadata (note/type/script) when call is confirmed
-    try {
-      const callId =
-        (this.currentSession &&
-          (this.currentSession.id || this.currentSession.call_id)) ||
-        null;
-      this.callHistoryService
-        .saveCallLog(callId, {
-          note: this.callNote(),
-          callType: this.callType(),
-          scriptBranch: this.selectedScriptBranch(),
-        })
-        .then(() => {
-          this.logger.info('Initial call log saved');
-        })
-        .catch((err) => {
-          this.logger.warn('saveCallLog initial failed', err);
-        });
-    } catch (e) {
-      this.logger.warn('saveCallLog (confirmed) failed', e);
-    }
   }
 
   private handleCallEnded(e: JsSIPSessionEvent) {
@@ -555,11 +536,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
         /* ignore */
       }
     }
-    // Preserve session id for final logging, then clear incoming state and session so UI resets
-    const _endedCallId =
-      (this.currentSession &&
-        (this.currentSession.id || this.currentSession.call_id)) ||
-      null;
+
     this.incoming.set(false);
     this.incomingFrom.set(null);
     this.currentSession = null;
@@ -573,29 +550,6 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
         ? 'Registered!'
         : `Call ended: ${e.data?.cause || 'Normal clearing'}`
     );
-
-    // Save final call log with duration and disposition
-    try {
-      const duration = this.callStart
-        ? Math.floor((Date.now() - this.callStart) / 1000)
-        : undefined;
-      this.callHistoryService
-        .saveCallLog(_endedCallId, {
-          note: this.callNote(),
-          callType: this.callType(),
-          scriptBranch: this.selectedScriptBranch(),
-          duration: duration as any,
-          disposition: causeStr || null,
-        })
-        .then(() => {
-          this.logger.info('Final call log saved');
-        })
-        .catch((err) => {
-          this.logger.warn('saveCallLog final failed', err);
-        });
-    } catch (err) {
-      this.logger.warn('saveCallLog (ended) failed', err);
-    }
   }
 
   private handleCallFailed(e: JsSIPSessionEvent) {
@@ -649,6 +603,31 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     const mm = String(Math.floor(diff / 60)).padStart(2, '0');
     const ss = String(diff % 60).padStart(2, '0');
     this.callDuration.set(`${mm}:${ss}`);
+  }
+
+  // Generate a lightweight client-side id to correlate frontend logs with Asterisk
+  private generateClientCallId(): string {
+    return `c-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  }
+
+  // Unified extraction of an identifier to use when saving call logs.
+  // Prefer client-generated id (attached to session), fall back to session id or call_id.
+  private getSessionCallKey(session: JsSIPSession | null): string | null {
+    try {
+      if (!session) return null;
+      const s = session as any;
+      if (s.__clientCallId) return String(s.__clientCallId);
+      if (s.call_id) return String(s.call_id);
+      if (s.id) return String(s.id);
+      // attempt to read SIP Call-ID from request headers
+      try {
+        const hdr = s.request?.getHeader?.('Call-ID') ?? s.request?.headers?.['call-id']?.[0]?.raw;
+        if (hdr) return String(hdr);
+      } catch {}
+      return null;
+    } catch (e) {
+      return null;
+    }
   }
 
   private extractNumber(s: string) {
@@ -727,12 +706,24 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
 
     this.status.set(`Calling ${this.callee}...`);
     try {
+      // generate a client-side id we can correlate with Asterisk via SIP header
+      const clientCallId = this.generateClientCallId();
+      const opts = {
+        extraHeaders: [`X-Client-Call-ID: ${clientCallId}`, 'X-Custom-Header: CRM Call'],
+        mediaConstraints: { audio: true, video: false },
+        pcConfig: { iceServers: [], rtcpMuxPolicy: 'require' },
+      };
+
       const session = this.softphone.call(
-        `sip:${this.callee}@${this.asteriskHost}`
+        `sip:${this.callee}@${this.asteriskHost}`,
+        opts
       );
+      try {
+        (session as any).__clientCallId = clientCallId;
+      } catch {}
       this.currentSession = session;
       this.callActive.set(true);
-      this.logger.info('Call session created:', session);
+      this.logger.info('Call session created:', session, { clientCallId });
     } catch (error) {
       this.logger.error('Error initiating call:', error);
       this.status.set('Ошибка при совершении вызова');
@@ -741,6 +732,64 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
 
   hangup() {
     this.softphone.hangup();
+  }
+
+  // Manual CDR / call log registration triggered from scripts panel
+  manualRegisterCall(payload?: {
+    branchId?: string | null;
+    note?: string;
+    createTask?: boolean;
+  }) {
+    try {
+      const callId = this.getSessionCallKey(this.currentSession);
+      const noteToSave = payload?.note ?? this.callNote();
+      const branch = payload?.branchId ?? this.selectedScriptBranch();
+
+      this.callHistoryService
+        .saveCallLog(callId, {
+          note: noteToSave,
+          callType: this.callType(),
+          scriptBranch: branch,
+        })
+        .then(() => this.logger.info('Manual CDR registered'))
+        .catch((err) =>
+          this.logger.warn('Manual CDR registration failed', err)
+        );
+
+      // If requested, open task modal with prefilled title/description
+      if (payload?.createTask) {
+        // find script title by id
+        const findTitle = (
+          list: any[] | undefined,
+          id?: string | null
+        ): string | null => {
+          if (!list || !id) return null;
+          for (const s of list) {
+            if (s.id === id) return s.title;
+            const found = findTitle(s.children, id);
+            if (found) return found;
+          }
+          return null;
+        };
+        const scriptsList = this.scripts() || [];
+        const title = findTitle(scriptsList, branch) || 'Task from script';
+        try {
+          this.taskModal.openModal({ mode: 'create', title, note: noteToSave });
+        } catch (e) {
+          this.logger.warn('Opening task modal failed', e);
+        }
+      }
+    } catch (e) {
+      this.logger.warn('manualRegisterCall failed', e);
+    }
+  }
+
+  onSelectedBranch(id: string | null) {
+    try {
+      this.selectedScriptBranch.set(id);
+    } catch (e) {
+      this.logger.warn('onSelectedBranch failed', e);
+    }
   }
 
   // Toggle local audio track enabled state

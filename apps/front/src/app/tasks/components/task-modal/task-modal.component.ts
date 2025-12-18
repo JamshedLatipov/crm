@@ -106,6 +106,11 @@ export class TaskModalComponent implements OnInit {
         updates.dueDate = cfg.date;
       }
 
+      // Allow prefilled description/note from caller
+      if (cfg.note || cfg.description) {
+        updates.description = cfg.note || cfg.description;
+      }
+
       if (cfg.leadId) {
         updates.leadId = cfg.leadId;
       }

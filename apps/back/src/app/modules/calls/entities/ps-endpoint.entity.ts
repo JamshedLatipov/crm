@@ -60,6 +60,9 @@ export class PsEndpoint {
   @Column({ length: 40, nullable: true })
   rtp_symmetric: string;
 
+  @Column({ length: 200, nullable: true })
+  from_domain: string;
+
   @OneToOne(() => User, user => user.sipEndpoint, { nullable: true })
   user?: User | null;
 }

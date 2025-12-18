@@ -49,6 +49,7 @@ auth=${OPERATOR_NAME}_auth
 aors=${OPERATOR_NAME}_aor
 direct_media=no
 rewrite_contact=yes
+from_domain=localhost
 
 [${OPERATOR_NAME}]
 type=identify

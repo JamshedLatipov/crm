@@ -10,12 +10,15 @@ import { PsEndpointService } from './services/ps-endpoint.service';
 import { PsAorService } from './services/ps-aor.service';
 import { PsAuthService } from './services/ps-auth.service';
 import { CdrService } from './services/cdr.service';
+import { ReconciliationService } from './services/reconciliation.service';
+// import { AriReconciliationService } from './services/ari-reconciliation.service';
 import { CdrController } from './controllers/cdr.controller';
 import { PsEndpointController } from './controllers/ps-endpoint.controller';
 import { PsAorController } from './controllers/ps-aor.controller';
 import { PsAuthController } from './controllers/ps-auth.controller';
 import { CallsController } from './controllers/calls.controller';
 import { QueuesController } from './controllers/queues.controller';
+import { QueueMembersController } from './controllers/queue-members.controller';
 import { CallTransferService } from './services/call-transfer.service';
 import { CallLog } from './entities/call-log.entity';
 import { AriModule } from '../ari/ari.module';
@@ -41,6 +44,12 @@ import { QueueLog } from './entities/queuelog.entity';
     PsAuthService,
     CdrService,
     CallTransferService,
+    // reconciliation background worker
+    ReconciliationService,
+    // ARI-based near-realtime reconciliation
+    // AriReconciliationService will subscribe to ARI events and update call_logs quickly
+    // to reduce latency between frontend saveCallLog and Asterisk CDR
+    // AriReconciliationService,
   ],
   controllers: [
     PsEndpointController,
@@ -49,6 +58,7 @@ import { QueueLog } from './entities/queuelog.entity';
     CdrController,
     CallsController,
     QueuesController,
+    QueueMembersController,
   ],
   exports: [
     PsEndpointService,

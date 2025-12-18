@@ -20,11 +20,11 @@ export class SoftphoneService {
       try { this.ua.stop(); } catch (err) { this.logger.warn('ua.stop failed', err); }
       this.ua = null;
     }
-
-    const socketWs = new (JsSIP as any).WebSocketInterface(`ws://${asteriskHost}:8089/ws`);
+    
+    const socketWs = new JsSIP.WebSocketInterface(`ws://${asteriskHost}:8089/ws`);
     socketWs.via_transport = 'WS';
 
-    this.ua = new (JsSIP as any).UA({
+    this.ua = new JsSIP.UA({
       uri: `sip:${sipUser}@${asteriskHost}`,
       password: sipPassword,
       sockets: [socketWs],

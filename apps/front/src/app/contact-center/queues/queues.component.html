@@ -1,0 +1,30 @@
+<app-page-layout title="Службы (Очереди)">
+  <div page-actions class="actions" style="display: flex; gap: 8px">
+    <button mat-stroked-button color="primary" (click)="add()">
+      Добавить службу
+    </button>
+  </div>
+  <ng-container *ngIf="queues$ | async as queues">
+    <crm-table [data]="queues" [columns]="columns">
+      <ng-template crmColumnTemplate="actionsTemplate" let-row>
+        <button mat-icon-button [matMenuTriggerFor]="rowMenu">
+          <mat-icon>more_vert</mat-icon>
+        </button>
+        <mat-menu #rowMenu="matMenu">
+          <button mat-menu-item (click)="edit(row)">
+            <mat-icon>edit</mat-icon>
+            <span>Редактировать</span>
+          </button>
+          <button mat-menu-item (click)="openMembers(row)">
+            <mat-icon>group</mat-icon>
+            <span>Участники</span>
+          </button>
+          <button mat-menu-item (click)="removeRow(row)">
+            <mat-icon color="warn">delete</mat-icon>
+            <span>Удалить</span>
+          </button>
+        </mat-menu>
+      </ng-template>
+    </crm-table>
+  </ng-container>
+</app-page-layout>

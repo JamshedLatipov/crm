@@ -10,6 +10,7 @@ export interface CreateIvrNodeDto {
   digit?: string | null;
   action: IvrActionType;
   payload?: string | null;
+  queueName?: string | null;
   order?: number;
   timeoutMs?: number;
   ttsText?: string | null;

@@ -65,6 +65,9 @@ export class SidebarComponent {
           label: 'Онлайн мониторинг',
           route: '/contact-center/monitoring',
         },
+        { icon: 'queue', label: 'Очереди', route: '/contact-center/queues' },
+        { icon: 'settings_phone', label: 'PJSIP', route: '/contact-center/pjsip' },
+        { icon: 'history', label: 'Логи звонков', route: '/contact-center/logs' },
         { icon: 'call', label: 'Звонки', route: '/contact-center/calls' },
         { icon: 'dialpad', label: 'IVR', route: '/contact-center/ivr' },
         {

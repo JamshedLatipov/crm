@@ -6,6 +6,7 @@ import { AddWebRtcOperator31691337601003 } from "./1691337601003-AddSipOperator1
 import { AddWebRtcOperator41691337601004 } from "./1691337601004-AddSipOperator2";
 import { CreateSupportQueueAndMembers1769999999999 } from "./1769999999999-CreateSupportQueueAndMembers";
 import { EnsurePjsipRecords1770000000000 } from "./1770000000000-EnsurePjsipRecords";
+import { AddFromDomainToPsEndpoints1770000000001 } from "./1770000000001-AddFromDomainToPsEndpoints";
 
 // Include PJSIP realtime table creation and MicroSIP seed so `ps_` tables
 // are created/populated by migrationsRun in the container runtime.
@@ -18,4 +19,5 @@ export const CALLS_MIGRATIONS = [
 	AddWebRtcOperator41691337601004,
 	EnsurePjsipRecords1770000000000,
 	CreateSupportQueueAndMembers1769999999999,
+	AddFromDomainToPsEndpoints1770000000001,
 ];

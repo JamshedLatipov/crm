@@ -30,6 +30,7 @@ import { AdsAccountsComponent } from './pages/ads/ads-accounts.component';
 import { TaskCalendarPageComponent } from './tasks/task-calendar/task-calendar-page.component';
 import { PromoCompaniesComponent } from './promo-companies/promo-companies.component';
 import { ContactCenterCallsComponent } from './contact-center/calls/calls-list.component';
+import { QueuesPageComponent } from './contact-center/queues/queues.component';
 import { SourcesReportComponent } from './contact-center/reports/sources-report/sources-report.component';
 import { OperatorsReportComponent } from './contact-center/reports/operators-report/operators-report.component';
 import { QueuesReportComponent } from './contact-center/reports/queues-report/queues-report.component';
@@ -56,7 +57,10 @@ export const appRoutes: Route[] = [
         children: [
             { path: '', redirectTo: 'monitoring', pathMatch: 'full' },
             { path: 'calls', component: ContactCenterCallsComponent },
+            { path: 'logs', loadComponent: () => import('./contact-center/call-logs/call-logs.component').then(m => m.CallLogsComponent) },
             { path: 'monitoring', component: OnlineMonitoringComponent },
+            { path: 'queues', component: QueuesPageComponent },
+            { path: 'pjsip', loadComponent: () => import('./contact-center/pjsip/ps-endpoints.component').then(m => m.PsEndpointsComponent) },
             { path: 'ivr', component: IvrAdminComponent },
             { path: 'scripts', component: CallScriptsManagerComponent },
             { path: 'scripts/categories', component: CallScriptCategoriesListPageComponent },

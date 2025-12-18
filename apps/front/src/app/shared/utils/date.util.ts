@@ -55,3 +55,24 @@ export function dateToHumanReadable(dateValue?: string | Date | null): string {
   const form = ruPlural(years, ['год', 'года', 'лет']);
   return `${years} ${form} назад`;
 }
+
+/**
+ * Форматирует длительность в человекопонятный вид (русский).
+ * Пример: 90 -> "1 мин 30 с", 3600 -> "1 ч"
+ */
+export function formatDurationHuman(seconds?: number | null): string {
+  if (seconds === undefined || seconds === null) return '—';
+  const s = Number(seconds) || 0;
+  if (s === 0) return '0 с';
+
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  const parts: string[] = [];
+  if (h) parts.push(`${h} ч`);
+  if (m) parts.push(`${m} мин`);
+  if (sec) parts.push(`${sec} с`);
+  return parts.join(' ');
+}
+
+export default dateToHumanReadable;

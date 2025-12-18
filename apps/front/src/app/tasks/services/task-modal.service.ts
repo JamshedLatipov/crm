@@ -10,6 +10,7 @@ export interface TaskModalConfig {
   showTime?: boolean;
   mode?: 'create' | 'edit';
   taskId?: number;
+  note?: string; // optional prefilled note/description from callers
 }
 
 @Injectable({

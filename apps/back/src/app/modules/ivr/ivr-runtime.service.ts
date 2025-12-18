@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { AriService } from '../ari/ari.service';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { IvrNode } from './entities/ivr-node.entity';
 import axios from 'axios';
 import { IvrLogService } from './ivr-log.service';
@@ -38,7 +38,8 @@ export class IvrRuntimeService implements OnModuleInit {
   constructor(
     private readonly ari: AriService,
     @InjectRepository(IvrNode) private readonly repo: Repository<IvrNode>,
-    @InjectRepository(IvrMedia) private readonly mediaRepo: Repository<IvrMedia>,
+    @InjectRepository(IvrMedia)
+    private readonly mediaRepo: Repository<IvrMedia>,
     private readonly logSvc: IvrLogService
   ) {}
 
@@ -57,19 +58,40 @@ export class IvrRuntimeService implements OnModuleInit {
     this.ari.on('ChannelDestroyed', (evt: unknown) => this.onChannelEnded(evt));
   }
 
-  private async getRootNode(): Promise<IvrNode | null> {
-    if (this.rootNodeCache) return this.rootNodeCache;
-    const root = await this.repo.findOne({ where: { name: 'root', parentId: null } });
-    this.rootNodeCache = root;
+  /**
+   * Resolve root node. If `entryKey` is provided, try to find a root node named `root:<entryKey>`
+   * (allows mapping different dialplan entry points to different IVR roots). Falls back to
+   * the default `root` node.
+   */
+  private async getRootNode(entryKey?: string): Promise<IvrNode | null> {
+    const root = await this.repo.findOne({
+      where: { name: entryKey.trim().toString(), parentId: IsNull() },
+    });
+
     return root;
   }
 
-	private async onStasisStart(evt: unknown, channel: unknown) {
+  private async onStasisStart(evt: unknown, channel: unknown) {
     if (!channel || typeof channel !== 'object') return;
     const channelId = (channel as { id?: string }).id;
     if (!channelId || this.calls.has(channelId)) return;
     const caller = this.extractCallerNumber(evt);
-    const root = await this.getRootNode();
+    // Allow dialplan to pass an optional entry key as second Stasis arg
+    let entryKey: string | undefined;
+    try {
+      const maybe = evt as Record<string, unknown>;
+      const args = maybe['args'] as unknown;
+      if (
+        Array.isArray(args) &&
+        args.length > 1 &&
+        typeof args[1] === 'string'
+      ) {
+        entryKey = args[1] as string;
+      }
+    } catch {
+      /* ignore */
+    }
+    const root = await this.getRootNode(entryKey);
     if (!root) {
       this.logger.warn('No root IVR node defined');
       return;
@@ -125,11 +147,14 @@ export class IvrRuntimeService implements OnModuleInit {
           let mediaRef = node.payload;
           // if payload looks like a UUID (media id), resolve filename
           if (/^[0-9a-fA-F-]{36,}$/.test(String(node.payload))) {
-            const m = await this.mediaRepo.findOne({ where: { id: node.payload } });
+            const m = await this.mediaRepo.findOne({
+              where: { id: node.payload },
+            });
             if (m) mediaRef = m.filename.replace(/\.[^.]+$/, '');
           }
+          // play from custom sounds folder so project-provided audio is used
           await this.safeChannelOp(channelId, () =>
-            client.channels.play({ channelId, media: `sound:${mediaRef}` })
+            client.channels.play({ channelId, media: `sound:custom/${mediaRef}` })
           );
         }
         break;
@@ -138,11 +163,14 @@ export class IvrRuntimeService implements OnModuleInit {
         if (node.payload) {
           let mediaRef = node.payload;
           if (/^[0-9a-fA-F-]{36,}$/.test(String(node.payload))) {
-            const m = await this.mediaRepo.findOne({ where: { id: node.payload } });
+            const m = await this.mediaRepo.findOne({
+              where: { id: node.payload },
+            });
             if (m) mediaRef = m.filename.replace(/\.[^.]+$/, '');
           }
+          // play menu prompt from custom sounds
           await this.safeChannelOp(channelId, () =>
-            client.channels.play({ channelId, media: `sound:${mediaRef}` })
+            client.channels.play({ channelId, media: `sound:custom/${mediaRef}` })
           );
           const stLocal = this.calls.get(channelId);
           if (stLocal) stLocal.waitingForDigit = node.allowEarlyDtmf;
@@ -180,12 +208,14 @@ export class IvrRuntimeService implements OnModuleInit {
       }
       case 'queue': {
         // TODO: use ari client instead of raw query
+        console.log(JSON.stringify(node), '-------------------------------------------------');
         const queueName = (node as IvrNode).queueName || 'support';
         const context = process.env.ASTERISK_FROM_ARI_CONTEXT || 'from-ari';
         const priority = 1;
         const host = process.env.ARI_HOST || 'localhost';
         const port = process.env.ARI_PORT || '8089';
-        const protocol = process.env.ARI_PROTOCOL === 'https' ? 'https' : 'http';
+        const protocol =
+          process.env.ARI_PROTOCOL === 'https' ? 'https' : 'http';
         const user = process.env.ARI_USER || 'ariuser';
         const pass = process.env.ARI_PASSWORD || 'aripass';
         const url = `${protocol}://${host}:${port}/ari/channels/${encodeURIComponent(
@@ -196,44 +226,71 @@ export class IvrRuntimeService implements OnModuleInit {
           nodeId: node.id,
           nodeName: node.name,
           event: 'QUEUE_ENTER',
-          meta: { queue: queueName, attempt: 'continue_http', context, priority },
+          meta: {
+            queue: queueName,
+            attempt: 'continue_http',
+            context,
+            priority,
+          },
         });
         this.logger.debug(
           `Queue handoff HTTP continue: channel=${channelId} context=${context} extension=${queueName} priority=${priority}`
         );
         try {
-          await axios.post(
-            url,
-            null,
-            {
-              params: { context, extension: queueName, priority },
+          // Try a few possible extension names so dialplan naming differences (e.g. 'support' vs 'queue_support') are handled.
+          // Try named queue dialplan entry first (queue_<name>), then plain queue name
+          const candidates = [`queue_${queueName}`, queueName];
+          let success = false;
+          for (const ext of candidates) {
+            const res = await axios.post(url, null, {
+              params: { context, extension: ext, priority },
               auth: { username: user, password: pass },
               timeout: 3000,
               validateStatus: () => true,
+            });
+            this.logger.debug(`Queue continue attempt extension=${ext} status=${res.status}`);
+            if (res.status >= 200 && res.status < 300) {
+              success = true;
+              break;
+            } else {
+              // Log response body for diagnostics when non-2xx
+              this.logger.debug(`Queue continue response body for ${ext}: ${JSON.stringify(res.data)}`);
             }
-          );
-          // We can't easily know success vs 4xx because swagger client wraps errors; do a lightweight follow-up check:
-          // if channel still in our map after a short delay, assume failure.
-          setTimeout(() => {
-            if (this.calls.has(channelId)) {
-              this.logger.warn(
-                `Queue continue HTTP did not handoff (channel still tracked) channel=${channelId}`
-              );
-            }
-          }, 200);
-          this.calls.delete(channelId); // optimistic: dialplan will own it now
-        } catch (e) {
-          const msg = (e as Error).message;
+          }
+          if (success) {
+            // optimistic: dialplan will own it now
+            setTimeout(() => {
+              if (this.calls.has(channelId)) {
+                this.logger.warn(
+                  `Queue continue HTTP did not handoff (channel still tracked) channel=${channelId}`
+                );
+              }
+            }, 200);
+            this.calls.delete(channelId);
+          } else {
             this.logger.error(
-              `HTTP continue to queue failed channel=${channelId} err=${msg}`
+              `HTTP continue to queue returned non-2xx for all candidates channel=${channelId} queue=${queueName}`
             );
             await this.safeLog({
               channelId,
               nodeId: node.id,
               nodeName: node.name,
               event: 'QUEUE_ENTER',
-              meta: { queue: queueName, attempt: 'failed_http', error: msg },
+              meta: { queue: queueName, attempt: 'failed_http', error: 'non-2xx response' },
             });
+          }
+        } catch (e) {
+          const msg = (e as Error).message;
+          this.logger.error(
+            `HTTP continue to queue failed channel=${channelId} err=${msg}`
+          );
+          await this.safeLog({
+            channelId,
+            nodeId: node.id,
+            nodeName: node.name,
+            event: 'QUEUE_ENTER',
+            meta: { queue: queueName, attempt: 'failed_http', error: msg },
+          });
         }
         break;
       }
@@ -653,7 +710,7 @@ export class IvrRuntimeService implements OnModuleInit {
   }
 
   // Return a lightweight snapshot of active calls for external consumers
-  getActiveCallsSnapshot() {
+  public getActiveCallsSnapshot(): { count: number; channelIds: string[] } {
     const channelIds = Array.from(this.calls.keys());
     return { count: channelIds.length, channelIds };
   }
