@@ -24,6 +24,9 @@
           <app-softphone-status-bar
             [status]="status()"
             [callActive]="callActive()"
+            [paused]="memberPaused()"
+            [reason]="memberReason()"
+            (pauseChange)="onMemberPauseChange($event)"
           ></app-softphone-status-bar>
         </div>
         <button

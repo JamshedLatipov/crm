@@ -15,9 +15,9 @@ export class ContactCenterGateway implements OnModuleInit {
 
   onModuleInit() {
     // Broadcast demo data every 3 seconds
-    setInterval(() => {
+    setInterval(async () => {
       try {
-        const data = this.svc.tick();
+        const data = await this.svc.tick();
         const opMsg = JSON.stringify({ type: 'operators', payload: data.operators });
         const qMsg = JSON.stringify({ type: 'queues', payload: data.queues });
 

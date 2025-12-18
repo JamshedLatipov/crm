@@ -1,11 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { QueueMember } from '../calls/entities/queue-member.entity';
+import { Queue } from '../calls/entities/queue.entity';
 
 export type OperatorStatus = {
   id: string;
   name: string;
   status: 'idle' | 'on_call' | 'wrap_up' | 'offline';
   currentCall?: string | null;
-  avgHandleTime?: number;
+  avgHandleTime?: number | null;
 };
 
 export type QueueStatus = {
@@ -18,43 +22,45 @@ export type QueueStatus = {
 
 @Injectable()
 export class ContactCenterService {
-  private operators: OperatorStatus[] = [
-    { id: 'op1', name: 'Иван Петров', status: 'idle', currentCall: null, avgHandleTime: 210 },
-    { id: 'op2', name: 'Мария Иванова', status: 'on_call', currentCall: 'Call #1234', avgHandleTime: 180 },
-    { id: 'op3', name: 'Сергей Сидоров', status: 'wrap_up', currentCall: null, avgHandleTime: 240 },
-  ];
+  constructor(
+    @InjectRepository(QueueMember) private readonly membersRepo: Repository<QueueMember>,
+    @InjectRepository(Queue) private readonly queueRepo: Repository<Queue>,
+  ) {}
 
-  private queues: QueueStatus[] = [
-    { id: 'q1', name: 'Продажи', waiting: 2, longestWaitingSeconds: 40, callsInService: 3 },
-    { id: 'q2', name: 'Поддержка', waiting: 5, longestWaitingSeconds: 120, callsInService: 6 },
-  ];
-
-  getOperatorsSnapshot() {
-    return this.operators;
+  // Return operators based on queue_members table. Fields are best-effort mappings.
+  async getOperatorsSnapshot(): Promise<OperatorStatus[]> {
+    const members = await this.membersRepo.find();
+    return members.map((m) => ({
+      id: m.member_name,
+      name: m.memberid || m.member_name,
+      status: m.paused ? 'offline' : 'idle',
+      currentCall: null,
+      avgHandleTime: null,
+    }));
   }
 
-  getQueuesSnapshot() {
-    return this.queues;
+  // Return queues with basic derived statistics: number of available agents and total members.
+  async getQueuesSnapshot(): Promise<QueueStatus[]> {
+    const queues = await this.queueRepo.find();
+    const members = await this.membersRepo.find();
+    return queues.map((q) => {
+      const qm = members.filter((m) => m.queue_name === q.name);
+      const callsInService = qm.filter((m) => !m.paused).length;
+      // waiting / longestWaitingSeconds are not tracked here — set to 0 as placeholder
+      return {
+        id: String(q.id),
+        name: q.name,
+        waiting: 0,
+        longestWaitingSeconds: 0,
+        callsInService,
+      } as QueueStatus;
+    });
   }
 
-  // For demo: mutate and return updated state (caller/gateway will call periodically)
-  tick() {
-    // rotate operator statuses for demo
-    this.operators = this.operators.map((op, i) => ({
-      ...op,
-      status: (['idle', 'on_call', 'wrap_up', 'offline'] as OperatorStatus['status'][])[
-        (i + Math.floor(Math.random() * 4)) % 4
-      ],
-      currentCall: Math.random() > 0.6 ? `Call #${Math.floor(Math.random() * 10000)}` : null,
-    }));
-
-    this.queues = this.queues.map((q, i) => ({
-      ...q,
-      waiting: Math.max(0, q.waiting + Math.floor(Math.random() * 3) - 1),
-      longestWaitingSeconds: Math.max(0, q.longestWaitingSeconds + Math.floor(Math.random() * 11) - 5),
-      callsInService: Math.max(0, q.callsInService + Math.floor(Math.random() * 2) - 1),
-    }));
-
-    return { operators: this.operators, queues: this.queues };
+  // For compatibility with the gateway polling logic, provide an async tick that returns current snapshots.
+  async tick() {
+    const operators = await this.getOperatorsSnapshot();
+    const queues = await this.getQueuesSnapshot();
+    return { operators, queues };
   }
 }

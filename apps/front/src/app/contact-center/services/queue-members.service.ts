@@ -35,6 +35,16 @@ export class QueueMembersService {
     return this.http.put<QueueMemberRecord>(`${this.base}/${id}`, payload);
   }
 
+  pause(payload: { paused: boolean; reason_paused?: string | null }) {
+    // TODO: change api to work with providing member id
+    const tmp = 0;
+    return this.http.put<QueueMemberRecord>(`${this.base}/${tmp}/pause`, payload);
+  }
+
+  myState(): Observable<QueueMemberRecord> {
+    return this.http.get<QueueMemberRecord>(`${this.base}/my-state`);
+  }
+
   remove(id: number) {
     return this.http.delete<{ ok: boolean }>(`${this.base}/${id}`);
   }

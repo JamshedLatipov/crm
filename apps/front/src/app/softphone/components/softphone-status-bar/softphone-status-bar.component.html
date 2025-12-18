@@ -1,6 +1,40 @@
 <div class="flex items-center gap-2 mb-2">
-  <span [class]="status().includes('Registered') ? 'inline-block w-2.5 h-2.5 rounded-full bg-green-500' :
-    (status().includes('failed') || status().includes('Ошибка') ? 'inline-block w-2.5 h-2.5 rounded-full bg-red-500' :
-    'inline-block w-2.5 h-2.5 rounded-full bg-yellow-500')"></span>
-  <span class="text-sm font-medium text-[var(--text-white)]">{{ status() }}</span>
+  <button
+    mat-button
+    [matMenuTriggerFor]="pauseMenu"
+    aria-label="Статус"
+    class="p-0"
+  >
+    <span
+      [class]="
+        paused()
+          ? 'inline-block w-2.5 h-2.5 rounded-full bg-yellow-500 mr-2'
+          : status().includes('Registered')
+          ? 'inline-block w-2.5 h-2.5 rounded-full bg-green-500 mr-2'
+          : status().includes('failed') || status().includes('Ошибка')
+          ? 'inline-block w-2.5 h-2.5 rounded-full bg-red-500 mr-2'
+          : 'inline-block w-2.5 h-2.5 rounded-full bg-yellow-500 mr-2'
+      "
+    ></span>
+    <span class="text-sm font-medium status-text"
+      >{{ status() }}{{ paused() && reason() ? ' — ' + reason() : '' }}</span
+    >
+    <span class="material-icons" style="font-size: 18px; margin-left: 6px"
+      >arrow_drop_down</span
+    >
+  </button>
+
+  <mat-menu
+    #pauseMenu="matMenu"
+    [overlapTrigger]="false"
+    panelClass="softphone-pause-menu"
+  >
+    <div class="text-gray-500 mr-2 ml-2">Выбрать причину паузы</div>
+    <mat-divider></mat-divider>
+    <button mat-menu-item *ngFor="let r of reasons" (click)="selectReason(r)">
+      <span>{{ r }}</span>
+    </button>
+    <mat-divider></mat-divider>
+    <button mat-menu-item (click)="clearPause()">Доступен</button>
+  </mat-menu>
 </div>

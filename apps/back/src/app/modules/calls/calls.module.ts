@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ContactCenterModule } from '../contact-center/contact-center.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PsEndpoint } from './entities/ps-endpoint.entity';
 import { PsAor } from './entities/ps-aor.entity';
@@ -23,10 +24,15 @@ import { CallTransferService } from './services/call-transfer.service';
 import { CallLog } from './entities/call-log.entity';
 import { AriModule } from '../ari/ari.module';
 import { QueueLog } from './entities/queuelog.entity';
+import { PassportModule } from '@nestjs/passport';
+import { UserModule } from '../user/user.module';
 
 @Module({
   imports: [
     AriModule,
+    ContactCenterModule,
+    PassportModule,
+    UserModule,
     TypeOrmModule.forFeature([
       PsEndpoint,
       PsAor,

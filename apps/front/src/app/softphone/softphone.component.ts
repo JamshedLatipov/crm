@@ -7,7 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { environment } from '../../environments/environment';
-import { Subject } from 'rxjs';
+import { Subject, lastValueFrom } from 'rxjs';
 import { takeUntil } from 'rxjs';
 import { CallsApiService } from '../calls/calls.service';
 import { CallScriptsService } from '../shared/services/call-scripts.service';
@@ -39,6 +39,10 @@ import { CallHistoryItem } from './components/softphone-call-history/softphone-c
 import { CallInfoCardComponent } from '../integrations';
 import { SoftphoneCallHistoryService } from './components/softphone-call-history/softphone-call-history.service';
 import { TaskModalService } from '../tasks/services/task-modal.service';
+import {
+  QueueMembersService,
+  QueueMemberRecord,
+} from '../contact-center/services/queue-members.service';
 
 // Define custom interfaces to avoid 'any' types
 interface JsSIPSessionEvent {
@@ -142,6 +146,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   private readonly logger = inject(SoftphoneLoggerService);
   private readonly callHistoryService = inject(SoftphoneCallHistoryService);
   private readonly taskModal = inject(TaskModalService);
+  private readonly queueMembersSvc = inject(QueueMembersService);
 
   constructor() {
     // Автоподстановка сохранённых SIP реквизитов оператора
@@ -163,6 +168,11 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   // Auto-expand softphone on incoming call
   autoExpandOnIncoming = true;
 
+  // Current operator queue member record (if any)
+  currentMember: QueueMemberRecord | null = null;
+  memberPaused = signal(false);
+  memberReason = signal('');
+
   ngOnInit() {
     try {
       const saved = localStorage.getItem('softphone.expanded');
@@ -176,197 +186,211 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     }
 
     // Subscribe to softphone events coming from the service
-    this.softphone.events$.pipe(takeUntil(this.destroy$)).subscribe((ev) => {
-      switch (ev.type) {
-        case 'registered':
-          this.status.set('Registered!');
-          break;
-        case 'registrationFailed':
-          this.registrationFailed(ev.payload as JsSIPRegisterEvent);
-          break;
-        case 'connecting':
-          this.status.set('Connecting...');
-          break;
-        case 'connected':
-          this.status.set('Connected, registering...');
-          break;
-        case 'disconnected':
-          this.status.set('Disconnected');
-          break;
-        case 'progress':
-          this.handleCallProgress(ev.payload as JsSIPSessionEvent);
-          break;
-        case 'confirmed':
-        case 'accepted':
-          this.handleCallConfirmed(ev.payload as JsSIPSessionEvent);
-          break;
-        case 'ended':
-          this.handleCallEnded(ev.payload as JsSIPSessionEvent);
-          break;
-        case 'failed':
-          this.handleCallFailed(ev.payload as JsSIPSessionEvent);
-          break;
-        case 'transferResult':
-          this.status.set(
-            ev.payload?.ok
-              ? 'Transfer initiated'
-              : 'Transfer result: ' + (ev.payload?.error || 'unknown')
-          );
-          break;
-        case 'transferFailed':
-          this.status.set('Transfer failed');
-          break;
-        case 'hold':
-          // Session confirmed placed on hold (remote or local)
-          this.onHold.set(true);
-          this.holdInProgress.set(false);
-          this.status.set('Call on hold');
-          try {
-            this.applyHoldState(true);
-          } catch (e) {
-            this.logger.warn('applyHoldState on hold failed', e);
-          }
-          break;
-        case 'unhold':
-          // Session resumed from hold
-          this.onHold.set(false);
-          this.holdInProgress.set(false);
-          this.status.set(
-            this.callActive()
-              ? 'Call in progress'
-              : this.isRegistered()
-              ? 'Registered!'
-              : 'Disconnected'
-          );
-          try {
-            this.applyHoldState(false);
-          } catch (e) {
-            this.logger.warn('applyHoldState on unhold failed', e);
-          }
-          break;
-          break;
-        case 'newRTCSession': {
-          const sess = ev.payload?.session as JsSIPSession;
-          this.currentSession = sess;
-
-          // determine direction
-          const dir =
-            (ev.payload && ev.payload.direction) ||
-            (sess && sess.direction) ||
-            'outgoing';
-
-          if (dir === 'incoming' || dir === 'inbound') {
-            this.incoming.set(true);
-            this.activeTab = 'info';
-
-            // try to extract caller display or remote identity
-            const from =
-              (sess &&
-                (sess.remote_identity?.uri ||
-                  sess.remote_identity?.display_name)) ||
-              (ev.payload && ev.payload.from) ||
-              null;
-            this.incomingFrom.set(
-              typeof from === 'string' ? from : from?.toString?.() ?? null
-            );
-            this.status.set(
-              `Incoming call${
-                this.incomingFrom() ? ' from ' + this.incomingFrom() : ''
-              }`
-            );
-            this.logger.info('Incoming call from:', this.incomingFrom());
-
-            // Auto-expand if user prefers
+    this.softphone.events$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(async (ev) => {
+        switch (ev.type) {
+          case 'registered':
+            this.status.set('Онлайн!');
+            // Try to locate operator queue member record and sync pause state
             try {
-              if (this.autoExpandOnIncoming && !this.expanded)
-                this.toggleExpand();
-            } catch {
-              /* ignore */
-            }
-
-            // Start incoming ringtone immediately
-            try {
-              this.ringtone.startRingback(
-                RINGBACK_INCOMING_LEVEL,
-                RINGTONE_SRC
+              const status = await lastValueFrom(
+                this.queueMembersSvc.myState()
               );
+              if (status.paused) {
+                this.memberPaused.set(true);
+                this.memberReason.set(status.reason_paused || '');
+              }
             } catch (e) {
-              this.logger.warn('Failed to start incoming ringtone', e);
+              this.logger.warn('load queue member failed', e);
+            }
+            break;
+          case 'registrationFailed':
+            this.registrationFailed(ev.payload as JsSIPRegisterEvent);
+            break;
+          case 'connecting':
+            this.status.set('Connecting...');
+            break;
+          case 'connected':
+            this.status.set('Connected, registering...');
+            break;
+          case 'disconnected':
+            this.status.set('Disconnected');
+            break;
+          case 'progress':
+            this.handleCallProgress(ev.payload as JsSIPSessionEvent);
+            break;
+          case 'confirmed':
+          case 'accepted':
+            this.handleCallConfirmed(ev.payload as JsSIPSessionEvent);
+            break;
+          case 'ended':
+            this.handleCallEnded(ev.payload as JsSIPSessionEvent);
+            break;
+          case 'failed':
+            this.handleCallFailed(ev.payload as JsSIPSessionEvent);
+            break;
+          case 'transferResult':
+            this.status.set(
+              ev.payload?.ok
+                ? 'Transfer initiated'
+                : 'Transfer result: ' + (ev.payload?.error || 'unknown')
+            );
+            break;
+          case 'transferFailed':
+            this.status.set('Transfer failed');
+            break;
+          case 'hold':
+            // Session confirmed placed on hold (remote or local)
+            this.onHold.set(true);
+            this.holdInProgress.set(false);
+            this.status.set('Call on hold');
+            try {
+              this.applyHoldState(true);
+            } catch (e) {
+              this.logger.warn('applyHoldState on hold failed', e);
+            }
+            break;
+          case 'unhold':
+            // Session resumed from hold
+            this.onHold.set(false);
+            this.holdInProgress.set(false);
+            this.status.set(
+              this.callActive()
+                ? 'Call in progress'
+                : this.isRegistered()
+                ? 'Registered!'
+                : 'Disconnected'
+            );
+            try {
+              this.applyHoldState(false);
+            } catch (e) {
+              this.logger.warn('applyHoldState on unhold failed', e);
+            }
+            break;
+            break;
+          case 'newRTCSession': {
+            const sess = ev.payload?.session as JsSIPSession;
+            this.currentSession = sess;
+
+            // determine direction
+            const dir =
+              (ev.payload && ev.payload.direction) ||
+              (sess && sess.direction) ||
+              'outgoing';
+
+            if (dir === 'incoming' || dir === 'inbound') {
+              this.incoming.set(true);
+              this.activeTab = 'info';
+
+              // try to extract caller display or remote identity
+              const from =
+                (sess &&
+                  (sess.remote_identity?.uri ||
+                    sess.remote_identity?.display_name)) ||
+                (ev.payload && ev.payload.from) ||
+                null;
+              this.incomingFrom.set(
+                typeof from === 'string' ? from : from?.toString?.() ?? null
+              );
+              this.status.set(
+                `Incoming call${
+                  this.incomingFrom() ? ' from ' + this.incomingFrom() : ''
+                }`
+              );
+              this.logger.info('Incoming call from:', this.incomingFrom());
+
+              // Auto-expand if user prefers
+              try {
+                if (this.autoExpandOnIncoming && !this.expanded)
+                  this.toggleExpand();
+              } catch {
+                /* ignore */
+              }
+
+              // Start incoming ringtone immediately
+              try {
+                this.ringtone.startRingback(
+                  RINGBACK_INCOMING_LEVEL,
+                  RINGTONE_SRC
+                );
+              } catch (e) {
+                this.logger.warn('Failed to start incoming ringtone', e);
+              }
+
+              // Desktop notification
+              try {
+                if (typeof Notification !== 'undefined') {
+                  if (Notification.permission === 'granted') {
+                    new Notification('Incoming call', {
+                      body: this.incomingFrom() || 'Unknown caller',
+                      tag: 'softphone-incoming',
+                    });
+                  } else if (Notification.permission !== 'denied') {
+                    Notification.requestPermission().then((perm) => {
+                      if (perm === 'granted') {
+                        new Notification('Incoming call', {
+                          body: this.incomingFrom() || 'Unknown caller',
+                          tag: 'softphone-incoming',
+                        });
+                      }
+                    });
+                  }
+                }
+              } catch (e) {
+                this.logger.warn('Notification failed', e);
+              }
             }
 
-            // Desktop notification
+            // Attach track handler and attach any existing receivers using audio service
             try {
-              if (typeof Notification !== 'undefined') {
-                if (Notification.permission === 'granted') {
-                  new Notification('Incoming call', {
-                    body: this.incomingFrom() || 'Unknown caller',
-                    tag: 'softphone-incoming',
-                  });
-                } else if (Notification.permission !== 'denied') {
-                  Notification.requestPermission().then((perm) => {
-                    if (perm === 'granted') {
-                      new Notification('Incoming call', {
-                        body: this.incomingFrom() || 'Unknown caller',
-                        tag: 'softphone-incoming',
-                      });
+              if (sess?.connection) {
+                const pc = sess.connection as RTCPeerConnection;
+                try {
+                  pc.addEventListener('track', (ev2: any) => {
+                    try {
+                      this.audioSvc.attachTrackEvent(ev2);
+                    } catch (ee) {
+                      this.logger.warn('audioSvc attachTrackEvent failed', ee);
                     }
                   });
+                } catch (e) {
+                  this.logger.warn('addEventListener(track) failed', e);
+                }
+
+                try {
+                  // attempt to attach already-present receivers
+                  if (!this.audioSvc.attachReceiversFromPC(pc)) {
+                    // nothing attached from receivers
+                  }
+                } catch (e) {
+                  this.logger.warn('audioSvc attachReceiversFromPC failed', e);
+                }
+
+                // initialize audio element reference
+                try {
+                  this.audioSvc.initAudioElement(REMOTE_AUDIO_ELEMENT_ID);
+                } catch (e) {
+                  this.logger.warn('initAudioElement failed', e);
                 }
               }
             } catch (e) {
-              this.logger.warn('Notification failed', e);
+              this.logger.warn('attachSession track handler failed', e);
             }
+
+            break;
           }
-
-          // Attach track handler and attach any existing receivers using audio service
-          try {
-            if (sess?.connection) {
-              const pc = sess.connection as RTCPeerConnection;
-              try {
-                pc.addEventListener('track', (ev2: any) => {
-                  try {
-                    this.audioSvc.attachTrackEvent(ev2);
-                  } catch (ee) {
-                    this.logger.warn('audioSvc attachTrackEvent failed', ee);
-                  }
-                });
-              } catch (e) {
-                this.logger.warn('addEventListener(track) failed', e);
-              }
-
-              try {
-                // attempt to attach already-present receivers
-                if (!this.audioSvc.attachReceiversFromPC(pc)) {
-                  // nothing attached from receivers
-                }
-              } catch (e) {
-                this.logger.warn('audioSvc attachReceiversFromPC failed', e);
-              }
-
-              // initialize audio element reference
-              try {
-                this.audioSvc.initAudioElement(REMOTE_AUDIO_ELEMENT_ID);
-              } catch (e) {
-                this.logger.warn('initAudioElement failed', e);
-              }
+          case 'track': {
+            // forward to audio service for consistency
+            try {
+              this.audioSvc.attachTrackEvent((ev && ev.payload) || ev);
+            } catch (e) {
+              this.logger.warn('track event forward failed', e);
             }
-          } catch (e) {
-            this.logger.warn('attachSession track handler failed', e);
+            break;
           }
-
-          break;
         }
-        case 'track': {
-          // forward to audio service for consistency
-          try {
-            this.audioSvc.attachTrackEvent((ev && ev.payload) || ev);
-          } catch (e) {
-            this.logger.warn('track event forward failed', e);
-          }
-          break;
-        }
-      }
-    });
+      });
 
     // Авто-SIP авторизация, если есть сохранённые данные и ещё не подключено
     if (!this.autoConnectAttempted && this.sipUser && this.sipPassword) {
@@ -621,7 +645,9 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       if (s.id) return String(s.id);
       // attempt to read SIP Call-ID from request headers
       try {
-        const hdr = s.request?.getHeader?.('Call-ID') ?? s.request?.headers?.['call-id']?.[0]?.raw;
+        const hdr =
+          s.request?.getHeader?.('Call-ID') ??
+          s.request?.headers?.['call-id']?.[0]?.raw;
         if (hdr) return String(hdr);
       } catch {}
       return null;
@@ -650,6 +676,30 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     // Delegate to service to create and start UA
     this.status.set('Connecting...');
     this.softphone.connect(this.sipUser, this.sipPassword, this.asteriskHost);
+  }
+
+  // Handle pause change emission from status bar
+  async onMemberPauseChange(ev: { paused: boolean; reason?: string }) {
+    try {
+      const paused = await lastValueFrom(
+        this.queueMembersSvc.pause({
+          paused: ev.paused,
+          reason_paused: ev.reason,
+        })
+      );
+
+      if (paused) {
+        this.memberPaused.set(ev.paused ? true : false);
+        this.memberReason.set(ev.reason || '');
+      }
+    } catch (e) {
+      this.logger.error('Failed to update queue member pause state', e);
+      // Revert optimistic update on failure
+      if (this.currentMember) {
+        this.memberPaused.set(Boolean(this.currentMember.paused));
+        this.memberReason.set(this.currentMember.reason_paused || '');
+      }
+    }
   }
 
   toggleExpand() {
@@ -709,7 +759,10 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       // generate a client-side id we can correlate with Asterisk via SIP header
       const clientCallId = this.generateClientCallId();
       const opts = {
-        extraHeaders: [`X-Client-Call-ID: ${clientCallId}`, 'X-Custom-Header: CRM Call'],
+        extraHeaders: [
+          `X-Client-Call-ID: ${clientCallId}`,
+          'X-Custom-Header: CRM Call',
+        ],
         mediaConstraints: { audio: true, video: false },
         pcConfig: { iceServers: [], rtcpMuxPolicy: 'require' },
       };
