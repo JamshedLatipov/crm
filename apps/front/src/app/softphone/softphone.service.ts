@@ -20,7 +20,7 @@ export class SoftphoneService {
       try { this.ua.stop(); } catch (err) { this.logger.warn('ua.stop failed', err); }
       this.ua = null;
     }
-
+    
     const socketWs = new (JsSIP as any).WebSocketInterface(`ws://${asteriskHost}:8089/ws`);
     socketWs.via_transport = 'WS';
 

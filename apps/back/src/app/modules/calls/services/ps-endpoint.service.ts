@@ -23,8 +23,11 @@ export class PsEndpointService {
   create(data: Partial<PsEndpoint>) {
     // Create endpoint along with corresponding ps_aors and ps_auths records in a transaction
     return this.repo.manager.transaction(async (em) => {
+      const fromDomain = data.from_domain || process.env.ASTERISK_HOST;
+
       const endpoint = em.create(PsEndpoint, {
         ...data,
+        from_domain: fromDomain,
         dtmf_mode: 'rfc4733',
         direct_media: 'no',
         rewrite_contact: 'yes',

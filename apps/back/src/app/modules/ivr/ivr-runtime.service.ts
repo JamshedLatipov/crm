@@ -208,6 +208,7 @@ export class IvrRuntimeService implements OnModuleInit {
       }
       case 'queue': {
         // TODO: use ari client instead of raw query
+        console.log(JSON.stringify(node), '-------------------------------------------------');
         const queueName = (node as IvrNode).queueName || 'support';
         const context = process.env.ASTERISK_FROM_ARI_CONTEXT || 'from-ari';
         const priority = 1;
@@ -236,22 +237,48 @@ export class IvrRuntimeService implements OnModuleInit {
           `Queue handoff HTTP continue: channel=${channelId} context=${context} extension=${queueName} priority=${priority}`
         );
         try {
-          await axios.post(url, null, {
-            params: { context, extension: queueName, priority },
-            auth: { username: user, password: pass },
-            timeout: 3000,
-            validateStatus: () => true,
-          });
-          // We can't easily know success vs 4xx because swagger client wraps errors; do a lightweight follow-up check:
-          // if channel still in our map after a short delay, assume failure.
-          setTimeout(() => {
-            if (this.calls.has(channelId)) {
-              this.logger.warn(
-                `Queue continue HTTP did not handoff (channel still tracked) channel=${channelId}`
-              );
+          // Try a few possible extension names so dialplan naming differences (e.g. 'support' vs 'queue_support') are handled.
+          // Try named queue dialplan entry first (queue_<name>), then plain queue name
+          const candidates = [`queue_${queueName}`, queueName];
+          let success = false;
+          for (const ext of candidates) {
+            const res = await axios.post(url, null, {
+              params: { context, extension: ext, priority },
+              auth: { username: user, password: pass },
+              timeout: 3000,
+              validateStatus: () => true,
+            });
+            this.logger.debug(`Queue continue attempt extension=${ext} status=${res.status}`);
+            if (res.status >= 200 && res.status < 300) {
+              success = true;
+              break;
+            } else {
+              // Log response body for diagnostics when non-2xx
+              this.logger.debug(`Queue continue response body for ${ext}: ${JSON.stringify(res.data)}`);
             }
-          }, 200);
-          this.calls.delete(channelId); // optimistic: dialplan will own it now
+          }
+          if (success) {
+            // optimistic: dialplan will own it now
+            setTimeout(() => {
+              if (this.calls.has(channelId)) {
+                this.logger.warn(
+                  `Queue continue HTTP did not handoff (channel still tracked) channel=${channelId}`
+                );
+              }
+            }, 200);
+            this.calls.delete(channelId);
+          } else {
+            this.logger.error(
+              `HTTP continue to queue returned non-2xx for all candidates channel=${channelId} queue=${queueName}`
+            );
+            await this.safeLog({
+              channelId,
+              nodeId: node.id,
+              nodeName: node.name,
+              event: 'QUEUE_ENTER',
+              meta: { queue: queueName, attempt: 'failed_http', error: 'non-2xx response' },
+            });
+          }
         } catch (e) {
           const msg = (e as Error).message;
           this.logger.error(
@@ -683,7 +710,7 @@ export class IvrRuntimeService implements OnModuleInit {
   }
 
   // Return a lightweight snapshot of active calls for external consumers
-  getActiveCallsSnapshot() {
+  public getActiveCallsSnapshot(): { count: number; channelIds: string[] } {
     const channelIds = Array.from(this.calls.keys());
     return { count: channelIds.length, channelIds };
   }
