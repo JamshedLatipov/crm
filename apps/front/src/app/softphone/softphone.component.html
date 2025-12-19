@@ -121,47 +121,7 @@
         [callDuration]="callDuration()"
       ></app-softphone-call-info>
 
-      <!-- DTMF Section (during active call) -->
-      <div *ngIf="callActive() && activeTab === 'dial'" class="dtmf-section">
-        <div class="dtmf-header">
-          <span class="dtmf-label">Отправить DTMF</span>
-          <span *ngIf="dtmfSequence" class="dtmf-sequence">
-            {{ dtmfSequence }}
-            <button
-              (click)="clearDtmf()"
-              class="action-button"
-              style="margin-left: 0.5rem; width: 1.5rem; height: 1.5rem"
-              title="Очистить"
-            >
-              <span class="material-icons" style="font-size: 1rem">close</span>
-            </button>
-          </span>
-        </div>
-        <div class="dtmf-pad">
-          <button
-            *ngFor="
-              let key of [
-                '1',
-                '2',
-                '3',
-                '4',
-                '5',
-                '6',
-                '7',
-                '8',
-                '9',
-                '*',
-                '0',
-                '#'
-              ]
-            "
-            (click)="pressKey(key)"
-            class="dtmf-button"
-          >
-            {{ key }}
-          </button>
-        </div>
-      </div>
+      <!-- DTMF moved into call actions component -->
 
       <!-- Call History Tab -->
       <app-softphone-call-history
@@ -187,46 +147,12 @@
         (hangup)="hangup()"
         (muteToggle)="toggleMute()"
         (holdToggle)="toggleHold()"
+        [(transferTarget)]="transferTarget"
+        (transfer)="transfer($event)"
+        [dtmfSequence]="dtmfSequence"
+        (pressKey)="pressKey($event)"
+        (clearDtmf)="clearDtmf()"
       ></app-softphone-call-actions>
-
-      <!-- Call Notes (during active call) -->
-      <div *ngIf="callActive()" class="call-notes-section">
-        <label class="notes-label" for="call-note">Добавить заметку</label>
-        <textarea
-          id="call-note"
-          rows="4"
-          class="notes-textarea"
-          placeholder="Добавьте заметку о звонке..."
-          [ngModel]="callNote()"
-          (ngModelChange)="callNote.set($event)"
-        ></textarea>
-      </div>
-
-      <!-- Transfer Section (during active call) -->
-      <div *ngIf="callActive()" class="transfer-section">
-        <label class="transfer-label" for="transfer-target"
-          >Перевод звонка</label
-        >
-        <div class="transfer-controls">
-          <input
-            id="transfer-target"
-            [(ngModel)]="transferTarget"
-            placeholder="SIP/1000 или 1000"
-            class="transfer-input"
-          />
-          <div class="transfer-buttons">
-            <button (click)="transfer('blind')" class="transfer-button blind">
-              Слепой
-            </button>
-            <button
-              (click)="transfer('attended')"
-              class="transfer-button attended"
-            >
-              Консультационный
-            </button>
-          </div>
-        </div>
-      </div>
 
       <!-- Scripts Panel -->
       <ng-container *ngIf="activeTab === 'scenarios'">

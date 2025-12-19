@@ -1,32 +1,107 @@
-<div class="grid grid-cols-3 gap-4 w-full">
+<div class="actions-grid">
   <!-- Active call controls -->
   <ng-container *ngIf="callActive()">
     <button
+      mat-button
+      class="action-btn"
       (click)="holdToggle.emit()"
       [disabled]="holdInProgress()"
-      class="flex flex-col items-center justify-center gap-2 p-3 rounded-lg transition-all"
       [ngClass]="holdButtonClass()"
       [attr.aria-pressed]="onHold()"
       [attr.aria-busy]="holdInProgress()"
     >
       <span class="material-icons">{{ holdIcon() }}</span>
-      <span class="text-xs font-medium">{{ holdLabel() }}</span>
+      <span class="action-label">{{ holdLabel() }}</span>
     </button>
     <button
+      mat-button
+      class="action-btn"
       (click)="muteToggle.emit()"
-      class="flex flex-col items-center justify-center gap-2 p-3 rounded-lg transition-all text-white"
       [ngClass]="muteButtonClass()"
       [attr.aria-pressed]="muted()"
     >
       <span class="material-icons">{{ muteIcon() }}</span>
-      <span class="text-xs font-medium">{{ muteLabel() }}</span>
+      <span class="action-label">{{ muteLabel() }}</span>
+    </button>
+    <div class="flex items-center justify-center">
+      <button
+        mat-button
+        class="action-btn"
+        [matMenuTriggerFor]="dtmfMenu"
+        title="DTMF"
+      >
+        <span class="material-icons">dialpad</span>
+        <span class="action-label">DTMF</span>
+      </button>
+    </div>
+    <button
+      mat-button
+      class="action-btn"
+      [matMenuTriggerFor]="transferMenu"
+      title="Перевод"
+    >
+      <span class="material-icons">swap_horiz</span>
+      <span class="action-label">Перевод</span>
     </button>
     <button
+      mat-flat-button
+      color="warn"
+      class="action-btn"
       (click)="hangup.emit()"
-      class="flex flex-col items-center justify-center gap-2 p-3 rounded-lg bg-red-600 hover:bg-red-700 transition-all text-white"
     >
       <span class="material-icons">call_end</span>
-      <span class="text-xs font-medium">Сбросить</span>
+      <span class="action-label">Сбросить</span>
     </button>
   </ng-container>
 </div>
+
+<mat-menu #dtmfMenu="matMenu">
+  <div class="px-4 py-2">
+    <div class="flex items-center justify-between">
+      <span>Отправить DTMF</span>
+      <button
+        *ngIf="dtmfSequence()"
+        mat-icon-button
+        (click)="clearDtmf.emit(); $event.stopPropagation()"
+        title="Очистить"
+      >
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+    <div *ngIf="dtmfSequence()" class="text-sm mt-1">{{ dtmfSequence() }}</div>
+  </div>
+  <div class="grid grid-cols-3 gap-1 p-2">
+    <button
+      mat-menu-item
+      *ngFor="
+        let key of ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#']
+      "
+      (click)="pressKey.emit(key)"
+    >
+      {{ key }}
+    </button>
+  </div>
+</mat-menu>
+
+<mat-menu #transferMenu="matMenu">
+  <div class="px-4 py-2" style="width:260px;">
+    <div class="flex items-center justify-between">
+      <span>Перевод звонка</span>
+    </div>
+    <div class="mt-2">
+      <mat-form-field appearance="outline" style="width:100%;" (click)="$event.stopPropagation()">
+        <input matInput id="transfer-target-menu"
+          [value]="transferTarget()"
+          (input)="transferTargetChange.emit($any($event.target).value)"
+          (mousedown)="$event.stopPropagation()"
+          (click)="$event.stopPropagation()"
+          (keydown)="$event.stopPropagation()"
+          placeholder="SIP/1000 или 1000" />
+      </mat-form-field>
+    </div>
+    <div class="mt-2" style="display:flex; gap:8px; justify-content:flex-end;">
+      <button mat-menu-item (click)="transfer.emit('blind');">Слепой</button>
+      <button mat-menu-item (click)="transfer.emit('attended');">Консультационный</button>
+    </div>
+  </div>
+</mat-menu>
