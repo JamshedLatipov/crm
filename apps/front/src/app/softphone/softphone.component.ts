@@ -36,7 +36,6 @@ import { SoftphoneDialTabComponent } from './components/softphone-dial-tab.compo
 import { SoftphoneInfoTabComponent } from './components/softphone-info-tab.component';
 import { SoftphoneCallHistoryComponent } from './components/softphone-call-history/softphone-call-history.component';
 import { CallHistoryItem } from './components/softphone-call-history/softphone-call-history.types';
-import { CallInfoCardComponent } from '../integrations';
 import { SoftphoneCallHistoryService } from './components/softphone-call-history/softphone-call-history.service';
 import { TaskModalService } from '../tasks/services/task-modal.service';
 import {
@@ -191,7 +190,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       .subscribe(async (ev) => {
         switch (ev.type) {
           case 'registered':
-            this.status.set('Онлайн!');
+            this.status.set('Вход выполнен!');
             // Try to locate operator queue member record and sync pause state
             try {
               const status = await lastValueFrom(
