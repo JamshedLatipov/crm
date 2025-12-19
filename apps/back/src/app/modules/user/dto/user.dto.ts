@@ -63,6 +63,10 @@ export class CreateUserDto {
   @IsOptional()
   @IsNumber()
   managerID?: number;
+
+  @IsOptional()
+  @IsString()
+  sipEndpointId?: string;
 }
 
 export class UpdateUserDto {
@@ -123,6 +127,10 @@ export class UpdateUserDto {
   @IsOptional()
   @IsNumber()
   managerID?: number;
+
+  @IsOptional()
+  @IsString()
+  sipEndpointId?: string;
 }
 
 export class AutoAssignCriteriaDto {
@@ -184,4 +192,5 @@ export class UserResponseDto {
   fullName: string;
   workloadPercentage: number;
   isOverloaded: boolean;
+  sipEndpointId?: string;
 }

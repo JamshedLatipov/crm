@@ -1,4 +1,11 @@
-import { Component, signal, inject, OnInit, ChangeDetectionStrategy, computed } from '@angular/core';
+import {
+  Component,
+  signal,
+  inject,
+  OnInit,
+  ChangeDetectionStrategy,
+  computed,
+} from '@angular/core';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
@@ -11,6 +18,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatOptionModule } from '@angular/material/core';
+import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { ConfirmActionDialogComponent } from '../../../shared/dialogs/confirm-action-dialog.component';
@@ -22,12 +30,19 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatListModule } from '@angular/material/list';
-import { UserManagementService, User } from '../../../services/user-management.service';
+import {
+  UserManagementService,
+  User,
+} from '../../../services/user-management.service';
 import { AssignmentService } from '../../../services/assignment.service';
 import { LeadService } from '../../../leads/services/lead.service';
 import { DealsService } from '../../../pipeline/deals.service';
 import { TasksService } from '../../../tasks/tasks.service';
 import { ReferenceDataService } from '../../../services/reference-data.service';
+import {
+  PsEndpointsService,
+  PsEndpointRecord,
+} from '../../../contact-center/pjsip/ps-endpoints.service';
 import { PasswordResetSnackbarComponent } from '../../../shared/components/password-reset-snackbar/password-reset-snackbar.component';
 import { UserHeaderComponent } from '../components/user-header/user-header.component';
 import { UserRolesComponent } from '../components/user-roles/user-roles.component';
@@ -56,6 +71,7 @@ type TabType = 'overview' | 'performance' | 'activity';
     MatInputModule,
     MatAutocompleteModule,
     MatOptionModule,
+    MatSelectModule,
     MatSnackBarModule,
     MatCardModule,
     MatProgressSpinnerModule,
@@ -63,15 +79,13 @@ type TabType = 'overview' | 'performance' | 'activity';
     MatMenuModule,
     MatTooltipModule,
     MatTabsModule,
-  MatListModule,
-    MatDividerModule
-    ,
+    MatListModule,
+    MatDividerModule,
     MatDialogModule,
-    ConfirmActionDialogComponent
   ],
   templateUrl: './user-detail.component.html',
   styleUrls: ['./user-detail.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UserDetailComponent implements OnInit {
   protected readonly userService = inject(UserManagementService);
@@ -80,6 +94,7 @@ export class UserDetailComponent implements OnInit {
   protected readonly dealsService = inject(DealsService);
   protected readonly tasksService = inject(TasksService);
   protected readonly referenceDataService = inject(ReferenceDataService);
+  protected readonly psEndpointsService = inject(PsEndpointsService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
@@ -98,28 +113,33 @@ export class UserDetailComponent implements OnInit {
   public readonly availableRoles = this.referenceDataService.activeRoles;
 
   // Options suitable for ChipAutocompleteComponent
-  public readonly rolesOptions = computed(() => this.availableRoles().map(r => ({ id: r.id, name: r.name })));
+  public readonly rolesOptions = computed(() =>
+    this.availableRoles().map((r) => ({ id: r.id, name: r.name }))
+  );
 
   // Filtered roles for autocomplete (exclude roles already assigned to current user)
   public readonly filteredRoles = computed(() => {
     const user = this.currentUser();
     const assigned = user?.roles || [];
-    return this.availableRoles().filter(r => !assigned.includes(r.id));
+    return this.availableRoles().filter((r) => !assigned.includes(r.id));
   });
 
   // Whether the inline role selector (autocomplete input) is visible
   public readonly showRoleSelector = signal<boolean>(false);
 
   // Available territories from reference data
-  public readonly availableTerritories = this.referenceDataService.activeTerritories;
+  public readonly availableTerritories =
+    this.referenceDataService.activeTerritories;
 
-  public readonly territoriesOptions = computed(() => this.availableTerritories().map(t => ({ id: t.id, name: t.name })));
+  public readonly territoriesOptions = computed(() =>
+    this.availableTerritories().map((t) => ({ id: t.id, name: t.name }))
+  );
 
   // Filtered territories for autocomplete (exclude territories already assigned to current user)
   public readonly filteredTerritories = computed(() => {
     const user = this.currentUser();
     const assigned = user?.territories || [];
-    return this.availableTerritories().filter(t => !assigned.includes(t.id));
+    return this.availableTerritories().filter((t) => !assigned.includes(t.id));
   });
 
   // Whether the inline territory selector is visible
@@ -131,13 +151,15 @@ export class UserDetailComponent implements OnInit {
   // Available skills from reference data
   public readonly availableSkills = this.referenceDataService.activeSkills;
 
-  public readonly skillsOptions = computed(() => this.availableSkills().map(s => ({ id: s.id, name: s.name })));
+  public readonly skillsOptions = computed(() =>
+    this.availableSkills().map((s) => ({ id: s.id, name: s.name }))
+  );
 
   // Filtered skills for autocomplete (exclude skills already assigned to current user)
   public readonly filteredSkills = computed(() => {
     const user = this.currentUser();
     const assigned = user?.skills || [];
-    return this.availableSkills().filter(s => !assigned.includes(s.id));
+    return this.availableSkills().filter((s) => !assigned.includes(s.id));
   });
 
   // Whether the inline skill selector is visible
@@ -148,6 +170,9 @@ export class UserDetailComponent implements OnInit {
   public readonly assignedDeals = signal<any[]>([]);
   public readonly assignedTasks = signal<any[]>([]);
   public readonly assignedLoading = signal<boolean>(false);
+  // PS endpoints for assignment
+  public readonly psEndpoints = signal<PsEndpointRecord[]>([]);
+  public readonly selectedEndpointId = signal<string | null>(null);
   // Performance analytics
   public readonly performanceLoading = signal<boolean>(false);
   public readonly performanceStats = signal<any | null>(null);
@@ -155,7 +180,9 @@ export class UserDetailComponent implements OnInit {
   openSkillSelector(): void {
     this.showSkillSelector.set(true);
     setTimeout(() => {
-      const el = document.getElementById('skill-input-el') as HTMLInputElement | null;
+      const el = document.getElementById(
+        'skill-input-el'
+      ) as HTMLInputElement | null;
       el?.focus();
     }, 50);
   }
@@ -163,7 +190,9 @@ export class UserDetailComponent implements OnInit {
   openTerritorySelector(): void {
     this.showTerritorySelector.set(true);
     setTimeout(() => {
-      const el = document.getElementById('territory-input-el') as HTMLInputElement | null;
+      const el = document.getElementById(
+        'territory-input-el'
+      ) as HTMLInputElement | null;
       el?.focus();
     }, 50);
   }
@@ -172,24 +201,27 @@ export class UserDetailComponent implements OnInit {
     this.showRoleSelector.set(true);
     // focus the input after it's rendered
     setTimeout(() => {
-      const el = document.getElementById('role-input-el') as HTMLInputElement | null;
+      const el = document.getElementById(
+        'role-input-el'
+      ) as HTMLInputElement | null;
       el?.focus();
     }, 50);
   }
 
   private readonly roleLabels: Record<string, string> = {
-    'admin': 'Администратор',
-    'sales_manager': 'Менеджер продаж',
-    'senior_manager': 'Старший менеджер',
-    'team_lead': 'Руководитель команды',
-    'account_manager': 'Менеджер аккаунтов',
-    'client': 'Клиент'
+    admin: 'Администратор',
+    sales_manager: 'Менеджер продаж',
+    senior_manager: 'Старший менеджер',
+    team_lead: 'Руководитель команды',
+    account_manager: 'Менеджер аккаунтов',
+    client: 'Клиент',
   };
 
   ngOnInit(): void {
     const userId = this.route.snapshot.paramMap.get('id');
     if (userId) {
       this.loadUser(parseInt(userId));
+      this.loadPsEndpoints();
     } else {
       this.goBack();
     }
@@ -217,7 +249,7 @@ export class UserDetailComponent implements OnInit {
       },
       error: () => {
         this.showError('Ошибка при изменении статуса пользователя');
-      }
+      },
     });
   }
 
@@ -231,12 +263,12 @@ export class UserDetailComponent implements OnInit {
           data: { password: result.temporaryPassword },
           duration: 10000,
           horizontalPosition: 'center',
-          verticalPosition: 'bottom'
+          verticalPosition: 'bottom',
         });
       },
       error: () => {
         this.showError('Ошибка при сбросе пароля');
-      }
+      },
     });
   }
 
@@ -252,7 +284,7 @@ export class UserDetailComponent implements OnInit {
         confirmText: 'Удалить',
         cancelText: 'Отмена',
         confirmColor: 'warn',
-      }
+      },
     });
 
     ref.afterClosed().subscribe((res) => {
@@ -264,7 +296,7 @@ export class UserDetailComponent implements OnInit {
           },
           error: () => {
             this.showError('Ошибка при удалении пользователя');
-          }
+          },
         });
       }
     });
@@ -292,7 +324,9 @@ export class UserDetailComponent implements OnInit {
   // For avatars/initials in assignment lists — try title/name, fallback to id
   getEntityInitials(entity: any): string {
     if (!entity) return '?';
-    const text = (entity.title || entity.name || String(entity.id || '')).toString().trim();
+    const text = (entity.title || entity.name || String(entity.id || ''))
+      .toString()
+      .trim();
     if (!text) return '?';
     const parts = text.split(/\s+/).filter(Boolean);
     if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
@@ -303,7 +337,11 @@ export class UserDetailComponent implements OnInit {
   getInitials(user: User): string {
     const firstInitial = user.firstName?.charAt(0).toUpperCase() || '';
     const lastInitial = user.lastName?.charAt(0).toUpperCase() || '';
-    return firstInitial + lastInitial || user.username?.charAt(0).toUpperCase() || '?';
+    return (
+      firstInitial + lastInitial ||
+      user.username?.charAt(0).toUpperCase() ||
+      '?'
+    );
   }
 
   getStatusBadgeClass(user: User): string {
@@ -316,19 +354,25 @@ export class UserDetailComponent implements OnInit {
 
   // Map display name -> id (if user selects by name from autocomplete)
   private findRoleIdByName(name: string): string | undefined {
-    const found = this.referenceDataService.roles().find(r => r.name === name || r.id === name);
+    const found = this.referenceDataService
+      .roles()
+      .find((r) => r.name === name || r.id === name);
     return found?.id;
   }
 
   // Map territory name -> id
   private findTerritoryIdByName(name: string): string | undefined {
-    const found = this.referenceDataService.territories().find(t => t.name === name || t.id === name);
+    const found = this.referenceDataService
+      .territories()
+      .find((t) => t.name === name || t.id === name);
     return found?.id;
   }
 
   // Map skill name -> id
   private findSkillIdByName(name: string): string | undefined {
-    const found = this.referenceDataService.skills().find(s => s.name === name || s.id === name);
+    const found = this.referenceDataService
+      .skills()
+      .find((s) => s.name === name || s.id === name);
     return found?.id;
   }
 
@@ -365,7 +409,7 @@ export class UserDetailComponent implements OnInit {
     this.showRoleSelector.set(false);
     this.userService.updateUserRoles(user.id, newRoles).subscribe({
       next: (updated) => this.currentUser.set(updated),
-      error: () => this.currentUser.set(user)
+      error: () => this.currentUser.set(user),
     });
   }
 
@@ -373,25 +417,33 @@ export class UserDetailComponent implements OnInit {
     const user = this.currentUser();
     if (!user || !territoryId) return;
     const assigned = user.territories || [];
-    if (assigned.includes(territoryId)) { this.showError('Территория уже назначена'); return; }
+    if (assigned.includes(territoryId)) {
+      this.showError('Территория уже назначена');
+      return;
+    }
     const newTerritories = [...assigned, territoryId];
     this.currentUser.set({ ...user, territories: newTerritories });
-    this.userService.updateUser(user.id, { territories: newTerritories }).subscribe({
-      next: (updated) => this.currentUser.set(updated),
-      error: () => this.currentUser.set(user)
-    });
+    this.userService
+      .updateUser(user.id, { territories: newTerritories })
+      .subscribe({
+        next: (updated) => this.currentUser.set(updated),
+        error: () => this.currentUser.set(user),
+      });
   }
 
   addSkillById(skillId: string): void {
     const user = this.currentUser();
     if (!user || !skillId) return;
     const assigned = user.skills || [];
-    if (assigned.includes(skillId)) { this.showError('Навык уже добавлен'); return; }
+    if (assigned.includes(skillId)) {
+      this.showError('Навык уже добавлен');
+      return;
+    }
     const newSkills = [...assigned, skillId];
     this.currentUser.set({ ...user, skills: newSkills });
     this.userService.updateUser(user.id, { skills: newSkills }).subscribe({
       next: (updated) => this.currentUser.set(updated),
-      error: () => this.currentUser.set(user)
+      error: () => this.currentUser.set(user),
     });
   }
 
@@ -450,7 +502,7 @@ export class UserDetailComponent implements OnInit {
       },
       complete: () => {
         this.roleInput.set('');
-      }
+      },
     });
   }
 
@@ -474,17 +526,19 @@ export class UserDetailComponent implements OnInit {
     const newTerritories = [...(user.territories || []), territory];
     this.currentUser.set({ ...user, territories: newTerritories });
 
-    this.userService.updateUser(user.id, { territories: newTerritories }).subscribe({
-      next: (updated) => {
-        this.currentUser.set(updated);
-        this.showSuccess('Территория добавлена');
-      },
-      error: () => {
-        this.currentUser.set(user);
-        this.showError('Не удалось добавить территорию');
-      },
-      complete: () => this.territoryInput.set('')
-    });
+    this.userService
+      .updateUser(user.id, { territories: newTerritories })
+      .subscribe({
+        next: (updated) => {
+          this.currentUser.set(updated);
+          this.showSuccess('Территория добавлена');
+        },
+        error: () => {
+          this.currentUser.set(user);
+          this.showError('Не удалось добавить территорию');
+        },
+        complete: () => this.territoryInput.set(''),
+      });
   }
 
   // Inline skill management
@@ -516,7 +570,7 @@ export class UserDetailComponent implements OnInit {
         this.currentUser.set(user);
         this.showError('Не удалось добавить навык');
       },
-      complete: () => this.skillInput.set('')
+      complete: () => this.skillInput.set(''),
     });
   }
 
@@ -535,7 +589,7 @@ export class UserDetailComponent implements OnInit {
       error: () => {
         this.currentUser.set(user);
         this.showError('Не удалось удалить навык');
-      }
+      },
     });
   }
 
@@ -543,19 +597,23 @@ export class UserDetailComponent implements OnInit {
     const user = this.currentUser();
     if (!user) return;
 
-    const newTerritories = (user.territories || []).filter((t) => t !== territoryToRemove);
+    const newTerritories = (user.territories || []).filter(
+      (t) => t !== territoryToRemove
+    );
     this.currentUser.set({ ...user, territories: newTerritories });
 
-    this.userService.updateUser(user.id, { territories: newTerritories }).subscribe({
-      next: (updated) => {
-        this.currentUser.set(updated);
-        this.showSuccess('Территория удалена');
-      },
-      error: () => {
-        this.currentUser.set(user);
-        this.showError('Не удалось удалить территорию');
-      }
-    });
+    this.userService
+      .updateUser(user.id, { territories: newTerritories })
+      .subscribe({
+        next: (updated) => {
+          this.currentUser.set(updated);
+          this.showSuccess('Территория удалена');
+        },
+        error: () => {
+          this.currentUser.set(user);
+          this.showError('Не удалось удалить территорию');
+        },
+      });
   }
 
   removeRole(roleToRemove: string): void {
@@ -576,7 +634,7 @@ export class UserDetailComponent implements OnInit {
         // revert
         this.currentUser.set(user);
         this.showError('Не удалось удалить роль');
-      }
+      },
     });
   }
 
@@ -588,7 +646,7 @@ export class UserDetailComponent implements OnInit {
       month: 'long',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   }
 
@@ -637,6 +695,7 @@ export class UserDetailComponent implements OnInit {
       next: (user) => {
         if (user) {
           this.currentUser.set(user);
+          this.selectedEndpointId.set(user.sipEndpointId || null);
           this.loadManagerInfo(user.managerID);
           // load assigned entities (leads, deals, tasks)
           this.loadAssignedEntities(user.id);
@@ -648,7 +707,7 @@ export class UserDetailComponent implements OnInit {
       error: () => {
         this.showError('Ошибка при загрузке пользователя');
         this.goBack();
-      }
+      },
     });
   }
 
@@ -656,74 +715,146 @@ export class UserDetailComponent implements OnInit {
     this.assignedLoading.set(true);
 
     // Leads via manager endpoint
-    this.leadService.getLeadsByManager(String(userId)).pipe(
-      catchError(() => of([]))
-    ).subscribe({
-      next: (leads) => this.assignedLeads.set(leads || []),
-      error: () => this.assignedLeads.set([])
-    });
+    this.leadService
+      .getLeadsByManager(String(userId))
+      .pipe(catchError(() => of([])))
+      .subscribe({
+        next: (leads) => this.assignedLeads.set(leads || []),
+        error: () => this.assignedLeads.set([]),
+      });
 
     // Deals via manager endpoint
-    this.dealsService.getDealsByManager(String(userId)).pipe(
-      catchError(() => of([]))
-    ).subscribe({
-      next: (deals) => this.assignedDeals.set(deals || []),
-      error: () => this.assignedDeals.set([])
-    });
+    this.dealsService
+      .getDealsByManager(String(userId))
+      .pipe(catchError(() => of([])))
+      .subscribe({
+        next: (deals) => this.assignedDeals.set(deals || []),
+        error: () => this.assignedDeals.set([]),
+      });
 
     // Tasks: fetch user's task assignments then load tasks
-    this.assignmentService.getUserAssignments(userId, 'task').pipe(
-      catchError(() => of([]))
-    ).subscribe({
-      next: (assignments) => {
-        const ids = (assignments || []).map((a: any) => Number(a.entityId)).filter(Boolean);
-        if (ids.length === 0) {
-          this.assignedTasks.set([]);
-          this.assignedLoading.set(false);
-          // still load analytics even if there are no tasks
-          this.loadPerformanceAnalytics(userId);
-          return;
-        }
-
-        const calls = ids.map((id: number) => this.tasksService.get(id).pipe(catchError(() => of(null))));
-        forkJoin(calls).subscribe({
-          next: (tasks) => {
-            this.assignedTasks.set((tasks || []).filter(Boolean));
-            this.assignedLoading.set(false);
-            // load analytics in parallel
-            this.loadPerformanceAnalytics(userId);
-          },
-          error: () => {
+    this.assignmentService
+      .getUserAssignments(userId, 'task')
+      .pipe(catchError(() => of([])))
+      .subscribe({
+        next: (assignments) => {
+          const ids = (assignments || [])
+            .map((a: any) => Number(a.entityId))
+            .filter(Boolean);
+          if (ids.length === 0) {
             this.assignedTasks.set([]);
             this.assignedLoading.set(false);
+            // still load analytics even if there are no tasks
             this.loadPerformanceAnalytics(userId);
+            return;
           }
-        });
-      },
-      error: () => {
-        this.assignedTasks.set([]);
-        this.assignedLoading.set(false);
-        this.loadPerformanceAnalytics(userId);
-      }
+
+          const calls = ids.map((id: number) =>
+            this.tasksService.get(id).pipe(catchError(() => of(null)))
+          );
+          forkJoin(calls).subscribe({
+            next: (tasks) => {
+              this.assignedTasks.set((tasks || []).filter(Boolean));
+              this.assignedLoading.set(false);
+              // load analytics in parallel
+              this.loadPerformanceAnalytics(userId);
+            },
+            error: () => {
+              this.assignedTasks.set([]);
+              this.assignedLoading.set(false);
+              this.loadPerformanceAnalytics(userId);
+            },
+          });
+        },
+        error: () => {
+          this.assignedTasks.set([]);
+          this.assignedLoading.set(false);
+          this.loadPerformanceAnalytics(userId);
+        },
+      });
+  }
+
+  private loadPsEndpoints(): void {
+    this.psEndpointsService.list().subscribe({
+      next: (list) => this.psEndpoints.set(list || []),
+      error: () => this.psEndpoints.set([]),
+    });
+  }
+
+  assignSelectedEndpoint(): void {
+    const user = this.currentUser();
+    const endpointId = this.selectedEndpointId();
+    if (!user) return;
+
+    this.userService
+      .updateUser(user.id, { sipEndpointId: endpointId as any })
+      .subscribe({
+        next: (updated) => {
+          this.currentUser.set(updated);
+          this.showSuccess('SIP-эндпоинт назначен');
+        },
+        error: () => this.showError('Не удалось назначить SIP-эндпоинт'),
+      });
+  }
+
+  unassignEndpoint(): void {
+    const user = this.currentUser();
+    if (!user) return;
+
+    this.selectedEndpointId.set(null);
+    this.userService
+      .updateUser(user.id, { sipEndpointId: null as any })
+      .subscribe({
+        next: (updated) => {
+          this.currentUser.set(updated);
+          this.showSuccess('SIP-эндпоинт отвязан');
+        },
+        error: () => this.showError('Не удалось отвязать SIP-эндпоинт'),
+      });
+  }
+
+  onHeaderAssign(endpointId: string | null): void {
+    this.selectedEndpointId.set(endpointId);
+    this.assignSelectedEndpoint();
+  }
+
+  onHeaderUnassign(): void {
+    this.unassignEndpoint();
+  }
+
+  openEndpointPickerModal(): void {
+    // Dynamically import component to keep bundles small
+    import('../components/ps-endpoint-picker.component').then(({ PsEndpointPickerComponent }) => {
+      const ref = this.dialog.open(PsEndpointPickerComponent);
+      ref.afterClosed().subscribe((id) => {
+        if (id !== undefined) {
+          this.onHeaderAssign(id as string | null);
+        }
+      });
     });
   }
 
   private loadPerformanceAnalytics(userId: number): void {
     this.performanceLoading.set(true);
 
-    this.assignmentService.getAssignmentStatistics('30d', 'user').pipe(
-      catchError(() => of([]))
-    ).subscribe({
-      next: (rows: any[]) => {
-        const found = (rows || []).find((r: any) => Number(r.userId) === Number(userId) || String(r.userId) === String(userId));
-        this.performanceStats.set(found || null);
-        this.performanceLoading.set(false);
-      },
-      error: () => {
-        this.performanceStats.set(null);
-        this.performanceLoading.set(false);
-      }
-    });
+    this.assignmentService
+      .getAssignmentStatistics('30d', 'user')
+      .pipe(catchError(() => of([])))
+      .subscribe({
+        next: (rows: any[]) => {
+          const found = (rows || []).find(
+            (r: any) =>
+              Number(r.userId) === Number(userId) ||
+              String(r.userId) === String(userId)
+          );
+          this.performanceStats.set(found || null);
+          this.performanceLoading.set(false);
+        },
+        error: () => {
+          this.performanceStats.set(null);
+          this.performanceLoading.set(false);
+        },
+      });
   }
 
   private loadManagerInfo(managerId?: number): void {
@@ -735,21 +866,21 @@ export class UserDetailComponent implements OnInit {
       },
       error: () => {
         // Ignore manager loading errors
-      }
+      },
     });
   }
 
   private showSuccess(message: string): void {
     this.snackBar.open(message, 'Закрыть', {
       duration: 3000,
-      panelClass: ['success-snackbar']
+      panelClass: ['success-snackbar'],
     });
   }
 
   private showError(message: string): void {
     this.snackBar.open(message, 'Закрыть', {
       duration: 5000,
-      panelClass: ['error-snackbar']
+      panelClass: ['error-snackbar'],
     });
   }
 }

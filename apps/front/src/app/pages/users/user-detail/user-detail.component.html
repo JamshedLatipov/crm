@@ -6,7 +6,7 @@
 
   <div *ngIf="!userService.isLoading() && currentUser()" class="contact-content">
     <!-- Header component -->
-    <app-user-header [user]="currentUser()" (edit)="editUser()" (reset)="resetPassword()">
+    <app-user-header [user]="currentUser()" [selectedEndpointId]="selectedEndpointId()" (openEndpointPicker)="openEndpointPickerModal()" (unassignEndpoint)="onHeaderUnassign()" (edit)="editUser()" (reset)="resetPassword()">
       <div class="breadcrumb" slot="breadcrumb">
         <button mat-button (click)="goBack()" class="breadcrumb-link">
           <mat-icon>arrow_back</mat-icon>
@@ -117,7 +117,7 @@
                         <div class="contact-icon"><mat-icon>settings_input_antenna</mat-icon></div>
                         <div class="contact-details">
                           <span class="contact-label">SIP-эндпоинт</span>
-                          <span class="contact-value">{{ currentUser()?.sipEndpointId || '-' }}</span>
+                          <div class="contact-value">{{selectedEndpointId() || '-'}}</div>
                         </div>
                       </div>
                     </div>

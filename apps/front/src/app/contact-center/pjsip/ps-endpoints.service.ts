@@ -45,4 +45,8 @@ export class PsEndpointsService {
   remove(id: string) {
     return this.http.delete<{ ok: boolean }>(`${this.base}/ps-endpoints/${id}`);
   }
+
+  free(): Observable<PsEndpointRecord[]> {
+    return this.http.get<PsEndpointRecord[]>(`${this.base}/ps-endpoints/free`);
+  }
 }

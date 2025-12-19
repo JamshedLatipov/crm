@@ -38,11 +38,17 @@
               <mat-icon>edit</mat-icon>
               Ред.
             </button>
+            <button mat-flat-button color="primary" class="action-btn small" (click)="openPicker()">
+              <mat-icon>settings_input_antenna</mat-icon>
+              {{ selectedEndpointId ? selectedEndpointId : 'Назначить SIP' }}
+            </button>
             <button mat-raised-button color="accent" (click)="reset.emit()" class="action-btn small">
               <mat-icon>lock_reset</mat-icon>
               Сброс пароля
             </button>
           </div>
+
+          <!-- Endpoint picker opens in a modal; unassign remained available -->
         </div>
       </div>
     </div>

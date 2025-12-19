@@ -20,6 +20,16 @@ export class PsEndpointService {
     return this.repo.findOneBy({ id });
   }
 
+  /**
+   * Find endpoints that are not assigned to any user (users.sip_endpoint_id IS NULL)
+   */
+  findFree() {
+    return this.repo
+      .createQueryBuilder('e')
+      .where('NOT EXISTS (SELECT 1 FROM users u WHERE u.sip_endpoint_id = e.id)')
+      .getMany();
+  }
+
   create(data: Partial<PsEndpoint>) {
     // Create endpoint along with corresponding ps_aors and ps_auths records in a transaction
     return this.repo.manager.transaction(async (em) => {

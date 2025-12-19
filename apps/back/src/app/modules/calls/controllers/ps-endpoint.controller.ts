@@ -10,6 +10,11 @@ export class PsEndpointController {
     return this.service.findAll();
   }
 
+  @Get('free')
+  findFree() {
+    return this.service.findFree();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.service.findOne(id);

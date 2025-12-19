@@ -52,6 +52,7 @@ export interface CreateUserRequest {
   maxTasksCapacity?: number;
   managerID?: number;
   isAvailableForAssignment?: boolean;
+  sipEndpointId?: string;
 }
 
 export interface UpdateUserRequest {
@@ -71,6 +72,7 @@ export interface UpdateUserRequest {
   managerID?: number;
   isActive?: boolean;
   isAvailableForAssignment?: boolean;
+  sipEndpointId?: string;
 }
 
 export interface UserFilters {
