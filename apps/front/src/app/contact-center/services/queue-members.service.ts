@@ -15,6 +15,14 @@ export interface QueueMemberRecord {
   uniqueid?: string | null;
   reason_paused?: string | null;
   member_type?: string | null;
+  user?: {
+    id: number;
+    username: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    sipEndpointId?: string;
+  };
 }
 
 @Injectable({ providedIn: 'root' })

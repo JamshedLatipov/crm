@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { User } from '../../user/user.entity';
 
 @Entity('queue_members')
 export class QueueMember {
@@ -8,8 +9,8 @@ export class QueueMember {
   @Column({ name: 'queue_name', type: 'text' })
   queue_name: string;
 
-  @Column({ type: 'text' })
-  member_name: string; // e.g., PJSIP/1001 or operator1
+  @Column({ type: 'text', nullable: true })
+  member_name?: string | null; // e.g., PJSIP/1001 or operator1
 
   @Column({ type: 'int', default: 0 })
   penalty?: number;
@@ -37,4 +38,11 @@ export class QueueMember {
 
   @Column({ length: 40, nullable: true })
   member_type?: string | null;
+
+  // Relation to User based on member_name matching sipEndpointId
+  @ManyToOne(() => User, { nullable: true, eager: false, createForeignKeyConstraints: false })
+  @JoinColumn([
+    { name: 'member_name', referencedColumnName: 'sipEndpointId' }
+  ])
+  user?: User;
 }
