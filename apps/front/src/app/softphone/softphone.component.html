@@ -102,6 +102,24 @@
           </button>
         </div>
       </div>
+      <!-- Call Actions -->
+      <app-softphone-call-actions
+        [status]="status()"
+        [callActive]="callActive()"
+        [muted]="muted()"
+        [onHold]="onHold()"
+        [holdInProgress]="holdInProgress()"
+        (connect)="connect()"
+        (call)="call()"
+        (hangup)="hangup()"
+        (muteToggle)="toggleMute()"
+        (holdToggle)="toggleHold()"
+        [(transferTarget)]="transferTarget"
+        (transfer)="transfer($event)"
+        [dtmfSequence]="dtmfSequence"
+        (pressKey)="pressKey($event)"
+        (clearDtmf)="clearDtmf()"
+      ></app-softphone-call-actions>
 
       <!-- Dial Tab Content (extracted to component) -->
       <app-softphone-dial-tab
@@ -134,25 +152,6 @@
         *ngIf="activeTab === 'info'"
         [phone]="incoming() ? incomingFrom() : callee"
       ></app-softphone-info-tab>
-
-      <!-- Call Actions -->
-      <app-softphone-call-actions
-        [status]="status()"
-        [callActive]="callActive()"
-        [muted]="muted()"
-        [onHold]="onHold()"
-        [holdInProgress]="holdInProgress()"
-        (connect)="connect()"
-        (call)="call()"
-        (hangup)="hangup()"
-        (muteToggle)="toggleMute()"
-        (holdToggle)="toggleHold()"
-        [(transferTarget)]="transferTarget"
-        (transfer)="transfer($event)"
-        [dtmfSequence]="dtmfSequence"
-        (pressKey)="pressKey($event)"
-        (clearDtmf)="clearDtmf()"
-      ></app-softphone-call-actions>
 
       <!-- Scripts Panel -->
       <ng-container *ngIf="activeTab === 'scenarios'">
