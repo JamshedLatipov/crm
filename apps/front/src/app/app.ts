@@ -10,5 +10,4 @@ import { SidebarComponent } from './sidebar/sidebar.component';
   styleUrl: './app.scss',
 })
 export class App {
-  protected title = 'front';
 }

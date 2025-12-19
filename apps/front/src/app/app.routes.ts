@@ -50,7 +50,6 @@ export const appRoutes: Route[] = [
         canActivate: [authGuard]
     },
     { path: 'deals/view/:id', component: DealDetailComponent, canActivate: [authGuard] },
-    { path: 'softphone', component: SoftphoneComponent, canActivate: [authGuard] },
     {
         path: 'contact-center',
         canActivate: [authGuard],
