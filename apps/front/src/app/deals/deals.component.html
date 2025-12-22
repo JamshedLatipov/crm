@@ -1,0 +1,201 @@
+    <app-page-layout title="Сделки" subtitle="Управление всеми сделками и их статусами">
+      <div page-actions>
+        <button mat-raised-button color="primary" (click)="openCreateDialog()">
+          <mat-icon>add</mat-icon>
+          Создать сделку
+        </button>
+      </div>
+
+      <!-- Статистика -->
+      <div class="stats-section">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">
+              <mat-icon>trending_up</mat-icon>
+            </div>
+            <div class="stat-content">
+              <div class="stat-value">{{ stats.total }}</div>
+              <div class="stat-label">Всего сделок</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon success">
+              <mat-icon>check_circle</mat-icon>
+            </div>
+            <div class="stat-content">
+              <div class="stat-value">{{ stats.won }}</div>
+              <div class="stat-label">Выиграно</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon warning">
+              <mat-icon>hourglass_empty</mat-icon>
+            </div>
+            <div class="stat-content">
+              <div class="stat-value">{{ stats.open }}</div>
+              <div class="stat-label">В работе</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon primary">
+              <mat-icon>monetization_on</mat-icon>
+            </div>
+            <div class="stat-content">
+              <div class="stat-value">{{ (stats.totalValue || 0) | currency:'TJS':'symbol':'1.0-0' }}</div>
+              <div class="stat-label">Общая сумма</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Список сделок -->
+      <div class="deals-section">
+        <!-- Загрузка -->
+        <div *ngIf="isLoading" class="loading-container">
+          <mat-spinner diameter="40"></mat-spinner>
+          <p>Загрузка сделок...</p>
+        </div>
+
+        <!-- Пустое состояние -->
+        <div *ngIf="!isLoading && filteredDeals.length === 0" class="empty-state">
+          <mat-icon class="empty-icon">handshake</mat-icon>
+          <h3>{{ searchQuery ? 'Сделки не найдены' : 'Нет сделок' }}</h3>
+          <p>{{ searchQuery ? 'Попробуйте изменить параметры поиска' : 'Создайте первую сделку для начала работы' }}</p>
+          <ng-container *ngIf="!searchQuery">
+            <button mat-raised-button color="primary" (click)="openCreateDialog()">
+              <mat-icon>add</mat-icon>
+              Создать сделку
+            </button>
+          </ng-container>
+        </div>
+
+        <!-- Фильтры: поиск + табы статусов -->
+        <div class="filters-section">
+          <div class="filters-card">
+            <div class="filters-grid">
+              <app-status-tabs [selected]="selectedStatus" (selectedChange)="onStatusTabChange($event)"></app-status-tabs>
+
+              <mat-form-field appearance="outline" class="search-field">
+                <mat-label>Поиск</mat-label>
+                <input matInput [(ngModel)]="searchQuery" (ngModelChange)="onSearchChange()" placeholder="По названию, контакту, компании" />
+                <mat-icon matSuffix>search</mat-icon>
+              </mat-form-field>
+            </div>
+          </div>
+        </div>
+
+        <!-- Таблица сделок -->
+        <div *ngIf="!isLoading && filteredDeals.length > 0" class="table-container">
+          <table mat-table [dataSource]="paginatedDeals" class="mat-elevation-z1 deals-table">
+
+            <!-- Title Column -->
+            <ng-container matColumnDef="title">
+              <th mat-header-cell *matHeaderCellDef>
+                <button class="th-sort" (click)="onHeaderSort('title')">
+                  Название сделки
+                  <mat-icon class="sort-icon">{{ sortBy === 'title' ? (sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward') : 'unfold_more' }}</mat-icon>
+                </button>
+              </th>
+              <td mat-cell *matCellDef="let deal">
+                <div class="title-cell">
+                  <div class="deal-icon">{{ deal.title ? (deal.title.charAt(0) | uppercase) : '?' }}</div>
+                  <div class="title-meta">
+                    <a class="title-link" (click)="viewDeal(deal)">{{ deal.title || 'Без названия' }}</a>
+                    <div *ngIf="deal.stage" class="deal-stage">{{ deal.stage.name }}</div>
+                  </div>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Contact Column -->
+            <ng-container matColumnDef="contact">
+              <th mat-header-cell *matHeaderCellDef>Контакт</th>
+              <td mat-cell *matCellDef="let deal">
+                <ng-container *ngIf="deal.contact; else noContact">
+                  <div>
+                    <div class="contact-name">{{ deal.contact.name }}</div>
+                    <div *ngIf="deal.company" class="contact-company">{{ deal.company.name }}</div>
+                  </div>
+                </ng-container>
+                <ng-template #noContact><span class="muted">—</span></ng-template>
+              </td>
+            </ng-container>
+
+            <!-- Amount Column -->
+            <ng-container matColumnDef="amount">
+              <th mat-header-cell *matHeaderCellDef>
+                <button class="th-sort" (click)="onHeaderSort('amount')">
+                  Сумма
+                  <mat-icon class="sort-icon">{{ sortBy === 'amount' ? (sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward') : 'unfold_more' }}</mat-icon>
+                </button>
+              </th>
+              <td mat-cell *matCellDef="let deal">
+                <div class="amount-cell">
+                  <div class="amount-value">{{ (deal.amount || 0) | currency:deal.currency:'symbol':'1.0-0' }}</div>
+                  <div class="amount-probability">{{ deal.probability }}% вероятность</div>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Status Column -->
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>Статус</th>
+              <td mat-cell *matCellDef="let deal">
+                <div class="status-actions">
+                  <app-deal-status [status]="deal.status" [showIndicators]="true" [isOverdue]="isOverdue(deal)" [isHighValue]="(deal.amount || 0) > 50000" size="small"></app-deal-status>
+                  <ng-container *ngIf="deal.status === 'open'">
+                    <div class="quick-actions">
+                      <button mat-icon-button matTooltip="Отметить выигранной" (click)="markAsWon(deal)" class="quick-action win"><mat-icon>check_circle</mat-icon></button>
+                      <button mat-icon-button matTooltip="Отметить проигранной" (click)="markAsLost(deal)" class="quick-action lose"><mat-icon>cancel</mat-icon></button>
+                    </div>
+                  </ng-container>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Expected Close Date Column -->
+            <ng-container matColumnDef="expectedCloseDate">
+              <th mat-header-cell *matHeaderCellDef>
+                <button class="th-sort" (click)="onHeaderSort('expectedCloseDate')">Дата закрытия <mat-icon class="sort-icon">{{ sortBy === 'expectedCloseDate' ? (sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward') : 'unfold_more' }}</mat-icon></button>
+              </th>
+              <td mat-cell *matCellDef="let deal">
+                <div class="date-cell" [class.overdue]="isOverdue(deal) && deal.status === 'open'">{{ deal.expectedCloseDate | date:'dd.MM.yyyy' }} <ng-container *ngIf="isOverdue(deal) && deal.status === 'open'"><mat-icon class="overdue-icon">warning</mat-icon></ng-container></div>
+              </td>
+            </ng-container>
+
+            <!-- Assigned To Column -->
+            <ng-container matColumnDef="assignedTo">
+              <th mat-header-cell *matHeaderCellDef>Ответственный</th>
+              <td mat-cell *matCellDef="let deal"> <ng-container *ngIf="deal.assignedTo; else noAssignee"><span>{{ deal.assignedUser?.fullName }}</span></ng-container><ng-template #noAssignee><span class="muted">Не назначен</span></ng-template></td>
+            </ng-container>
+
+            <!-- Actions Column -->
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef></th>
+              <td mat-cell *matCellDef="let deal" class="actions-cell">
+                <button mat-icon-button matTooltip="Просмотр" (click)="viewDeal(deal)"><mat-icon>visibility</mat-icon></button>
+                <button mat-icon-button matTooltip="Редактировать" (click)="openEditDialog(deal)"><mat-icon>edit</mat-icon></button>
+                <button mat-icon-button [matMenuTriggerFor]="dealMenu" matTooltip="Действия"><mat-icon>more_vert</mat-icon></button>
+                <mat-menu #dealMenu="matMenu">
+                  <ng-container *ngIf="deal.status === 'open'"><button mat-menu-item (click)="markAsWon(deal)"><mat-icon>check_circle</mat-icon><span>Отметить выигранной</span></button><button mat-menu-item (click)="markAsLost(deal)"><mat-icon>cancel</mat-icon><span>Отметить проигранной</span></button><mat-divider></mat-divider></ng-container>
+                  <button mat-menu-item (click)="duplicateDeal(deal)"><mat-icon>content_copy</mat-icon><span>Дублировать</span></button>
+                  <button mat-menu-item (click)="deleteDeal(deal)" class="delete-action"><mat-icon>delete</mat-icon><span>Удалить</span></button>
+                </mat-menu>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
+          </table>
+          <div class="table-footer">
+            <div class="footer-info">
+              <!-- optional summary or controls could go here -->
+            </div>
+            <mat-paginator [length]="totalResults || filteredDeals.length" [pageSize]="pageSize" [pageIndex]="currentPage" [pageSizeOptions]="[10,25,50,100]" (page)="onPageChange($event)" showFirstLastButtons></mat-paginator>
+          </div>
+        </div>
+      </div>
+    </app-page-layout>

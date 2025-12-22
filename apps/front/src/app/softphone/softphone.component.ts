@@ -229,13 +229,17 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
           case 'failed':
             this.handleCallFailed(ev.payload as JsSIPSessionEvent);
             break;
-          case 'transferResult':
+          case 'transferResult': {
+            // payload is unknown, cast to any to access properties
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const p = ev.payload as any;
             this.status.set(
-              ev.payload?.ok
+              p?.ok
                 ? 'Transfer initiated'
-                : 'Transfer result: ' + (ev.payload?.error || 'unknown')
+                : 'Transfer result: ' + (p?.error || 'unknown')
             );
             break;
+          }
           case 'transferFailed':
             this.status.set('Transfer failed');
             break;
@@ -269,12 +273,15 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
             break;
             break;
           case 'newRTCSession': {
-            const sess = ev.payload?.session as JsSIPSession;
+            // payload is unknown, cast to any to access dynamic JsSIP event props
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const payload = ev.payload as any;
+            const sess = payload?.session as JsSIPSession;
             this.currentSession = sess;
 
             // determine direction
             const dir =
-              (ev.payload && ev.payload.direction) ||
+              (payload && payload.direction) ||
               (sess && sess.direction) ||
               'outgoing';
 
@@ -287,7 +294,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
                 (sess &&
                   (sess.remote_identity?.uri ||
                     sess.remote_identity?.display_name)) ||
-                (ev.payload && ev.payload.from) ||
+                (payload && payload.from) ||
                 null;
               this.incomingFrom.set(
                 typeof from === 'string' ? from : from?.toString?.() ?? null
@@ -674,7 +681,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
 
     // Delegate to service to create and start UA
     this.status.set('Connecting...');
-    this.softphone.connect(this.sipUser, this.sipPassword, this.asteriskHost);
+    this.softphone.connect(this.sipUser, this.sipPassword);
   }
 
   // Handle pause change emission from status bar

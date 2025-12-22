@@ -5,9 +5,10 @@ import { ContactsController } from './contacts.controller';
 import { Contact } from './contact.entity';
 import { ContactActivity } from './contact-activity.entity';
 import { CompaniesModule } from '../companies/companies.module';
+import { UserModule } from '../user/user.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Contact, ContactActivity]), CompaniesModule],
+  imports: [TypeOrmModule.forFeature([Contact, ContactActivity]), CompaniesModule, UserModule],
   providers: [ContactsService],
   controllers: [ContactsController],
   exports: [ContactsService],

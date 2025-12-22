@@ -1,29 +1,55 @@
 import { Injectable, inject } from '@angular/core';
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Subject } from 'rxjs';
 import * as JsSIP from 'jssip';
 import { CallsApiService } from '../services/calls.service';
 import { SoftphoneLoggerService } from './softphone-logger.service';
+import { environment } from '../../environments/environment';
 
-export type SoftphoneEvent = { type: string; payload?: any };
+export type SoftphoneEvent = { type: string; payload?: unknown };
+
+// Minimal type definitions for JsSIP to avoid 'any'
+interface RTCSession {
+  id: string;
+  sessionId?: string; // fallback
+  direction: 'incoming' | 'outgoing';
+  connection?: RTCPeerConnection;
+  answer(options?: unknown): void;
+  terminate(options?: { status_code?: number }): void;
+  sendDTMF(tone: string | number): void;
+  hold(options?: { useUpdate?: boolean }): void;
+  unhold(options?: { useUpdate?: boolean }): void;
+  on(event: string, callback: (data: unknown) => void): void;
+}
+
+interface UA {
+  start(): void;
+  stop(): void;
+  isRegistered(): boolean;
+  call(target: string, options?: unknown): RTCSession;
+  on(event: string, callback: (data: unknown) => void): void;
+}
 
 @Injectable({ providedIn: 'root' })
 export class SoftphoneService {
-  private ua: any = null;
-  private currentSession: any = null;
+  private ua: UA | null = null;
+  private currentSession: RTCSession | null = null;
   public events$ = new Subject<SoftphoneEvent>();
   private callsApi = inject(CallsApiService);
   private readonly logger = inject(SoftphoneLoggerService);
 
-  connect(sipUser: string, sipPassword: string, asteriskHost = '127.0.0.1') {
+  connect(sipUser: string, sipPassword: string) {
+    const asteriskHost = environment.asteriskHost;
+    const wsUrl = environment.asteriskWsUrl;
+
     if (this.ua) {
       try { this.ua.stop(); } catch (err) { this.logger.warn('ua.stop failed', err); }
       this.ua = null;
     }
     
-    const socketWs = new JsSIP.WebSocketInterface(`ws://${asteriskHost}:8089/ws`);
-    socketWs.via_transport = 'WS';
+    const socketWs = new JsSIP.WebSocketInterface(wsUrl);
+    socketWs.via_transport = 'WS'; // or WSS depending on URL
 
+    // Cast to unknown then to UA because JsSIP types might not be perfectly aligned or available
     this.ua = new JsSIP.UA({
       uri: `sip:${sipUser}@${asteriskHost}`,
       password: sipPassword,
@@ -32,16 +58,16 @@ export class SoftphoneService {
       connection_recovery_min_interval: 2,
       connection_recovery_max_interval: 30,
       realm: asteriskHost,
-    });
+    }) as unknown as UA;
 
     this.ua.on('registered', () => this.events$.next({ type: 'registered' }));
-    this.ua.on('registrationFailed', (e: any) => this.events$.next({ type: 'registrationFailed', payload: e }));
-    this.ua.on('connecting', (e: any) => this.events$.next({ type: 'connecting', payload: e }));
-    this.ua.on('connected', (e: any) => this.events$.next({ type: 'connected', payload: e }));
+    this.ua.on('registrationFailed', (e: unknown) => this.events$.next({ type: 'registrationFailed', payload: e }));
+    this.ua.on('connecting', (e: unknown) => this.events$.next({ type: 'connecting', payload: e }));
+    this.ua.on('connected', (e: unknown) => this.events$.next({ type: 'connected', payload: e }));
     this.ua.on('disconnected', () => this.events$.next({ type: 'disconnected' }));
 
     this.ua.on('newRTCSession', (e: any) => {
-      const session = e.session as any;
+      const session = e.session as RTCSession;
       this.attachSession(session);
       this.events$.next({ type: 'newRTCSession', payload: { session, direction: session.direction } });
     });
@@ -50,20 +76,20 @@ export class SoftphoneService {
     this.events$.next({ type: 'connecting' });
   }
 
-  private attachSession(session: any) {
+  private attachSession(session: RTCSession) {
     this.currentSession = session;
-    session.on('progress', (e: any) => this.events$.next({ type: 'progress', payload: e }));
-    session.on('confirmed', (e: any) => this.events$.next({ type: 'confirmed', payload: e }));
-    session.on('ended', (e: any) => this.events$.next({ type: 'ended', payload: e }));
-    session.on('failed', (e: any) => this.events$.next({ type: 'failed', payload: e }));
-    session.on('accepted', (e: any) => this.events$.next({ type: 'accepted', payload: e }));
+    session.on('progress', (e: unknown) => this.events$.next({ type: 'progress', payload: e }));
+    session.on('confirmed', (e: unknown) => this.events$.next({ type: 'confirmed', payload: e }));
+    session.on('ended', (e: unknown) => this.events$.next({ type: 'ended', payload: e }));
+    session.on('failed', (e: unknown) => this.events$.next({ type: 'failed', payload: e }));
+    session.on('accepted', (e: unknown) => this.events$.next({ type: 'accepted', payload: e }));
     session.on('hold', () => this.events$.next({ type: 'hold' }));
     session.on('unhold', () => this.events$.next({ type: 'unhold' }));
 
     try {
       if (session.connection) {
-        const pc = session.connection as RTCPeerConnection;
-        pc.addEventListener('track', (ev: any) => {
+        const pc = session.connection;
+        pc.addEventListener('track', (ev: unknown) => {
           this.events$.next({ type: 'track', payload: ev });
         });
         // Diagnostic hooks: log ICE state changes and configuration
@@ -84,7 +110,7 @@ export class SoftphoneService {
   /**
    * Answer an incoming call. If session is omitted, currentSession is used.
    */
-  answer(session?: any, options?: any) {
+  answer(session?: RTCSession, options?: unknown) {
     const s = session ?? this.currentSession;
     if (!s) throw new Error('No session to answer');
     const defaultOptions = {
@@ -110,7 +136,7 @@ export class SoftphoneService {
   /**
    * Reject/decline an incoming call. Uses terminate with status code when supported.
    */
-  reject(session?: any, statusCode = 486) {
+  reject(session?: RTCSession, statusCode = 486) {
     const s = session ?? this.currentSession;
     if (!s) throw new Error('No session to reject');
     try {
@@ -128,7 +154,7 @@ export class SoftphoneService {
     return !!this.ua && this.ua.isRegistered && this.ua.isRegistered();
   }
 
-  call(target: string, options?: any) {
+  call(target: string, options?: unknown) {
     if (!this.ua) throw new Error('UA not initialized');
     const defaultOptions = {
       mediaConstraints: { audio: true, video: false },
@@ -142,7 +168,7 @@ export class SoftphoneService {
       }
     };
     const callOptions = options ?? defaultOptions;
-    const session = this.ua.call(target, callOptions);
+    const session = this.ua.call(target, callOptions) as unknown as RTCSession;
     this.attachSession(session);
     return session;
   }
