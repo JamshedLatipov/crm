@@ -1,18 +1,18 @@
 {
   "run": {
-    "command": "nxw build back",
-    "startTime": "2025-12-13T21:54:51.547Z",
-    "endTime": "2025-12-13T21:54:56.573Z",
+    "command": "nx test back",
+    "startTime": "2025-12-22T21:00:59.177Z",
+    "endTime": "2025-12-22T21:01:00.253Z",
     "inner": false
   },
   "tasks": [
     {
-      "taskId": "back:build",
-      "target": "build",
+      "taskId": "back:test",
+      "target": "test",
       "projectName": "back",
-      "hash": "14768494547591752425",
-      "startTime": "2025-12-13T21:54:51.556Z",
-      "endTime": "2025-12-13T21:54:56.565Z",
+      "hash": "3970391526913493764",
+      "startTime": "2025-12-22T21:00:59.202Z",
+      "endTime": "2025-12-22T21:01:00.251Z",
       "params": "",
       "cacheStatus": "cache-miss",
       "status": 0

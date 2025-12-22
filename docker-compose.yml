@@ -5,8 +5,8 @@ services:
     restart: always
     environment:
       POSTGRES_DB: crm
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
       - "5432:5432"
     volumes:
@@ -107,19 +107,19 @@ services:
       - asterisk
       - turn
     environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASS: postgres
-      DB_NAME: crm
-      RMQ_URL: amqp://rabbitmq:5672
-      RMQ_QUEUE: crm_queue
-      REDIS_URL: redis://redis:6379
-      ARI_HOST: asterisk
-      ARI_PORT: 8089
-      ARI_USER: ariuser
-      ARI_PASSWORD: aripass
-      ARI_APP: crm-app
+      DB_HOST: ${DB_HOST:-postgres}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASS: ${DB_PASS:-postgres}
+      DB_NAME: ${DB_NAME:-crm}
+      RMQ_URL: ${RMQ_URL:-amqp://rabbitmq:5672}
+      RMQ_QUEUE: ${RMQ_QUEUE:-crm_queue}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      ARI_HOST: ${ARI_HOST:-asterisk}
+      ARI_PORT: ${ARI_PORT:-8089}
+      ARI_USER: ${ARI_USER:-ariuser}
+      ARI_PASSWORD: ${ARI_PASSWORD:-aripass}
+      ARI_APP: ${ARI_APP:-crm-app}
     ports:
       - "3000:3000"
     command: ["node", "dist/main.js"]

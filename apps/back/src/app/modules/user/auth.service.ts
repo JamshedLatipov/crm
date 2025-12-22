@@ -52,7 +52,28 @@ export class AuthService {
       );
     }
 
-    const payload = { username: user.username, sub: user.id, roles: user.roles, operator: sip };
+    // Build an explicit operator object to include in the JWT payload.
+    // This expands the token with SIP provisioning info (when available):
+    // - username/password (for JsSIP client provisioning)
+    // - authId (ps_auths.id) and endpointId (user.sipEndpointId) for tracing
+    const operator = sip
+      ? {
+          username: sip.username,
+          password: sip.password,
+          authId: sip && (await (async () => {
+            try {
+              // If we resolved auth earlier, include its id when possible
+              const endpoint = user.sipEndpointId ? await this.psEndpointRepo.findOne({ where: { id: user.sipEndpointId } }) : undefined;
+              const authRec = endpoint?.auth ? await this.psAuthRepo.findOne({ where: { id: endpoint.auth } }) : undefined;
+              return authRec?.id || null;
+            } catch {
+              return null;
+            }
+          })()) ,
+          endpointId: user.sipEndpointId || null,
+        }
+      : null;
+    const payload = { username: user.username, sub: user.id, roles: user.roles, operator };
     return {
       access_token: this.jwtService.sign(payload),
       sip,

@@ -14,6 +14,7 @@ import { CallScriptsService } from '../shared/services/call-scripts.service';
 import { SoftphoneService } from './softphone.service';
 import { SoftphoneAudioService } from './softphone-audio.service';
 import { SoftphoneLoggerService } from './softphone-logger.service';
+import { AuthService } from '../auth/auth.service';
 import {
   RingtoneService,
   OUTGOING_RINGTONE_SRC,
@@ -144,14 +145,22 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   private readonly callHistoryService = inject(SoftphoneCallHistoryService);
   private readonly taskModal = inject(TaskModalService);
   private readonly queueMembersSvc = inject(QueueMembersService);
+  private readonly auth = inject(AuthService);
 
   constructor() {
     // Автоподстановка сохранённых SIP реквизитов оператора
     try {
-      const savedUser = localStorage.getItem('operator.username');
-      const savedPass = localStorage.getItem('operator.password');
-      if (savedUser) this.sipUser = savedUser;
-      if (savedPass) this.sipPassword = savedPass;
+      // Prefer transient credentials embedded in JWT payload (if present).
+      // These are not persisted by the client; they are read from the decoded
+      // token for the current session only. Fall back to saved username only.
+      const decoded = this.auth.getUserData();
+      console.log('Restored SIP creds from JWT payload for user:', decoded);
+      if (decoded?.operator?.username) this.sipUser = decoded.operator.username;
+      if (decoded?.operator?.password) this.sipPassword = decoded.operator.password;
+      else {
+        const savedUser = localStorage.getItem('operator.username');
+        if (savedUser) this.sipUser = savedUser;
+      }
     } catch {
       /* ignore */
     }

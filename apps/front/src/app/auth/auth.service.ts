@@ -96,10 +96,13 @@ export class AuthService {
       } else {
         sessionStorage.setItem(AuthService.STORAGE_KEY, JSON.stringify(store));
       }
-      // Prefer operator creds from JWT payload, fallback to explicit sip field
-      const op = decoded?.operator || res.sip;
-      if (op?.username) localStorage.setItem('operator.username', op.username);
-      if (op?.password) localStorage.setItem('operator.password', op.password);
+  // Prefer operator creds from JWT payload, fallback to explicit sip field
+  // NOTE: do NOT persist operator password in localStorage (security risk).
+  // Keep only the username client-side if needed; passwords must not be stored
+  // in persistent browser storage. For secure softphone provisioning use
+  // ephemeral credentials issued by the backend instead.
+  const op = decoded?.operator || res.sip;
+  if (op?.username) localStorage.setItem('operator.username', op.username);
       return true;
     } catch {
       return false;
