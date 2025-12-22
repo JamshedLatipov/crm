@@ -1,31 +1,31 @@
-Landing page for CRM — single-page marketing site
+# CRM Landing Page
 
-Overview
+This is the public-facing landing page for the CRM system, built with [Vue.js](https://vuejs.org/).
 
-This folder contains a small Vue-based single-page marketing site for the CRM. It's purposely simple so you can preview the new one-pager locally using Vite (the project already includes it via Nx).
+## Overview
 
-How to run locally
+This application serves as the entry point for marketing and public information about the CRM product.
 
-# From repo root
-# 1) Install dependencies (if not already)
-npm install
+## Key Technologies
 
-# 2) Run the landing-page app with Nx (preferred)
-# This will start the Vite dev server for the app
-npx nx serve landing-page
+- **Framework:** Vue.js 3
+- **Build Tool:** Vite
+- **Styling:** SCSS
 
-# Or directly with pnpm/npm if you prefer:
-# cd apps/landing-page
-# npm run dev
+## Getting Started
 
-Notes
+### Running the Application
 
-- The landing page component lives at `apps/landing-page/src/app/NxWelcome.vue` and is intentionally self-contained.
-- The contact form is a static form (no backend). Wire it to your API or analytics as needed.
-- The page uses the existing `styles.scss` file and scoped styles inside the component.
+To start the landing page in development mode:
 
-Next steps
+```bash
+nx serve landing-page
+```
 
-- Hook the contact form to a lead capture endpoint or mailing list.
-- Replace the placeholder logo and screenshots with your real assets.
-- Add analytics/tracking snippets as required.
+### Testing
+
+Run unit tests:
+
+```bash
+nx test landing-page
+```
