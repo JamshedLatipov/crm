@@ -134,32 +134,9 @@ export class DealsService {
         ? (assignmentsMapRaw as Map<string, any>)
         : new Map(Object.entries(assignmentsMapRaw || {}));
 
-      // Debugging info if assignments appear missing
-      try {
-        const keys = Array.from(assignmentsMap.keys());
-        // eslint-disable-next-line no-console
-        console.debug(
-          'attachAssignments: found assignment keys for deals:',
-          keys.slice(0, 20)
-        );
-      } catch (e) {
-        // ignore
-      }
-
       for (const deal of deals) {
         let assign = assignmentsMap.get(String(deal.id));
-        if (!assign) {
-          try {
-            const single = await this.assignmentService.getCurrentAssignments(
-              'deal',
-              String(deal.id)
-            );
-            if (single && single.length > 0) assign = single[0];
-          } catch (err) {
-            // ignore per-entity lookup errors
-          }
-        }
-
+        
         if (assign && assign.userId) {
           (deal as any).assignedTo = String(assign.userId);
           // attach a richer user object for frontend convenience
@@ -187,10 +164,7 @@ export class DealsService {
         }
       }
     } catch (err) {
-      console.warn(
-        'Failed to attach assignments to deals:',
-        err?.message || err
-      );
+      // ignore
       for (const deal of deals) {
         (deal as any).assignedTo = null;
       }
@@ -1042,29 +1016,6 @@ export class DealsService {
       relations: ['stage', 'company', 'contact', 'lead'],
       order: { createdAt: 'DESC' },
     });
-    // Debug log to help diagnose frontend issues where related deals are not displayed.
-    try {
-      console.log(`getDealsByContact called`, {
-        contactId,
-        found: Array.isArray(deals) ? deals.length : 0,
-      });
-      if (Array.isArray(deals) && deals.length > 0) {
-        // log brief summary of first deal to help with quick inspection
-        const d = deals[0];
-        console.log('getDealsByContact sample deal', {
-          id: d.id,
-          title: d.title,
-          amount: d.amount,
-          status: d.status,
-        });
-      }
-    } catch (err) {
-      // swallow logging errors to avoid breaking the endpoint
-      console.warn(
-        'Failed to log getDealsByContact debug info',
-        err?.message || err
-      );
-    }
 
     return deals;
   }
