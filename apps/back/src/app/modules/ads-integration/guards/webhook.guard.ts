@@ -7,7 +7,7 @@ export class WebhookGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const req: any = context.switchToHttp().getRequest();
     const secret = process.env.ADS_WEBHOOK_SECRET;
-    if (!secret) return true; // no secret configured -> allow (dev)
+    if (!secret) throw new UnauthorizedException('Webhook secret not configured');
 
     // 1) token in header X-Ads-Token
     const token = req.headers['x-ads-token'] as string | undefined;

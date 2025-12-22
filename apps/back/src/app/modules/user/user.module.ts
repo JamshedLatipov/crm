@@ -18,7 +18,7 @@ import { UserActivityModule } from '../user-activity/user-activity.module';
     TypeOrmModule.forFeature([User, PsAuth, PsEndpoint]),
     PassportModule,
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'secret',
+      secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '1d' },
     }),
     UserActivityModule,

@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { LeadStatus, LeadSource, LeadPriority } from './lead.entity';
 import { IsString, IsOptional, IsEmail, IsEnum, IsNumber, IsArray, IsDateString } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateLeadDto {
   @ApiProperty({ required: false })
@@ -288,50 +289,99 @@ export class ScheduleFollowUpDto {
 
 export class LeadFiltersDto {
   @ApiProperty({ enum: LeadStatus, isArray: true, required: false })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') return value.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    return value;
+  })
   status?: LeadStatus[];
 
   @ApiProperty({ enum: LeadSource, isArray: true, required: false })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') return value.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    return value;
+  })
   source?: LeadSource[];
 
   @ApiProperty({ enum: LeadPriority, isArray: true, required: false })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') return value.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    return value;
+  })
   priority?: LeadPriority[];
 
   @ApiProperty({ type: [String], required: false })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') return value.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    return value;
+  })
   assignedTo?: string[];
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @Transform(({ value }) => value ? Number(value) : undefined)
   scoreMin?: number;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @Transform(({ value }) => value ? Number(value) : undefined)
   scoreMax?: number;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @Transform(({ value }) => value ? Number(value) : undefined)
   estimatedValueMin?: number;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @Transform(({ value }) => value ? Number(value) : undefined)
   estimatedValueMax?: number;
 
   @ApiProperty({ required: false })
+  @IsOptional()
   createdAfter?: Date;
 
   @ApiProperty({ required: false })
+  @IsOptional()
   createdBefore?: Date;
 
   @ApiProperty({ type: [String], required: false })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') return value.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    return value;
+  })
   tags?: string[];
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
   isQualified?: boolean;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
   hasEmail?: boolean;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
   hasPhone?: boolean;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
   hasCompany?: boolean;
 
   @ApiProperty({ required: false })
+  @IsOptional()
   search?: string;
 }

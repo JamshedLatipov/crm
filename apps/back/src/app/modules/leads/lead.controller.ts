@@ -11,6 +11,8 @@ import {
   Req,
   BadRequestException,
   UnauthorizedException,
+  ValidationPipe,
+  UsePipes,
 } from '@nestjs/common';
 import { ApiTags, ApiQuery, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { LeadService } from './lead.service';
@@ -27,7 +29,7 @@ import {
   ScheduleFollowUpDto,
   LeadFiltersDto,
 } from './lead.dto';
-import { LeadStatus, LeadSource, LeadPriority } from './lead.entity';
+import { LeadStatus } from './lead.entity';
 import { LeadActivity } from './entities/lead-activity.entity';
 import { ChangeType } from './entities/lead-history.entity';
 import { JwtAuthGuard } from '../user/jwt-auth.guard';
@@ -36,63 +38,6 @@ import {
   CurrentUserPayload,
 } from '../user/current-user.decorator';
 import { AutomationService } from '../pipeline/automation.service';
-
-// Helper function to parse array parameters
-function parseArrayParam(
-  param: string | string[] | undefined
-): string[] | undefined {
-  if (!param) return undefined;
-  if (Array.isArray(param)) return param;
-  return param
-    .split(',')
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
-}
-
-// Type-safe enum parsing functions
-function parseStatusArray(
-  param: string | string[] | undefined
-): LeadStatus[] | undefined {
-  const parsed = parseArrayParam(param);
-  return parsed
-    ? (parsed.filter((s) =>
-        Object.values(LeadStatus).includes(s as LeadStatus)
-      ) as LeadStatus[])
-    : undefined;
-}
-
-function parseSourceArray(
-  param: string | string[] | undefined
-): LeadSource[] | undefined {
-  const parsed = parseArrayParam(param);
-  return parsed
-    ? (parsed.filter((s) =>
-        Object.values(LeadSource).includes(s as LeadSource)
-      ) as LeadSource[])
-    : undefined;
-}
-
-function parsePriorityArray(
-  param: string | string[] | undefined
-): LeadPriority[] | undefined {
-  const parsed = parseArrayParam(param);
-  return parsed
-    ? (parsed.filter((s) =>
-        Object.values(LeadPriority).includes(s as LeadPriority)
-      ) as LeadPriority[])
-    : undefined;
-}
-
-function parseChangeTypeArray(
-  param: string | string[] | undefined
-): ChangeType[] | undefined {
-  const parsed = parseArrayParam(param);
-  return parsed
-    ? (parsed.filter((s) =>
-        Object.values(ChangeType).includes(s as ChangeType)
-      ) as ChangeType[])
-    : undefined;
-}
 
 @ApiTags('leads')
 // @ApiBearerAuth()
@@ -111,28 +56,6 @@ export class LeadController {
     @Req() req: unknown,
     @CurrentUser() user?: CurrentUserPayload
   ): Promise<Lead> {
-    if (req && typeof req === 'object' && req !== null) {
-      const r = req as { rawBody?: unknown; headers?: Record<string, unknown> };
-      if (typeof r.rawBody === 'string') {
-        console.log('Creating lead — rawBody from middleware:', r.rawBody);
-      }
-      const headers = r.headers || {};
-      const contentType = (headers['content-type'] ||
-        headers['Content-Type']) as string | undefined;
-      const contentLength = (headers['content-length'] ||
-        headers['Content-Length']) as string | undefined;
-      const transferEncoding = (headers['transfer-encoding'] ||
-        headers['Transfer-Encoding']) as string | undefined;
-      const xff = (headers['x-forwarded-for'] || headers['X-Forwarded-For']) as
-        | string
-        | undefined;
-      console.log('Creating lead — headers:', {
-        contentType,
-        contentLength,
-        transferEncoding,
-        xForwardedFor: xff,
-      });
-    }
     const userId = user?.sub ? String(user.sub) : undefined;
     const userName = user?.username;
     const lead = await this.leadService.create(data, userId, userName);
@@ -140,7 +63,7 @@ export class LeadController {
     // Trigger automation asynchronously
     setImmediate(() => {
       this.automationService.onLeadCreated(lead).catch((error) => {
-        console.error('Error in lead creation automation:', error);
+        // Silently catch error for now, ideally log to a monitoring service
       });
     });
 
@@ -148,9 +71,10 @@ export class LeadController {
   }
 
   @Get()
+  @UsePipes(new ValidationPipe({ transform: true }))
   @ApiQuery({ type: LeadFiltersDto, required: false })
   async findAll(
-    @Query() query: Record<string, string | string[]>,
+    @Query() filters: LeadFiltersDto,
     @Query('page') page = 1,
     @Query('limit') limit = 50
   ): Promise<{
@@ -159,32 +83,13 @@ export class LeadController {
     page: number;
     totalPages: number;
   }> {
-    // Transform string arrays to proper arrays
-    const filters: LeadFiltersDto = {
-      ...query,
-      status: parseStatusArray(query.status),
-      source: parseSourceArray(query.source),
-      priority: parsePriorityArray(query.priority),
-      assignedTo: parseArrayParam(query.assignedTo),
-      tags: parseArrayParam(query.tags),
-    };
-
     return this.leadService.findAll(filters, Number(page), Number(limit));
   }
 
   @Get('statistics')
+  @UsePipes(new ValidationPipe({ transform: true }))
   @ApiQuery({ type: LeadFiltersDto, required: false })
-  async getStatistics(@Query() query: Record<string, string | string[]>) {
-    // Transform string arrays to proper arrays
-    const filters: LeadFiltersDto = {
-      ...query,
-      status: parseStatusArray(query.status),
-      source: parseSourceArray(query.source),
-      priority: parsePriorityArray(query.priority),
-      assignedTo: parseArrayParam(query.assignedTo),
-      tags: parseArrayParam(query.tags),
-    };
-
+  async getStatistics(@Query() filters: LeadFiltersDto) {
     return this.leadService.getStatistics(filters);
   }
 
@@ -302,7 +207,7 @@ export class LeadController {
         this.automationService
           .onLeadUpdated(updatedLead, changes)
           .catch((error) => {
-            console.error('Error in lead update automation:', error);
+            // Silently catch error
           });
       });
     }
@@ -435,7 +340,7 @@ export class LeadController {
           );
         } catch (err) {
           // log and continue — status already changed
-          console.error('Auto-convert failed:', err?.message || err);
+          // console.error('Auto-convert failed:', err?.message || err);
         }
       }
     }
@@ -619,10 +524,15 @@ export class LeadController {
     @Query('dateFrom') dateFrom?: string,
     @Query('dateTo') dateTo?: string
   ) {
+    // Simple parsing for optional query arrays if they are not transformed automatically here
+    // Note: If you add DTO for history filters, you can use Transform there too.
+    // For now keeping manual simple split if string
+    const parse = (v: string | string[]) => Array.isArray(v) ? v : (v ? v.split(',').map(s=>s.trim()) : undefined);
+
     const filters = {
-      changeType: parseChangeTypeArray(changeType),
-      userId: parseArrayParam(userId),
-      fieldName: parseArrayParam(fieldName),
+      changeType: parse(changeType as any) as any,
+      userId: parse(userId as any),
+      fieldName: parse(fieldName as any),
       dateFrom: dateFrom ? new Date(dateFrom) : undefined,
       dateTo: dateTo ? new Date(dateTo) : undefined,
     };

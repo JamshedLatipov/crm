@@ -87,7 +87,6 @@ export class LeadService {
   ) {}
 
   async create(data: CreateLeadData, userId?: string, userName?: string): Promise<Lead> {
-    console.log('Creating lead with data:', data);
     
     // Подготавливаем данные для сохранения
     const { companyId, ...leadDataWithoutCompanyId } = data;
@@ -121,7 +120,6 @@ export class LeadService {
         if (assignedArray.length > 0) {
           // Use provided userId as assignedBy if available, otherwise system user (1)
           const assignedBy = userId ? Number(userId) : 1;
-          console.log('Lead created with ID:', assignedBy, assignedArray);
           await this.assignmentService.createAssignment({
             entityType: 'lead',
             entityId: lead.id.toString(),
@@ -136,7 +134,7 @@ export class LeadService {
           }
         }
       } catch (err) {
-        console.warn('Failed to apply explicit assignment during lead creation:', err?.message || err);
+        // warn but continue
       }
     }
 
@@ -1154,7 +1152,6 @@ export class LeadService {
           });
           const savedContact = await this.contactRepo.save(newContact);
           foundContact = savedContact;
-          console.log('convertToDeal - created contact from lead', { leadId: lead.id, contactId: savedContact.id });
 
           // Log contact activity: contact created from lead
           try {
@@ -1166,7 +1163,7 @@ export class LeadService {
               metadata: { leadId: lead.id, leadName: lead.name }
             });
           } catch (err) {
-            console.warn('Failed to write contact activity for contact created from lead:', err?.message || err);
+            // ignore
           }
         }
 
@@ -1183,20 +1180,14 @@ export class LeadService {
               metadata: { leadId: lead.id, leadName: lead.name }
             });
           } catch (err) {
-            console.warn('Failed to write contact activity when linking lead to existing contact:', err?.message || err);
+            // ignore
           }
         }
       } catch (err) {
-        console.warn('convertToDeal: failed to find/create contact for lead', err?.message || err);
+        // ignore
       }
 
     // Создаем сделку через DealsService для правильного связывания
-    // Diagnostic logging: inspect DTO before creating deal to catch invalid types
-    try {
-      console.log('convertToDeal - creating deal with DTO:', Object.fromEntries(Object.entries(dealDto).map(([k,v]) => [k, typeof v === 'object' && v !== null ? JSON.stringify(v) : v])));
-    } catch (err) {
-      console.log('convertToDeal - failed to stringify dealDto', err?.message || err);
-    }
     const savedDeal = await this.dealsService.createDeal(dealDto, userId, userName);
 
     // Обновляем статус лида на "CONVERTED"
@@ -1226,9 +1217,7 @@ export class LeadService {
           leadsConverted: promoCompany.leadsConverted + 1 // Увеличиваем количество конвертированных лидов
         });
         
-        console.log(`Lead ${leadId} removed from promo company ${lead.promoCompanyId} during conversion to deal`);
       } catch (error) {
-        console.warn('Failed to remove lead from promo company during conversion:', error.message);
         // Не прерываем конвертацию из-за этой ошибки
       }
     }
