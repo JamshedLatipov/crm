@@ -1,21 +1,21 @@
 <!-- Softphone container: expandable -->
 <!-- Hide softphone entirely when user has no operator credentials -->
 <div *ngIf="hasOperator()" class="fixed bottom-4 right-4 z-50">
-  <!-- Minimized floating button -->
-  <button
-    *ngIf="!expanded"
-    (click)="toggleExpand()"
-    title="Open softphone"
-    class="floating-button"
-  >
-    <span class="material-icons">call</span>
-    <!-- Active call indicator -->
-    <span *ngIf="callActive()" class="active-call-indicator"></span>
-    <!-- Missed call badge -->
-    <span *ngIf="missedCallCount" class="missed-call-badge">{{
-      missedCallCount > 99 ? '99+' : missedCallCount
-    }}</span>
-  </button>
+    <!-- Minimized floating button -->
+    <button
+      *ngIf="!expanded"
+      (click)="toggleExpand()"
+      title="Open softphone"
+      class="floating-button"
+    >
+      <span class="material-icons">call</span>
+      <!-- Active call indicator -->
+      <span *ngIf="callActive()" class="active-call-indicator"></span>
+      <!-- Missed call badge -->
+      <span *ngIf="missedCallCount()" class="missed-call-badge">{{
+        missedCallCount() > 99 ? '99+' : missedCallCount()
+      }}</span>
+    </button>
 
   <!-- Expanded panel -->
   <div *ngIf="expanded" class="expanded-panel">
@@ -46,7 +46,7 @@
         <div class="tab-buttons">
           <button
             (click)="selectTab('dial')"
-            [class.active]="activeTab === 'dial'"
+            [class.active]="activeTab() === 'dial'"
             class="tab-button"
           >
             <span class="material-icons">call</span>
@@ -54,7 +54,7 @@
           </button>
           <button
             (click)="selectTab('history')"
-            [class.active]="activeTab === 'history'"
+            [class.active]="activeTab() === 'history'"
             class="tab-button"
           >
             <span class="material-icons">history</span>
@@ -62,7 +62,7 @@
           </button>
           <button
             (click)="selectTab('scenarios')"
-            [class.active]="activeTab === 'scenarios'"
+            [class.active]="activeTab() === 'scenarios'"
             class="tab-button"
           >
             <span class="material-icons">menu_book</span>
@@ -70,7 +70,7 @@
           </button>
           <button
             (click)="selectTab('info')"
-            [class.active]="activeTab === 'info'"
+            [class.active]="activeTab() === 'info'"
             class="tab-button"
           >
             <span class="material-icons">info</span>
@@ -124,7 +124,7 @@
 
       <!-- Dial Tab Content (extracted to component) -->
       <app-softphone-dial-tab
-        *ngIf="activeTab === 'dial' && !callActive()"
+        *ngIf="activeTab() === 'dial' && !callActive()"
         [callee]="callee"
         (calleeChange)="callee = $event"
         (pressKey)="pressKey($event)"
@@ -135,7 +135,7 @@
 
       <!-- Call Info (when active call) -->
       <app-softphone-call-info
-        *ngIf="callActive() && activeTab === 'dial'"
+        *ngIf="callActive() && activeTab() === 'dial'"
         [callee]="callee"
         [callDuration]="callDuration()"
       ></app-softphone-call-info>
@@ -144,18 +144,18 @@
 
       <!-- Call History Tab -->
       <app-softphone-call-history
-        *ngIf="activeTab === 'history'"
+        *ngIf="activeTab() === 'history'"
         [operatorId]="sipUser"
       />
 
       <!-- Info Tab (extracted to component) -->
       <app-softphone-info-tab
-        *ngIf="activeTab === 'info'"
+        *ngIf="activeTab() === 'info'"
         [phone]="incoming() ? incomingFrom() : callee"
       ></app-softphone-info-tab>
 
       <!-- Scripts Panel -->
-      <ng-container *ngIf="activeTab === 'scenarios'">
+      <ng-container *ngIf="activeTab() === 'scenarios'">
         <app-softphone-scripts-panel
           [callActive]="callActive()"
           [showScripts]="showScripts()"
