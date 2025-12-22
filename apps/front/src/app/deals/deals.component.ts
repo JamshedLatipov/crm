@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -25,6 +25,7 @@ import { DealFormComponent } from './components/deal-form.component/deal-form.co
 import { PageLayoutComponent } from '../shared/page-layout/page-layout.component';
 import { StatusChangeDialogComponent, StatusChangeData, StatusChangeResult } from './components/status-change-dialog.component';
 import { User } from '../users/users.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-deals',
@@ -853,12 +854,14 @@ import { User } from '../users/users.service';
     }
   `]
 })
-export class DealsComponent implements OnInit {
+export class DealsComponent implements OnInit, OnDestroy {
   private readonly dealsService = inject(DealsService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+
+  private readonly subs = new Subscription();
 
   deals: Deal[] = [];
   filteredDeals: Deal[] = [];
@@ -898,27 +901,35 @@ export class DealsComponent implements OnInit {
     this.loadDeals();
     // If navigated with a contactId (for quick create), open the create dialog
     // and prefill contact when provided via query params.
-    this.route.queryParamMap.subscribe((params) => {
-      const contactId = params.get('contactId');
-      const newFlag = params.get('new');
-      if (contactId && newFlag) {
-        // Open the create dialog and pass contactId through data
-        const dialogRef = this.dialog.open(DealFormComponent, {
-          width: '700px',
-          maxWidth: '95vw',
-          maxHeight: '90vh',
-          data: { mode: 'create', contactId },
-          disableClose: false
-        });
+    this.subs.add(
+      this.route.queryParamMap.subscribe((params) => {
+        const contactId = params.get('contactId');
+        const newFlag = params.get('new');
+        if (contactId && newFlag) {
+          // Open the create dialog and pass contactId through data
+          const dialogRef = this.dialog.open(DealFormComponent, {
+            width: '700px',
+            maxWidth: '95vw',
+            maxHeight: '90vh',
+            data: { mode: 'create', contactId },
+            disableClose: false
+          });
 
-        dialogRef.afterClosed().subscribe(result => {
-          if (result) {
-            this.loadDeals();
-            this.snackBar.open('Сделка успешно создана', 'Закрыть', { duration: 3000 });
-          }
-        });
-      }
-    });
+          this.subs.add(
+            dialogRef.afterClosed().subscribe(result => {
+              if (result) {
+                this.loadDeals();
+                this.snackBar.open('Сделка успешно создана', 'Закрыть', { duration: 3000 });
+              }
+            })
+          );
+        }
+      })
+    );
+  }
+
+  ngOnDestroy(): void {
+    this.subs.unsubscribe();
   }
 
   loadDeals() {

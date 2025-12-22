@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { ConfirmActionDialogComponent } from '../../../shared/dialogs/confirm-action-dialog.component';
@@ -29,7 +29,7 @@ import { IvrApiService, IvrNodeDto } from '../../ivr.service';
   templateUrl: './ivr-node-dialog.component.html',
   styleUrls: ['./ivr-node-dialog.component.scss'],
 })
-export class IvrNodeDialogComponent {
+export class IvrNodeDialogComponent implements OnDestroy {
   private dialogRef = inject(MatDialogRef<IvrNodeDialogComponent>);
   private readonly dialog = inject(MatDialog);
   public readonly dialogData = inject(MAT_DIALOG_DATA) as
@@ -75,6 +75,14 @@ export class IvrNodeDialogComponent {
 
   get selected() {
     return { id: this.form.value.id } as any;
+  }
+
+  ngOnDestroy(): void {
+    if (this.formSub) {
+      try {
+        this.formSub.unsubscribe();
+      } catch (e) {}
+    }
   }
 
   getActionIcon(action: string): string {

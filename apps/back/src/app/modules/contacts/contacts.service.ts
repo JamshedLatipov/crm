@@ -307,26 +307,46 @@ export class ContactsService {
 
   // Дедупликация
   async findDuplicates(): Promise<Contact[][]> {
-    // Находим дубликаты по email
-    const duplicatesByEmail = await this.contactRepository
+    // 1. Находим email'ы, которые встречаются более одного раза
+    const duplicates = await this.contactRepository
       .createQueryBuilder('contact')
+      .select('contact.email')
+      .addSelect('COUNT(*)', 'count')
       .where('contact.email IS NOT NULL')
+      .andWhere("contact.email != ''")
+      .andWhere('contact.isActive = :isActive', { isActive: true })
+      .groupBy('contact.email')
+      .having('COUNT(*) > 1')
+      .getRawMany();
+
+    if (duplicates.length === 0) {
+      return [];
+    }
+
+    const emails = duplicates.map(d => d.contact_email);
+
+    // 2. Получаем полные данные контактов с этими email'ами
+    const contacts = await this.contactRepository
+      .createQueryBuilder('contact')
+      .leftJoinAndSelect('contact.company', 'company')
+      .where('contact.email IN (:...emails)', { emails })
       .andWhere('contact.isActive = :isActive', { isActive: true })
       .orderBy('contact.email')
+      .addOrderBy('contact.createdAt', 'DESC')
       .getMany();
 
+    // 3. Группируем по email
     const emailGroups: Record<string, Contact[]> = {};
-    duplicatesByEmail.forEach(contact => {
+    for (const contact of contacts) {
       if (contact.email) {
         if (!emailGroups[contact.email]) {
           emailGroups[contact.email] = [];
         }
         emailGroups[contact.email].push(contact);
       }
-    });
+    }
 
-    // Возвращаем только группы с дубликатами
-    return Object.values(emailGroups).filter(group => group.length > 1);
+    return Object.values(emailGroups);
   }
 
   // === Активность контактов ===

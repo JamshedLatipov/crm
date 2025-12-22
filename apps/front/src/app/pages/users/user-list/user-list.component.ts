@@ -1,4 +1,5 @@
-import { Component, signal, inject, OnInit, ChangeDetectionStrategy, effect } from '@angular/core';
+import { Component, signal, inject, OnInit, ChangeDetectionStrategy, effect, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormControl } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
@@ -57,7 +58,7 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
   ],
   // Note: ConfirmActionDialogComponent used programmatically via MatDialog
   templateUrl: './user-list.component.html',
-  changeDetection: ChangeDetectionStrategy.Default,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./user-list.component.scss'],
 })
 export class UserListComponent implements OnInit {
@@ -85,6 +86,8 @@ export class UserListComponent implements OnInit {
     'roles', 'skills', 'workload', 'status', 'actions'
   ];
 
+  private readonly destroyRef = inject(DestroyRef);
+
   constructor() {
     // Создаем эффект для отслеживания изменений пользователей
     effect(() => {
@@ -97,16 +100,20 @@ export class UserListComponent implements OnInit {
     });
 
     // Подписываемся на изменения поискового запроса
-    this.searchControl.valueChanges.subscribe(value => {
-      this.onSearchChange(value || '');
-    });
+    this.searchControl.valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe(value => {
+        this.onSearchChange(value || '');
+      });
 
     // Подписываемся на изменения фильтра статуса
-    this.statusControl.valueChanges.subscribe(value => {
-      this.onStatusFilterChange(value || '');
-      // Keep the selectedStatus signal in sync when control changes
-      this.selectedStatus.set(value || '');
-    });
+    this.statusControl.valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe(value => {
+        this.onStatusFilterChange(value || '');
+        // Keep the selectedStatus signal in sync when control changes
+        this.selectedStatus.set(value || '');
+      });
   }
 
   // Tabs for status filtering
@@ -123,18 +130,20 @@ export class UserListComponent implements OnInit {
   }
 
   private loadUsersAndSetupFilters(): void {
-    this.userService.loadUsers().subscribe({
-      next: () => {
-        // После загрузки сразу обновляем фильтрованный список
-        this.updateFilteredUsers();
-      },
-      error: (error) => {
-        console.error('Error loading users:', error);
-        this.snackBar.open('Ошибка загрузки пользователей', 'Закрыть', {
-          duration: 5000
-        });
-      }
-    });
+    this.userService.loadUsers()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          // После загрузки сразу обновляем фильтрованный список
+          this.updateFilteredUsers();
+        },
+        error: (error) => {
+          console.error('Error loading users:', error);
+          this.snackBar.open('Ошибка загрузки пользователей', 'Закрыть', {
+            duration: 5000
+          });
+        }
+      });
   }
 
   // Search and filtering
