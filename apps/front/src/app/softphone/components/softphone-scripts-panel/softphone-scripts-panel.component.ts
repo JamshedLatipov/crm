@@ -6,19 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSlideToggle } from '@angular/material/slide-toggle';
-
-export interface Script {
-  id: string;
-  title: string;
-  description?: string;
-  steps?: string[];
-  questions?: string[];
-  tips?: string[];
-  category?: string; // optional grouping
-  bookmarked?: boolean;
-  recentlyUsed?: boolean;
-  children?: Script[];
-}
+import { SoftphoneScript, mapCallScriptToSoftphoneScript } from '../../types/softphone-script';
 
 @Component({
   selector: 'app-softphone-scripts-panel',
@@ -32,14 +20,14 @@ export interface Script {
 export class SoftphoneScriptsPanelComponent implements OnChanges {
   callActive = input<boolean>(false);
   showScripts = input<boolean>(false);
-  scripts = input<Script[]>([]);
+  scripts = input<SoftphoneScript[]>([]);
   selectedBranch = input<string | null>(null);
   // Local selection and UI state
   localSelected = signal<string | null>(null);
   branchNote = signal('');
   createTaskToggle = signal(false);
   // local writable copy of scripts (parent input may be readonly)
-  localScripts = signal<Script[]>([]);
+  localScripts = signal<SoftphoneScript[]>([]);
   private readonly callScriptsSvc = inject(CallScriptsService);
   private readonly taskModal = inject(TaskModalService);
 
@@ -62,7 +50,7 @@ export class SoftphoneScriptsPanelComponent implements OnChanges {
       if (q) {
         // Collect all script IDs that should be expanded
         const toExpand: Record<string, boolean> = {};
-        const collectExpandable = (script: Script) => {
+        const collectExpandable = (script: SoftphoneScript) => {
           if (script.children?.length) {
             toExpand[script.id] = true;
             script.children.forEach(child => collectExpandable(child));
@@ -79,7 +67,7 @@ export class SoftphoneScriptsPanelComponent implements OnChanges {
       const sel = this.localSelected();
       if (shouldOpen && sel) {
         // find title for selected branch
-        const findTitle = (list: Script[] | undefined, id: string | null): string | null => {
+        const findTitle = (list: SoftphoneScript[] | undefined, id: string | null): string | null => {
           if (!list || !id) return null;
           for (const s of list) {
             if (s.id === id) return s.title;
@@ -110,7 +98,7 @@ export class SoftphoneScriptsPanelComponent implements OnChanges {
   // Computed list of leaf scripts (branches) for selector — stable across change detection
   branches = computed(() => {
     const out: { id: string; title: string }[] = [];
-    const collect = (s: Script) => {
+    const collect = (s: SoftphoneScript) => {
       if (!s.children || s.children.length === 0) {
         out.push({ id: s.id, title: s.title });
       } else {
@@ -130,7 +118,7 @@ export class SoftphoneScriptsPanelComponent implements OnChanges {
     }
   }
 
-  selectLeaf(script: Script) {
+  selectLeaf(script: SoftphoneScript) {
     try {
       // toggle selection if same clicked
       const cur = this.localSelected();
@@ -172,7 +160,7 @@ export class SoftphoneScriptsPanelComponent implements OnChanges {
 
   
 
-  trackByScriptId(index: number, script: Script): string {
+  trackByScriptId(index: number, script: SoftphoneScript): string {
     return script.id;
   }
 
@@ -190,13 +178,13 @@ export class SoftphoneScriptsPanelComponent implements OnChanges {
     return !!this.expandedNodes()[scriptId];
   }
 
-  toggleBookmark(script: Script) {
+  toggleBookmark(script: SoftphoneScript) {
     // emit an event later if needed; for now toggle locally if present
     script.bookmarked = !script.bookmarked;
   }
 
   // Recursive helper to check if script or any of its children match search query
-  private matchesSearch(script: Script, q: string): boolean {
+  private matchesSearch(script: SoftphoneScript, q: string): boolean {
     if (!q) return true;
     
     const titleMatch = (script.title || '').toLowerCase().includes(q);
@@ -213,9 +201,9 @@ export class SoftphoneScriptsPanelComponent implements OnChanges {
   }
 
   // Recursive helper to filter tree preserving structure
-  private filterScriptTree(script: Script, q: string): Script | null {
+  private filterScriptTree(script: SoftphoneScript, q: string): SoftphoneScript | null {
     // Filter children first
-    const filteredChildren: Script[] = [];
+    const filteredChildren: SoftphoneScript[] = [];
     if (script.children?.length) {
       for (const child of script.children) {
         const filteredChild = this.filterScriptTree(child, q);
@@ -241,7 +229,7 @@ export class SoftphoneScriptsPanelComponent implements OnChanges {
     return null;
   }
 
-  filteredScripts(): Script[] {
+  filteredScripts(): SoftphoneScript[] {
     const q = this.search().toLowerCase().trim();
     let list = this.localScripts() || [];
     
@@ -251,7 +239,7 @@ export class SoftphoneScriptsPanelComponent implements OnChanges {
     
     // Apply search filter with tree preservation
     if (q) {
-      const filtered: Script[] = [];
+      const filtered: SoftphoneScript[] = [];
       for (const script of list) {
         const filteredScript = this.filterScriptTree(script, q);
         if (filteredScript) {
@@ -264,8 +252,8 @@ export class SoftphoneScriptsPanelComponent implements OnChanges {
     return list;
   }
 
-  categories(): Record<string, Script[]> {
-    const map: Record<string, Script[]> = {};
+  categories(): Record<string, SoftphoneScript[]> {
+    const map: Record<string, SoftphoneScript[]> = {};
     for (const s of this.filteredScripts()) {
       const cat = s.category || 'Uncategorized';
       if (!map[cat]) map[cat] = [];
@@ -303,20 +291,8 @@ export class SoftphoneScriptsPanelComponent implements OnChanges {
   private loadActiveScripts() {
     try {
       this.callScriptsSvc.getCallScriptsTree(true).subscribe(list => {
-        const mapNode = (s: any): Script => ({
-          id: s.id,
-          title: s.title,
-          description: s.description,
-          steps: s.steps,
-          questions: s.questions,
-          tips: s.tips,
-          category: s.category?.name || s.category || null,
-          bookmarked: false,
-          recentlyUsed: false,
-          children: (s.children || []).map((c: any) => mapNode(c)),
-        });
-        const mapped = (list || []).map((s: any) => mapNode(s));
-        this.localScripts.set(mapped as any);
+        const mapped = (list || []).map((s) => mapCallScriptToSoftphoneScript(s));
+        this.localScripts.set(mapped);
         // auto-expand categories after loading
         const cats = this.categoriesKeys();
         const expanded: Record<string, boolean> = {};
@@ -331,7 +307,7 @@ export class SoftphoneScriptsPanelComponent implements OnChanges {
   }
 
   // Expose local scripts getter for template compatibility
-  scriptsForTemplate(): Script[] {
+  scriptsForTemplate(): SoftphoneScript[] {
     return this.localScripts() || [];
   }
 }

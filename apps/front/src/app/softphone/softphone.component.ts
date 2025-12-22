@@ -35,13 +35,13 @@ import {
 import { SoftphoneDialTabComponent } from './components/softphone-dial-tab.component';
 import { SoftphoneInfoTabComponent } from './components/softphone-info-tab.component';
 import { SoftphoneCallHistoryComponent } from './components/softphone-call-history/softphone-call-history.component';
-import { CallHistoryItem } from './components/softphone-call-history/softphone-call-history.types';
-import { SoftphoneCallHistoryService } from './components/softphone-call-history/softphone-call-history.service';
+import { SoftphoneCallHistoryService } from './services/softphone-call-history.service';
 import { TaskModalService } from '../tasks/services/task-modal.service';
 import {
   QueueMembersService,
   QueueMemberRecord,
 } from '../contact-center/services/queue-members.service';
+import { SoftphoneScript, mapCallScriptToSoftphoneScript } from './types/softphone-script';
 
 // Define custom interfaces to avoid 'any' types
 interface JsSIPSessionEvent {
@@ -119,10 +119,8 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   // Transfer UI
   transferTarget = '';
 
-  // Call history data
-  callHistory = signal<CallHistoryItem[]>([]);
   // Call scripts UI
-  scripts = signal<any[]>([]);
+  scripts = signal<SoftphoneScript[]>([]);
   showScripts = signal(false);
   // Per-call metadata to persist
   callNote = signal<string>('');
@@ -444,24 +442,12 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
                 count: (list || []).length,
               });
               try {
-                const mapNode = (s: any) => ({
-                  id: s.id,
-                  title: s.title,
-                  description: s.description,
-                  steps: s.steps,
-                  questions: s.questions,
-                  tips: s.tips,
-                  category: s.category?.name || s.category || null,
-                  bookmarked: false,
-                  recentlyUsed: false,
-                  children: (s.children || []).map((c: any) => mapNode(c)),
-                });
-                const mapped = (list || []).map((s: any) => mapNode(s));
-                this.scripts.set(mapped as any);
+                const mapped = (list || []).map((s) => mapCallScriptToSoftphoneScript(s));
+                this.scripts.set(mapped);
                 this.logger.debug('Mapped scripts (tree)', mapped);
               } catch (mapErr) {
                 this.logger.warn('Mapping call scripts tree failed', mapErr);
-                this.scripts.set(list || ([] as any));
+                this.scripts.set([]);
               }
             },
             (err) => {
@@ -819,7 +805,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       if (payload?.createTask) {
         // find script title by id
         const findTitle = (
-          list: any[] | undefined,
+          list: SoftphoneScript[] | undefined,
           id?: string | null
         ): string | null => {
           if (!list || !id) return null;

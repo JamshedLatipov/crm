@@ -1,0 +1,77 @@
+<app-page-layout [title]="'Логи звонков'">
+  <div page-actions>
+    <button mat-button (click)="reload()">Обновить</button>
+  </div>
+
+  <crm-table
+    [columns]="columns"
+    [data]="logs()"
+    [pageSize]="20"
+    [showPaginator]="true"
+    (rowClick)="view($event)"
+  >
+    <ng-template crmColumnTemplate="createdAt" let-row>
+      {{ row.createdAt ? (row.createdAt | date : 'dd.MM.y HH:mm:ss') : '' }}
+    </ng-template>
+    <ng-template crmColumnTemplate="asteriskUniqueId" let-row>
+      <a
+        class="unique-id-link"
+        (click)="openDetail(row.asteriskUniqueId)"
+        >{{ row.asteriskUniqueId || '-' }}</a
+      >
+    </ng-template>
+    <ng-template crmColumnTemplate="createdBy" let-row>
+      <span>{{ row.createdBy || '-' }}</span>
+    </ng-template>
+    <ng-template crmColumnTemplate="scriptTitle" let-row>
+      <span>{{ row.scriptTitle }}</span>
+    </ng-template>
+    <ng-template crmColumnTemplate="note" let-row>
+      <span [title]="row.note">{{ row.note || '-' }}</span>
+    </ng-template>
+    <ng-template crmColumnTemplate="status" let-row>
+      <span>{{ row.status }}</span>
+    </ng-template>
+  </crm-table>
+  <div *ngIf="showDetailSidebar()" class="right-detail-panel">
+      <mat-card *ngIf="detailRecord(); else noDetail">
+        <mat-card-header class="card-header">
+          <mat-card-title>Детали CDR</mat-card-title>
+          <div class="actions">
+            <button mat-icon-button matTooltip="Копировать UniqueID" (click)="copyUniqueId(detailRecord().uniqueid)">
+              <mat-icon>content_copy</mat-icon>
+            </button>
+            <button mat-icon-button (click)="closeDetail()" matTooltip="Закрыть">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+        </mat-card-header>
+        <mat-divider></mat-divider>
+        <mat-card-content>
+          <div class="field"><strong>Дата/время:</strong> {{ detailRecord().calldate | date:'dd.MM.y HH:mm:ss' }}</div>
+          <mat-divider></mat-divider>
+          <div class="field"><strong>Источник:</strong> {{ detailRecord().src || '-' }}</div>
+          <div class="field"><strong>Назначение:</strong> {{ detailRecord().dst || '-' }}</div>
+          <mat-divider></mat-divider>
+          <div class="field"><strong>Длительность:</strong> {{ detailRecord().duration ? detailRecord().duration + ' s' : '-' }}</div>
+          <div class="field"><strong>Диспозиция:</strong> {{ detailRecord().disposition || '-' }}</div>
+          <mat-divider></mat-divider>
+          <div class="field"><strong>Канал:</strong> {{ detailRecord().channel || '-' }}</div>
+          <div class="field"><strong>Dst Channel:</strong> {{ detailRecord().dstchannel || '-' }}</div>
+          <mat-divider></mat-divider>
+          <div class="field"><strong>Контекст:</strong> {{ detailRecord().dcontext || '-' }}</div>
+          <div class="field"><strong>Уникальный ID:</strong> <code class="unique-id">{{ detailRecord().uniqueid || '-' }}</code></div>
+          <mat-divider></mat-divider>
+          <div class="field"><strong>Заметки:</strong> {{ detailRecord().userfield || '-' }}</div>
+          <mat-divider></mat-divider>
+          <div class="meta">
+            <div><strong>Создал (ID):</strong> {{ detailRecord().user_id || detailRecord().user || '-' }}</div>
+            <div><strong>Скрипт:</strong> {{ detailRecord().scriptTitle || '-' }}</div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+      <ng-template #noDetail>
+        <div class="no-detail">Детали не найдены</div>
+      </ng-template>
+  </div>
+</app-page-layout>

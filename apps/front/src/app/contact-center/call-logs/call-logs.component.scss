@@ -1,0 +1,42 @@
+.call-logs-page {
+  padding: 1rem;
+}
+.unique-id-link {
+  cursor: pointer;
+  color: var(--crm-text-link, #145ea8);
+  text-decoration: none;
+  border-bottom: 1px dotted rgba(0,0,0,0.06);
+}
+/* Right side detail panel — neutral site tokens */
+.right-detail-panel {
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: min(420px, 36%);
+  max-width: 480px;
+  height: 100vh;
+  background: var(--crm-surface, #ffffff);
+  box-shadow: 0 6px 18px rgba(12,16,20,0.06);
+  z-index: 1200;
+  padding: 1rem;
+  overflow: auto;
+  transform: translateX(100%);
+  animation: slideIn 220ms ease-out forwards;
+  border-left: 1px solid rgba(0,0,0,0.04);
+  display: flex;
+  flex-direction: column;
+}
+.right-detail-panel mat-card {
+  border-radius: 6px;
+  box-shadow: none;
+  background: transparent;
+}
+.card-header { padding: 0; display: flex; align-items: center; justify-content: space-between }
+.card-header .actions { display:flex; gap:6px; align-items:center }
+.unique-id { background: var(--crm-code-bg,#f5f6f8); padding: 2px 6px; border-radius: 3px; font-family: monospace }
+.no-detail { padding: 1rem; color: rgba(0,0,0,0.55) }
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
