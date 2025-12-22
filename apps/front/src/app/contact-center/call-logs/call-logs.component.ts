@@ -14,7 +14,6 @@ import {
 import { SoftphoneCallHistoryService } from '../../softphone/services/softphone-call-history.service';
 import { CallScriptsService } from '../../shared/services/call-scripts.service';
 import { firstValueFrom } from 'rxjs';
-import { MatSliderModule } from '@angular/material/slider';
 
 @Component({
   selector: 'app-call-logs',
@@ -29,7 +28,6 @@ import { MatSliderModule } from '@angular/material/slider';
     MatDividerModule,
     MatCardModule,
     MatTooltipModule,
-    MatSliderModule,
   ],
   templateUrl: './call-logs.component.html',
   styleUrl: './call-logs.component.scss',
