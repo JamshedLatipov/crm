@@ -14,6 +14,8 @@ import { CallScriptsService } from '../shared/services/call-scripts.service';
 import { SoftphoneService } from './softphone.service';
 import { SoftphoneAudioService } from './softphone-audio.service';
 import { SoftphoneLoggerService } from './softphone-logger.service';
+import { SoftphoneMediaService } from './softphone-media.service';
+import { SoftphoneControllerService } from './softphone-controller.service';
 import { AuthService } from '../auth/auth.service';
 import {
   RingtoneService,
@@ -151,6 +153,8 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   private readonly ringtone = inject(RingtoneService);
   private readonly audioSvc = inject(SoftphoneAudioService);
   private readonly logger = inject(SoftphoneLoggerService);
+  private readonly media = inject(SoftphoneMediaService);
+  private readonly controller = inject(SoftphoneControllerService);
   private readonly callHistoryService = inject(SoftphoneCallHistoryService);
   private readonly taskModal = inject(TaskModalService);
   private readonly queueMembersSvc = inject(QueueMembersService);
@@ -368,40 +372,11 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
               }
             }
 
-            // Attach track handler and attach any existing receivers using audio service
+            // Delegate PC track attachment and audio initialization to media service
             try {
-              if (sess?.connection) {
-                const pc = sess.connection as RTCPeerConnection;
-                try {
-                  pc.addEventListener('track', (ev2: any) => {
-                    try {
-                      this.audioSvc.attachTrackEvent(ev2);
-                    } catch (ee) {
-                      this.logger.warn('audioSvc attachTrackEvent failed', ee);
-                    }
-                  });
-                } catch (e) {
-                  this.logger.warn('addEventListener(track) failed', e);
-                }
-
-                try {
-                  // attempt to attach already-present receivers
-                  if (!this.audioSvc.attachReceiversFromPC(pc)) {
-                    // nothing attached from receivers
-                  }
-                } catch (e) {
-                  this.logger.warn('audioSvc attachReceiversFromPC failed', e);
-                }
-
-                // initialize audio element reference
-                try {
-                  this.audioSvc.initAudioElement(REMOTE_AUDIO_ELEMENT_ID);
-                } catch (e) {
-                  this.logger.warn('initAudioElement failed', e);
-                }
-              }
+              this.media.setSession(sess);
             } catch (e) {
-              this.logger.warn('attachSession track handler failed', e);
+              this.logger.warn('media.setSession failed', e);
             }
 
             break;
@@ -707,10 +682,9 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   answerIncoming() {
     if (!this.incoming() || !this.currentSession) return;
     try {
-      this.softphone.answer(this.currentSession);
+      this.controller.answer(this.currentSession);
       this.incoming.set(false);
       this.status.set('Call answered');
-      this.ringtone.stopRingback();
     } catch (err) {
       this.logger.error('Answer failed', err);
       this.status.set('Answer failed');
@@ -721,10 +695,9 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   rejectIncoming() {
     if (!this.incoming() || !this.currentSession) return;
     try {
-      this.softphone.reject(this.currentSession);
+      this.controller.reject(this.currentSession);
       this.incoming.set(false);
       this.status.set('Call rejected');
-      this.ringtone.stopRingback();
     } catch (err) {
       this.logger.error('Reject failed', err);
       this.status.set('Reject failed');
@@ -743,35 +716,26 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
 
     this.status.set(`Calling ${this.callee}...`);
     try {
-      // generate a client-side id we can correlate with Asterisk via SIP header
-      const clientCallId = this.generateClientCallId();
       const opts = {
-        extraHeaders: [
-          `X-Client-Call-ID: ${clientCallId}`,
-          'X-Custom-Header: CRM Call',
-        ],
+        extraHeaders: ['X-Custom-Header: CRM Call'],
         mediaConstraints: { audio: true, video: false },
         pcConfig: { iceServers: [], rtcpMuxPolicy: 'require' },
       };
-
-      const session = this.softphone.call(
+      const session = this.controller.call(
         `sip:${this.callee}@${this.asteriskHost}`,
         opts
       );
-      try {
-        (session as any).__clientCallId = clientCallId;
-      } catch {}
       this.currentSession = session;
       this.callActive.set(true);
-      this.logger.info('Call session created:', session, { clientCallId });
+      this.logger.info('Call session created (via controller):', session);
     } catch (error) {
-      this.logger.error('Error initiating call:', error);
+      this.logger.error('Error initiating call (controller):', error);
       this.status.set('Ошибка при совершении вызова');
     }
   }
 
   hangup() {
-    this.softphone.hangup();
+    this.controller.hangup();
   }
 
   // Manual CDR / call log registration triggered from scripts panel
@@ -836,16 +800,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   toggleMute() {
     if (!this.callActive() || !this.currentSession) return;
     try {
-      const newMuted = !this.muted();
-      const pc: RTCPeerConnection | undefined =
-        this.currentSession['connection'];
-      if (pc) {
-        pc.getSenders()?.forEach((sender) => {
-          if (sender.track && sender.track.kind === 'audio') {
-            sender.track.enabled = !newMuted;
-          }
-        });
-      }
+      const newMuted = this.media.toggleMute();
       this.muted.set(newMuted);
       this.status.set(this.muted() ? 'Microphone muted' : 'Call in progress');
     } catch (e) {
@@ -894,7 +849,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     if (/[0-9*#]/.test(key)) {
       if (this.callActive()) {
         try {
-          this.softphone.sendDTMF(key);
+          this.controller.sendDTMF(key);
           this.dtmfSequence = (this.dtmfSequence + key).slice(-32); // keep last 32 keys
           this.status.set(`DTMF: ${key}`);
         } catch (e) {
@@ -957,7 +912,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     }
     try {
       this.status.set('Transferring...');
-      await this.softphone.transfer(this.transferTarget, type);
+      await this.controller.transfer(this.transferTarget, type);
     } catch (err) {
       this.logger.error('Transfer request failed', err);
       this.status.set('Transfer request failed');
@@ -986,76 +941,8 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   // Apply hold state locally: disable outgoing audio senders and pause/resume remote audio playback
   private applyHoldState(hold: boolean) {
     try {
-      // Remember/restore microphone muted state around hold
-      const pc: RTCPeerConnection | undefined = this.currentSession?.connection;
-
-      if (hold) {
-        // store whether user had microphone muted before placing on hold
-        this.preHoldMuted = this.preHoldMuted ?? this.muted();
-      }
-
-      // Disable or enable local audio senders
-      try {
-        if (pc) {
-          pc.getSenders()?.forEach((sender) => {
-            if (sender.track && sender.track.kind === 'audio') {
-              try {
-                sender.track.enabled = !hold;
-              } catch (e) {
-                // Some browsers may not allow changing track state; ignore
-              }
-            }
-          });
-        }
-      } catch (e) {
-        this.logger.warn('applyHoldState: manipulating senders failed', e);
-      }
-
-      // Update component muted state: when placed on hold we show muted, on resume restore previous state
-      if (hold) {
-        this.muted.set(true);
-      } else {
-        this.muted.set(this.preHoldMuted ?? false);
-        this.preHoldMuted = null;
-      }
-
-      // Mute or restore remote audio element to avoid hearing hold music/tones locally
-      try {
-        const audio = document.getElementById(
-          REMOTE_AUDIO_ELEMENT_ID
-        ) as HTMLAudioElement | null;
-        if (audio) {
-          if (hold) {
-            // store previous volume so we can restore it
-            try {
-              (audio as any).dataset.__preHoldVolume = String(
-                audio.volume ?? 1
-              );
-            } catch {}
-            audio.muted = true;
-            audio.volume = 0;
-          } else {
-            const prev = (audio as any).dataset?.__preHoldVolume;
-            if (prev !== undefined) {
-              audio.volume = Number(prev) || 1;
-              try {
-                delete (audio as any).dataset.__preHoldVolume;
-              } catch {}
-            } else {
-              audio.volume = 1;
-            }
-            audio.muted = false;
-            // try to resume playback if it was paused
-            try {
-              const p = audio.play();
-              if (p && typeof (p as any).then === 'function')
-                (p as Promise<void>).catch(() => {});
-            } catch {}
-          }
-        }
-      } catch (e) {
-        this.logger.warn('applyHoldState: remote audio handling failed', e);
-      }
+      const newMuted = this.media.applyHoldState(hold);
+      this.muted.set(newMuted);
     } catch (e) {
       this.logger.warn('applyHoldState failed', e);
     }
