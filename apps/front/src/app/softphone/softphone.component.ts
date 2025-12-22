@@ -43,6 +43,13 @@ import {
   QueueMemberRecord,
 } from '../contact-center/services/queue-members.service';
 import { SoftphoneScript, mapCallScriptToSoftphoneScript } from './types/softphone-script';
+import {
+  generateClientCallId,
+  getSessionCallKey,
+  extractDigits,
+  cleanClipboardNumber,
+  formatDurationFromStart,
+} from './softphone.helpers';
 
 // Define custom interfaces to avoid 'any' types
 interface JsSIPSessionEvent {
@@ -626,45 +633,23 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   }
   private updateDuration() {
     if (!this.callStart) return;
-    const diff = Math.floor((Date.now() - this.callStart) / 1000);
-    const mm = String(Math.floor(diff / 60)).padStart(2, '0');
-    const ss = String(diff % 60).padStart(2, '0');
-    this.callDuration.set(`${mm}:${ss}`);
+    this.callDuration.set(formatDurationFromStart(this.callStart));
   }
 
   // Generate a lightweight client-side id to correlate frontend logs with Asterisk
+  // small wrapper that delegates to helpers
   private generateClientCallId(): string {
-    return `c-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    return generateClientCallId();
   }
 
   // Unified extraction of an identifier to use when saving call logs.
   // Prefer client-generated id (attached to session), fall back to session id or call_id.
   private getSessionCallKey(session: JsSIPSession | null): string | null {
-    try {
-      if (!session) return null;
-      const s = session as any;
-      if (s.__clientCallId) return String(s.__clientCallId);
-      if (s.call_id) return String(s.call_id);
-      if (s.id) return String(s.id);
-      // attempt to read SIP Call-ID from request headers
-      try {
-        const hdr =
-          s.request?.getHeader?.('Call-ID') ??
-          s.request?.headers?.['call-id']?.[0]?.raw;
-        if (hdr) return String(hdr);
-      } catch {}
-      return null;
-    } catch (e) {
-      return null;
-    }
+    return getSessionCallKey(session as any);
   }
 
   private extractNumber(s: string) {
-    if (!s) return '';
-    // extract continuous digits and optional leading +
-    const m = s.match(/\+?\d+/g);
-    if (!m) return s.replace(/\D/g, '');
-    return m.join('');
+    return extractDigits(s);
   }
 
   connect() {
@@ -980,7 +965,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   }
 
   private applyClipboardNumber(raw: string) {
-    const cleaned = raw.replace(/[^0-9*#+]/g, '');
+    const cleaned = cleanClipboardNumber(raw);
     if (!cleaned) return;
     this.callee = cleaned;
     this.status.set(`Number pasted (${cleaned.length} digits)`);
