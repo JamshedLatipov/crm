@@ -91,6 +91,8 @@ export class AuthService {
       const effectiveUsername = decoded?.username || username;
       this._user.set(effectiveUsername);
   const store: StoredAuthData = { username, token, ts: Date.now(), exp: decoded?.exp, roles: decoded?.roles };
+      // Persist session: if the user requested "remember" keep token in
+      // localStorage (longer lived), otherwise keep it in sessionStorage.
       if (remember) {
         localStorage.setItem(AuthService.STORAGE_KEY, JSON.stringify(store));
       } else {
@@ -102,7 +104,9 @@ export class AuthService {
   // in persistent browser storage. For secure softphone provisioning use
   // ephemeral credentials issued by the backend instead.
   const op = decoded?.operator || res.sip;
-  if (op?.username) localStorage.setItem('operator.username', op.username);
+  // Do not persist operator username/password in browser storage.
+  // Operator credentials must be transient and delivered via JWT or
+  // ephemeral provisioning from the server.
       return true;
     } catch {
       return false;
@@ -123,8 +127,7 @@ export class AuthService {
     // Clear local session data
     this._user.set(null);
     this.clearStoredAuth();
-    localStorage.removeItem('operator.username');
-    localStorage.removeItem('operator.password');
+  // operator credentials are not persisted client-side anymore
   }
 
   private decodeJwt(token: string): JwtPayload | undefined {
@@ -145,8 +148,8 @@ export class AuthService {
   }
 
   private restoreSession() {
-    // Prefer localStorage, then sessionStorage
-    const raw = localStorage.getItem(AuthService.STORAGE_KEY) || sessionStorage.getItem(AuthService.STORAGE_KEY);
+  // Prefer localStorage (remembered session) then sessionStorage
+  const raw = localStorage.getItem(AuthService.STORAGE_KEY) || sessionStorage.getItem(AuthService.STORAGE_KEY);
     if (!raw) return;
     try {
       const data: StoredAuthData = JSON.parse(raw);
@@ -161,13 +164,13 @@ export class AuthService {
   }
 
   private getStoredAuth(): StoredAuthData | null {
-    const raw = localStorage.getItem(AuthService.STORAGE_KEY) || sessionStorage.getItem(AuthService.STORAGE_KEY);
+  const raw = localStorage.getItem(AuthService.STORAGE_KEY) || sessionStorage.getItem(AuthService.STORAGE_KEY);
     if (!raw) return null;
     try { return JSON.parse(raw) as StoredAuthData; } catch { return null; }
   }
 
   private clearStoredAuth() {
-    localStorage.removeItem(AuthService.STORAGE_KEY);
-    sessionStorage.removeItem(AuthService.STORAGE_KEY);
+  localStorage.removeItem(AuthService.STORAGE_KEY);
+  sessionStorage.removeItem(AuthService.STORAGE_KEY);
   }
 }

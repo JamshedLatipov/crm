@@ -89,6 +89,8 @@ type JsSIPSession = any;
 })
 export class SoftphoneComponent implements OnInit, OnDestroy {
   status = signal('Disconnected');
+  // Whether current authenticated user has an operator payload (SIP credentials)
+  hasOperator = signal(false);
   // Incoming call state
   incoming = signal(false);
   incomingFrom = signal<string | null>(null);
@@ -154,13 +156,12 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       // These are not persisted by the client; they are read from the decoded
       // token for the current session only. Fall back to saved username only.
       const decoded = this.auth.getUserData();
-      console.log('Restored SIP creds from JWT payload for user:', decoded);
+      // mark whether user has operator info — used to decide whether to show
+      // softphone UI and to initialize SIP subsystem. We avoid initializing
+      // the softphone when operator is not present.
+      this.hasOperator.set(Boolean(decoded?.operator?.username));
       if (decoded?.operator?.username) this.sipUser = decoded.operator.username;
       if (decoded?.operator?.password) this.sipPassword = decoded.operator.password;
-      else {
-        const savedUser = localStorage.getItem('operator.username');
-        if (savedUser) this.sipUser = savedUser;
-      }
     } catch {
       /* ignore */
     }
@@ -181,14 +182,19 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     try {
-      const saved = localStorage.getItem('softphone.expanded');
-      if (saved !== null) this.expanded = saved === '1';
-      const savedAuto = localStorage.getItem('softphone.autoExpandOnIncoming');
-      if (savedAuto !== null) this.autoExpandOnIncoming = savedAuto === '1';
-      const savedMissed = localStorage.getItem('softphone.missedCount');
-      if (savedMissed !== null) this.missedCallCount = Number(savedMissed) || 0;
+      // UI preferences are no longer persisted in localStorage. Keep defaults
+      // in-memory only for the current session.
     } catch {
       // ignore
+    }
+
+    // If the user does not have operator credentials, we do not subscribe
+    // to softphone events and do not attempt to auto-connect — the softphone
+    // component will be hidden in the template.
+    if (!this.hasOperator()) {
+      // leave lightweight state only; do not initialize SIP logic
+      this.status.set('Softphone disabled');
+      return;
     }
 
     // Subscribe to softphone events coming from the service
@@ -553,10 +559,6 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     if (wasMissed) {
       try {
         this.missedCallCount = (this.missedCallCount || 0) + 1;
-        localStorage.setItem(
-          'softphone.missedCount',
-          String(this.missedCallCount)
-        );
       } catch {
         /* ignore */
       }
@@ -706,11 +708,10 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   toggleExpand() {
     this.expanded = !this.expanded;
     try {
-      localStorage.setItem('softphone.expanded', this.expanded ? '1' : '0');
+      // Do not persist expand/collapse state in localStorage anymore.
       if (this.expanded) {
         // clearing missed count when the user opens the softphone
         this.missedCallCount = 0;
-        localStorage.setItem('softphone.missedCount', '0');
       }
     } catch {
       // ignore

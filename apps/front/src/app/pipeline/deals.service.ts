@@ -16,6 +16,7 @@ import {
   MostActiveDeal
 } from './dtos';
 import { environment } from '../../environments/environment';
+import { AuthService } from '../auth/auth.service';
 
 export interface DealAssignment {
   id: string;
@@ -32,6 +33,7 @@ export class DealsService {
   private readonly apiUrl = environment.apiBase + '/deals';
   private readonly http = inject(HttpClient);
   private readonly assignmentService = inject(AssignmentService);
+  private readonly auth = inject(AuthService);
 
   // === CRUD операции ===
   // Can return either full array or a paged response { items, total }
@@ -116,7 +118,7 @@ export class DealsService {
     const normalized = Array.isArray(managerId) ? managerId : [managerId];
     const assignedTo = normalized.map(m => Number(m));
 
-    const assignedBy = Number(localStorage.getItem('userId')) || 0; // best-effort current user id
+  const assignedBy = Number(this.auth.getUserId()) || 0; // best-effort current user id
 
     const req: AssignmentRequest = {
       entityType: 'deal',
