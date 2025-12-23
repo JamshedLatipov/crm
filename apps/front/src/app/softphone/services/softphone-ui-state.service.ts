@@ -1,4 +1,4 @@
-import { Injectable, signal, effect, inject } from '@angular/core';
+import { Injectable, signal, effect, inject, Injector, runInInjectionContext } from '@angular/core';
 import { SoftphoneControllerFacade } from '../softphone-controller.facade';
 
 export type SoftphoneTab = 'dial' | 'history' | 'info' | 'scenarios';
@@ -14,7 +14,13 @@ export type SoftphoneTab = 'dial' | 'history' | 'info' | 'scenarios';
   providedIn: 'root',
 })
 export class SoftphoneUiStateService {
-  private readonly facade = inject(SoftphoneControllerFacade);
+  // Use the injector to lazily resolve the facade to avoid a constructor-time
+  // circular dependency. The Injector itself is safe to inject eagerly.
+  private readonly injector = inject(Injector);
+
+  private getFacade(): SoftphoneControllerFacade {
+    return this.injector.get(SoftphoneControllerFacade);
+  }
 
   // UI состояние
   activeTab = signal<SoftphoneTab>('dial');
@@ -23,14 +29,26 @@ export class SoftphoneUiStateService {
   missedCallCount = signal(0);
 
   constructor() {
-    // При входящем звонке переключаем на вкладку info и раскрываем панель
-    effect(() => {
-      if (this.facade.incoming()) {
-        this.activeTab.set('info');
-        if (this.autoExpandOnIncoming() && !this.expanded()) {
-          this.toggleExpand();
-        }
-      }
+    // Delay creating the effect until the next microtask so that the
+    // SoftphoneControllerFacade can be constructed first. This prevents a
+    // circular DI resolution where the facade -> event handler -> ui state ->
+    // facade would attempt to instantiate synchronously.
+    // Defer installation of the effect to the next microtask but ensure it
+    // runs inside an Angular injection context. Creating the effect outside a
+    // proper injection context will throw NG0203, so we wrap the effect with
+    // runInInjectionContext using the previously injected Injector.
+    Promise.resolve().then(() => {
+      runInInjectionContext(this.injector, () => {
+        effect(() => {
+          const facade = this.getFacade();
+          if (facade?.incoming && facade.incoming()) {
+            this.activeTab.set('info');
+            if (this.autoExpandOnIncoming() && !this.expanded()) {
+              this.toggleExpand();
+            }
+          }
+        });
+      });
     });
   }
 
@@ -39,14 +57,15 @@ export class SoftphoneUiStateService {
    */
   selectTab(tab: SoftphoneTab) {
     this.activeTab.set(tab);
-    
+
     // Синхронизируем состояние панели скриптов
+    const facade = this.getFacade();
     if (tab === 'scenarios') {
-      if (!this.facade.showScripts()) {
-        this.facade.toggleScriptsPanel();
+      if (!facade.showScripts()) {
+        facade.toggleScriptsPanel();
       }
     } else {
-      this.facade.showScripts.set(false);
+      facade.showScripts.set(false);
     }
   }
 
