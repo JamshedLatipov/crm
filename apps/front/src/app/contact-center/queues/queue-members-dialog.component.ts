@@ -226,7 +226,7 @@ export class QueueMembersDialogComponent implements OnInit {
   styles: [
     `
       .add-member-form {
-        min-width: 700px;
+        min-width: 400px;
         padding: 16px 0;
       }
     `,
