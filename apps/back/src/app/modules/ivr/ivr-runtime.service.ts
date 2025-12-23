@@ -192,9 +192,6 @@ export class IvrRuntimeService implements OnModuleInit {
           app: process.env.ARI_APP || 'crm-app',
           callerId: channelId,
         };
-        this.logger.debug(
-          `ARI originate params (dial): ${JSON.stringify(originateParams)}`
-        );
         await this.safeChannelOp(channelId, () =>
           client.channels.originate(originateParams)
         );
@@ -233,9 +230,6 @@ export class IvrRuntimeService implements OnModuleInit {
             priority,
           },
         });
-        this.logger.debug(
-          `Queue handoff HTTP continue: channel=${channelId} context=${context} extension=${queueName} priority=${priority}`
-        );
         try {
           // Try a few possible extension names so dialplan naming differences (e.g. 'support' vs 'queue_support') are handled.
           // Try named queue dialplan entry first (queue_<name>), then plain queue name
@@ -248,14 +242,10 @@ export class IvrRuntimeService implements OnModuleInit {
               timeout: 3000,
               validateStatus: () => true,
             });
-            this.logger.debug(`Queue continue attempt extension=${ext} status=${res.status}`);
             if (res.status >= 200 && res.status < 300) {
               success = true;
               break;
-            } else {
-              // Log response body for diagnostics when non-2xx
-              this.logger.debug(`Queue continue response body for ${ext}: ${JSON.stringify(res.data)}`);
-            }
+            } 
           }
           if (success) {
             // optimistic: dialplan will own it now
@@ -657,9 +647,6 @@ export class IvrRuntimeService implements OnModuleInit {
       }
 
       if (this.isChannelMissingError(err)) {
-        this.logger.debug(
-          `Channel not found for op; cleaning state (${channelId})`
-        );
         const st = this.calls.get(channelId);
         if (st) {
           if (st.digitTimer) clearTimeout(st.digitTimer);
