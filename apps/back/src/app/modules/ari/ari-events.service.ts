@@ -17,18 +17,18 @@ export class AriEventsService implements OnModuleInit, OnModuleDestroy {
 
   onModuleInit() {
     // Try to attach immediately; if client not ready, retry until available
-    console.debug('[AriEventsService] onModuleInit: attempting attach');
+    // console.debug('[AriEventsService] onModuleInit: attempting attach');
     const tryAttach = () => {
       const client = this.ari.getClient();
       if (client) {
-        console.debug('[AriEventsService] onModuleInit: client available, attaching now');
+        // console.debug('[AriEventsService] onModuleInit: client available, attaching now');
         this.attachToClient(client);
         if (this.attachRetry) {
           clearInterval(this.attachRetry as unknown as number);
           this.attachRetry = undefined;
         }
       } else {
-        console.debug('[AriEventsService] onModuleInit: client not ready, will retry');
+        // console.debug('[AriEventsService] onModuleInit: client not ready, will retry');
       }
     };
 
@@ -52,7 +52,7 @@ export class AriEventsService implements OnModuleInit, OnModuleDestroy {
     coreEvents.forEach((evt) =>
       this.ari.on(evt, async (...args: unknown[]) => {
         try {
-          console.debug('[AriEventsService] re-emitted core event', evt, args);
+        //   console.debug('[AriEventsService] re-emitted core event', evt, args);
         } catch {}
         this.subject.next({ event: evt, args });
         try {
@@ -69,7 +69,7 @@ export class AriEventsService implements OnModuleInit, OnModuleDestroy {
             await this.store.write({ event: evt, channelId: channelId ?? null, payload: payload as Record<string, unknown> ?? null, raw: undefined });
           }
         } catch (e) {
-          console.debug('[AriEventsService] failed to persist re-emitted event', evt, e);
+        //   console.debug('[AriEventsService] failed to persist re-emitted event', evt, e);
         }
       })
     );
@@ -87,7 +87,7 @@ export class AriEventsService implements OnModuleInit, OnModuleDestroy {
       try {
         try {
           // lightweight console debug for raw events
-          console.debug('[ARI EVENT]', event, args && args.length ? args : 'no-args');
+        //   console.debug('[ARI EVENT]', event, args && args.length ? args : 'no-args');
         } catch {}
         self.subject.next({ event, args });
         // Persist to DB if store available (fire-and-forget)
@@ -106,19 +106,19 @@ export class AriEventsService implements OnModuleInit, OnModuleDestroy {
           }
         } catch (e) {
           try {
-            console.debug('[AriEventsService] failed to persist event', event, e);
+            // console.debug('[AriEventsService] failed to persist event', event, e);
           } catch {}
         }
       } catch (err) {
         try {
-          console.debug('[AriEventsService] subject.next failed', err);
+        //   console.debug('[AriEventsService] subject.next failed', err);
         } catch {}
       }
       // call original emit
       return self.originalEmit ? self.originalEmit(event, ...args) : true;
     };
     this.logger.log('Attached to ARI client.emit to intercept events');
-    console.debug('[AriEventsService] attachToClient: patched client.emit');
+    // console.debug('[AriEventsService] attachToClient: patched client.emit');
   }
 
   // Expose observable for consumers
@@ -133,7 +133,7 @@ export class AriEventsService implements OnModuleInit, OnModuleDestroy {
         // restore original emit
         (client as any).emit = this.originalEmit;
         this.logger.log('Restored ARI client.emit');
-        console.debug('[AriEventsService] onModuleDestroy: restored client.emit');
+        // console.debug('[AriEventsService] onModuleDestroy: restored client.emit');
       } catch {
         /* ignore */
       }
@@ -143,6 +143,6 @@ export class AriEventsService implements OnModuleInit, OnModuleDestroy {
       this.attachRetry = undefined;
     }
     this.subject.complete();
-    console.debug('[AriEventsService] onModuleDestroy: subject completed');
+    // console.debug('[AriEventsService] onModuleDestroy: subject completed');
   }
 }

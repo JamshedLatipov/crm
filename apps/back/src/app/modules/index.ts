@@ -3,6 +3,7 @@ import { TaskModule } from "./tasks/task.module";
 import { UserModule } from "./user/user.module";
 import { CallsModule } from "./calls/calls.module";
 import { AriModule } from "./ari/ari.module";
+import { AmiModule } from './ami/ami.module';
 import { IvrModule } from "./ivr/ivr.module";
 import { IvrMediaModule } from './ivr-media/ivr-media.module';
 import { PipelineModule } from './pipeline/pipeline.module';
@@ -26,6 +27,7 @@ export const MODULES = [
     TaskModule,
     CallsModule,
     AriModule,
+    AmiModule,
     IvrModule,
     IvrMediaModule,
     PipelineModule,

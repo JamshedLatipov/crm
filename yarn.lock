@@ -6010,6 +6010,36 @@ ast-v8-to-istanbul@^0.3.3:
     estree-walker "^3.0.3"
     js-tokens "^9.0.1"
 
+asterisk-ami-client@^1.1.5:
+  version "1.1.5"
+  resolved "https://registry.yarnpkg.com/asterisk-ami-client/-/asterisk-ami-client-1.1.5.tgz#366cb928fa16caf7838e4625c964c23d64a2f5d6"
+  integrity sha512-hwjlCMY6YNbLiOyLzntCAeTulYlR0tQ+urMfJINGe6BB19vxApnHImO/GndnWU2a00+GzyI5d/Ub4GAXuxYbMQ==
+  dependencies:
+    asterisk-ami-connector "^1.0"
+    co "^4.6.0"
+    debug "^2.2.0"
+
+asterisk-ami-connector@^1.0:
+  version "1.1.6"
+  resolved "https://registry.yarnpkg.com/asterisk-ami-connector/-/asterisk-ami-connector-1.1.6.tgz#9dc812ac55e8fa2a16c34dbd3023c28784704ceb"
+  integrity sha512-FiIhFKNUD65svQgHHsMRofA+BuBsSQqczz5+0uTYqP8l9/w7Wg0c0fgyudNc2VKoWoV8GssDeuaUp7J97T3fWg==
+  dependencies:
+    asterisk-ami-event-utils "^2.0"
+    asterisk-ami-events-stream "^1.0"
+    co "^4.6.0"
+
+asterisk-ami-event-utils@^2.0:
+  version "2.0.2"
+  resolved "https://registry.yarnpkg.com/asterisk-ami-event-utils/-/asterisk-ami-event-utils-2.0.2.tgz#26e35a9913c88018d5802ac369fd9caeca7de933"
+  integrity sha512-peq2TlC/60T2yXA7I77tbkK1nbP7jOUdc4f4KfiR4g/nLluaTZVBPD2FMqbdjpiZ1G3GucbQD23T2APN1RFa6w==
+
+asterisk-ami-events-stream@^1.0:
+  version "1.2.8"
+  resolved "https://registry.yarnpkg.com/asterisk-ami-events-stream/-/asterisk-ami-events-stream-1.2.8.tgz#b4c8ef9a1a5d91c48a34cb6aaaa08de9078e5874"
+  integrity sha512-HU8r32NtBlxloppDeqHrs1TOwIC8ZBebr6Mre4TU4kjuLstEYtrp8UOB5qhIvx73NNzYGG6pFwQ0k43Pbzr+LQ==
+  dependencies:
+    asterisk-ami-event-utils "^2.0"
+
 async-limiter@~1.0.0:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/async-limiter/-/async-limiter-1.0.1.tgz#dd379e94f0db8310b08291f9d64c3209766617fd"
@@ -7200,7 +7230,7 @@ de-indent@^1.0.2:
   resolved "https://registry.yarnpkg.com/de-indent/-/de-indent-1.0.2.tgz#b2038e846dc33baa5796128d0804b455b8c1e21d"
   integrity sha512-e/1zu3xH5MQryN2zdVaF0OrdNLUbvWxzMbi+iNA6Bky7l1RoP8a2fIbRocyHclXt/arDrrR6lL3TqFD9pMQTsg==
 
-debug@2.6.9:
+debug@2.6.9, debug@^2.2.0:
   version "2.6.9"
   resolved "https://registry.yarnpkg.com/debug/-/debug-2.6.9.tgz#5d128515df134ff327e90a4c93f4e077a536341f"
   integrity sha512-bC7ElrdJaJnPbAP+1EotYvqZsb3ecl5wi6Bfi6BJTUcNowp6cvspg0jXznRTKDjm/E7AdgFBVeAPVMNcKGsHMA==

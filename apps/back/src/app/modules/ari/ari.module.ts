@@ -8,9 +8,17 @@ import { AriEventStoreService } from './ari-event-store.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([AriEvent])],
-  providers: [AriService, AriEventsService, AriEventStoreService],
+  providers: [
+    AriService,
+    AriEventsService,
+    AriEventStoreService,
+  ],
   controllers: [AriController],
-  exports: [AriService, AriEventsService, AriEventStoreService]
+  exports: [
+    AriService,
+    AriEventsService,
+    AriEventStoreService,
+  ],
 })
 export class AriModule implements OnModuleInit, OnModuleDestroy {
   constructor(private readonly ari: AriService) {}
