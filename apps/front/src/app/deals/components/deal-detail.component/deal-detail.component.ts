@@ -42,7 +42,6 @@ import { ConfirmActionDialogComponent } from '../../../shared/dialogs/confirm-ac
     MatTabsModule,
     DealStatusComponent,
     DealActionsComponent,
-    ConfirmActionDialogComponent,
     DealHistoryComponent,
     DealHistoryStatsComponent,
     CommentsComponent,

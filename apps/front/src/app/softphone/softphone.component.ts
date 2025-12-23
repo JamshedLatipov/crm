@@ -402,6 +402,14 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     }
 
     this.toggleScripts();
+
+    // Mark operator offline when tab / window is closed or becomes hidden
+    try {
+      window.addEventListener('beforeunload', this.onBeforeUnloadHandler);
+      document.addEventListener('visibilitychange', this.onVisibilityChangeHandler);
+    } catch (e) {
+      this.logger.warn('Failed to attach unload handlers', e);
+    }
   }
 
   // Select visible tab and manage scripts panel state
@@ -474,7 +482,27 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
+    try {
+      window.removeEventListener('beforeunload', this.onBeforeUnloadHandler);
+      document.removeEventListener('visibilitychange', this.onVisibilityChangeHandler);
+    } catch (e) {
+      /* ignore */
+    }
   }
+  private onBeforeUnloadHandler = (ev?: Event) => {
+    try {
+      this.queueMembersSvc.notifyOffline('beforeunload');
+    } catch {}
+  };
+
+  private onVisibilityChangeHandler = () => {
+    try {
+      if (document.visibilityState === 'hidden') {
+        // When tab is hidden for extended periods, mark offline so queues don't route calls
+        this.queueMembersSvc.notifyOffline('visibility_hidden');
+      }
+    } catch {}
+  };
 
   // Унифицированные хендлеры событий звонка
   private handleCallProgress(e: JsSIPSessionEvent) {

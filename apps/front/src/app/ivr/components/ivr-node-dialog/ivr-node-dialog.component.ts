@@ -24,7 +24,6 @@ import { IvrApiService, IvrNodeDto } from '../../ivr.service';
     MatSelectModule,
     MatCheckboxModule,
     MatIconModule,
-    ConfirmActionDialogComponent,
   ],
   templateUrl: './ivr-node-dialog.component.html',
   styleUrls: ['./ivr-node-dialog.component.scss'],

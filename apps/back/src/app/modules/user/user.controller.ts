@@ -41,6 +41,7 @@ export interface ManagerDto {
   maxDealsCapacity?: number;
   currentTasksCount?: number;
   maxTasksCapacity?: number;
+  sipEndpointId: string;
 }
 
 @ApiTags('users')
@@ -258,7 +259,8 @@ export class UserController {
       conversionRate: Number(user.conversionRate) || 0,
       isAvailable: user.isAvailableForAssignment && user.isActive && !user.isOverloaded,
       skills: user.skills || [],
-      territories: user.territories || []
+      territories: user.territories || [],
+      sipEndpointId: user.sipEndpointId || ''
     };
   }
 

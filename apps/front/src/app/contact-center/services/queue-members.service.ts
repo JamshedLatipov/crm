@@ -56,4 +56,47 @@ export class QueueMembersService {
   remove(id: number) {
     return this.http.delete<{ ok: boolean }>(`${this.base}/${id}`);
   }
+
+  /**
+   * Notify backend that current operator should be marked offline/paused.
+   * Uses navigator.sendBeacon when possible (reliable during unload), with
+   * fetch keepalive and synchronous XHR fallbacks as a best-effort.
+   */
+  notifyOffline(reason = 'tab_closed') {
+    try {
+      const url = `${this.base}/0/pause`;
+      const payload = JSON.stringify({ paused: true, reason_paused: reason });
+
+      if (typeof navigator !== 'undefined' && typeof (navigator as any).sendBeacon === 'function') {
+        const blob = new Blob([payload], { type: 'application/json' });
+        try { (navigator as any).sendBeacon(url, blob); } catch (e) { /* ignore */ }
+        return;
+      }
+
+      // Fallback: try fetch with keepalive
+      try {
+        fetch(url, {
+          method: 'PUT',
+          body: payload,
+          keepalive: true,
+          headers: { 'Content-Type': 'application/json' },
+        }).catch(() => {});
+        return;
+      } catch (e) {
+        // continue to XHR fallback
+      }
+
+      // Last resort: synchronous XHR (best-effort)
+      try {
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', url, false);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.send(payload);
+      } catch (err) {
+        console.warn('QueueMembersService.notifyOffline failed', err);
+      }
+    } catch (e) {
+      console.warn('QueueMembersService.notifyOffline error', e);
+    }
+  }
 }

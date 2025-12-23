@@ -71,7 +71,6 @@ interface HistoryEntry {
     LeadActionsComponent,
     LeadStatusComponent,
     TaskListWidgetComponent,
-    ConfirmActionDialogComponent,
   ],
   templateUrl: './lead-detail.component.html',
   styleUrls: ['./lead-detail.component.scss'],

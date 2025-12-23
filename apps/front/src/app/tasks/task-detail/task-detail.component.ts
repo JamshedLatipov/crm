@@ -60,8 +60,7 @@ export interface Status {
     MatTooltipModule,
     MatTabsModule,
     MatMenuModule,
-  MatDialogModule,
-  ConfirmActionDialogComponent,
+    MatDialogModule,
     HumanDatePipe,
     TaskDueDateComponent,
     CommentsComponent,
@@ -190,8 +189,8 @@ export class TaskDetailComponent implements OnInit {
         message: 'Вы уверены, что хотите удалить эту задачу?',
         confirmText: 'Удалить',
         cancelText: 'Отмена',
-        confirmColor: 'warn'
-      }
+        confirmColor: 'warn',
+      },
     });
 
     ref.afterClosed().subscribe((res) => {
@@ -263,39 +262,56 @@ export class TaskDetailComponent implements OnInit {
         },
         error: (err) => {
           console.error('Error assigning task via assignments:', err);
-          this.snackBar.open('Ошибка назначения исполнителя', 'OK', { duration: 3000 });
-        }
+          this.snackBar.open('Ошибка назначения исполнителя', 'OK', {
+            duration: 3000,
+          });
+        },
       });
     } else {
       // Unassign: try to remove active assignments for this task (if any)
       // First fetch current assignments for this task to get user ids
-      this.assignmentService.getCurrentAssignments('task', this.taskId!).subscribe({
-        next: (users) => {
-          const userIds = users.map(u => u.id.toString());
-          if (userIds.length === 0) {
-            // nothing to unassign, still clear task locally
-            this.tasksService.update(this.taskId!, { assignedToId: undefined }).subscribe({ next: () => this.loadTask() });
-            this.snackBar.open('Назначение снято', 'OK', { duration: 2000 });
-            return;
-          }
-
-          this.assignmentService.unassignResponsible('task', this.taskId!, userIds).subscribe({
-            next: () => {
-              this.loadTask();
-              this.loadHistory();
+      this.assignmentService
+        .getCurrentAssignments('task', this.taskId!)
+        .subscribe({
+          next: (users) => {
+            const userIds = users.map((u) => u.id.toString());
+            if (userIds.length === 0) {
+              // nothing to unassign, still clear task locally
+              this.tasksService
+                .update(this.taskId!, { assignedToId: undefined })
+                .subscribe({ next: () => this.loadTask() });
               this.snackBar.open('Назначение снято', 'OK', { duration: 2000 });
-            },
-            error: (err) => {
-              console.error('Error unassigning via assignments:', err);
-              this.snackBar.open('Ошибка снятия назначения', 'OK', { duration: 3000 });
+              return;
             }
-          });
-        },
-        error: (err) => {
-          console.error('Error loading current assignments for unassign:', err);
-          this.snackBar.open('Не удалось получить текущие назначения', 'OK', { duration: 3000 });
-        }
-      });
+
+            this.assignmentService
+              .unassignResponsible('task', this.taskId!, userIds)
+              .subscribe({
+                next: () => {
+                  this.loadTask();
+                  this.loadHistory();
+                  this.snackBar.open('Назначение снято', 'OK', {
+                    duration: 2000,
+                  });
+                },
+                error: (err) => {
+                  console.error('Error unassigning via assignments:', err);
+                  this.snackBar.open('Ошибка снятия назначения', 'OK', {
+                    duration: 3000,
+                  });
+                },
+              });
+          },
+          error: (err) => {
+            console.error(
+              'Error loading current assignments for unassign:',
+              err
+            );
+            this.snackBar.open('Не удалось получить текущие назначения', 'OK', {
+              duration: 3000,
+            });
+          },
+        });
     }
   }
 

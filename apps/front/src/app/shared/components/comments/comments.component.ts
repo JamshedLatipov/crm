@@ -45,7 +45,6 @@ interface CommentGroup {
     MatPaginatorModule,
     ReactiveFormsModule,
     MatDialogModule,
-    ConfirmActionDialogComponent,
   ],
   templateUrl: './comments.component.html',
   styleUrls: ['./comments.component.scss']

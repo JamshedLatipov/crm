@@ -1,5 +1,4 @@
 import { Route } from '@angular/router';
-import { SoftphoneComponent } from './softphone/softphone.component';
 import { LoginComponent } from './login/login.component';
 import { authGuard } from './auth/auth.guard';
 import { AuthTestComponent } from './auth/auth-test.component';

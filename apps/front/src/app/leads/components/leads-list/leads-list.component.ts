@@ -43,7 +43,11 @@ import { ChangeStatusDialogComponent } from '../change-status-dialog.component';
 import { AssignUserDialogComponent } from '../../../deals/components/assign-user-dialog.component';
 import { QuickAssignDialogComponent } from '../quick-assign-dialog.component';
 import { ConvertToDealDialogComponent } from '../convert-to-deal-dialog/convert-to-deal-dialog.component';
-import { leadStatusDisplay, leadSourceDisplay, leadPriorityDisplay } from '../../../shared/utils';
+import {
+  leadStatusDisplay,
+  leadSourceDisplay,
+  leadPriorityDisplay,
+} from '../../../shared/utils';
 import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.component';
 
 @Component({
@@ -66,7 +70,6 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
     MatProgressSpinnerModule,
     MatTooltipModule,
     MatMenuModule,
-  ConfirmActionDialogComponent,
     MatDialogModule,
     MatDividerModule,
     MatCheckboxModule,
@@ -133,7 +136,12 @@ export class LeadsListComponent implements OnInit {
   managers: Manager[] = [];
 
   // Map of entityId -> current assignment (from centralized assignments API)
-  currentAssignmentsMap = signal<Record<string, { id: number; name: string; email?: string; assignedAt?: string }>>({});
+  currentAssignmentsMap = signal<
+    Record<
+      string,
+      { id: number; name: string; email?: string; assignedAt?: string }
+    >
+  >({});
 
   // Expose LeadStatus to template for comparisons
   readonly LeadStatus = LeadStatus;
@@ -219,14 +227,19 @@ export class LeadsListComponent implements OnInit {
           this.leads.set(response.leads);
           this.totalResults = response.total;
           // Fetch current assignments for the loaded leads in batch
-          const ids = response.leads.map(l => l.id).filter(Boolean);
+          const ids = response.leads.map((l) => l.id).filter(Boolean);
           if (ids.length) {
-            this.assignmentService.getCurrentAssignmentsForEntities('lead', ids).subscribe({
-              next: (map) => this.currentAssignmentsMap.set(map || {}),
-              error: (err) => {
-                console.error('Error loading assignments for leads list:', err);
-              }
-            });
+            this.assignmentService
+              .getCurrentAssignmentsForEntities('lead', ids)
+              .subscribe({
+                next: (map) => this.currentAssignmentsMap.set(map || {}),
+                error: (err) => {
+                  console.error(
+                    'Error loading assignments for leads list:',
+                    err
+                  );
+                },
+              });
           } else {
             this.currentAssignmentsMap.set({});
           }
@@ -333,7 +346,7 @@ export class LeadsListComponent implements OnInit {
     const dialogRef = this.dialog.open(QuickAssignDialogComponent, {
       width: '700px',
       maxWidth: '90vw',
-      data: { leads: selected }
+      data: { leads: selected },
     });
 
     dialogRef.afterClosed().subscribe((result: any) => {
@@ -367,7 +380,11 @@ export class LeadsListComponent implements OnInit {
 
   changeStatus(lead: Lead): void {
     // Проверяем, находится ли лид в финальном статусе
-    const finalStatuses = [LeadStatus.CONVERTED, LeadStatus.REJECTED, LeadStatus.LOST];
+    const finalStatuses = [
+      LeadStatus.CONVERTED,
+      LeadStatus.REJECTED,
+      LeadStatus.LOST,
+    ];
     if (finalStatuses.includes(lead.status)) {
       // Можно показать уведомление, что статус нельзя изменить
       return;
@@ -390,7 +407,11 @@ export class LeadsListComponent implements OnInit {
   }
 
   canChangeStatus(lead: Lead): boolean {
-    const finalStatuses = [LeadStatus.CONVERTED, LeadStatus.REJECTED, LeadStatus.LOST];
+    const finalStatuses = [
+      LeadStatus.CONVERTED,
+      LeadStatus.REJECTED,
+      LeadStatus.LOST,
+    ];
     return !finalStatuses.includes(lead.status);
   }
 
@@ -401,15 +422,15 @@ export class LeadsListComponent implements OnInit {
       maxWidth: '90vw',
       data: {
         deal: { title: lead.name, assignedTo: lead.assignedTo } as any,
-        currentUsers: []
-      }
+        currentUsers: [],
+      },
     });
 
     dialogRef.afterClosed().subscribe((result: any) => {
       if (result && result.userId) {
         this.leadService.assignLead(lead.id, result.userId).subscribe({
           next: () => this.loadLeads(),
-          error: (err) => console.error('Error assigning lead:', err)
+          error: (err) => console.error('Error assigning lead:', err),
         });
       }
     });
@@ -469,8 +490,8 @@ export class LeadsListComponent implements OnInit {
         message: `Вы уверены, что хотите удалить лид "${lead.name}"?`,
         confirmText: 'Удалить',
         cancelText: 'Отмена',
-        confirmColor: 'warn'
-      }
+        confirmColor: 'warn',
+      },
     });
 
     ref.afterClosed().subscribe((res) => {
@@ -541,7 +562,7 @@ export class LeadsListComponent implements OnInit {
   }
 
   getPromoCompanyName(promoCompanyId: number): string {
-    const company = this.promoCompanies.find(c => c.id === promoCompanyId);
+    const company = this.promoCompanies.find((c) => c.id === promoCompanyId);
     return company?.name || `ID: ${promoCompanyId}`;
   }
 

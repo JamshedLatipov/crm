@@ -51,7 +51,7 @@ export interface ManagersStats {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class UsersService {
   private readonly http = inject(HttpClient);
@@ -60,9 +60,9 @@ export class UsersService {
   getAllManagers(): Observable<User[]> {
     // Use the shared backend->manager mapper so workload fields (leads/deals/tasks)
     // are normalized (handles snake_case and legacy fields like `workload`/`maxCapacity`).
-  return this.http.get<unknown[]>(`${this.apiUrl}/users/managers`).pipe(
-      map(list => {
-        const mapped = (list || []).map(item => {
+    return this.http.get<unknown[]>(`${this.apiUrl}/users/managers`).pipe(
+      map((list) => {
+        const mapped = (list || []).map((item) => {
           const m = mapBackendToManager(item as Record<string, unknown>);
           // Convert Manager -> User shape expected by various components
           return {
@@ -74,7 +74,7 @@ export class UsersService {
             workload: m.currentLeadsCount || 0,
             maxCapacity: m.maxLeadsCapacity || 0,
             workloadPercentage: m.workloadPercentage || 0,
-            role: (m.roles && m.roles.length) ? m.roles[0] : '',
+            role: m.roles && m.roles.length ? m.roles[0] : '',
             conversionRate: m.conversionRate || 0,
             isAvailable: !!m.isAvailableForAssignment,
             skills: m.skills || [],
@@ -90,7 +90,8 @@ export class UsersService {
             firstName: m.firstName,
             lastName: m.lastName,
             fullName: m.fullName,
-            username: m.username
+            username: m.username,
+            sipEndpointId: m.sipEndpointId || '',
           } as User;
         });
         console.log('UsersService: Mapped managers -> users', mapped);
@@ -100,7 +101,9 @@ export class UsersService {
   }
 
   getAvailableManagers(): Observable<User[]> {
-    return this.http.get<User[]>(`${this.apiUrl}/users/managers?available=true`);
+    return this.http.get<User[]>(
+      `${this.apiUrl}/users/managers?available=true`
+    );
   }
 
   getManagerById(id: string): Observable<User> {
@@ -117,7 +120,7 @@ export class UsersService {
     territory?: string;
   }): Observable<User> {
     const params = new URLSearchParams();
-    
+
     if (criteria.criteria?.length) {
       params.append('criteria', criteria.criteria.join(','));
     }
@@ -128,7 +131,9 @@ export class UsersService {
       params.append('territory', criteria.territory);
     }
 
-    return this.http.get<User>(`${this.apiUrl}/users/managers/auto-assign?${params.toString()}`);
+    return this.http.get<User>(
+      `${this.apiUrl}/users/managers/auto-assign?${params.toString()}`
+    );
   }
 
   /**

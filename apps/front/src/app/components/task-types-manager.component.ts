@@ -31,7 +31,6 @@ import { TaskTypeDialogComponent } from './task-type-dialog.component';
     MatMenuModule,
     MatProgressSpinnerModule,
     MatDividerModule,
-    ConfirmActionDialogComponent,
   ],
   template: `
     <div class="task-types-container">

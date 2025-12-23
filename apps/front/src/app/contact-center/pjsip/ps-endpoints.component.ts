@@ -22,7 +22,6 @@ import { MatMenuModule } from '@angular/material/menu';
     MatIconModule,
     MatButtonModule,
     MatDialogModule,
-    PsEndpointFormComponent,
     MatMenuModule,
   ],
   template: `

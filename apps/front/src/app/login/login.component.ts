@@ -100,7 +100,7 @@ export class LoginComponent implements OnInit {
     const ok = await this.auth.login(this.username.trim(), this.password, this.rememberMe);
     this.loggingIn.set(false);
     if (ok) {
-      this.router.navigateByUrl('/softphone');
+      this.router.navigateByUrl('/dashboard');
     } else {
       this.error.set('Неверные учетные данные');
     }

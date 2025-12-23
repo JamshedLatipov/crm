@@ -28,8 +28,6 @@ import { ViewChild } from '@angular/core';
     MatCheckboxModule,
     MatTooltipModule,
     MatDialogModule,
-    // use the new ConfirmActionDialogComponent for richer confirmations
-    ConfirmActionDialogComponent,
   ],
   template: `
     <div class="p-4">

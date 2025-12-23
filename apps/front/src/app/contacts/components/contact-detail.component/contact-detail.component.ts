@@ -35,7 +35,6 @@ import { Contact, ContactType, ContactSource, ContactActivity, ActivityType, Dea
     MatDividerModule
     ,
     MatDialogModule,
-    ConfirmActionDialogComponent,
   ],
   templateUrl: './contact-detail.component.html',
   styleUrls: ['./contact-detail.component.scss']

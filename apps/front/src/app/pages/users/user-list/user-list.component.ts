@@ -46,7 +46,6 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
     MatCheckboxModule,
     MatSnackBarModule,
     MatDialogModule,
-  ConfirmActionDialogComponent,
     MatPaginatorModule,
     MatProgressSpinnerModule,
     MatCardModule,

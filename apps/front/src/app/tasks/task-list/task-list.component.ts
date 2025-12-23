@@ -68,10 +68,8 @@ interface Task {
     TaskTypeDisplayComponent,
     TaskStatusComponent,
     TaskModalComponent,
-    PageLayoutComponent
-    ,
+    PageLayoutComponent,
     MatDialogModule,
-    ConfirmActionDialogComponent
   ],
   templateUrl: './task-list.component.html',
   styleUrls: ['./task-list.component.scss']

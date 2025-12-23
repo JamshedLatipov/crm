@@ -28,6 +28,7 @@ export interface Manager {
   isOverloaded: boolean;
   skills: string[];
   territories: string[];
+  sipEndpointId: string
 }
 
 export interface ManagerStats {

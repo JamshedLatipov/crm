@@ -28,7 +28,6 @@ import { QueueMembersDialogComponent } from './queue-members-dialog.component';
     MatIconModule,
     MatMenuModule,
     MatButtonModule,
-    QueueFormDialogComponent,
     MatDialogModule,
   ],
   templateUrl: './queues.component.html',
