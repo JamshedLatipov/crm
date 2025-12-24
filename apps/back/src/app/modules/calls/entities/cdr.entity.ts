@@ -1,4 +1,4 @@
-import { Column, Entity, PrimaryColumn } from 'typeorm';
+import { Column, Entity, Index, PrimaryColumn } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 
 @Entity({ name: 'cdr' })
@@ -25,7 +25,7 @@ export class Cdr {
   @ApiProperty() @Column({ length: 45 }) disposition!: string;
   @ApiProperty() @Column({ type: 'int' }) amaflags!: number;
   @ApiProperty() @Column({ length: 20 }) accountcode!: string;
-  @ApiProperty() @Column({ length: 32 }) uniqueid!: string;
+  @Index() @ApiProperty() @Column({ length: 32 }) uniqueid!: string;
   @ApiProperty() @Column({ length: 255 }) userfield!: string;
   @ApiProperty() @Column({ type: 'int' }) sequence!: number;
 }

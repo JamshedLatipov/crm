@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, Index } from 'typeorm';
 
 @Entity({ name: 'queue_log' })
 export class QueueLog {
@@ -10,6 +10,7 @@ export class QueueLog {
   time?: string | null;
 
   // unique call identifier from Asterisk (if available)
+  @Index()
   @Column({ type: 'char', length: 64, nullable: true })
   callid?: string | null;
 

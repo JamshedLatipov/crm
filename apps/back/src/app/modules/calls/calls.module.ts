@@ -21,8 +21,13 @@ import { CallsController } from './controllers/calls.controller';
 import { QueuesController } from './controllers/queues.controller';
 import { QueueMembersController } from './controllers/queue-members.controller';
 import { CallTransferService } from './services/call-transfer.service';
+import { CallTraceService } from './services/call-trace.service';
+import { CallAggregationService } from './services/call-aggregation.service';
+import { CallTraceController } from './controllers/call-trace.controller';
 import { CallLog } from './entities/call-log.entity';
+import { CallSummary } from './entities/call-summary.entity';
 import { AriModule } from '../ari/ari.module';
+import { IvrLog } from '../ivr/entities/ivr-log.entity';
 import { QueueLog } from './entities/queuelog.entity';
 import { PassportModule } from '@nestjs/passport';
 import { UserModule } from '../user/user.module';
@@ -42,6 +47,8 @@ import { UserModule } from '../user/user.module';
       QueueMember,
       QueueLog,
       CallLog,
+      CallSummary,
+      IvrLog,
     ]),
   ],
   providers: [
@@ -49,6 +56,8 @@ import { UserModule } from '../user/user.module';
     PsAorService,
     PsAuthService,
     CdrService,
+    CallTraceService,
+    CallAggregationService,
     CallTransferService,
     // reconciliation background worker
     ReconciliationService,
@@ -65,6 +74,7 @@ import { UserModule } from '../user/user.module';
     CallsController,
     QueuesController,
     QueueMembersController,
+    CallTraceController,
   ],
   exports: [
     PsEndpointService,
@@ -72,6 +82,7 @@ import { UserModule } from '../user/user.module';
     PsAuthService,
     CdrService,
     CallTransferService,
+    CallTraceService,
   ],
 })
 export class CallsModule {}
