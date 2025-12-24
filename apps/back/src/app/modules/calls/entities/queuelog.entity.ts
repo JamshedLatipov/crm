@@ -6,12 +6,12 @@ export class QueueLog {
   id: number;
 
   // stored by Asterisk as a short text timestamp; keep nullable to match DEFAULT NULL
-  @Column({ type: 'char', length: 32, nullable: true })
+  @Column({ type: 'varchar', length: 32, nullable: true })
   time?: string | null;
 
   // unique call identifier from Asterisk (if available)
   @Index()
-  @Column({ type: 'char', length: 64, nullable: true })
+  @Column({ type: 'varchar', length: 64, nullable: true })
   callid?: string | null;
 
   @Column({ length: 80 })

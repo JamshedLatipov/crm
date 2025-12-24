@@ -286,15 +286,21 @@ export class CallTraceService {
 
   private parseQueueLogTime(timeStr?: string | null): Date {
     if (!timeStr) return new Date();
-    // Assuming asterisk standard: seconds.microseconds or just seconds
+    
+    // Try parsing as datetime string first (format: "2025-12-24 19:28:38.665928")
+    const d = new Date(timeStr);
+    if (!isNaN(d.getTime())) {
+      return d;
+    }
+    
+    // Fallback: try Unix timestamp format (seconds.microseconds)
     const parts = timeStr.split('.');
     const seconds = parseInt(parts[0], 10);
-    const ms = parts[1] ? parseInt(parts[1].substring(0, 3), 10) : 0;
-    // Check if it's already a date string (some configs do that)
-    if (isNaN(seconds)) {
-        const d = new Date(timeStr);
-        return isNaN(d.getTime()) ? new Date() : d;
+    if (!isNaN(seconds)) {
+      const ms = parts[1] ? parseInt(parts[1].substring(0, 3), 10) : 0;
+      return new Date(seconds * 1000 + ms);
     }
-    return new Date(seconds * 1000 + ms);
+    
+    return new Date();
   }
 }

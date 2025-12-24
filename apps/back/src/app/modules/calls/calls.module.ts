@@ -23,7 +23,9 @@ import { QueueMembersController } from './controllers/queue-members.controller';
 import { CallTransferService } from './services/call-transfer.service';
 import { CallTraceService } from './services/call-trace.service';
 import { CallAggregationService } from './services/call-aggregation.service';
+import { CallEnrichmentService } from './services/call-enrichment.service';
 import { CallTraceController } from './controllers/call-trace.controller';
+import { CallAnalyticsController } from './controllers/call-analytics.controller';
 import { CallLog } from './entities/call-log.entity';
 import { CallSummary } from './entities/call-summary.entity';
 import { AriModule } from '../ari/ari.module';
@@ -58,6 +60,7 @@ import { UserModule } from '../user/user.module';
     CdrService,
     CallTraceService,
     CallAggregationService,
+    CallEnrichmentService,
     CallTransferService,
     // reconciliation background worker
     ReconciliationService,
@@ -75,6 +78,7 @@ import { UserModule } from '../user/user.module';
     QueuesController,
     QueueMembersController,
     CallTraceController,
+    CallAnalyticsController,
   ],
   exports: [
     PsEndpointService,

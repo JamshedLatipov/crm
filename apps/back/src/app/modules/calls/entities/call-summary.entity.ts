@@ -56,4 +56,53 @@ export class CallSummary {
 
   @Column({ length: 32, nullable: true })
   hangupBy: string;
+
+  // Call metrics
+  @Column({ type: 'int', nullable: true })
+  talkTime: number; // billsec from CDR
+
+  @Column({ type: 'int', nullable: true })
+  ringTime: number; // time between ENTERQUEUE and CONNECT
+
+  @Column({ type: 'int', nullable: true })
+  abandonTime: number; // time before abandon
+
+  // Call routing
+  @Column({ length: 32, nullable: true, default: 'inbound' })
+  direction: string; // inbound/outbound/internal
+
+  @Column({ length: 64, nullable: true })
+  entryPoint: string; // DID/trunk
+
+  @Column({ type: 'int', nullable: true, default: 0 })
+  ringCount: number; // number of agents ringed
+
+  // Business context
+  @Index()
+  @Column({ type: 'int', nullable: true })
+  leadId: number;
+
+  @Index()
+  @Column({ type: 'int', nullable: true })
+  dealId: number;
+
+  @Index()
+  @Column({ type: 'int', nullable: true })
+  contactId: number;
+
+  @Column({ type: 'text', nullable: true })
+  recordingUrl: string;
+
+  @Column({ type: 'text', nullable: true })
+  tags: string; // JSON array
+
+  // Quality metrics
+  @Column({ type: 'boolean', nullable: true, default: false })
+  slaViolated: boolean;
+
+  @Column({ type: 'int', nullable: true })
+  firstResponseTime: number; // seconds to first IVR/agent response
+
+  @Column({ type: 'varchar', length: 64, nullable: true })
+  disconnectReason: string; // from CDR disposition + hangup cause
 }
