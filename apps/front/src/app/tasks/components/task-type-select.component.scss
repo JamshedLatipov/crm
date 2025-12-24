@@ -1,0 +1,27 @@
+:host { display: block; width: 100%; }
+     .full-width, mat-form-field.full-width { width: 100%; }
+     .task-type-option { display: flex; align-items: center; gap: 8px; width: 100%; }
+     /* Icon container: fixed size, center content */
+     .type-icon { display:flex; align-items:center; justify-content:center; flex: 0 0 32px; width:32px; height:32px; border-radius:6px; color:#fff }
+     .type-icon mat-icon { font-size: 18px; line-height: 18px; }
+     /* Ensure name takes available space */
+     .type-name { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+     /* Overlay options live outside the component; ensure they inherit the same layout */
+     ::ng-deep .cdk-overlay-pane .mat-option .task-type-option { display: flex; align-items: center; gap: 8px; width: 100%; }
+     ::ng-deep .cdk-overlay-pane .mat-option .type-icon { display:flex; align-items:center; justify-content:center; flex: 0 0 32px; width:32px; height:32px; border-radius:6px; color:#fff }
+     ::ng-deep .cdk-overlay-pane .mat-option .type-icon mat-icon { font-size: 18px; line-height: 18px; }
+     /* Adjust material option icon and pseudo-checkbox spacing via host-scoped rule */
+     /* More specific overlay selectors to cover MDC-based select panel rendered in cdk overlay */
+     :host ::ng-deep .mat-mdc-option .mat-icon,
+     :host ::ng-deep .mat-mdc-option .mat-pseudo-checkbox-full,
+     :host ::ng-deep .cdk-overlay-pane .mat-mdc-select-panel .mat-mdc-option .mat-icon,
+     :host ::ng-deep .cdk-overlay-pane .mat-mdc-select-panel .mat-mdc-option .mat-pseudo-checkbox-full,
+     :host ::ng-deep .cdk-overlay-pane .mat-select-panel .mat-option .mat-icon,
+     :host ::ng-deep .cdk-overlay-pane .mat-select-panel .mat-option .mat-pseudo-checkbox-full {
+       margin-right: -8px !important;
+       margin-top: 7px !important;
+     }
+  /* Ensure the mat-option itself aligns its children centrally */
+  ::ng-deep .cdk-overlay-pane .mat-option { display:flex; align-items:center; }
+

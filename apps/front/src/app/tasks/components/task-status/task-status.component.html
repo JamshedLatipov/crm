@@ -1,0 +1,26 @@
+
+    <div class="task-status-container">
+      <mat-chip
+        [class]="'status-chip status-' + status + ' size-' + size"
+        [style.background-color]="config.backgroundColor"
+        [style.border-color]="config.borderColor"
+        [style.color]="config.textColor">
+
+        <div class="status-content">
+          <div class="status-icon-wrapper">
+            <mat-icon class="status-icon">{{ config.icon }}</mat-icon>
+            <div class="status-pulse" *ngIf="status === 'in_progress'"></div>
+          </div>
+
+          <span class="status-label">{{ config.label }}</span>
+
+          <!-- Дополнительный индикатор для просроченных -->
+          <div class="status-indicators" *ngIf="showIndicators && status === 'overdue'">
+            <div class="indicator overdue"
+                 matTooltip="Просрочено">
+              <mat-icon>warning</mat-icon>
+            </div>
+          </div>
+        </div>
+      </mat-chip>
+    </div>

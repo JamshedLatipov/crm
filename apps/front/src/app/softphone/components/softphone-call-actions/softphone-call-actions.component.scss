@@ -1,0 +1,17 @@
+:host { display: block; }
+    .actions-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(56px, 1fr)); gap: 0.25rem; align-items: center; }
+    .action-btn { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0.15rem; min-width:56px; height:56px; padding:6px; }
+    .action-btn .material-icons { font-size:18px; }
+    .action-label { font-size:0.68rem; line-height:1; }
+    @media (max-width: 420px) {
+      .action-label { display:none; }
+      .action-btn { height:48px; min-width:48px; }
+    }
+    .hold-active { background-color: rgba(2,132,199,0.12); border-radius:16px; }
+    .hold-pulse { background-color: rgba(245,158,11,0.9); color:white; border-radius:16px; box-shadow: 0 0 0 4px rgba(245,158,11,0.15); }
+    .mute-active { background-color: rgba(99,102,241,0.12); border-radius:16px; }
+    .transfer-controls { display:flex; gap:0.5rem; align-items:center; margin-top:0.5rem; }
+    .transfer-controls input { flex:1; padding:0.5rem; border-radius:4px; border:1px solid rgba(0,0,0,0.12); }
+    .transfer-buttons { display:flex; gap:0.5rem; }
+    mat-menu .mat-menu-content { padding:0.5rem; }
+    mat-menu button[mat-menu-item] { width:56px; height:40px; display:flex; align-items:center; justify-content:center; }
