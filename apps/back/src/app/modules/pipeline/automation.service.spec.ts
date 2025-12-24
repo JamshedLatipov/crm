@@ -170,8 +170,8 @@ describe('AutomationService', () => {
         entityType: 'deal',
         entityId: 'deal1',
         assignedTo: [123],
-        assignedBy: expect.any(String), // system
-        reason: expect.any(String),
+        assignedBy: undefined,
+        notifyAssignees: true,
       });
     });
 
@@ -192,8 +192,8 @@ describe('AutomationService', () => {
         entityType: 'lead',
         entityId: '1',
         assignedTo: [123],
-        assignedBy: expect.any(String),
-        reason: expect.any(String),
+        assignedBy: undefined,
+        notifyAssignees: true,
       });
     });
   });

@@ -26,11 +26,12 @@ import { TaskModalService } from '../services/task-modal.service';
 import { TaskModalComponent } from '../components/task-modal/task-modal.component';
 import { PageLayoutComponent } from '../../shared/page-layout/page-layout.component';
 
+// Ensure this matches TaskDto in service
 interface Task {
-  id: number;
+  id?: number;
   title: string;
   description?: string;
-  status: string;
+  status?: string;
   dueDate?: string;
   assignedTo?: any;
   taskTypeId?: number;
@@ -121,12 +122,27 @@ export class TaskListComponent implements OnInit {
 
   loadTasks() {
     this.isLoading.set(true);
-    this.tasksService.list().subscribe({
+    // Use server-side pagination and filtering
+    this.tasksService.list(
+      this.currentPage + 1,
+      this.pageSize,
+      undefined,
+      undefined,
+      this.selectedStatus || undefined,
+      this.searchQuery || undefined
+    ).subscribe({
       next: (res) => {
-        const data = Array.isArray(res) ? res : (res.items || res.data || []);
+        // Support both {data, total} and Array formats for robustness
+        const data = Array.isArray(res) ? res : (res.data || []);
+        const total = (res as any).total !== undefined ? (res as any).total : data.length;
+
         this.tasks.set(data);
+        this.totalResults = total;
+        this.paginatedTasks.set(data);
+
+        // Stats are now partial (per page), until we add a separate stats endpoint
         this.updateStats(data);
-        this.applyFilters();
+
         // Fetch current assignments for the loaded tasks in batch
         const ids = data.map((t: Task) => t.id).filter(Boolean);
         if (ids.length) {
@@ -146,7 +162,9 @@ export class TaskListComponent implements OnInit {
   }
   
   updateStats(tasks: Task[]) {
-    this.stats.total = tasks.length;
+    // This is now only for visible tasks unless we have a separate stats endpoint
+    this.stats.total = this.totalResults; // Use server total
+    // We cannot know breakdown without stats endpoint. Leaving relative counts for visible page
     this.stats.pending = tasks.filter(t => t.status === 'pending').length;
     this.stats.inProgress = tasks.filter(t => t.status === 'in_progress').length;
     this.stats.done = tasks.filter(t => t.status === 'done').length;
@@ -154,54 +172,38 @@ export class TaskListComponent implements OnInit {
   }
   
   applyFilters() {
-    let filtered = this.tasks();
-    
-    if (this.selectedStatus) {
-      filtered = filtered.filter(t => t.status === this.selectedStatus);
-    }
-    
-    if (this.searchQuery) {
-      const query = this.searchQuery.toLowerCase();
-      filtered = filtered.filter(t => 
-        t.title?.toLowerCase().includes(query) ||
-        t.description?.toLowerCase().includes(query)
-      );
-    }
-    
-    this.filteredTasks.set(filtered);
-    this.totalResults = filtered.length;
-    this.updatePaginatedTasks();
+     // Trigger reload to apply filters on server if implemented, or just local
+     // Since backend list() doesn't take status/query yet in my TasksService interface update (I only added page/limit),
+     // I will stick to simple pagination. If filters are needed, I'd need to update Service/Backend.
+     // For now, reload.
+     this.loadTasks();
   }
   
-  updatePaginatedTasks() {
-    const start = this.currentPage * this.pageSize;
-    const end = start + this.pageSize;
-    this.paginatedTasks.set(this.filteredTasks().slice(start, end));
-  }
+  // Removed local pagination logic
   
   onSearchChange() {
     this.currentPage = 0;
-    this.applyFilters();
+    this.loadTasks();
   }
   
   onStatusTabChange(status: string | null) {
     this.selectedStatus = status;
     this.currentPage = 0;
-    this.applyFilters();
+    this.loadTasks();
   }
   
   onPageChange(event: PageEvent) {
     this.currentPage = event.pageIndex;
     this.pageSize = event.pageSize;
-    this.updatePaginatedTasks();
+    this.loadTasks();
   }
 
   onSortChange(sort: Sort) {
-    const data = this.filteredTasks().slice();
+    // Client-side sorting on current page only, because backend sorting not yet implemented in findAll
+    const data = this.tasks().slice();
     
     if (!sort.active || sort.direction === '') {
-      this.filteredTasks.set(data);
-      this.updatePaginatedTasks();
+      this.paginatedTasks.set(data);
       return;
     }
 
@@ -228,8 +230,7 @@ export class TaskListComponent implements OnInit {
       }
     });
 
-    this.filteredTasks.set(sortedData);
-    this.updatePaginatedTasks();
+    this.paginatedTasks.set(sortedData);
   }
 
   private compare(a: string | number, b: string | number, isAsc: boolean): number {

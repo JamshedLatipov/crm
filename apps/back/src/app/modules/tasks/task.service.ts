@@ -160,12 +160,23 @@ export class TaskService {
     }
   }
 
-  async findAll(page = 1, limit = 50): Promise<{ data: Task[]; total: number }> {
-    const [tasks, total] = await this.taskRepo.findAndCount({
-      relations: ['lead', 'deal', 'taskType'],
-      take: limit,
-      skip: (page - 1) * limit,
-    });
+  async findAll(page = 1, limit = 50, filters?: { status?: string, search?: string }): Promise<{ data: Task[]; total: number }> {
+    const qb = this.taskRepo.createQueryBuilder('task')
+      .leftJoinAndSelect('task.lead', 'lead')
+      .leftJoinAndSelect('task.deal', 'deal')
+      .leftJoinAndSelect('task.taskType', 'taskType')
+      .take(limit)
+      .skip((page - 1) * limit);
+
+    if (filters?.status) {
+      qb.andWhere('task.status = :status', { status: filters.status });
+    }
+
+    if (filters?.search) {
+      qb.andWhere('(task.title ILIKE :search OR task.description ILIKE :search)', { search: `%${filters.search}%` });
+    }
+
+    const [tasks, total] = await qb.getManyAndCount();
     await this.attachAssignments(tasks);
     return { data: tasks, total };
   }

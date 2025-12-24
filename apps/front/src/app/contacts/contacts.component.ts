@@ -112,15 +112,16 @@ export class ContactsComponent implements OnInit {
       listPromise,
       this.contactsService.getContactsStats().toPromise(),
     ])
-      .then(([contacts, stats]) => {
-        this.contacts = contacts || [];
+      .then(([response, stats]) => {
+        // Handle { data, total } response
+        const contactsData = (response as any).data || response || [];
+        this.contacts = contactsData;
         this.stats = stats || null;
-        // If server supports total count, it should provide it; otherwise fall back to array length
-        // Assume service returns contacts array; if it returns an object later, adjust accordingly
-        this.totalResults =
-          contacts && (contacts as any).total
-            ? (contacts as any).total
-            : (contacts || []).length;
+
+        this.totalResults = (response as any).total !== undefined
+          ? (response as any).total
+          : contactsData.length;
+
         this.loading = false;
       })
       .catch((error) => {
