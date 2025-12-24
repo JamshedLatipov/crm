@@ -13,19 +13,7 @@ interface TaskType {
   selector: 'app-task-type-display',
   standalone: true,
   imports: [CommonModule, MatIconModule],
-  template: `
-    <ng-container *ngIf="taskType; else noType">
-      <div class="task-type-display" [class.compact]="compact">
-        <div class="type-icon" [style.background-color]="taskType.color || '#667eea'" *ngIf="!hideIcon">
-          <mat-icon>{{ getTaskTypeIcon(taskType.icon) }}</mat-icon>
-        </div>
-        <span class="type-name" *ngIf="!compact">{{ taskType.name }}</span>
-      </div>
-    </ng-container>
-    <ng-template #noType>
-      <span class="muted" *ngIf="!compact">—</span>
-    </ng-template>
-  `,
+  templateUrl: './task-type-display.component.html',
   styleUrls: ['./task-type-display.component.scss']
 })
 export class TaskTypeDisplayComponent {

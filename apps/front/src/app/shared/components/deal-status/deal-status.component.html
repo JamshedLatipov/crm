@@ -1,0 +1,39 @@
+
+    <div class="deal-status-container">
+      <mat-chip
+        [class]="'status-chip status-' + status + ' size-' + size"
+        [style.background-color]="config.backgroundColor"
+        [style.border-color]="config.borderColor"
+        [style.color]="config.textColor">
+
+        <div class="status-content">
+          <div class="status-icon-wrapper">
+            <mat-icon class="status-icon">{{ config.icon }}</mat-icon>
+            <div class="status-pulse" *ngIf="status === 'open'"></div>
+          </div>
+
+          <span class="status-label">{{ config.label }}</span>
+
+          <!-- Дополнительные индикаторы -->
+          <div class="status-indicators" *ngIf="showIndicators">
+            <div class="indicator overdue"
+                 *ngIf="isOverdue && status === 'open'"
+                 matTooltip="Просрочена">
+              <mat-icon>warning</mat-icon>
+            </div>
+
+            <div class="indicator high-value"
+                 *ngIf="isHighValue"
+                 matTooltip="Крупная сделка">
+              <mat-icon>star</mat-icon>
+            </div>
+
+            <div class="indicator hot"
+                 *ngIf="isHot"
+                 matTooltip="Горячая сделка">
+              <mat-icon>local_fire_department</mat-icon>
+            </div>
+          </div>
+        </div>
+      </mat-chip>
+    </div>

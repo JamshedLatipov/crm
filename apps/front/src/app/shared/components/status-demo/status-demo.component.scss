@@ -1,0 +1,79 @@
+
+    .status-demo {
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .demo-section {
+      margin-bottom: 32px;
+
+      h3 {
+        color: var(--primary-color);
+        margin-bottom: 16px;
+        font-size: 18px;
+        font-weight: 600;
+      }
+    }
+
+    .status-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .size-group,
+    .indicator-group,
+    .animation-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 16px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      background: #fafafa;
+
+      label {
+        font-size: 12px;
+        color: #666;
+        font-weight: 500;
+        text-align: center;
+        margin-bottom: 8px;
+      }
+    }
+
+    /* Темная тема */
+    :host-context(.dark) {
+      .size-group,
+      .indicator-group,
+      .animation-group {
+        border-color: #424242;
+        background: #303030;
+
+        label {
+          color: #bbb;
+        }
+      }
+    }
+
+    /* Мобильная адаптация */
+    @media (max-width: 768px) {
+      .status-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .size-group,
+      .indicator-group,
+      .animation-group {
+        flex-direction: row;
+        justify-content: space-between;
+
+        label {
+          margin-bottom: 0;
+          text-align: left;
+        }
+      }
+    }

@@ -1,0 +1,30 @@
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>{{ label }}</mat-label>
+      <mat-select [value]="value" (selectionChange)="onSelect($event.value)" [disabled]="disabled">
+        <!-- Trigger shown when select is closed: show only name and duration, hide icon -->
+        <mat-select-trigger>
+          <ng-container *ngIf="value; else noType">
+            {{ getTypeById(value)?.name }}
+            <span class="type-duration" *ngIf="getTypeById(value)?.timeFrameSettings?.defaultDuration">
+              ({{ getTypeById(value)?.timeFrameSettings?.defaultDuration }} мин)
+            </span>
+          </ng-container>
+          <ng-template #noType>Без типа</ng-template>
+        </mat-select-trigger>
+
+        <mat-option [value]="null">Без типа</mat-option>
+        <mat-option *ngFor="let type of taskTypes" [value]="type.id">
+          <div class="task-type-option">
+            <span class="type-icon" [style.background-color]="type.color">
+              <mat-icon>{{ type.icon || 'task' }}</mat-icon>
+            </span>
+            <span class="type-name">{{ type.name }}</span>
+            <span class="type-duration" *ngIf="type.timeFrameSettings?.defaultDuration">
+              ({{ type.timeFrameSettings.defaultDuration }} мин)
+            </span>
+          </div>
+        </mat-option>
+      </mat-select>
+      <mat-icon matPrefix>category</mat-icon>
+    </mat-form-field>

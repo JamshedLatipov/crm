@@ -1,0 +1,14 @@
+
+    <div class="tabs" role="tablist" aria-label="Status tabs">
+      <button
+        *ngFor="let t of effectiveTabs; trackBy: trackByValue"
+        type="button"
+        class="tab"
+        [class.active]="selected === t.value"
+        [attr.aria-pressed]="selected === t.value"
+        [disabled]="t.disabled"
+        (click)="onSelect(t.value)">
+        <span class="label">{{ t.label }}</span>
+        <span *ngIf="showCounts && t.count != null" class="count">{{ t.count }}</span>
+      </button>
+    </div>
