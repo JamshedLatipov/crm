@@ -7,22 +7,27 @@ import {
   TemplateRef,
   ViewChild,
   AfterViewInit,
+  signal,
+  computed,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { concat, Observable, shareReplay } from 'rxjs';
+import { Observable, shareReplay } from 'rxjs';
 import {
   ContactCenterMonitoringService,
   OperatorStatus,
   QueueStatus,
+  ActiveCall,
 } from '../services/contact-center-monitoring.service';
 import { CrmTableComponent } from '../../shared/components/crm-table/crm-table.component';
 import type { CrmColumn } from '../../shared/components/crm-table/crm-table.component';
 import { BaseChartDirective } from 'ng2-charts';
-import { ChartData, ChartOptions, ChartType } from 'chart.js';
+import { ChartData, ChartOptions } from 'chart.js';
 import { Chart, registerables } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { MatIconModule } from '@angular/material/icon';
 import { PageLayoutComponent } from '@crm/front/app/shared/page-layout/page-layout.component';
+import { MatButtonModule } from '@angular/material/button';
+import { MatBadgeModule } from '@angular/material/badge';
 
 // Register all Chart.js components
 Chart.register(...registerables, ChartDataLabels);
@@ -36,6 +41,8 @@ Chart.register(...registerables, ChartDataLabels);
     BaseChartDirective,
     MatIconModule,
     PageLayoutComponent,
+    MatButtonModule,
+    MatBadgeModule,
   ],
   templateUrl: './online-monitoring.component.html',
   styleUrls: ['./online-monitoring.component.scss'],
@@ -51,20 +58,43 @@ export class OnlineMonitoringComponent implements OnInit, AfterViewInit {
   @ViewChild('serviceTemplate') serviceTemplate!: TemplateRef<any>;
   @ViewChild('actionsTemplate') actionsTemplate!: TemplateRef<any>;
   @ViewChild('tableTitleTemplate') tableTitleTemplate!: TemplateRef<any>;
+  @ViewChild('queueTitleTemplate') queueTitleTemplate!: TemplateRef<any>;
+  @ViewChild('queueWaitingTemplate') queueWaitingTemplate!: TemplateRef<any>;
+  @ViewChild('queueServiceLevelTemplate') queueServiceLevelTemplate!: TemplateRef<any>;
+  @ViewChild('queueMembersTemplate') queueMembersTemplate!: TemplateRef<any>;
 
   @Input() templates: { [key: string]: TemplateRef<any> } = {};
 
-  // Combine a one-time REST snapshot (fast initial render) with the live WS stream.
-  // concat will emit the snapshot first (HTTP completes) and then forward live updates from WS.
-  operators$: Observable<OperatorStatus[]> = concat(
-    this.svc.fetchOperatorsSnapshot(),
-    this.svc.getOperators()
-  ).pipe(shareReplay({ bufferSize: 1, refCount: true }));
+  // Signals for reactive state
+  operators = signal<OperatorStatus[]>([]);
+  queues = signal<QueueStatus[]>([]);
+  activeCalls = signal<ActiveCall[]>([]);
 
-  queues$: Observable<QueueStatus[]> = concat(
-    this.svc.fetchQueuesSnapshot(),
-    this.svc.getQueues()
-  ).pipe(shareReplay({ bufferSize: 1, refCount: true }));
+  // Computed values
+  totalOperators = computed(() => this.operators().length);
+  activeOperators = computed(() => this.operators().filter(op => op.status !== 'offline').length);
+  totalQueues = computed(() => this.queues().length);
+  totalWaiting = computed(() => this.queues().reduce((sum, q) => sum + q.waiting, 0));
+  totalCallsInService = computed(() => this.queues().reduce((sum, q) => sum + q.callsInService, 0));
+  avgServiceLevel = computed(() => {
+    const queues = this.queues();
+    if (queues.length === 0) return 0;
+    const total = queues.reduce((sum, q) => sum + (q.serviceLevel || 0), 0);
+    return Math.round(total / queues.length);
+  });
+
+  // Direct WebSocket streams with fallback to polling
+  operators$: Observable<OperatorStatus[]> = this.svc.getOperators().pipe(
+    shareReplay({ bufferSize: 1, refCount: true })
+  );
+
+  queues$: Observable<QueueStatus[]> = this.svc.getQueues().pipe(
+    shareReplay({ bufferSize: 1, refCount: true })
+  );
+
+  activeCalls$: Observable<ActiveCall[]> = this.svc.getActiveCalls().pipe(
+    shareReplay({ bufferSize: 1, refCount: true })
+  );
 
   // Chart data
   chartData: ChartData<'pie'> = {
@@ -83,7 +113,7 @@ export class OnlineMonitoringComponent implements OnInit, AfterViewInit {
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        display: false, // Hide legend since we have custom legend
+        display: false,
       },
       datalabels: {
         display: (context: any) => {
@@ -112,12 +142,11 @@ export class OnlineMonitoringComponent implements OnInit, AfterViewInit {
     },
   };
 
-  private currentOperators: OperatorStatus[] = [];
-
   ngOnInit() {
+    console.log('[OnlineMonitoring] Component initialized');
     this.operators$.subscribe((operators) => {
-      console.log('Operators data:', operators);
-      this.currentOperators = operators;
+      console.log('[OnlineMonitoring] Operators updated:', operators?.length || 0, operators);
+      this.operators.set(operators);
 
       const statusCounts = {
         idle: 0,
@@ -130,8 +159,7 @@ export class OnlineMonitoringComponent implements OnInit, AfterViewInit {
           statusCounts[op.status as keyof typeof statusCounts]++;
         }
       });
-      console.log('Status counts:', statusCounts);
-      // Create new dataset to trigger change detection
+
       this.chartData = {
         ...this.chartData,
         datasets: [
@@ -148,6 +176,18 @@ export class OnlineMonitoringComponent implements OnInit, AfterViewInit {
       };
       this.cdr.detectChanges();
     });
+
+    this.queues$.subscribe((queues) => {
+      console.log('[OnlineMonitoring] Queues updated:', queues?.length || 0, queues);
+      this.queues.set(queues);
+      this.cdr.detectChanges();
+    });
+
+    this.activeCalls$.subscribe((calls) => {
+      console.log('[OnlineMonitoring] Active calls updated:', calls?.length || 0, calls);
+      this.activeCalls.set(calls);
+      this.cdr.detectChanges();
+    });
   }
 
   ngAfterViewInit() {
@@ -155,9 +195,9 @@ export class OnlineMonitoringComponent implements OnInit, AfterViewInit {
   }
 
   getPercentage(status: string): number {
-    const total = this.currentOperators.length;
+    const total = this.operators().length;
     if (total === 0) return 0;
-    const count = this.currentOperators.filter(
+    const count = this.operators().filter(
       (op) => op.status === status
     ).length;
     return Math.round((count / total) * 100);
@@ -174,23 +214,37 @@ export class OnlineMonitoringComponent implements OnInit, AfterViewInit {
       case 'offline':
         return 'Оффлайн';
       default:
-        return '\u2014';
+        return '—';
     }
   }
 
-  // compute percent from numbers so template is safe
-  computePercentFromNumbers(waiting: number, callsInService: number) {
-    const denom = (callsInService ?? 0) + (waiting ?? 0) + 1;
-    const pct = (waiting / denom) * 100;
-    return Math.min(100, Math.max(0, Math.round(pct * 10) / 10));
+  getStatusClass(s: OperatorStatus['status'] | undefined): string {
+    switch (s) {
+      case 'idle':
+        return 'status-idle';
+      case 'on_call':
+        return 'status-on-call';
+      case 'wrap_up':
+        return 'status-wrap-up';
+      case 'offline':
+        return 'status-offline';
+      default:
+        return '';
+    }
   }
 
-  // crm-table column definitions for operators
+  formatDuration(seconds: number | null | undefined): string {
+    if (!seconds) return '—';
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  }
+
   columns: CrmColumn[] = [
     {
       key: 'title',
       label: 'Оператор',
-      width: '30%',
+      width: '20%',
       template: 'titleTemplate',
     },
     {
@@ -202,22 +256,74 @@ export class OnlineMonitoringComponent implements OnInit, AfterViewInit {
     {
       key: 'currentCall',
       label: 'Клиент',
-      width: '20%',
+      width: '15%',
       template: 'currentCallTemplate',
     },
     {
       key: 'avgHandleTime',
-      label: 'Время в статусе',
-      width: '15%',
+      label: 'Ср. время',
+      width: '10%',
       template: 'avgHandleTimeTemplate',
     },
     {
-      key: 'service',
-      label: 'Сервис',
+      key: 'callsToday',
+      label: 'Звонков',
       width: '10%',
+    },
+    {
+      key: 'service',
+      label: 'Очередь',
+      width: '15%',
       template: 'serviceTemplate',
     },
-    { key: 'actions', label: '', width: '10%', template: 'actionsTemplate' },
+    { key: 'actions', label: '', width: '15%', template: 'actionsTemplate' },
+  ];
+
+  queueColumns: CrmColumn[] = [
+    {
+      key: 'name',
+      label: 'Очередь',
+      width: '20%',
+      template: 'queueTitleTemplate',
+    },
+    {
+      key: 'waiting',
+      label: 'Ожидают',
+      width: '10%',
+      template: 'queueWaitingTemplate',
+    },
+    {
+      key: 'callsInService',
+      label: 'В работе',
+      width: '10%',
+    },
+    {
+      key: 'totalCallsToday',
+      label: 'Количество звонков',
+      width: '12%',
+    },
+    {
+      key: 'answeredCallsToday',
+      label: 'Обработано',
+      width: '10%',
+    },
+    {
+      key: 'serviceLevel',
+      label: 'Уровень сервиса',
+      width: '13%',
+      template: 'queueServiceLevelTemplate',
+    },
+    {
+      key: 'members',
+      label: 'Операторы',
+      width: '10%',
+      template: 'queueMembersTemplate',
+    },
+    {
+      key: 'abandonedToday',
+      label: 'Пропущено',
+      width: '10%',
+    },
   ];
 
   get tableTemplates(): { [key: string]: TemplateRef<any> } {
@@ -229,6 +335,10 @@ export class OnlineMonitoringComponent implements OnInit, AfterViewInit {
       serviceTemplate: this.serviceTemplate,
       actionsTemplate: this.actionsTemplate,
       tableTitleTemplate: this.tableTitleTemplate,
+      queueTitleTemplate: this.queueTitleTemplate,
+      queueWaitingTemplate: this.queueWaitingTemplate,
+      queueServiceLevelTemplate: this.queueServiceLevelTemplate,
+      queueMembersTemplate: this.queueMembersTemplate,
     };
   }
 }

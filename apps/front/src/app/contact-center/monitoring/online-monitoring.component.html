@@ -4,20 +4,20 @@
 >
   <div class="kpi-row">
     <div class="kpi-card">
-      <div class="kpi-title">Оператор дня</div>
-      <div class="kpi-value">152</div>
-      <div class="kpi-sub">Обработано звонков · <strong>Liam Johnson</strong></div>
+      <div class="kpi-title">Операторы онлайн</div>
+      <div class="kpi-value">{{ activeOperators() }}/{{ totalOperators() }}</div>
+      <div class="kpi-sub">Активных операторов</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-title">Оператор недели</div>
-      <div class="kpi-value">98%</div>
-      <div class="kpi-sub">Удовлетворенность · <strong>Emma Wilson</strong></div>
+      <div class="kpi-title">Уровень обслуживания</div>
+      <div class="kpi-value">{{ avgServiceLevel() }}%</div>
+      <div class="kpi-sub">Средний по всем очередям</div>
     </div>
     <div class="kpi-card highlight">
-      <div class="kpi-title">Оператор месяца</div>
-      <div class="kpi-value">2m 15s</div>
+      <div class="kpi-title">Активные звонки</div>
+      <div class="kpi-value">{{ totalCallsInService() }}</div>
       <div class="kpi-sub">
-        Среднее время решения · <strong>Noah Brown</strong>
+        В работе · {{ totalWaiting() }} в ожидании
       </div>
     </div>
   </div>
@@ -28,7 +28,7 @@
         <div class="stat-card service-level">
           <div class="stat-content">
             <div class="stat-info">
-              <h3>95.2%</h3>
+              <h3>{{ avgServiceLevel() }}%</h3>
               <p>Уровень обслуживания</p>
             </div>
             <div class="stat-icon">
@@ -39,8 +39,8 @@
         <div class="stat-card missed-calls">
           <div class="stat-content">
             <div class="stat-info">
-              <h3>12</h3>
-              <p>Пропущенные звонки<br><small>(Сегодня)</small></p>
+              <h3>{{ totalWaiting() }}</h3>
+              <p>Звонков в ожидании<br><small>(Сейчас)</small></p>
             </div>
             <div class="stat-icon">
               <mat-icon>call_missed</mat-icon>
@@ -50,7 +50,7 @@
         <div class="stat-card wide queue-status">
           <div class="stat-content">
             <div class="stat-info">
-              <h3>12 Активных / 3 Ожидающих</h3>
+              <h3>{{ totalCallsInService() }} Активных / {{ totalWaiting() }} Ожидающих</h3>
               <p>Статус очереди</p>
             </div>
             <div class="stat-icon">
@@ -91,6 +91,63 @@
     </div>
   </div>
 
+  <!-- Queues Table -->
+  <div class="queues-area">
+    <div class="section-header">
+      <h3 class="section-title">
+        <mat-icon>queue</mat-icon>
+        Очереди
+      </h3>
+    </div>
+    <div class="queues-table">
+      <crm-table 
+        [columns]="queueColumns" 
+        [data]="queues$ | async" 
+        [showPaginator]="false" 
+        [templates]="tableTemplates">
+      </crm-table>
+    </div>
+
+    <!-- Queue Templates -->
+    <ng-template #queueTitleTemplate let-queue>
+      <div class="queue-name">
+        <mat-icon class="queue-icon">support_agent</mat-icon>
+        {{ queue.name || '—' }}
+      </div>
+    </ng-template>
+
+    <ng-template #queueWaitingTemplate let-queue>
+      <div class="waiting-badge" [class.has-waiting]="queue.waiting > 0">
+        <mat-icon>schedule</mat-icon>
+        {{ queue.waiting }}
+        @if (queue.longestWaitingSeconds > 0) {
+          <span class="longest-wait">{{ formatDuration(queue.longestWaitingSeconds) }}</span>
+        }
+      </div>
+    </ng-template>
+
+    <ng-template #queueServiceLevelTemplate let-queue>
+      <div class="service-level">
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="queue.serviceLevel || 0"
+               [class.good]="(queue.serviceLevel || 0) >= 80"
+               [class.warning]="(queue.serviceLevel || 0) >= 60 && (queue.serviceLevel || 0) < 80"
+               [class.poor]="(queue.serviceLevel || 0) < 60">
+          </div>
+        </div>
+        <span class="service-level-text">{{ queue.serviceLevel || 0 }}%</span>
+      </div>
+    </ng-template>
+
+    <ng-template #queueMembersTemplate let-queue>
+      <div class="members-info">
+        <span class="available">{{ queue.availableMembers }}</span> /
+        <span class="total">{{ queue.totalMembers }}</span>
+      </div>
+    </ng-template>
+  </div>
+
+  <!-- Operators Table -->
   <div class="operators-area">
     <div class="operators-header">
       <input class="search" placeholder="Поиск операторов..." />
@@ -107,29 +164,90 @@
         </h3>
       </ng-template>
 
-      <!-- Templates -->
+      <!-- Operator Templates -->
       <ng-template #titleTemplate let-operator>
-        {{ operator.name || '—' }}
+        <div class="operator-info">
+          <div class="operator-name">{{ operator.name || '—' }}</div>
+          @if (operator.extension) {
+            <div class="operator-extension">Доб. {{ operator.extension }}</div>
+          }
+        </div>
       </ng-template>
 
       <ng-template #statusTemplate let-operator>
-        {{ formatStatus(operator.status) }}
+        <span class="status-badge" [ngClass]="getStatusClass(operator.status)">
+          {{ formatStatus(operator.status) }}
+          @if (operator.pausedReason) {
+            <span class="pause-reason">({{ operator.pausedReason }})</span>
+          }
+        </span>
       </ng-template>
 
       <ng-template #currentCallTemplate let-operator>
-        {{ operator.currentCall || '—' }}
+        @if (operator.currentCall) {
+          <div class="current-call">
+            <mat-icon class="call-icon">phone_in_talk</mat-icon>
+            {{ operator.currentCall }}
+            @if (operator.currentCallDuration) {
+              <span class="call-duration">{{ formatDuration(operator.currentCallDuration) }}</span>
+            }
+          </div>
+        } @else {
+          <span class="no-call">—</span>
+        }
       </ng-template>
 
       <ng-template #avgHandleTimeTemplate let-operator>
-        {{ operator.avgHandleTime ? operator.avgHandleTime + 's' : '—' }}
+        {{ operator.avgHandleTime ? formatDuration(operator.avgHandleTime) : '—' }}
       </ng-template>
 
       <ng-template #serviceTemplate let-operator>
-        Продажи
+        {{ operator.queue || '—' }}
       </ng-template>
 
       <ng-template #actionsTemplate let-operator>
-        Подробно
+        <button mat-button color="primary" class="details-btn">
+          <mat-icon>visibility</mat-icon>
+          Подробно
+        </button>
       </ng-template>
   </div>
+
+  <!-- Active Calls Section -->
+  @if (activeCalls().length > 0) {
+    <div class="active-calls-section">
+      <div class="section-header">
+        <h3 class="section-title">
+          <mat-icon>call</mat-icon>
+          Активные звонки
+          <span class="badge" [matBadge]="activeCalls().length" matBadgeColor="primary"></span>
+        </h3>
+      </div>
+      <div class="active-calls-list">
+        @for (call of activeCalls(); track call.uniqueid) {
+          <div class="call-card">
+            <div class="call-info">
+              <div class="caller-id">
+                <mat-icon>phone</mat-icon>
+                <span class="number">{{ call.callerIdNum }}</span>
+                @if (call.callerIdName) {
+                  <span class="name">{{ call.callerIdName }}</span>
+                }
+              </div>
+              <div class="call-details">
+                <span class="duration">{{ formatDuration(call.duration) }}</span>
+                <span class="state">{{ call.state }}</span>
+                @if (call.operator) {
+                  <span class="operator">→ {{ call.operator }}</span>
+                }
+                @if (call.queue) {
+                  <span class="queue">{{ call.queue }}</span>
+                }
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
 </app-page-layout>

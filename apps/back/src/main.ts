@@ -5,6 +5,7 @@
 
 import { Logger, ClassSerializerInterceptor } from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
+import { WsAdapter } from '@nestjs/platform-ws';
 import { AppModule } from './app/app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
@@ -12,6 +13,9 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, { cors: false});
   const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix);
+
+  // Use native WebSockets instead of Socket.IO
+  app.useWebSocketAdapter(new WsAdapter(app));
 
   // CORS disabled
   app.enableCors(

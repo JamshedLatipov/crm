@@ -78,14 +78,8 @@ export class AmiService implements OnModuleInit, OnModuleDestroy {
     try {
       // Filter queue-related events (AMI sends many event names; queue events often start with 'Queue' or include 'Queue')
       const name = String(evt?.Event || evt?.event || evt?.name || 'Unknown');
-      console.debug('AMI Event received:', name, '---------------------------------');
       if (!name) return;
-    //   if (!/queue/i.test(name)) return; // ignore non-queue events by default
-
-      try {
-        console.debug('[AMI EVENT]', name, evt);
-      } catch {}
-
+    
       if (this.store) {
         try {
           await this.store.write({
@@ -101,5 +95,40 @@ export class AmiService implements OnModuleInit, OnModuleDestroy {
     } catch (e) {
       this.logger.warn('Error handling AMI event: ' + String((e as Error).message));
     }
+  }
+
+  /**
+   * Send AMI action and return response
+   */
+  async action(action: string, params: Record<string, any> = {}): Promise<any> {
+    if (!this.connected || !this.client) {
+      this.logger.warn(`AMI action ${action} called but not connected`);
+      throw new Error('AMI not connected');
+    }
+
+    try {
+      const response = await this.client.action({
+        Action: action,
+        ...params,
+      });
+      return response;
+    } catch (err) {
+      this.logger.error(`AMI action ${action} failed: ${(err as Error).message}`);
+      throw err;
+    }
+  }
+
+  /**
+   * Check if AMI is connected
+   */
+  isConnected(): boolean {
+    return this.connected;
+  }
+
+  /**
+   * Get AMI client for direct access (use carefully)
+   */
+  getClient(): any {
+    return this.client;
   }
 }

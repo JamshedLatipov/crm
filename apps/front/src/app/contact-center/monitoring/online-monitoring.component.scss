@@ -99,6 +99,307 @@
     left: 100%;
   }
 }
+
+// Status badges for operators
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  gap: 4px;
+
+  &.status-idle {
+    background: #d1fae5;
+    color: #065f46;
+  }
+
+  &.status-on-call {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+
+  &.status-wrap-up {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  &.status-offline {
+    background: #f3f4f6;
+    color: #4b5563;
+  }
+
+  .pause-reason {
+    font-size: 10px;
+    opacity: 0.7;
+  }
+}
+
+// Operator info
+.operator-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  .operator-name {
+    font-weight: 600;
+    color: #1e293b;
+  }
+
+  .operator-extension {
+    font-size: 11px;
+    color: #64748b;
+  }
+}
+
+// Current call display
+.current-call {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+
+  .call-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: #2563eb;
+  }
+
+  .call-duration {
+    font-size: 11px;
+    color: #64748b;
+    margin-left: 4px;
+  }
+}
+
+.no-call {
+  color: #9ca3af;
+}
+
+// Queue name display
+.queue-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+
+  .queue-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    color: #6366f1;
+  }
+}
+
+// Waiting badge
+.waiting-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: #f3f4f6;
+
+  &.has-waiting {
+    background: #fef3c7;
+    color: #92400e;
+    font-weight: 600;
+  }
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+
+  .longest-wait {
+    font-size: 11px;
+    opacity: 0.7;
+    margin-left: 4px;
+  }
+}
+
+// Service level progress bar
+.service-level {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .progress-bar {
+    flex: 1;
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+
+    .progress-fill {
+      height: 100%;
+      transition: width 0.3s ease;
+
+      &.good {
+        background: #10b981;
+      }
+
+      &.warning {
+        background: #f59e0b;
+      }
+
+      &.poor {
+        background: #ef4444;
+      }
+    }
+  }
+
+  .service-level-text {
+    font-weight: 600;
+    min-width: 40px;
+  }
+}
+
+// Members info
+.members-info {
+  font-size: 14px;
+
+  .available {
+    font-weight: 700;
+    color: #10b981;
+  }
+
+  .total {
+    color: #6b7280;
+  }
+}
+
+// Section styling
+.queues-area,
+.active-calls-section {
+  margin-top: 32px;
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.section-header {
+  margin-bottom: 20px;
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 20px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0;
+
+    mat-icon {
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+    }
+
+    .badge {
+      margin-left: 8px;
+    }
+  }
+}
+
+// Active calls list
+.active-calls-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.call-card {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+
+  .call-info {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    .caller-id {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 16px;
+      font-weight: 600;
+
+      mat-icon {
+        color: #2563eb;
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+
+      .number {
+        color: #1e293b;
+      }
+
+      .name {
+        font-size: 14px;
+        font-weight: 400;
+        color: #64748b;
+      }
+    }
+
+    .call-details {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      flex-wrap: wrap;
+
+      .duration {
+        background: #dbeafe;
+        color: #1e40af;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-weight: 600;
+      }
+
+      .state {
+        color: #6b7280;
+      }
+
+      .operator {
+        color: #059669;
+        font-weight: 500;
+      }
+
+      .queue {
+        background: #e0e7ff;
+        color: #4338ca;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+      }
+    }
+  }
+}
+
+.details-btn {
+  font-size: 12px;
+  
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
 .kpi-title {
   font-size: 14px;
   color: #64748b;
