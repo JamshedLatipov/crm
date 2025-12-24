@@ -25,15 +25,18 @@ export class ContactsService {
   }
 
   /**
-   * List contacts. If isActive is undefined, return all contacts. Otherwise filter by isActive flag.
+   * List contacts with pagination.
    */
-  async listContacts(isActive?: boolean): Promise<Contact[]> {
+  async listContacts(isActive?: boolean, page = 1, limit = 50): Promise<{ data: Contact[]; total: number }> {
     const whereClause = isActive === undefined ? {} : { isActive };
-    return this.contactRepository.find({
+    const [data, total] = await this.contactRepository.findAndCount({
       where: whereClause,
       relations: ['company'],
       order: { createdAt: 'DESC' },
+      take: limit,
+      skip: (page - 1) * limit,
     });
+    return { data, total };
   }
 
   async getContactById(id: string): Promise<Contact> {

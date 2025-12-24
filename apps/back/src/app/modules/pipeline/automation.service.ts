@@ -47,7 +47,7 @@ export class AutomationService implements OnModuleInit, OnModuleDestroy {
     private leadService: LeadService,
     @Inject(forwardRef(() => TaskService))
     private taskService: TaskService,
-    @Inject(forwardRef(() => TaskService))
+    @Inject(forwardRef(() => AssignmentService))
     private assignmentService: AssignmentService
   ) {}
 

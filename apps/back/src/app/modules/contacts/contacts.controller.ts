@@ -27,8 +27,13 @@ export class ContactsController {
     @Query('tag') tag?: string,
     @Query('search') search?: string,
     @Query('isActive') isActive?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
     const parsedIsActive = isActive === undefined ? undefined : isActive === 'true';
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 50;
+
     if (type) {
       return this.contactsService.getContactsByType(type);
     }
@@ -53,7 +58,7 @@ export class ContactsController {
       return this.contactsService.searchContacts(search, parsedIsActive);
     }
 
-    return this.contactsService.listContacts(parsedIsActive);
+    return this.contactsService.listContacts(parsedIsActive, pageNum, limitNum);
   }
 
   @Get('recent')

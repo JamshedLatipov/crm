@@ -43,13 +43,15 @@ export class TasksService {
   private base = environment.apiBase + '/tasks';
   constructor(private http: HttpClient) {}
 
-  list(page?: number, limit?: number, leadId?: number, dealId?: string): Observable<any> {
+  list(page?: number, limit?: number, leadId?: number, dealId?: string, status?: string, search?: string): Observable<{ data: TaskDto[]; total: number }> {
     const params: any = {};
     if (page != null) params.page = page;
     if (limit != null) params.limit = limit;
     if (leadId != null) params.leadId = leadId;
     if (dealId != null) params.dealId = dealId;
-    return this.http.get<any>(this.base, { params });
+    if (status != null) params.status = status;
+    if (search != null) params.search = search;
+    return this.http.get<{ data: TaskDto[]; total: number }>(this.base, { params });
   }
 
   // List tasks in a date range. Backend should support `from` and `to` ISO params.

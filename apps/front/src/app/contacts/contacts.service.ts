@@ -23,8 +23,10 @@ export class ContactsService {
   private readonly http = inject(HttpClient);
 
   // === Основные CRUD операции ===
-  listContacts(filters?: ContactFilters): Observable<Contact[]> {
-    let params = new HttpParams();
+  listContacts(filters?: ContactFilters, page = 1, limit = 50): Observable<{ data: Contact[], total: number }> {
+    let params = new HttpParams()
+      .set('page', page.toString())
+      .set('limit', limit.toString());
     
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
@@ -34,7 +36,7 @@ export class ContactsService {
       });
     }
     
-    return this.http.get<Contact[]>(this.apiUrl, { params });
+    return this.http.get<{ data: Contact[], total: number }>(this.apiUrl, { params });
   }
 
   getContactById(id: string): Observable<Contact> {

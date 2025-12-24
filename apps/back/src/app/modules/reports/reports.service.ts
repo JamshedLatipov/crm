@@ -26,17 +26,29 @@ export class ReportsService {
     const since = new Date();
     since.setDate(since.getDate() - Number(days));
 
-  const newLeadsCount = await this.leadRepo.count({ where: { createdAt: MoreThan(since) as any } as any } as any);
+    // Optimized: Count directly in DB
+    const newLeadsCount = await this.leadRepo.count({
+      where: { createdAt: MoreThan(since) } as any
+    });
 
-  // conversion: leads that have related deals
-  const allLeads = await this.leadRepo.find({ where: { createdAt: MoreThan(since) as any } as any, relations: ['deals'] });
-    const convertedToDeals = allLeads.filter(l => Array.isArray(l.deals) && l.deals.length > 0).length;
+    // Optimized: Count leads with deals using QueryBuilder (Inner Join)
+    const convertedToDeals = await this.leadRepo.createQueryBuilder('lead')
+      .innerJoin('lead.deals', 'deal')
+      .where('lead.createdAt > :since', { since })
+      .getCount();
 
-    // sources distribution
+    // Optimized: Group by source in DB
+    const sourcesData = await this.leadRepo.createQueryBuilder('lead')
+      .select('lead.source', 'source')
+      .addSelect('COUNT(lead.id)', 'count')
+      .where('lead.createdAt > :since', { since })
+      .groupBy('lead.source')
+      .getRawMany();
+
     const sourcesMap: Record<string, number> = {};
-    allLeads.forEach(l => {
-      const s = l.source || 'unknown';
-      sourcesMap[String(s)] = (sourcesMap[String(s)] || 0) + 1;
+    sourcesData.forEach(item => {
+      const s = item.source || 'unknown';
+      sourcesMap[String(s)] = Number(item.count);
     });
 
     return {
@@ -48,15 +60,22 @@ export class ReportsService {
     };
   }
 
-  // 4.2 Funnel: conversion per stage and avg time in stage
+  // 4.2 Funnel: conversion per stage
   async funnelAnalytics() {
-    // reuse pipeline analytics endpoint? we will compute from deals and stages
-  const stages = await this.stageRepo.find({ order: { position: 'ASC' as any } });
-  const deals = await this.dealRepo.find();
+    const stages = await this.stageRepo.find({ order: { position: 'ASC' as any } });
 
-    // counts per stage id
+    // Optimized: Get counts per stage using Group By
+    const dealsCounts = await this.dealRepo.createQueryBuilder('deal')
+      .select('deal.stageId', 'stageId')
+      .addSelect('COUNT(deal.id)', 'count')
+      .groupBy('deal.stageId')
+      .getRawMany();
+
+    const countsMap = new Map<string, number>();
+    dealsCounts.forEach(d => countsMap.set(String(d.stageId), Number(d.count)));
+
     const byStage = stages.map((s: any) => {
-      const count = deals.filter((d: Deal) => d.stageId === s.id).length;
+      const count = countsMap.get(String(s.id)) || 0;
       return {
         id: s.id,
         name: s.name,
@@ -64,17 +83,15 @@ export class ReportsService {
       };
     });
 
-    // conversion between stages (simple percent to next by position)
-    // assume stages ordered by position
-  // stages are already ordered
     const conversions = byStage.map((s: any, i: number) => ({
       ...s,
       conversionToNext: i < byStage.length - 1 ? Math.round(((byStage[i + 1].count || 0) / (s.count || 1)) * 10000) / 100 : null,
     }));
 
-    // average time in stage: requires deal history; fallback to null
+    const totalDeals = dealsCounts.reduce((acc, curr) => acc + Number(curr.count), 0);
+
     return {
-      totalDeals: deals.length,
+      totalDeals,
       byStage: conversions,
     };
   }
