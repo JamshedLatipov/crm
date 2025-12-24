@@ -55,7 +55,8 @@ export class CallTraceService {
     if (uniqueIds.length === 0) return [];
 
     // 1. Bulk Fetch
-    const [ivrLogs, queueLogs, callLogs] = await Promise.all([
+    // Optimized: Split CallLogs query to avoid OR scan, then merge
+    const [ivrLogs, queueLogs, callLogsById, callLogsByCallId] = await Promise.all([
       this.ivrLogRepo.find({
         where: { channelId: In(uniqueIds) },
         order: { createdAt: 'ASC' },
@@ -65,13 +66,19 @@ export class CallTraceService {
         order: { id: 'ASC' },
       }),
       this.callLogRepo.find({
-        where: [
-            { asteriskUniqueId: In(uniqueIds) },
-            { callId: In(uniqueIds) }
-        ],
+        where: { asteriskUniqueId: In(uniqueIds) },
+        order: { createdAt: 'ASC' },
+      }),
+      this.callLogRepo.find({
+        where: { callId: In(uniqueIds) },
         order: { createdAt: 'ASC' },
       })
     ]);
+
+    // Merge and deduplicate call logs
+    const allCallLogs = [...callLogsById, ...callLogsByCallId];
+    const uniqueCallLogs = Array.from(new Map(allCallLogs.map(item => [item.id, item])).values())
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 
     let cdrs: Cdr[] = [];
     if (providedCdrs) {
@@ -82,14 +89,42 @@ export class CallTraceService {
         });
     }
 
-    // 2. Group by UniqueId
+    // 2. Group by UniqueId using Maps for O(1) lookup
+    const ivrMap = new Map<string, IvrLog[]>();
+    ivrLogs.forEach(log => {
+      if (!ivrMap.has(log.channelId)) ivrMap.set(log.channelId, []);
+      ivrMap.get(log.channelId)?.push(log);
+    });
+
+    const queueMap = new Map<string, QueueLog[]>();
+    queueLogs.forEach(log => {
+      if (!log.callid) return;
+      if (!queueMap.has(log.callid)) queueMap.set(log.callid, []);
+      queueMap.get(log.callid)?.push(log);
+    });
+
+    const cdrMap = new Map<string, Cdr>();
+    cdrs.forEach(c => cdrMap.set(c.uniqueid, c));
+
+    const appLogMap = new Map<string, CallLog[]>();
+    uniqueCallLogs.forEach(log => {
+      const uid = log.asteriskUniqueId || log.callId;
+      if (!uid) return;
+      // Handle potential cross-linking where uniqueId matches one but not the other
+      // We'll trust the caller provided valid uniqueIds
+      if (uniqueIds.includes(uid)) {
+         if (!appLogMap.has(uid)) appLogMap.set(uid, []);
+         appLogMap.get(uid)?.push(log);
+      }
+    });
+
     const traces: CallTrace[] = [];
 
     for (const uid of uniqueIds) {
-        const myIvr = ivrLogs.filter(l => l.channelId === uid);
-        const myQueue = queueLogs.filter(l => l.callid === uid);
-        const myCdr = cdrs.find(c => c.uniqueid === uid);
-        const myApp = callLogs.filter(l => l.asteriskUniqueId === uid || l.callId === uid);
+        const myIvr = ivrMap.get(uid) || [];
+        const myQueue = queueMap.get(uid) || [];
+        const myCdr = cdrMap.get(uid);
+        const myApp = appLogMap.get(uid) || [];
 
         if (myIvr.length === 0 && myQueue.length === 0 && !myCdr && myApp.length === 0) {
             continue;

@@ -160,10 +160,14 @@ export class TaskService {
     }
   }
 
-  async findAll(): Promise<Task[]> {
-    const tasks = await this.taskRepo.find({ relations: ['lead', 'deal', 'taskType'] });
+  async findAll(page = 1, limit = 50): Promise<{ data: Task[]; total: number }> {
+    const [tasks, total] = await this.taskRepo.findAndCount({
+      relations: ['lead', 'deal', 'taskType'],
+      take: limit,
+      skip: (page - 1) * limit,
+    });
     await this.attachAssignments(tasks);
-    return tasks;
+    return { data: tasks, total };
   }
 
   async findByLeadId(leadId: number): Promise<Task[]> {

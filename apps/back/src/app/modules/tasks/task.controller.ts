@@ -24,17 +24,25 @@ export class TaskController {
   @Get()
   @ApiQuery({ name: 'leadId', required: false, description: 'Фильтр по ID лида' })
   @ApiQuery({ name: 'dealId', required: false, description: 'Фильтр по ID сделки' })
+  @ApiQuery({ name: 'page', required: false, description: 'Номер страницы' })
+  @ApiQuery({ name: 'limit', required: false, description: 'Количество записей на странице' })
   async findAll(
     @Query('leadId') leadId?: string,
-    @Query('dealId') dealId?: string
-  ): Promise<Task[]> {
+    @Query('dealId') dealId?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ): Promise<any> {
     if (leadId) {
       return this.taskService.findByLeadId(Number(leadId));
     }
     if (dealId) {
       return this.taskService.findByDealId(dealId);
     }
-    return this.taskService.findAll();
+
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 50;
+
+    return this.taskService.findAll(pageNum, limitNum);
   }
 
   @Get(':id')

@@ -8,12 +8,14 @@ import { Deal } from '../deals/deal.entity';
 import { Lead } from '../leads/lead.entity';
 import { DealsService } from '../deals/deals.service';
 import { LeadService } from '../leads/lead.service';
+import { AssignmentService } from '../shared/services/assignment.service';
 
 describe('AutomationService', () => {
   let service: AutomationService;
   let automationRulesRepo: Repository<AutomationRule>;
   let dealsService: DealsService;
   let leadService: LeadService;
+  let assignmentService: AssignmentService;
 
   const mockAutomationRulesRepo = {
     find: jest.fn(),
@@ -41,6 +43,10 @@ describe('AutomationService', () => {
     scheduleFollowUp: jest.fn(),
   };
 
+  const mockAssignmentService = {
+    createAssignment: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -61,6 +67,10 @@ describe('AutomationService', () => {
           provide: LeadService,
           useValue: mockLeadService,
         },
+        {
+          provide: AssignmentService,
+          useValue: mockAssignmentService,
+        },
       ],
     }).useMocker(() => ({}))
       .compile();
@@ -69,6 +79,7 @@ describe('AutomationService', () => {
     automationRulesRepo = module.get<Repository<AutomationRule>>(getRepositoryToken(AutomationRule));
     dealsService = module.get<DealsService>(DealsService);
     leadService = module.get<LeadService>(LeadService);
+    assignmentService = module.get<AssignmentService>(AssignmentService);
   });
 
   afterEach(() => {
@@ -142,8 +153,8 @@ describe('AutomationService', () => {
   });
 
   describe('executeAssignToUser', () => {
-    it('should call dealsService.assignDeal for deal entity', async () => {
-      const config = { userId: 'user123' };
+    it('should call assignmentService.createAssignment for deal entity', async () => {
+      const config = { userId: 123 };
       const context = {
         entityType: 'deal' as const,
         entityId: 'deal1',
@@ -151,15 +162,21 @@ describe('AutomationService', () => {
         trigger: AutomationTrigger.DEAL_CREATED,
       };
 
-      mockDealsService.assignDeal.mockResolvedValue({} as any);
+      mockAssignmentService.createAssignment.mockResolvedValue({} as any);
 
       await (service as any).executeAssignToUser(config, context);
 
-      expect(mockDealsService.assignDeal).toHaveBeenCalledWith('deal1', 'user123', undefined, undefined);
+      expect(mockAssignmentService.createAssignment).toHaveBeenCalledWith({
+        entityType: 'deal',
+        entityId: 'deal1',
+        assignedTo: [123],
+        assignedBy: expect.any(String), // system
+        reason: expect.any(String),
+      });
     });
 
-    it('should call leadService.assignLead for lead entity', async () => {
-      const config = { userId: 'user123' };
+    it('should call assignmentService.createAssignment for lead entity', async () => {
+      const config = { userId: 123 };
       const context = {
         entityType: 'lead' as const,
         entityId: '1',
@@ -167,11 +184,17 @@ describe('AutomationService', () => {
         trigger: AutomationTrigger.LEAD_CREATED,
       };
 
-      mockLeadService.assignLead.mockResolvedValue({} as any);
+      mockAssignmentService.createAssignment.mockResolvedValue({} as any);
 
       await (service as any).executeAssignToUser(config, context);
 
-      expect(mockLeadService.assignLead).toHaveBeenCalledWith(1, 'user123', undefined, undefined);
+      expect(mockAssignmentService.createAssignment).toHaveBeenCalledWith({
+        entityType: 'lead',
+        entityId: '1',
+        assignedTo: [123],
+        assignedBy: expect.any(String),
+        reason: expect.any(String),
+      });
     });
   });
 
