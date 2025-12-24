@@ -179,12 +179,19 @@
     </ng-template>
 
     <ng-template #statusTemplate let-operator>
-      <span class="status-badge" [ngClass]="getStatusClass(operator.status)">
-        {{ formatStatus(operator.status) }}
-        @if (operator.pausedReason) {
-        <span class="pause-reason">({{ operator.pausedReason }})</span>
+      <div class="status-container">
+        <span class="status-badge" [ngClass]="getStatusClass(operator.status)">
+          {{ formatStatus(operator.status) }}
+          @if (operator.pausedReason) {
+          <span class="pause-reason">({{ operator.pausedReason }})</span>
+          }
+        </span>
+        @if (operator.statusDuration !== null && operator.statusDuration !== undefined) {
+        <span class="status-duration" [title]="getStatusDurationLabel(operator.status) + ': ' + formatDuration(operator.statusDuration)">
+          {{ formatDuration(operator.statusDuration) }}
+        </span>
         }
-      </span>
+      </div>
     </ng-template>
 
     <ng-template #currentCallTemplate let-operator>

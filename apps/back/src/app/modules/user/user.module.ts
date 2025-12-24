@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
@@ -12,6 +12,7 @@ import { JwtStrategy } from './jwt.strategy';
 import { PsAuth } from '../calls/entities/ps-auth.entity';
 import { PsEndpoint } from '../calls/entities/ps-endpoint.entity';
 import { UserActivityModule } from '../user-activity/user-activity.module';
+import { SharedModule } from '../shared/shared.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { UserActivityModule } from '../user-activity/user-activity.module';
       signOptions: { expiresIn: '1d' },
     }),
     UserActivityModule,
+    forwardRef(() => SharedModule),
   ],
   providers: [AuthService, UserService, RolesGuard, JwtStrategy],
   controllers: [AuthController, UserController],

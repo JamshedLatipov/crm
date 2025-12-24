@@ -42,6 +42,9 @@ import { INTEGRATIONS_MIGRATIONS } from './modules/integrations/migrations';
       // changes in controlled deployments.
       synchronize: true,
       autoLoadEntities: true,
+      extra: {
+        timezone: 'UTC',
+      },
       migrations: [
         ...CALLS_MIGRATIONS,
         ...USER_MIGRATIONS,

@@ -36,7 +36,14 @@ export class ContactCenterGateway
         const data = await this.svc.tick();
         
         // Log what we're about to send
-        this.logger.debug(`Broadcasting: queues waiting = [${data.queues.map(q => `${q.name}:${q.waiting}`).join(', ')}], totalUniqueWaiting = ${data.totalUniqueWaiting}`);
+        this.logger.debug(`Broadcasting: operators = ${data.operators.length}, queues waiting = [${data.queues.map(q => `${q.name}:${q.waiting}`).join(', ')}], totalUniqueWaiting = ${data.totalUniqueWaiting}`);
+        
+        // Log operators with statusDuration
+        data.operators.forEach(op => {
+          if (op.statusDuration !== null && op.statusDuration !== undefined) {
+            this.logger.debug(`  Broadcasting operator ${op.name}: status=${op.status}, statusDuration=${op.statusDuration}s`);
+          }
+        });
         
         const opMsg = JSON.stringify({ type: 'operators', payload: data.operators });
         const qMsg = JSON.stringify({ type: 'queues', payload: data.queues });

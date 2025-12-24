@@ -24,6 +24,7 @@ export interface OperatorStatus {
   status: 'idle' | 'on_call' | 'wrap_up' | 'offline';
   currentCall?: string | null;
   currentCallDuration?: number | null;
+  statusDuration?: number | null; // Время в текущем статусе (в секундах)
   avgHandleTime?: number;
   callsToday?: number;
   pausedReason?: string | null;

@@ -101,6 +101,9 @@ export class User {
   @Column({ nullable: true })
   lastActiveAt: Date; // Последняя активность
 
+  @Column({ type: 'varchar', length: 100, default: 'Asia/Dushanbe' })
+  timezone: string; // Временная зона пользователя (IANA timezone, например "Asia/Dushanbe", "Europe/Moscow")
+
   // SIP endpoint linkage (optional)
   @Column({ name: 'sip_endpoint_id', length: 40, nullable: true })
   sipEndpointId?: string | null;

@@ -19,6 +19,7 @@ import { Transform } from 'class-transformer';
 import { UserService } from './user.service';
 import { CreateUserDto, UpdateUserDto, AutoAssignCriteriaDto, ManagerStatsResponseDto } from './dto/user.dto';
 import { User } from './user.entity';
+import { TimezoneService } from '../shared/timezone.service';
 
 export interface ManagerDto {
   id: string;
@@ -47,7 +48,10 @@ export interface ManagerDto {
 @ApiTags('users')
 @Controller('users')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly timezoneService: TimezoneService
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Get all users' })
@@ -280,5 +284,12 @@ export class UserController {
     }
 
     return roles[0] || 'sales_manager';
+  }
+
+  @Get('timezones')
+  @ApiOperation({ summary: 'Get list of available timezones' })
+  @ApiResponse({ status: 200, description: 'List of timezones with offsets' })
+  async getTimezones() {
+    return this.timezoneService.getCommonTimezones();
   }
 }

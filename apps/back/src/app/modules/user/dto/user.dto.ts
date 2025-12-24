@@ -131,6 +131,10 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   sipEndpointId?: string;
+
+  @IsOptional()
+  @IsString()
+  timezone?: string; // IANA timezone string (e.g., 'Europe/Moscow', 'America/New_York')
 }
 
 export class AutoAssignCriteriaDto {

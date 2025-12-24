@@ -13,6 +13,7 @@ export type OperatorStatus = {
   status: 'idle' | 'on_call' | 'wrap_up' | 'offline';
   currentCall?: string | null;
   currentCallDuration?: number | null;
+  statusDuration?: number | null; // Время в текущем статусе (в секундах)
   avgHandleTime?: number | null;
   callsToday?: number;
   pausedReason?: string | null;
@@ -103,8 +104,14 @@ export class ContactCenterService {
     try {
       const response = await this.amiService.action('CoreShowChannels', {});
       if (response && Array.isArray(response)) {
-        return response.filter(ch => ch.Event === 'CoreShowChannel');
+        const channels = response.filter(ch => ch.Event === 'CoreShowChannel');
+        this.logger.debug(`getActiveChannels: Found ${channels.length} channels`);
+        if (channels.length > 0) {
+          this.logger.debug(`Sample channel: ${JSON.stringify(channels[0])}`);
+        }
+        return channels;
       }
+      this.logger.debug('getActiveChannels: No channels found');
       return [];
     } catch (err) {
       this.logger.warn('Failed to get active channels:', err);
@@ -169,10 +176,18 @@ export class ContactCenterService {
 
   // Return operators based on queue_members table enriched with real-time AMI data
   async getOperatorsSnapshot(): Promise<OperatorStatus[]> {
+    this.logger.debug('=== getOperatorsSnapshot() START ===');
     await this.refreshAmiCache();
     
     const members = await this.membersRepo.find();
     const channels = this.amiCache.channels || [];
+    
+    this.logger.debug(`getOperatorsSnapshot: Found ${members.length} members, ${channels.length} active channels`);
+    if (channels.length > 0) {
+      channels.forEach((ch, idx) => {
+        this.logger.debug(`  Channel ${idx}: ${ch.Channel} | CallerIDNum: ${ch.CallerIDNum} | Seconds: ${ch.Seconds}`);
+      });
+    }
     
     // Get call counts for last 24 hours (not just today since 00:00)
     const last24h = new Date();
@@ -188,22 +203,43 @@ export class ContactCenterService {
         continue;
       }
       
+      this.logger.debug(`Looking for channel for operator: ${m.memberid}, interface: ${operatorInterface}`);
+      
       const memberChannel = channels.find(ch => 
         ch.Channel?.includes(operatorInterface) || 
         ch.CallerIDNum === operatorInterface.split('/')[1]
       );
+      
+      if (memberChannel) {
+        this.logger.debug(`Found channel for ${m.memberid}: ${JSON.stringify(memberChannel)}`);
+      } else {
+        this.logger.debug(`No active channel found for ${m.memberid}`);
+      }
 
       // Determine status
       let status: OperatorStatus['status'] = 'idle';
       let currentCall: string | null = null;
       let currentCallDuration: number | null = null;
+      let statusDuration: number | null = null;
 
       if (m.paused) {
         status = 'offline';
+        // Для offline: пока не можем точно определить время паузы без дополнительного поля в БД
+        // TODO: Добавить поле paused_since в таблицу queue_members для отслеживания времени паузы
+        statusDuration = null;
+        this.logger.debug(`Operator ${m.memberid} is offline/paused`);
       } else if (memberChannel) {
         status = 'on_call';
         currentCall = memberChannel.CallerIDNum || 'Unknown';
         currentCallDuration = memberChannel.Seconds || 0;
+        // Для статуса "на звонке" statusDuration = длительность звонка
+        statusDuration = currentCallDuration;
+        this.logger.debug(`Operator ${m.memberid} on call: ${currentCall}, duration: ${currentCallDuration}s, statusDuration: ${statusDuration}s`);
+      } else {
+        // Для idle status можно добавить отслеживание времени простоя
+        // TODO: Добавить отслеживание времени в idle статусе
+        status = 'idle';
+        statusDuration = null;
       }
 
       // Get today's call statistics
@@ -247,20 +283,36 @@ export class ContactCenterService {
         ? Math.round(recentCalls.reduce((sum, c) => sum + (c.billsec || c.duration), 0) / recentCalls.length)
         : null;
 
-      operators.push({
+      // Для idle/offline: рассчитываем время с последнего звонка
+      if (statusDuration === null && recentCalls.length > 0) {
+        const lastCallTime = recentCalls[0].calldate;
+        if (lastCallTime) {
+          const now = new Date();
+          const timeSinceLastCall = Math.floor((now.getTime() - lastCallTime.getTime()) / 1000);
+          statusDuration = timeSinceLastCall;
+          this.logger.debug(`Operator ${m.memberid}: ${status}, time since last call: ${timeSinceLastCall}s`);
+        }
+      }
+
+      const operatorData = {
         id: m.member_name || String(m.id),
         name: m.memberid || m.member_name || 'Unknown',
         extension: operatorInterface.split('/')[1] || operatorInterface,
         status,
         currentCall,
         currentCallDuration,
+        statusDuration,
         avgHandleTime,
         callsToday,
         pausedReason: m.paused ? (m.reason_paused || 'Paused') : null,
         queue: m.queue_name,
-      });
+      };
+      
+      this.logger.debug(`  ✅ Operator: ${operatorData.name} | status: ${status} | statusDuration: ${statusDuration} | currentCallDuration: ${currentCallDuration}`);
+      operators.push(operatorData);
     }
 
+    this.logger.debug(`=== getOperatorsSnapshot() END - Returning ${operators.length} operators ===`);
     return operators;
   }
 

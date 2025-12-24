@@ -159,6 +159,11 @@ export class OnlineMonitoringComponent implements OnInit, AfterViewInit {
   ngOnInit() {
     console.log('[OnlineMonitoring] Component initialized');
     this.operators$.subscribe((operators) => {
+      console.log('[OnlineMonitoring] Operators received:', operators);
+      // Логируем операторов с их statusDuration
+      operators.forEach(op => {
+        console.log(`Operator ${op.name}: status=${op.status}, statusDuration=${op.statusDuration}, currentCallDuration=${op.currentCallDuration}`);
+      });
       this.operators.set(operators);
 
       const statusCounts = {
@@ -253,10 +258,33 @@ export class OnlineMonitoringComponent implements OnInit, AfterViewInit {
   }
 
   formatDuration(seconds: number | null | undefined): string {
-    if (!seconds) return '—';
+    if (seconds === null || seconds === undefined) return '—';
+    
+    // Для времени больше часа показываем часы
+    if (seconds >= 3600) {
+      const hours = Math.floor(seconds / 3600);
+      const mins = Math.floor((seconds % 3600) / 60);
+      return `${hours}ч ${mins}м`;
+    }
+    
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  }
+
+  getStatusDurationLabel(status: OperatorStatus['status'] | undefined): string {
+    switch (status) {
+      case 'on_call':
+        return 'В звонке';
+      case 'idle':
+        return 'Доступен';
+      case 'offline':
+        return 'Оффлайн';
+      case 'wrap_up':
+        return 'Завершение';
+      default:
+        return 'В статусе';
+    }
   }
 
   columns: CrmColumn[] = [
