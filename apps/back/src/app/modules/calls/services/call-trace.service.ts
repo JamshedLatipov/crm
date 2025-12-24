@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Between, LessThanOrEqual, MoreThanOrEqual, In } from 'typeorm';
 import { IvrLog } from '../../ivr/entities/ivr-log.entity';
 import { QueueLog } from '../entities/queuelog.entity';
 import { Cdr } from '../entities/cdr.entity';
@@ -47,36 +47,61 @@ export class CallTraceService {
   ) {}
 
   async getCallTrace(uniqueId: string): Promise<CallTrace | null> {
-    // 1. Fetch IVR Logs
-    const ivrLogs = await this.ivrLogRepo.find({
-      where: { channelId: uniqueId },
-      order: { createdAt: 'ASC' },
-    });
+    const traces = await this.getCallTraces([uniqueId]);
+    return traces[0] || null;
+  }
 
-    // 2. Fetch Queue Logs
-    const queueLogs = await this.queueLogRepo.find({
-      where: { callid: uniqueId },
-      order: { id: 'ASC' },
-    });
+  async getCallTraces(uniqueIds: string[], providedCdrs?: Cdr[]): Promise<CallTrace[]> {
+    if (uniqueIds.length === 0) return [];
 
-    // 3. Fetch CDR
-    const cdr = await this.cdrRepo.findOne({
-      where: { uniqueid: uniqueId },
-    });
+    // 1. Bulk Fetch
+    const [ivrLogs, queueLogs, callLogs] = await Promise.all([
+      this.ivrLogRepo.find({
+        where: { channelId: In(uniqueIds) },
+        order: { createdAt: 'ASC' },
+      }),
+      this.queueLogRepo.find({
+        where: { callid: In(uniqueIds) },
+        order: { id: 'ASC' },
+      }),
+      this.callLogRepo.find({
+        where: [
+            { asteriskUniqueId: In(uniqueIds) },
+            { callId: In(uniqueIds) }
+        ],
+        order: { createdAt: 'ASC' },
+      })
+    ]);
 
-    // 4. Fetch Manual/App Call Logs
-    const appLogs = await this.callLogRepo.find({
-      where: [
-        { asteriskUniqueId: uniqueId },
-        { callId: uniqueId }
-      ],
-      order: { createdAt: 'ASC' },
-    });
-
-    if (ivrLogs.length === 0 && queueLogs.length === 0 && !cdr && appLogs.length === 0) {
-      return null;
+    let cdrs: Cdr[] = [];
+    if (providedCdrs) {
+        cdrs = providedCdrs;
+    } else {
+        cdrs = await this.cdrRepo.find({
+            where: { uniqueid: In(uniqueIds) }
+        });
     }
 
+    // 2. Group by UniqueId
+    const traces: CallTrace[] = [];
+
+    for (const uid of uniqueIds) {
+        const myIvr = ivrLogs.filter(l => l.channelId === uid);
+        const myQueue = queueLogs.filter(l => l.callid === uid);
+        const myCdr = cdrs.find(c => c.uniqueid === uid);
+        const myApp = callLogs.filter(l => l.asteriskUniqueId === uid || l.callId === uid);
+
+        if (myIvr.length === 0 && myQueue.length === 0 && !myCdr && myApp.length === 0) {
+            continue;
+        }
+
+        traces.push(this.buildSingleTrace(uid, myIvr, myQueue, myCdr, myApp));
+    }
+
+    return traces;
+  }
+
+  private buildSingleTrace(uniqueId: string, ivrLogs: IvrLog[], queueLogs: QueueLog[], cdr: Cdr | undefined, appLogs: CallLog[]): CallTrace {
     // Build timeline
     const timeline: CallEvent[] = [];
 
@@ -97,7 +122,6 @@ export class CallTraceService {
 
     // Queue Events
     queueLogs.forEach(log => {
-      // timestamp is string unix time in seconds (or sometimes formatted string depending on asterisk config)
       const ts = this.parseQueueLogTime(log.time);
       timeline.push({
         timestamp: ts,
@@ -115,10 +139,10 @@ export class CallTraceService {
       });
     });
 
-    // CDR Event (usually represents the end/summary)
+    // CDR Event
     if (cdr) {
       timeline.push({
-        timestamp: cdr.calldate, // This is usually start time. End time = calldate + duration
+        timestamp: cdr.calldate,
         type: 'CDR',
         event: 'CDR_RECORD',
         details: cdr,
@@ -177,7 +201,6 @@ export class CallTraceService {
 
     if (transfer) {
         summary.wasTransferred = true;
-        // TRANSFER(extension|context|remotetime|localposition) -> data1 is extension
         summary.transferTarget = transfer.data1 || undefined;
     }
 
@@ -185,7 +208,6 @@ export class CallTraceService {
       summary.queueEntered = true;
       summary.queueName = enterQueue.queuename;
     } else {
-      // Check IVR for queue attempt
       const ivrQueue = ivrLogs.find(l => l.event === 'QUEUE_ENTER');
       if (ivrQueue) {
         summary.queueEntered = true;
@@ -197,12 +219,12 @@ export class CallTraceService {
       summary.answered = true;
       summary.agentAnswered = connect.agent;
       summary.agentAnswerTime = this.parseQueueLogTime(connect.time);
-      summary.queueWaitTime = parseInt(connect.data1 || '0', 10); // holdtime
+      summary.queueWaitTime = parseInt(connect.data1 || '0', 10);
     }
 
     if (abandon) {
       summary.answered = false;
-      summary.hangupBy = 'caller'; // Usually abandon means caller hung up
+      summary.hangupBy = 'caller';
       summary.queueWaitTime = parseInt(abandon.data3 || '0', 10);
     }
 
@@ -213,7 +235,6 @@ export class CallTraceService {
     }
 
     if (!summary.queueWaitTime && summary.queueEntered) {
-        // Calculate manually if we have enter and leave events
         const enter = timeline.find(e => e.type === 'QUEUE' && e.event === 'ENTERQUEUE');
         const leave = timeline.find(e => e.type === 'QUEUE' && (e.event === 'CONNECT' || e.event === 'ABANDON' || e.event === 'EXITWITHKEY' || e.event === 'EXITEMPTY'));
         if (enter && leave) {

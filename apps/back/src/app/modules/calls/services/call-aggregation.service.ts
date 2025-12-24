@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThan } from 'typeorm';
+import { Repository, MoreThan, In } from 'typeorm';
 import { Cdr } from '../entities/cdr.entity';
 import { CallSummary } from '../entities/call-summary.entity';
 import { CallTraceService } from './call-trace.service';
@@ -53,27 +53,34 @@ export class CallAggregationService implements OnModuleInit, OnModuleDestroy {
 
       this.logger.log(`Processing ${newCdrs.length} new CDRs for aggregation`);
 
-      for (const cdr of newCdrs) {
-        // Check if already exists (idempotency)
-        const exists = await this.summaryRepo.findOne({ where: { uniqueId: cdr.uniqueid } });
-        if (exists) {
-            // Update cdrId if missing? Or just skip.
-            // If exists but no cdrId, we might want to update it, but keeping it simple: skip
-            continue;
-        }
+      // Optimize: Fetch all traces in bulk
+      const uniqueIds = newCdrs.map(c => c.uniqueid);
+      const traces = await this.traceService.getCallTraces(uniqueIds, newCdrs);
 
-        const trace = await this.traceService.getCallTrace(cdr.uniqueid);
-        if (!trace) continue; // Should not happen if CDR exists, but safety check
+      const summaries = [];
+
+      for (const trace of traces) {
+        // Check if uniqueId already exists in database is expensive in loop if not batched
+        // But we can just rely on the unique constraint in DB for safety,
+        // OR fetch existing IDs first.
+        // Given 'take: 100', a `WHERE uniqueId IN (...)` is efficient.
+
+        // We will skip existence check here and rely on INSERT ON CONFLICT DO NOTHING logic
+        // or just try/catch individually if we want to process rest.
+        // Or better: filter out existing ones beforehand.
 
         const s = trace.summary;
-        // Extract IVR path
         const ivrNodes = trace.timeline
           .filter(e => e.type === 'IVR' && e.event === 'NODE_EXECUTE')
           .map(e => e.details.nodeName || e.details.nodeId)
           .join(' -> ');
 
-        const summary = this.summaryRepo.create({
-          uniqueId: cdr.uniqueid,
+        // Find corresponding CDR for ID
+        const cdr = newCdrs.find(c => c.uniqueid === trace.uniqueId);
+        if (!cdr) continue;
+
+        summaries.push(this.summaryRepo.create({
+          uniqueId: trace.uniqueId,
           cdrId: cdr.id,
           startedAt: s.startTime,
           endedAt: s.endTime,
@@ -90,18 +97,21 @@ export class CallAggregationService implements OnModuleInit, OnModuleDestroy {
           ignoredAgents: s.ignoredAgents ? JSON.stringify(s.ignoredAgents) : null,
           wasTransferred: s.wasTransferred || false,
           transferTarget: s.transferTarget
-        });
+        }));
+      }
 
-        try {
-          await this.summaryRepo.save(summary);
-        } catch (err) {
-          // Ignore duplicate key errors (race condition)
-          if ((err as any).code === '23505') { // Postgres unique violation
-             this.logger.debug(`Skipping duplicate summary for ${cdr.uniqueid}`);
-          } else {
-             this.logger.error(`Failed to save summary for ${cdr.uniqueid}`, err);
-          }
-        }
+      // Bulk Save (or individual if we want to ignore duplicates per row)
+      // save() in TypeORM iterates and saves. repo.insert() is bulk but no relations/listeners.
+      // We'll stick to loop with error handling to avoid one dupe failing the whole batch,
+      // or filter existing first. Filtering existing is safer.
+      const existing = await this.summaryRepo.find({ where: { uniqueId: In(uniqueIds) } });
+      const existingIds = new Set(existing.map(e => e.uniqueId));
+
+      const toSave = summaries.filter(s => !existingIds.has(s.uniqueId));
+
+      if (toSave.length > 0) {
+        await this.summaryRepo.save(toSave);
+        this.logger.log(`Saved ${toSave.length} summaries`);
       }
     } finally {
       this.isRunning = false;

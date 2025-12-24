@@ -18,6 +18,7 @@ describe('CallAggregationService', () => {
   };
   const mockTraceService = {
     getCallTrace: jest.fn(),
+    getCallTraces: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -43,9 +44,8 @@ describe('CallAggregationService', () => {
 
     mockSummaryRepo.find.mockResolvedValue([]); // No existing summaries (lastId = 0)
     mockCdrRepo.find.mockResolvedValue([cdr]); // 1 new CDR
-    mockSummaryRepo.findOne.mockResolvedValue(null); // Not already processed
 
-    mockTraceService.getCallTrace.mockResolvedValue({
+    mockTraceService.getCallTraces.mockResolvedValue([{
       uniqueId: '123',
       timeline: [
         { type: 'IVR', event: 'NODE_EXECUTE', details: { nodeName: 'Welcome' } },
@@ -61,19 +61,19 @@ describe('CallAggregationService', () => {
         answered: true,
         queueEntered: false,
       },
-    });
+    }]);
 
     mockSummaryRepo.create.mockImplementation((dto) => dto);
     mockSummaryRepo.save.mockResolvedValue({});
 
     await service.aggregateRecentCalls();
 
-    expect(mockTraceService.getCallTrace).toHaveBeenCalledWith('123');
-    expect(mockSummaryRepo.save).toHaveBeenCalledWith(expect.objectContaining({
+    expect(mockTraceService.getCallTraces).toHaveBeenCalledWith(['123'], [cdr]);
+    expect(mockSummaryRepo.save).toHaveBeenCalledWith([expect.objectContaining({
       uniqueId: '123',
       cdrId: 101,
       status: 'ANSWERED',
       ivrPath: 'Welcome -> Menu',
-    }));
+    })]);
   });
 });

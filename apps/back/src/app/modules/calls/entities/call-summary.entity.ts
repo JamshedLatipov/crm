@@ -1,4 +1,4 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryColumn, Column, CreateDateColumn, Index } from 'typeorm';
 
 @Entity('call_summaries')
 export class CallSummary {
@@ -8,6 +8,7 @@ export class CallSummary {
   @CreateDateColumn()
   createdAt: Date;
 
+  @Index()
   @Column({ type: 'int', nullable: true })
   cdrId: number;
 

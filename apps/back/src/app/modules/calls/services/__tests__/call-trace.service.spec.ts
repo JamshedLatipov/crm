@@ -17,6 +17,7 @@ describe('CallTraceService', () => {
   };
   const mockCdrRepo = {
     findOne: jest.fn(),
+    find: jest.fn(),
   };
   const mockCallLogRepo = {
     find: jest.fn(),
@@ -62,14 +63,14 @@ describe('CallTraceService', () => {
     ]);
 
     // Mock CDR
-    mockCdrRepo.findOne.mockResolvedValue({
+    mockCdrRepo.find.mockResolvedValue([{
       uniqueid: uniqueId,
       calldate: now,
       duration: 60,
       disposition: 'ANSWERED',
       dst: 's',
       clid: '555-1234',
-    });
+    }]);
 
     // Mock CallLog
     mockCallLogRepo.find.mockResolvedValue([]);
@@ -97,7 +98,7 @@ describe('CallTraceService', () => {
        { id: 1, callid: uniqueId, time: (now.getTime() / 1000).toString(), event: 'ENTERQUEUE', queuename: 'sales' },
        { id: 2, callid: uniqueId, time: (now.getTime() / 1000 + 30).toString(), event: 'ABANDON', queuename: 'sales', data3: '30' },
     ]);
-    mockCdrRepo.findOne.mockResolvedValue(null);
+    mockCdrRepo.find.mockResolvedValue([]);
     mockCallLogRepo.find.mockResolvedValue([]);
 
     const trace = await service.getCallTrace(uniqueId);
@@ -120,7 +121,7 @@ describe('CallTraceService', () => {
       { id: 3, callid: uniqueId, time: (now.getTime() / 1000 + 10).toString(), event: 'RINGNOANSWER', agent: 'Agent/101', data1: '1000' },
       { id: 4, callid: uniqueId, time: (now.getTime() / 1000 + 20).toString(), event: 'TRANSFER', queuename: 'support', data1: '2000' },
     ]);
-    mockCdrRepo.findOne.mockResolvedValue(null);
+    mockCdrRepo.find.mockResolvedValue([]);
     mockCallLogRepo.find.mockResolvedValue([]);
 
     const trace = await service.getCallTrace(uniqueId);
