@@ -102,17 +102,61 @@ export class ContactCenterService {
   // Get active channels from AMI
   private async getActiveChannels(): Promise<any[]> {
     try {
-      const response = await this.amiService.action('CoreShowChannels', {});
-      if (response && Array.isArray(response)) {
-        const channels = response.filter(ch => ch.Event === 'CoreShowChannel');
-        this.logger.debug(`getActiveChannels: Found ${channels.length} channels`);
-        if (channels.length > 0) {
-          this.logger.debug(`Sample channel: ${JSON.stringify(channels[0])}`);
+      const events: any[] = [];
+      
+      // Create a promise that collects all events
+      const eventPromise = new Promise<any[]>((resolve) => {
+        let collected: any[] = [];
+        const timeout = setTimeout(() => {
+          this.logger.debug(`getActiveChannels: Timeout reached, collected ${collected.length} events`);
+          resolve(collected);
+        }, 1000); // 1 second timeout
+        
+        // Listen for events temporarily
+        const handler = (evt: any) => {
+          const eventName = evt?.Event || evt?.event;
+          // Collect CoreShowChannel events
+          if (eventName === 'CoreShowChannel') {
+            collected.push(evt);
+          }
+          // Stop collecting when we get Complete event
+          if (eventName === 'CoreShowChannelsComplete') {
+            this.logger.debug(`getActiveChannels: Complete event received, collected ${collected.length} channels`);
+            clearTimeout(timeout);
+            resolve(collected);
+          }
+        };
+        
+        // Get AMI client
+        const client = this.amiService.getClient();
+        if (!client) {
+          this.logger.warn('getActiveChannels: AMI client not available');
+          clearTimeout(timeout);
+          resolve([]);
+          return;
         }
-        return channels;
+        
+        client.on('event', handler);
+        
+        // Clean up after timeout
+        setTimeout(() => {
+          client.off('event', handler);
+        }, 1500);
+      });
+      
+      // Send the action
+      this.logger.debug('getActiveChannels: Sending CoreShowChannels action');
+      await this.amiService.action('CoreShowChannels', {});
+      
+      // Wait for events to be collected
+      const collectedChannels = await eventPromise;
+      
+      this.logger.debug(`getActiveChannels: Returning ${collectedChannels.length} channels`);
+      if (collectedChannels.length > 0) {
+        this.logger.debug(`Sample channel (full data): ${JSON.stringify(collectedChannels[0], null, 2)}`);
       }
-      this.logger.debug('getActiveChannels: No channels found');
-      return [];
+      
+      return collectedChannels;
     } catch (err) {
       this.logger.warn('Failed to get active channels:', err);
       return [];
@@ -184,9 +228,11 @@ export class ContactCenterService {
     
     this.logger.debug(`getOperatorsSnapshot: Found ${members.length} members, ${channels.length} active channels`);
     if (channels.length > 0) {
+      this.logger.debug('=== ACTIVE CHANNELS DUMP ===');
       channels.forEach((ch, idx) => {
-        this.logger.debug(`  Channel ${idx}: ${ch.Channel} | CallerIDNum: ${ch.CallerIDNum} | Seconds: ${ch.Seconds}`);
+        this.logger.debug(`  Channel ${idx}: ${ch.Channel} | CallerIDNum: ${ch.CallerIDNum} | ConnectedLineNum: ${ch.ConnectedLineNum} | State: ${ch.ChannelStateDesc} | Seconds: ${ch.Seconds}`);
       });
+      this.logger.debug('=== END CHANNELS DUMP ===');
     }
     
     // Get call counts for last 24 hours (not just today since 00:00)
@@ -205,15 +251,26 @@ export class ContactCenterService {
       
       this.logger.debug(`Looking for channel for operator: ${m.memberid}, interface: ${operatorInterface}`);
       
-      const memberChannel = channels.find(ch => 
-        ch.Channel?.includes(operatorInterface) || 
-        ch.CallerIDNum === operatorInterface.split('/')[1]
-      );
+      // Более детальное логирование для отладки
+      const extension = operatorInterface.split('/')[1];
+      this.logger.debug(`  Extension extracted: ${extension}`);
+      
+      const memberChannel = channels.find(ch => {
+        // Проверяем несколько условий для более надежного поиска
+        const channelMatch = ch.Channel?.includes(operatorInterface);
+        const extensionMatch = ch.Channel?.includes(`/${extension}-`);
+        const callerIdMatch = ch.CallerIDNum === extension;
+        
+        this.logger.debug(`    Checking channel ${ch.Channel}: channelMatch=${channelMatch}, extensionMatch=${extensionMatch}, callerIdMatch=${callerIdMatch}`);
+        
+        return channelMatch || extensionMatch || callerIdMatch;
+      });
       
       if (memberChannel) {
-        this.logger.debug(`Found channel for ${m.memberid}: ${JSON.stringify(memberChannel)}`);
+        this.logger.debug(`✅ Found channel for ${m.memberid}`);
+        this.logger.debug(`   Full channel data: ${JSON.stringify(memberChannel, null, 2)}`);
       } else {
-        this.logger.debug(`No active channel found for ${m.memberid}`);
+        this.logger.debug(`❌ No active channel found for ${m.memberid}`);
       }
 
       // Determine status
@@ -231,9 +288,32 @@ export class ContactCenterService {
       } else if (memberChannel) {
         status = 'on_call';
         currentCall = memberChannel.CallerIDNum || 'Unknown';
-        currentCallDuration = memberChannel.Seconds || 0;
+        
+        // Парсим длительность из строки формата "HH:MM:SS" в секунды
+        const parseDuration = (durationStr: string): number => {
+          if (!durationStr) return 0;
+          const parts = durationStr.split(':');
+          if (parts.length === 3) {
+            const hours = parseInt(parts[0], 10) || 0;
+            const minutes = parseInt(parts[1], 10) || 0;
+            const seconds = parseInt(parts[2], 10) || 0;
+            return hours * 3600 + minutes * 60 + seconds;
+          }
+          return parseInt(durationStr, 10) || 0;
+        };
+        
+        // Проверяем различные поля для длительности
+        const durationValue = memberChannel.Duration || memberChannel.duration || '0';
+        
+        // Конвертируем в секунды
+        currentCallDuration = typeof durationValue === 'string' 
+          ? parseDuration(durationValue) 
+          : durationValue;
+        
         // Для статуса "на звонке" statusDuration = длительность звонка
         statusDuration = currentCallDuration;
+        
+        this.logger.debug(`🔥 Channel duration: Duration=${memberChannel.Duration}, parsed=${currentCallDuration}s`);
         this.logger.debug(`Operator ${m.memberid} on call: ${currentCall}, duration: ${currentCallDuration}s, statusDuration: ${statusDuration}s`);
       } else {
         // Для idle status можно добавить отслеживание времени простоя
@@ -245,7 +325,6 @@ export class ContactCenterService {
       // Get today's call statistics
       // CDR channel field contains full channel name like "PJSIP/1001-00000042"
       // We need to search by operator interface pattern (e.g., "PJSIP/1001")
-      const extension = operatorInterface.split('/')[1] || operatorInterface;
       const channelPattern = `%${operatorInterface}%`;
       
       const callsToday = await this.cdrRepo.count({
