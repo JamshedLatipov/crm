@@ -23,6 +23,7 @@ import { QueueMembersController } from './controllers/queue-members.controller';
 import { CallTransferService } from './services/call-transfer.service';
 import { CallLog } from './entities/call-log.entity';
 import { AriModule } from '../ari/ari.module';
+import { AmiModule } from '../ami/ami.module';
 import { QueueLog } from './entities/queuelog.entity';
 import { PassportModule } from '@nestjs/passport';
 import { UserModule } from '../user/user.module';
@@ -31,6 +32,7 @@ import { UserModule } from '../user/user.module';
   imports: [
     AriModule,
     ContactCenterModule,
+    AmiModule,
     PassportModule,
     UserModule,
     TypeOrmModule.forFeature([

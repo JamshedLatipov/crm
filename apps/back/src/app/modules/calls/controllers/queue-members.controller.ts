@@ -15,6 +15,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { QueueMember } from '../entities/queue-member.entity';
 import { ContactCenterService } from '../../contact-center/contact-center.service';
+import { RedisQueueStatusService } from '../../ami/redis-queue-status.service';
 import {
   CurrentUser,
   CurrentUserPayload,
@@ -28,7 +29,8 @@ import { JwtAuthGuard } from '../../user/jwt-auth.guard';
 export class QueueMembersController {
   constructor(
     @InjectRepository(QueueMember) private repo: Repository<QueueMember>,
-    private readonly contactCenterSvc: ContactCenterService
+    private readonly contactCenterSvc: ContactCenterService,
+    private readonly redisStatus: RedisQueueStatusService,
   ) {}
 
   @Get()
@@ -82,15 +84,21 @@ export class QueueMembersController {
         where: { member_name: `PJSIP/${userName}` },
       });
 
-      m.forEach(async (member) => {
+      for (const member of m) {
         const prevPaused = Boolean(member.paused);
         const prevReason = member.reason_paused;
         if (prevPaused !== body.paused || prevReason !== body.reason_paused) {
           member.paused = !!body.paused;
           member.reason_paused = body.reason_paused ?? null;
           await this.repo.save(member as any);
+          try {
+            // Update Redis realtime status for operator
+            await this.redisStatus.updateOperatorPausedStatus(member.member_name, member.paused, member.reason_paused ?? undefined);
+          } catch (e) {
+            console.warn('Failed to update Redis operator paused status', (e as Error).message);
+          }
         }
-      });
+      }
 
       return true;
     } catch (err) {

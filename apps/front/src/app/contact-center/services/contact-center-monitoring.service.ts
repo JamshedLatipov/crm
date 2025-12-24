@@ -1,20 +1,9 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import {
-  Observable,
-  interval,
-  switchMap,
-  of,
-  startWith,
-  map,
-  catchError,
-  shareReplay,
-  filter,
-  retryWhen,
-  delay,
-  tap,
-} from 'rxjs';
+import { Observable, interval, of, fromEvent } from 'rxjs';
+import { switchMap, map, catchError, shareReplay, filter, retryWhen, delay, tap, startWith } from 'rxjs/operators';
 import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
+import { io, Socket } from 'socket.io-client';
 import { environment } from '../../../environments/environment';
 
 export interface OperatorStatus {
@@ -41,7 +30,10 @@ export class ContactCenterMonitoringService {
   // WebSocket subject (lazy init)
   private ws$: WebSocketSubject<any> | null = null;
 
-  // Shared parsed message stream when WS is available
+  // socket.io client (when available)
+  private socket: Socket | null = null;
+
+  // Shared parsed message stream when WS or socket.io is available
   private messages$ = null as unknown as Observable<any> | null;
 
   private getWsUrl() {
@@ -50,64 +42,69 @@ export class ContactCenterMonitoringService {
     return api.replace(/^http/, 'ws') + '/contact-center/ws';
   }
 
+  private getSocketBase() {
+    // derive base host without the trailing /api
+    const api = environment.apiBase;
+    return api.replace(/\/api\/?$/, '');
+  }
+
   private ensureWs() {
-    if (this.ws$) return this.ws$;
+    // If socket.io client is available on the server side (Nest uses socket.io), prefer it
+    if (this.socket) return this.socket;
+
     try {
+      const base = this.getSocketBase();
+      this.socket = io(base, { path: '/api/contact-center/ws' });
+
+      // create messages$ stream from socket 'message' events lazily when needed
+      this.socket.on('connect_error', (err) => {
+        console.warn('Socket.io connect_error', err);
+      });
+
+      // leave ws$ (raw WebSocket) fallback for non-socket.io servers
       const url = this.getWsUrl();
       this.ws$ = webSocket({
         url,
-        // accept any data type and let parsing happen downstream
         deserializer: (e: any) => e.data,
-        // prevent WebSocketSubject from closing on error so our retry logic can handle reconnects
-        openObserver: {
-          next: () => {
-            // reset messages$ on new connection
-            this.messages$ = null;
-          },
-        },
       });
 
-      // subscribe once to keep socket alive and handle terminal states
-      this.ws$.subscribe({
-        error: () => {
-          this.ws$ = null;
-          this.messages$ = null;
-        },
-        complete: () => {
-          this.ws$ = null;
-          this.messages$ = null;
-        },
-      });
-
-      return this.ws$;
+      return this.socket;
     } catch (err) {
-      console.warn('WS init failed', err);
-      this.ws$ = null;
-      return null;
+      console.warn('Socket init failed, falling back to raw ws', err);
+      this.socket = null;
+      return this.ws$;
     }
   }
 
   // Prefer WebSocket stream; fallback to polling
   getOperators(): Observable<OperatorStatus[]> {
-    const ws = this.ensureWs();
-    if (ws) {
-      // build a shared parsed message stream lazily
+    const s = this.ensureWs();
+    if (this.socket) {
       if (!this.messages$) {
-        this.messages$ = ws.pipe(
-          // incoming raw data can be string (JSON) or object (socket.io emits)
+        this.messages$ = fromEvent(this.socket, 'message').pipe(
+          map((raw: any) => (typeof raw === 'string' ? JSON.parse(raw) : raw)),
+          filter((m: any) => !!m),
+          shareReplay({ bufferSize: 1, refCount: true })
+        );
+      }
+
+      return (this.messages$ as Observable<any>).pipe(
+        filter((m: any) => m && m.type === 'operators'),
+        map((m: any) => m.payload as OperatorStatus[])
+      );
+    }
+
+    if (this.ws$) {
+      // raw ws fallback
+      if (!this.messages$) {
+        this.messages$ = this.ws$.pipe(
           map((raw) => {
             try {
               if (typeof raw === 'string') return JSON.parse(raw);
-              // socket.io may wrap payloads under { type, payload } or under { data }
               if (raw && raw.type) return raw;
-              if (raw && raw.data) {
-                // sometimes socket.io emits { data: { type, payload } }
-                return raw.data;
-              }
-              // if raw is already an object with expected shape
+              if (raw && raw.data) return raw.data;
               return raw;
-            } catch (e) {
-              // if parse failed, return null and let filter drop it
+            } catch {
               return null;
             }
           }),
@@ -118,17 +115,7 @@ export class ContactCenterMonitoringService {
 
       return (this.messages$ as Observable<any>).pipe(
         filter((m) => m && m.type === 'operators'),
-        map((m) => m.payload as OperatorStatus[]),
-        // if the socket errors upstream, clear ws so next subscription will recreate it
-        retryWhen((errors) =>
-          errors.pipe(
-            tap(() => {
-              this.ws$ = null;
-              this.messages$ = null;
-            }),
-            delay(2000)
-          )
-        )
+        map((m) => m.payload as OperatorStatus[])
       );
     }
 
@@ -146,18 +133,31 @@ export class ContactCenterMonitoringService {
   }
 
   getQueues(): Observable<QueueStatus[]> {
-    const ws = this.ensureWs();
-    if (ws) {
+    if (this.socket) {
       if (!this.messages$) {
-        // messages$ is created in getOperators path; create if missing
-        this.messages$ = ws.pipe(
+        this.messages$ = fromEvent(this.socket, 'message').pipe(
+          map((raw: any) => (typeof raw === 'string' ? JSON.parse(raw) : raw)),
+          filter((m: any) => !!m),
+          shareReplay({ bufferSize: 1, refCount: true })
+        );
+      }
+
+      return (this.messages$ as Observable<any>).pipe(
+        filter((m: any) => m && m.type === 'queues'),
+        map((m: any) => m.payload as QueueStatus[])
+      );
+    }
+
+    if (this.ws$) {
+      if (!this.messages$) {
+        this.messages$ = this.ws$.pipe(
           map((raw) => {
             try {
               if (typeof raw === 'string') return JSON.parse(raw);
               if (raw && raw.type) return raw;
               if (raw && raw.data) return raw.data;
               return raw;
-            } catch (e) {
+            } catch {
               return null;
             }
           }),
@@ -168,16 +168,7 @@ export class ContactCenterMonitoringService {
 
       return (this.messages$ as Observable<any>).pipe(
         filter((m) => m && m.type === 'queues'),
-        map((m) => m.payload as QueueStatus[]),
-        retryWhen((errors) =>
-          errors.pipe(
-            tap(() => {
-              this.ws$ = null;
-              this.messages$ = null;
-            }),
-            delay(2000)
-          )
-        )
+        map((m) => m.payload as QueueStatus[])
       );
     }
 

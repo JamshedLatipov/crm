@@ -9,12 +9,14 @@ import {
   AfterViewInit,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { concat, Observable, shareReplay } from 'rxjs';
+import { concat, Observable } from 'rxjs';
+import { shareReplay } from 'rxjs/operators';
 import {
   ContactCenterMonitoringService,
   OperatorStatus,
   QueueStatus,
 } from '../services/contact-center-monitoring.service';
+import { HttpClient } from '@angular/common/http';
 import { CrmTableComponent } from '../../shared/components/crm-table/crm-table.component';
 import type { CrmColumn } from '../../shared/components/crm-table/crm-table.component';
 import { BaseChartDirective } from 'ng2-charts';
@@ -42,6 +44,7 @@ Chart.register(...registerables, ChartDataLabels);
 })
 export class OnlineMonitoringComponent implements OnInit, AfterViewInit {
   private svc = inject(ContactCenterMonitoringService);
+  private http = inject(HttpClient);
   private cdr = inject(ChangeDetectorRef);
 
   @ViewChild('titleTemplate') titleTemplate!: TemplateRef<any>;
@@ -56,6 +59,7 @@ export class OnlineMonitoringComponent implements OnInit, AfterViewInit {
 
   // Combine a one-time REST snapshot (fast initial render) with the live WS stream.
   // concat will emit the snapshot first (HTTP completes) and then forward live updates from WS.
+  // Emit a one-time REST snapshot, then subscribe to the service stream (WS/REST fallback)
   operators$: Observable<OperatorStatus[]> = concat(
     this.svc.fetchOperatorsSnapshot(),
     this.svc.getOperators()
