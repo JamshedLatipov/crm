@@ -5,7 +5,9 @@
   <div class="kpi-row">
     <div class="kpi-card">
       <div class="kpi-title">Операторы онлайн</div>
-      <div class="kpi-value">{{ activeOperators() }}/{{ totalOperators() }}</div>
+      <div class="kpi-value">
+        {{ activeOperators() }}/{{ totalOperators() }}
+      </div>
       <div class="kpi-sub">Активных операторов</div>
     </div>
     <div class="kpi-card">
@@ -16,9 +18,7 @@
     <div class="kpi-card highlight">
       <div class="kpi-title">Активные звонки</div>
       <div class="kpi-value">{{ totalCallsInService() }}</div>
-      <div class="kpi-sub">
-        В работе · {{ totalWaiting() }} в ожидании
-      </div>
+      <div class="kpi-sub">В работе · {{ totalWaiting() }} в ожидании</div>
     </div>
   </div>
 
@@ -40,7 +40,7 @@
           <div class="stat-content">
             <div class="stat-info">
               <h3>{{ totalWaiting() }}</h3>
-              <p>Звонков в ожидании<br><small>(Сейчас)</small></p>
+              <p>Звонков в ожидании<br /><small>(Сейчас)</small></p>
             </div>
             <div class="stat-icon">
               <mat-icon>call_missed</mat-icon>
@@ -50,7 +50,10 @@
         <div class="stat-card wide queue-status">
           <div class="stat-content">
             <div class="stat-info">
-              <h3>{{ totalCallsInService() }} Активных / {{ totalWaiting() }} Ожидающих</h3>
+              <h3>
+                {{ totalCallsInService() }} Активных /
+                {{ totalWaiting() }} Ожидающих
+              </h3>
               <p>Статус очереди</p>
             </div>
             <div class="stat-icon">
@@ -64,10 +67,12 @@
       <div class="chart-card">
         <h3 class="card-title">Статус операторов</h3>
         <div class="chart-container">
-          <canvas baseChart
-                  [data]="chartData"
-                  [options]="chartOptions"
-                  [type]="'pie'">
+          <canvas
+            baseChart
+            [data]="chartData"
+            [options]="chartOptions"
+            [type]="'pie'"
+          >
           </canvas>
         </div>
         <div class="chart-legend">
@@ -76,7 +81,8 @@
             <span class="muted">{{ getPercentage('idle') }}%</span>
           </div>
           <div>
-            <span class="dot blue"></span> На звонке <span class="muted">{{ getPercentage('on_call') }}%</span>
+            <span class="dot blue"></span> На звонке
+            <span class="muted">{{ getPercentage('on_call') }}%</span>
           </div>
           <div>
             <span class="dot yellow"></span> Завершение
@@ -92,19 +98,14 @@
   </div>
 
   <!-- Queues Table -->
-  <div class="queues-area">
-    <div class="section-header">
-      <h3 class="section-title">
-        <mat-icon>queue</mat-icon>
-        Очереди
-      </h3>
-    </div>
+  <div >
     <div class="queues-table">
-      <crm-table 
-        [columns]="queueColumns" 
-        [data]="queues$ | async" 
-        [showPaginator]="false" 
-        [templates]="tableTemplates">
+      <crm-table
+        [columns]="queueColumns"
+        [data]="queues$ | async"
+        [showPaginator]="false"
+        [templates]="tableTemplates"
+      >
       </crm-table>
     </div>
 
@@ -121,7 +122,9 @@
         <mat-icon>schedule</mat-icon>
         {{ queue.waiting }}
         @if (queue.longestWaitingSeconds > 0) {
-          <span class="longest-wait">{{ formatDuration(queue.longestWaitingSeconds) }}</span>
+        <span class="longest-wait">{{
+          formatDuration(queue.longestWaitingSeconds)
+        }}</span>
         }
       </div>
     </ng-template>
@@ -129,11 +132,15 @@
     <ng-template #queueServiceLevelTemplate let-queue>
       <div class="service-level">
         <div class="progress-bar">
-          <div class="progress-fill" [style.width.%]="queue.serviceLevel || 0"
-               [class.good]="(queue.serviceLevel || 0) >= 80"
-               [class.warning]="(queue.serviceLevel || 0) >= 60 && (queue.serviceLevel || 0) < 80"
-               [class.poor]="(queue.serviceLevel || 0) < 60">
-          </div>
+          <div
+            class="progress-fill"
+            [style.width.%]="queue.serviceLevel || 0"
+            [class.good]="(queue.serviceLevel || 0) >= 80"
+            [class.warning]="
+              (queue.serviceLevel || 0) >= 60 && (queue.serviceLevel || 0) < 80
+            "
+            [class.poor]="(queue.serviceLevel || 0) < 60"
+          ></div>
         </div>
         <span class="service-level-text">{{ queue.serviceLevel || 0 }}%</span>
       </div>
@@ -152,102 +159,106 @@
     <div class="operators-header">
       <input class="search" placeholder="Поиск операторов..." />
     </div>
-      <div class="operators-table">
-        <crm-table [columns]="columns" [data]="operators$ | async" [showPaginator]="false" [templates]="tableTemplates"></crm-table>
-      </div>
+    <div class="operators-table">
+      <crm-table
+        [columns]="columns"
+        [data]="operators$ | async"
+        [showPaginator]="false"
+        [templates]="tableTemplates"
+      ></crm-table>
+    </div>
 
-      <!-- Table Title Template -->
-      <ng-template #tableTitleTemplate>
-        <h3 class="operators-table-title">
-          <mat-icon>people</mat-icon>
-          Операторы
-        </h3>
-      </ng-template>
-
-      <!-- Operator Templates -->
-      <ng-template #titleTemplate let-operator>
-        <div class="operator-info">
-          <div class="operator-name">{{ operator.name || '—' }}</div>
-          @if (operator.extension) {
-            <div class="operator-extension">Доб. {{ operator.extension }}</div>
-          }
-        </div>
-      </ng-template>
-
-      <ng-template #statusTemplate let-operator>
-        <span class="status-badge" [ngClass]="getStatusClass(operator.status)">
-          {{ formatStatus(operator.status) }}
-          @if (operator.pausedReason) {
-            <span class="pause-reason">({{ operator.pausedReason }})</span>
-          }
-        </span>
-      </ng-template>
-
-      <ng-template #currentCallTemplate let-operator>
-        @if (operator.currentCall) {
-          <div class="current-call">
-            <mat-icon class="call-icon">phone_in_talk</mat-icon>
-            {{ operator.currentCall }}
-            @if (operator.currentCallDuration) {
-              <span class="call-duration">{{ formatDuration(operator.currentCallDuration) }}</span>
-            }
-          </div>
-        } @else {
-          <span class="no-call">—</span>
+    <!-- Operator Templates -->
+    <ng-template #titleTemplate let-operator>
+      <div class="operator-info">
+        <div class="operator-name">{{ operator.name || '—' }}</div>
+        @if (operator.extension) {
+        <div class="operator-extension">Доб. {{ operator.extension }}</div>
         }
-      </ng-template>
+      </div>
+    </ng-template>
 
-      <ng-template #avgHandleTimeTemplate let-operator>
-        {{ operator.avgHandleTime ? formatDuration(operator.avgHandleTime) : '—' }}
-      </ng-template>
+    <ng-template #statusTemplate let-operator>
+      <span class="status-badge" [ngClass]="getStatusClass(operator.status)">
+        {{ formatStatus(operator.status) }}
+        @if (operator.pausedReason) {
+        <span class="pause-reason">({{ operator.pausedReason }})</span>
+        }
+      </span>
+    </ng-template>
 
-      <ng-template #serviceTemplate let-operator>
-        {{ operator.queue || '—' }}
-      </ng-template>
+    <ng-template #currentCallTemplate let-operator>
+      @if (operator.currentCall) {
+      <div class="current-call">
+        <mat-icon class="call-icon">phone_in_talk</mat-icon>
+        {{ operator.currentCall }}
+        @if (operator.currentCallDuration) {
+        <span class="call-duration">{{
+          formatDuration(operator.currentCallDuration)
+        }}</span>
+        }
+      </div>
+      } @else {
+      <span class="no-call">—</span>
+      }
+    </ng-template>
 
-      <ng-template #actionsTemplate let-operator>
-        <button mat-button color="primary" class="details-btn">
-          <mat-icon>visibility</mat-icon>
-          Подробно
-        </button>
-      </ng-template>
+    <ng-template #avgHandleTimeTemplate let-operator>
+      {{
+        operator.avgHandleTime ? formatDuration(operator.avgHandleTime) : '—'
+      }}
+    </ng-template>
+
+    <ng-template #serviceTemplate let-operator>
+      {{ operator.queue || '—' }}
+    </ng-template>
+
+    <ng-template #actionsTemplate let-operator>
+      <button mat-button color="primary" class="details-btn">
+        <mat-icon>visibility</mat-icon>
+        Подробно
+      </button>
+    </ng-template>
   </div>
 
   <!-- Active Calls Section -->
   @if (activeCalls().length > 0) {
-    <div class="active-calls-section">
-      <div class="section-header">
-        <h3 class="section-title">
-          <mat-icon>call</mat-icon>
-          Активные звонки
-          <span class="badge" [matBadge]="activeCalls().length" matBadgeColor="primary"></span>
-        </h3>
-      </div>
-      <div class="active-calls-list">
-        @for (call of activeCalls(); track call.uniqueid) {
-          <div class="call-card">
-            <div class="call-info">
-              <div class="caller-id">
-                <mat-icon>phone</mat-icon>
-                <span class="number">{{ call.callerIdNum }}</span>
-                @if (call.callerIdName) {
-                  <span class="name">{{ call.callerIdName }}</span>
-                }
-              </div>
-              <div class="call-details">
-                <span class="duration">{{ formatDuration(call.duration) }}</span>
-                <span class="state">{{ call.state }}</span>
-                @if (call.operator) {
-                  <span class="operator">→ {{ call.operator }}</span>
-                }
-                @if (call.queue) {
-                  <span class="queue">{{ call.queue }}</span>
-                }
-              </div>
-            </div>
-          </div>
-        }
-      </div>
+  <div class="active-calls-section">
+    <div class="section-header">
+      <h3 class="section-title">
+        <mat-icon>call</mat-icon>
+        Активные звонки
+        <span
+          class="badge"
+          [matBadge]="activeCalls().length"
+          matBadgeColor="primary"
+        ></span>
+      </h3>
     </div>
+    <div class="active-calls-list">
+      @for (call of activeCalls(); track call.uniqueid) {
+      <div class="call-card">
+        <div class="call-info">
+          <div class="caller-id">
+            <mat-icon>phone</mat-icon>
+            <span class="number">{{ call.callerIdNum }}</span>
+            @if (call.callerIdName) {
+            <span class="name">{{ call.callerIdName }}</span>
+            }
+          </div>
+          <div class="call-details">
+            <span class="duration">{{ formatDuration(call.duration) }}</span>
+            <span class="state">{{ call.state }}</span>
+            @if (call.operator) {
+            <span class="operator">→ {{ call.operator }}</span>
+            } @if (call.queue) {
+            <span class="queue">{{ call.queue }}</span>
+            }
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+  </div>
   }
 </app-page-layout>

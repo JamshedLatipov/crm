@@ -111,6 +111,10 @@ export class OnlineMonitoringComponent implements OnInit, AfterViewInit {
   chartOptions: ChartOptions<'pie'> = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: {
+      duration: 750,
+      easing: 'easeInOutQuart',
+    },
     plugins: {
       legend: {
         display: false,
@@ -160,20 +164,15 @@ export class OnlineMonitoringComponent implements OnInit, AfterViewInit {
         }
       });
 
-      this.chartData = {
-        ...this.chartData,
-        datasets: [
-          {
-            ...this.chartData.datasets[0],
-            data: [
-              statusCounts.idle,
-              statusCounts.on_call,
-              statusCounts.wrap_up,
-              statusCounts.offline,
-            ],
-          },
-        ],
-      };
+      // Create new array reference to trigger Chart.js update with animation
+      this.chartData.datasets[0].data = [
+        statusCounts.idle,
+        statusCounts.on_call,
+        statusCounts.wrap_up,
+        statusCounts.offline,
+      ];
+      // Force new reference to trigger change detection
+      this.chartData = { ...this.chartData };
       this.cdr.detectChanges();
     });
 
