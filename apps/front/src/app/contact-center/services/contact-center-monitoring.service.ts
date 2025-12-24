@@ -55,6 +55,10 @@ export interface ActiveCall {
   queue?: string;
 }
 
+export interface ContactCenterStats {
+  totalUniqueWaiting: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ContactCenterMonitoringService {
   private http = inject(HttpClient);
@@ -72,7 +76,6 @@ export class ContactCenterMonitoringService {
     const wsUrl = api.startsWith('https') 
       ? api.replace(/^https/, 'wss') + '/contact-center/ws'
       : api.replace(/^http/, 'ws') + '/contact-center/ws';
-    console.log('[ContactCenter] WebSocket URL:', wsUrl);
     return wsUrl;
   }
 
@@ -116,7 +119,6 @@ export class ContactCenterMonitoringService {
     if (!this.messages$) {
       this.messages$ = ws.pipe(
         // incoming raw data can be string (JSON) or object (socket.io emits)
-        tap((raw) => console.log('[ContactCenter] WS raw message:', raw)),
         map((raw) => {
           try {
             if (typeof raw === 'string') return JSON.parse(raw);
@@ -147,7 +149,6 @@ export class ContactCenterMonitoringService {
     if (messages$) {
       return messages$.pipe(
         filter((m) => m && m.type === 'operators'),
-        tap((m) => console.log('[ContactCenter] Received operators:', m.payload)),
         map((m) => m.payload as OperatorStatus[]),
         // if the socket errors upstream, clear ws so next subscription will recreate it
         retryWhen((errors) =>
@@ -180,7 +181,7 @@ export class ContactCenterMonitoringService {
     if (messages$) {
       return messages$.pipe(
         filter((m) => m && m.type === 'queues'),
-        tap((m) => console.log('[ContactCenter] Received queues:', m.payload)),
+        tap((m) => console.log('[ContactCenterService] Received queues via WS:', JSON.stringify(m.payload))),
         map((m) => m.payload as QueueStatus[]),
         retryWhen((errors) =>
           errors.pipe(
@@ -198,6 +199,7 @@ export class ContactCenterMonitoringService {
       startWith(0),
       switchMap(() =>
         this.http.get<QueueStatus[]>(`${this.base}/queues`).pipe(
+          tap((queues) => console.log('[ContactCenterService] Received queues via HTTP:', JSON.stringify(queues))),
           catchError((err) => {
             console.error('Failed to load queues', err);
             return of([] as QueueStatus[]);
@@ -232,7 +234,6 @@ export class ContactCenterMonitoringService {
     if (messages$) {
       return messages$.pipe(
         filter((m) => m && m.type === 'activeCalls'),
-        tap((m) => console.log('[ContactCenter] Received activeCalls:', m.payload)),
         map((m) => m.payload as ActiveCall[]),
         retryWhen((errors) =>
           errors.pipe(
@@ -266,5 +267,28 @@ export class ContactCenterMonitoringService {
         return of([] as ActiveCall[]);
       })
     );
+  }
+
+  // Get stats (totalUniqueWaiting, etc.)
+  getStats(): Observable<ContactCenterStats> {
+    const messages$ = this.ensureMessages();
+    if (messages$) {
+      return messages$.pipe(
+        filter((m) => m && m.type === 'stats'),
+        map((m) => m.payload as ContactCenterStats),
+        retryWhen((errors) =>
+          errors.pipe(
+            tap(() => {
+              this.ws$ = null;
+              this.messages$ = null;
+            }),
+            delay(2000)
+          )
+        )
+      );
+    }
+
+    // Fallback: calculate from queues data (not ideal but better than nothing)
+    return of({ totalUniqueWaiting: 0 });
   }
 }

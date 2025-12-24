@@ -35,9 +35,13 @@ export class ContactCenterGateway
       try {
         const data = await this.svc.tick();
         
+        // Log what we're about to send
+        this.logger.debug(`Broadcasting: queues waiting = [${data.queues.map(q => `${q.name}:${q.waiting}`).join(', ')}], totalUniqueWaiting = ${data.totalUniqueWaiting}`);
+        
         const opMsg = JSON.stringify({ type: 'operators', payload: data.operators });
         const qMsg = JSON.stringify({ type: 'queues', payload: data.queues });
         const callsMsg = JSON.stringify({ type: 'activeCalls', payload: data.activeCalls });
+        const statsMsg = JSON.stringify({ type: 'stats', payload: { totalUniqueWaiting: data.totalUniqueWaiting } });
 
         if (!this.server) {
           this.logger.warn('WebSocket server not initialized yet; skipping broadcast');
@@ -51,6 +55,7 @@ export class ContactCenterGateway
             client.send(opMsg);
             client.send(qMsg);
             client.send(callsMsg);
+            client.send(statsMsg);
             clientCount++;
           }
         });

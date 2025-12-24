@@ -61,12 +61,15 @@ export class ContactCenterService {
   ) {}
 
   // Refresh AMI data cache
-  private async refreshAmiCache() {
+  private async refreshAmiCache(force = false) {
     const now = Date.now();
-    // Cache for 2 seconds to avoid hammering AMI
-    if (this.amiCache.lastUpdate && now - this.amiCache.lastUpdate < 2000) {
+    // Cache for 1 second to avoid hammering AMI (reduced from 2s)
+    if (!force && this.amiCache.lastUpdate && now - this.amiCache.lastUpdate < 1000) {
+      this.logger.debug(`Using cached AMI data (age: ${now - this.amiCache.lastUpdate}ms)`);
       return;
     }
+
+    this.logger.debug('Refreshing AMI cache...');
 
     try {
       // Get active channels
@@ -263,15 +266,30 @@ export class ContactCenterService {
 
   // Return queues with real-time statistics from AMI
   async getQueuesSnapshot(): Promise<QueueStatus[]> {
+    this.logger.debug('=== getQueuesSnapshot() called ===');
     await this.refreshAmiCache();
     
     const queues = await this.queueRepo.find();
     const members = await this.membersRepo.find();
     const queueStatusMap = this.amiCache.queueStatus || new Map();
     
+    // Get active channels for validation
+    const activeChannels = new Set<string>();
+    (this.amiCache.channels || []).forEach((ch: any) => {
+      if (ch.Channel && ch.ChannelStateDesc !== 'Down') {
+        activeChannels.add(ch.Channel);
+      }
+    });
+    
+    this.logger.debug(`Found ${queues.length} queues, ${queueStatusMap.size} have AMI data, ${activeChannels.size} active channels`);
+    
     // Get calls for last 24 hours (not just today since 00:00)
     const last24h = new Date();
     last24h.setHours(last24h.getHours() - 24);
+    
+    // Track which channels/members are already assigned to queues to avoid double-counting
+    const assignedChannels = new Set<string>();
+    const assignedMembers = new Set<string>(); // Track member interfaces (PJSIP/operator1, etc.)
     
     const result: QueueStatus[] = [];
     
@@ -287,27 +305,83 @@ export class ContactCenterService {
       let longestWaitingSeconds = 0;
 
       if (amiEvents && amiEvents.length > 0) {
-        // Look for QueueParams event (summary info)
+        // Look for QueueEntry events (callers waiting in queue) - most accurate
+        const entryEvents = amiEvents.filter((e: any) => e.Event === 'QueueEntry');
+        
+        // Count unique channels only:
+        // 1. Must be in active channels (not a stale/closed channel)
+        // 2. Not already assigned to another queue
+        const uniqueChannels = new Set<string>();
+        const staleChannels: string[] = [];
+        
+        entryEvents.forEach((e: any) => {
+          if (!e.Channel) return;
+          
+          // Skip if channel is not active (stale data from Asterisk)
+          if (!activeChannels.has(e.Channel)) {
+            staleChannels.push(e.Channel);
+            return;
+          }
+          
+          // Skip if already assigned to another queue
+          if (assignedChannels.has(e.Channel)) {
+            return;
+          }
+          
+          uniqueChannels.add(e.Channel);
+          assignedChannels.add(e.Channel);
+        });
+        
+        waiting = uniqueChannels.size;
+        
+        // Log entry events for debugging
+        if (entryEvents.length > 0) {
+          const duplicates = entryEvents.filter((e: any) => e.Channel && assignedChannels.has(e.Channel) && !uniqueChannels.has(e.Channel)).length;
+          this.logger.debug(`Queue ${q.name}: ${entryEvents.length} QueueEntry, ${uniqueChannels.size} unique, ${staleChannels.length} stale, ${duplicates} in other queues`);
+          
+          if (staleChannels.length > 0) {
+            this.logger.warn(`Queue ${q.name} has ${staleChannels.length} stale channels: ${staleChannels.join(', ')}`);
+          }
+        }
+        
+        // Look for QueueParams event for additional info (longest wait time)
         const paramsEvent = amiEvents.find((e: any) => e.Event === 'QueueParams');
         if (paramsEvent) {
-          // Calls = total calls in queue (waiting)
-          // Completed = completed calls today
-          // Abandoned = abandoned calls today  
-          // ServiceLevel = service level percentage
-          // Holdtime = longest hold time in seconds
-          waiting = parseInt(paramsEvent.Calls || '0', 10);
+          // Use Holdtime for longest waiting time
           longestWaitingSeconds = parseInt(paramsEvent.Holdtime || '0', 10);
+          
+          // Log params for debugging
+          this.logger.debug(`Queue ${q.name} QueueParams: Calls=${paramsEvent.Calls}, Max=${paramsEvent.Max}, Completed=${paramsEvent.Completed}, Abandoned=${paramsEvent.Abandoned}, ServiceLevel=${paramsEvent.ServiceLevel}, Holdtime=${paramsEvent.Holdtime}s`);
+          
+          // Only use Calls from QueueParams if we don't have QueueEntry events
+          if (waiting === 0 && paramsEvent.Calls) {
+            const paramsWaiting = parseInt(paramsEvent.Calls || '0', 10);
+            this.logger.debug(`Queue ${q.name}: No QueueEntry events, using QueueParams.Calls=${paramsWaiting}`);
+            waiting = paramsWaiting;
+          }
         }
         
-        // Look for QueueEntry events (callers waiting in queue)
-        const entryEvents = amiEvents.filter((e: any) => e.Event === 'QueueEntry');
-        if (entryEvents.length > 0) {
-          waiting = entryEvents.length;
-        }
-        
-        // Count calls in service (QueueMember events with InCall > 0)
+        // Count calls in service - but only count each member once across all queues
         const memberEvents = amiEvents.filter((e: any) => e.Event === 'QueueMember');
-        callsInService = memberEvents.filter((m: any) => parseInt(m.InCall || '0', 10) > 0).length;
+        let localCallsInService = 0;
+        
+        memberEvents.forEach((m: any) => {
+          const inCall = parseInt(m.InCall || '0', 10);
+          if (inCall > 0 && m.Name) {
+            // Only count if this member hasn't been counted in another queue
+            if (!assignedMembers.has(m.Name)) {
+              localCallsInService += inCall;
+              assignedMembers.add(m.Name);
+            }
+          }
+        });
+        
+        callsInService = localCallsInService;
+        
+        // Summary log for this queue
+        this.logger.debug(`Queue ${q.name} summary: waiting=${waiting}, callsInService=${callsInService}`);
+      } else {
+        this.logger.debug(`Queue ${q.name}: No AMI events available`);
       }
 
       // Get abandoned calls for last 24h
@@ -366,6 +440,31 @@ export class ContactCenterService {
       });
     }
     
+    // Collect all unique waiting channels to avoid double-counting
+    const allWaitingChannels = new Set<string>();
+    for (const q of queues) {
+      const amiEvents = queueStatusMap.get(q.name);
+      if (amiEvents && amiEvents.length > 0) {
+        const entryEvents = amiEvents.filter((e: any) => e.Event === 'QueueEntry');
+        entryEvents.forEach((e: any) => {
+          if (e.Channel) {
+            allWaitingChannels.add(e.Channel);
+          }
+        });
+      }
+    }
+    
+    // Log total waiting calls across all queues
+    const totalWaiting = result.reduce((sum, q) => sum + q.waiting, 0);
+    const uniqueWaiting = allWaitingChannels.size;
+    this.logger.debug(`Total waiting: ${totalWaiting} (sum across queues), ${uniqueWaiting} unique channels`);
+    if (totalWaiting !== uniqueWaiting) {
+      this.logger.warn(`⚠️ Mismatch detected: ${totalWaiting} total vs ${uniqueWaiting} unique waiting calls. Possible duplicate counting across queues.`);
+    }
+    
+    // Log final result before returning
+    this.logger.debug(`Returning ${result.length} queues with waiting values: [${result.map(q => `${q.name}:${q.waiting}`).join(', ')}]`);
+    
     return result;
   }
 
@@ -396,13 +495,34 @@ export class ContactCenterService {
 
   // For compatibility with the gateway polling logic, provide an async tick that returns current snapshots.
   async tick() {
+    // Force refresh AMI cache to get latest data
+    await this.refreshAmiCache(true);
+    
     const [operators, queues, activeCalls] = await Promise.all([
       this.getOperatorsSnapshot(),
       this.getQueuesSnapshot(),
       this.getActiveCalls(),
     ]);
     
-    return { operators, queues, activeCalls };
+    // Calculate unique waiting calls across all queues
+    const uniqueWaitingChannels = new Set<string>();
+    const queueStatusMap = this.amiCache.queueStatus || new Map();
+    for (const q of queues) {
+      const amiEvents = queueStatusMap.get(q.name);
+      if (amiEvents && amiEvents.length > 0) {
+        const entryEvents = amiEvents.filter((e: any) => e.Event === 'QueueEntry');
+        entryEvents.forEach((e: any) => {
+          if (e.Channel) {
+            uniqueWaitingChannels.add(e.Channel);
+          }
+        });
+      }
+    }
+    
+    const totalUniqueWaiting = uniqueWaitingChannels.size;
+    this.logger.debug(`tick() result: ${totalUniqueWaiting} unique waiting calls across ${queues.length} queues`);
+    
+    return { operators, queues, activeCalls, totalUniqueWaiting };
   }
 
   // Debug methods

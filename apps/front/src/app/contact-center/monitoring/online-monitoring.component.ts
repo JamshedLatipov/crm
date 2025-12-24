@@ -11,12 +11,13 @@ import {
   computed,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Observable, shareReplay } from 'rxjs';
+import { Observable, share } from 'rxjs';
 import {
   ContactCenterMonitoringService,
   OperatorStatus,
   QueueStatus,
   ActiveCall,
+  ContactCenterStats,
 } from '../services/contact-center-monitoring.service';
 import { CrmTableComponent } from '../../shared/components/crm-table/crm-table.component';
 import type { CrmColumn } from '../../shared/components/crm-table/crm-table.component';
@@ -69,13 +70,18 @@ export class OnlineMonitoringComponent implements OnInit, AfterViewInit {
   operators = signal<OperatorStatus[]>([]);
   queues = signal<QueueStatus[]>([]);
   activeCalls = signal<ActiveCall[]>([]);
+  stats = signal<ContactCenterStats>({ totalUniqueWaiting: 0 });
 
   // Computed values
   totalOperators = computed(() => this.operators().length);
   activeOperators = computed(() => this.operators().filter(op => op.status !== 'offline').length);
   totalQueues = computed(() => this.queues().length);
-  totalWaiting = computed(() => this.queues().reduce((sum, q) => sum + q.waiting, 0));
-  totalCallsInService = computed(() => this.queues().reduce((sum, q) => sum + q.callsInService, 0));
+  // Используем уникальное количество ожидающих из stats
+  totalWaiting = computed(() => this.stats().totalUniqueWaiting);
+  // Активные звонки = количество активных звонков (не операторов на звонках)
+  totalActiveCalls = computed(() => this.queues().reduce((sum, q) => sum + (q.callsInService || 0), 0));
+  // Операторы на звонках (для справки)
+  operatorsOnCall = computed(() => this.operators().filter(op => op.status === 'on_call').length);
   avgServiceLevel = computed(() => {
     const queues = this.queues();
     if (queues.length === 0) return 0;
@@ -85,15 +91,19 @@ export class OnlineMonitoringComponent implements OnInit, AfterViewInit {
 
   // Direct WebSocket streams with fallback to polling
   operators$: Observable<OperatorStatus[]> = this.svc.getOperators().pipe(
-    shareReplay({ bufferSize: 1, refCount: true })
+    share()
   );
 
   queues$: Observable<QueueStatus[]> = this.svc.getQueues().pipe(
-    shareReplay({ bufferSize: 1, refCount: true })
+    share()
   );
 
   activeCalls$: Observable<ActiveCall[]> = this.svc.getActiveCalls().pipe(
-    shareReplay({ bufferSize: 1, refCount: true })
+    share()
+  );
+
+  stats$: Observable<ContactCenterStats> = this.svc.getStats().pipe(
+    share()
   );
 
   // Chart data
@@ -149,7 +159,6 @@ export class OnlineMonitoringComponent implements OnInit, AfterViewInit {
   ngOnInit() {
     console.log('[OnlineMonitoring] Component initialized');
     this.operators$.subscribe((operators) => {
-      console.log('[OnlineMonitoring] Operators updated:', operators?.length || 0, operators);
       this.operators.set(operators);
 
       const statusCounts = {
@@ -177,14 +186,25 @@ export class OnlineMonitoringComponent implements OnInit, AfterViewInit {
     });
 
     this.queues$.subscribe((queues) => {
-      console.log('[OnlineMonitoring] Queues updated:', queues?.length || 0, queues);
+      const now = new Date().toISOString();
+      console.log(`[${now}] [OnlineMonitoring] Queues received:`, queues.length);
+      console.log(`[${now}] Raw data:`, JSON.stringify(queues, null, 2));
+      queues.forEach((q, idx) => {
+        console.log(`  Queue ${idx + 1}: ${q.name} - waiting: ${q.waiting}, callsInService: ${q.callsInService}`);
+      });
+      console.log('[OnlineMonitoring] Total waiting (sum):', queues.reduce((sum, q) => sum + (q.waiting || 0), 0));
       this.queues.set(queues);
       this.cdr.detectChanges();
     });
 
     this.activeCalls$.subscribe((calls) => {
-      console.log('[OnlineMonitoring] Active calls updated:', calls?.length || 0, calls);
       this.activeCalls.set(calls);
+      this.cdr.detectChanges();
+    });
+
+    this.stats$.subscribe((stats) => {
+      console.log('[OnlineMonitoring] Stats received:', stats);
+      this.stats.set(stats);
       this.cdr.detectChanges();
     });
   }
