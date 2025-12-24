@@ -9,8 +9,8 @@ export class CallSummary {
   createdAt: Date;
 
   @Index()
-  @Column({ type: 'int', nullable: true })
-  cdrId: number;
+  @Column({ type: 'uuid', nullable: true })
+  cdrId: string;
 
   @Column({ type: 'timestamp', nullable: true })
   startedAt: Date;

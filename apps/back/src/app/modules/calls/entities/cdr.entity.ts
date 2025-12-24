@@ -1,12 +1,12 @@
-import { Column, Entity, Index, PrimaryColumn } from 'typeorm';
+import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 
 @Entity({ name: 'cdr' })
 export class Cdr {
 
   @ApiProperty({ description: 'Call ID' })
-  @PrimaryColumn({ type: 'int', name: 'id', generated: 'uuid' })
-  id!: number;
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
 
   @ApiProperty({ description: 'Call start date/time (UTC)' })
   @Column({ type: 'timestamp', name: 'calldate' })

@@ -37,14 +37,15 @@ export class CallAggregationService implements OnModuleInit, OnModuleDestroy {
         take: 1
       });
 
-      let lastId = 0;
+      let lastId: string | undefined = undefined;
       if (lastSummary.length > 0 && lastSummary[0].cdrId) {
-        lastId = lastSummary[0].cdrId;
+        lastId = String(lastSummary[0].cdrId as any);
       }
 
-      // Fetch new CDRs
+      // Fetch new CDRs. If we don't have a lastId yet, fetch from beginning.
+      const whereClause = lastId ? { id: MoreThan(lastId) } : {};
       const newCdrs = await this.cdrRepo.find({
-        where: { id: MoreThan(lastId) },
+        where: whereClause,
         order: { id: 'ASC' },
         take: 100 // Batch size
       });
@@ -57,7 +58,7 @@ export class CallAggregationService implements OnModuleInit, OnModuleDestroy {
       const uniqueIds = newCdrs.map(c => c.uniqueid);
       const traces = await this.traceService.getCallTraces(uniqueIds, newCdrs);
 
-      const summaries = [];
+      const summaries: CallSummary[] = [];
 
       for (const trace of traces) {
         // Check if uniqueId already exists in database is expensive in loop if not batched
@@ -104,10 +105,18 @@ export class CallAggregationService implements OnModuleInit, OnModuleDestroy {
       // save() in TypeORM iterates and saves. repo.insert() is bulk but no relations/listeners.
       // We'll stick to loop with error handling to avoid one dupe failing the whole batch,
       // or filter existing first. Filtering existing is safer.
+      // Deduplicate summaries by uniqueId (in case traces produced duplicates)
+      const summaryMap = new Map<string, CallSummary>();
+      for (const s of summaries) {
+        if (!summaryMap.has(s.uniqueId)) summaryMap.set(s.uniqueId, s);
+      }
+
+      const dedupedSummaries = Array.from(summaryMap.values());
+
       const existing = await this.summaryRepo.find({ where: { uniqueId: In(uniqueIds) } });
       const existingIds = new Set(existing.map(e => e.uniqueId));
 
-      const toSave = summaries.filter(s => !existingIds.has(s.uniqueId));
+      const toSave = dedupedSummaries.filter(s => !existingIds.has(s.uniqueId));
 
       if (toSave.length > 0) {
         await this.summaryRepo.save(toSave);
