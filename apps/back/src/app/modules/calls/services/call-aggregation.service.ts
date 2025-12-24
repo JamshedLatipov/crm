@@ -86,10 +86,22 @@ export class CallAggregationService implements OnModuleInit, OnModuleDestroy {
           agent: s.agentAnswered,
           waitTime: s.queueWaitTime,
           hangupBy: s.hangupBy,
-          ivrPath: ivrNodes
+          ivrPath: ivrNodes,
+          ignoredAgents: s.ignoredAgents ? JSON.stringify(s.ignoredAgents) : null,
+          wasTransferred: s.wasTransferred || false,
+          transferTarget: s.transferTarget
         });
 
-        await this.summaryRepo.save(summary);
+        try {
+          await this.summaryRepo.save(summary);
+        } catch (err) {
+          // Ignore duplicate key errors (race condition)
+          if ((err as any).code === '23505') { // Postgres unique violation
+             this.logger.debug(`Skipping duplicate summary for ${cdr.uniqueid}`);
+          } else {
+             this.logger.error(`Failed to save summary for ${cdr.uniqueid}`, err);
+          }
+        }
       }
     } finally {
       this.isRunning = false;

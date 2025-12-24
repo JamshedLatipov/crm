@@ -108,4 +108,26 @@ describe('CallTraceService', () => {
     expect(trace.summary.hangupBy).toBe('caller');
     expect(trace.summary.queueWaitTime).toBe(30);
   });
+
+  it('should detect ignored agents and transfers', async () => {
+    const uniqueId = '12345.XFER';
+    const now = new Date();
+
+    mockIvrLogRepo.find.mockResolvedValue([]);
+    mockQueueLogRepo.find.mockResolvedValue([
+      { id: 1, callid: uniqueId, time: (now.getTime() / 1000).toString(), event: 'ENTERQUEUE', queuename: 'support' },
+      { id: 2, callid: uniqueId, time: (now.getTime() / 1000 + 5).toString(), event: 'RINGNOANSWER', agent: 'Agent/100', data1: '1000' },
+      { id: 3, callid: uniqueId, time: (now.getTime() / 1000 + 10).toString(), event: 'RINGNOANSWER', agent: 'Agent/101', data1: '1000' },
+      { id: 4, callid: uniqueId, time: (now.getTime() / 1000 + 20).toString(), event: 'TRANSFER', queuename: 'support', data1: '2000' },
+    ]);
+    mockCdrRepo.findOne.mockResolvedValue(null);
+    mockCallLogRepo.find.mockResolvedValue([]);
+
+    const trace = await service.getCallTrace(uniqueId);
+
+    expect(trace.summary.queueEntered).toBe(true);
+    expect(trace.summary.ignoredAgents).toEqual(['Agent/100', 'Agent/101']);
+    expect(trace.summary.wasTransferred).toBe(true);
+    expect(trace.summary.transferTarget).toBe('2000');
+  });
 });

@@ -44,6 +44,15 @@ export class CallSummary {
   @Column({ type: 'text', nullable: true })
   ivrPath: string; // JSON or comma-separated list of nodes
 
+  @Column({ type: 'text', nullable: true })
+  ignoredAgents: string; // JSON list of agents who didn't answer
+
+  @Column({ type: 'boolean', nullable: true, default: false })
+  wasTransferred: boolean;
+
+  @Column({ length: 64, nullable: true })
+  transferTarget: string;
+
   @Column({ length: 32, nullable: true })
   hangupBy: string;
 }

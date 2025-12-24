@@ -23,6 +23,9 @@ export interface CallTrace {
     agentAnswered?: string;
     agentAnswerTime?: Date;
     hangupBy?: string;
+    ignoredAgents?: string[];
+    wasTransferred?: boolean;
+    transferTarget?: string;
   };
   timeline: CallEvent[];
 }
@@ -160,6 +163,23 @@ export class CallTraceService {
     const connect = queueLogs.find(l => l.event === 'CONNECT' || l.event === 'AGENTCONNECT');
     const abandon = queueLogs.find(l => l.event === 'ABANDON');
     const exitKey = queueLogs.find(l => l.event === 'EXITWITHKEY');
+    const transfer = queueLogs.find(l => l.event === 'TRANSFER' || l.event === 'BLINDTRANSFER' || l.event === 'ATTENDEDTRANSFER');
+
+    const ignoredAgents: string[] = [];
+    queueLogs.forEach(l => {
+        if (l.event === 'RINGNOANSWER') {
+            ignoredAgents.push(l.agent);
+        }
+    });
+    if (ignoredAgents.length > 0) {
+        summary.ignoredAgents = ignoredAgents;
+    }
+
+    if (transfer) {
+        summary.wasTransferred = true;
+        // TRANSFER(extension|context|remotetime|localposition) -> data1 is extension
+        summary.transferTarget = transfer.data1 || undefined;
+    }
 
     if (enterQueue) {
       summary.queueEntered = true;
