@@ -204,10 +204,60 @@ export class IvrRuntimeService implements OnModuleInit {
         break;
       }
       case 'queue': {
-        // TODO: use ari client instead of raw query
+        // Get call state and prepare for transition
+        const st = this.calls.get(channelId);
+        if (!st) {
+          this.logger.warn(`No call state found for ${channelId} during queue transition`);
+          break;
+        }
+
+        // Disable DTMF handling completely before queue transition
+        st.waitingForDigit = false;
+        if (st.digitTimer) {
+          clearTimeout(st.digitTimer);
+          st.digitTimer = undefined;
+        }
+        this.logger.log(`[QUEUE_TRANSITION] Disabled DTMF for channel ${channelId}`);
+
+        // Stop any active playbacks before transitioning to dialplan
+        if (st.activePlaybacks?.size > 0) {
+          this.logger.log(`[QUEUE_TRANSITION] Stopping ${st.activePlaybacks.size} active playbacks for channel=${channelId}`);
+          for (const pbId of st.activePlaybacks) {
+            try {
+              await this.safeChannelOp(channelId, () =>
+                client.playbacks.stop({ playbackId: pbId })
+              );
+            } catch (err) {
+              this.logger.warn(`Failed to stop playback ${pbId}: ${err}`);
+            }
+          }
+          st.activePlaybacks.clear();
+          // Give Asterisk MORE time to fully process playback stops and stabilize channel
+          this.logger.log(`[QUEUE_TRANSITION] Waiting 500ms for playback cleanup channel=${channelId}`);
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+
+        // Verify channel is still up before continuing
+        try {
+          const channelInfo = await client.channels.get({ channelId });
+          if (!channelInfo || channelInfo.state === 'Down') {
+            this.logger.warn(`[QUEUE_TRANSITION] Channel ${channelId} is down, aborting transition`);
+            this.calls.delete(channelId);
+            break;
+          }
+          this.logger.log(`[QUEUE_TRANSITION] Channel ${channelId} state=${channelInfo.state}, proceeding to queue`);
+        } catch (err) {
+          this.logger.error(`[QUEUE_TRANSITION] Failed to get channel info for ${channelId}: ${err}`);
+          this.calls.delete(channelId);
+          break;
+        }
+
         console.log(JSON.stringify(node), '-------------------------------------------------');
         const queueName = (node as IvrNode).queueName || 'support';
-        const context = process.env.ASTERISK_FROM_ARI_CONTEXT || 'from-ari';
+        this.logger.log(`[QUEUE_TRANSITION] Starting continue to queue=${queueName} for channel=${channelId}`);
+        
+        // Use 'default' context so operators registered there can receive calls
+        const context = 'default';
         const priority = 1;
         const host = process.env.ARI_HOST || 'localhost';
         const port = process.env.ARI_PORT || '8089';
@@ -235,38 +285,43 @@ export class IvrRuntimeService implements OnModuleInit {
           // Try named queue dialplan entry first (queue_<name>), then plain queue name
           const candidates = [`queue_${queueName}`, queueName];
           let success = false;
+          let lastError = null;
           for (const ext of candidates) {
-            const res = await axios.post(url, null, {
-              params: { context, extension: ext, priority },
-              auth: { username: user, password: pass },
-              timeout: 3000,
-              validateStatus: () => true,
-            });
-            if (res.status >= 200 && res.status < 300) {
-              success = true;
-              break;
-            } 
+            this.logger.log(`[QUEUE_TRANSITION] Attempting continue: context=${context}, ext=${ext}, channel=${channelId}`);
+            try {
+              const res = await axios.post(url, null, {
+                params: { context, extension: ext, priority },
+                auth: { username: user, password: pass },
+                timeout: 5000,
+                validateStatus: () => true,
+              });
+              this.logger.log(`[QUEUE_TRANSITION] Continue response: status=${res.status}, ext=${ext}, channel=${channelId}`);
+              if (res.status >= 200 && res.status < 300) {
+                success = true;
+                this.logger.log(`[QUEUE_TRANSITION] SUCCESS! Transitioned channel=${channelId} to queue via extension=${ext}`);
+                break;
+              } else {
+                lastError = `status ${res.status}`;
+              }
+            } catch (err) {
+              lastError = err.message || String(err);
+              this.logger.warn(`[QUEUE_TRANSITION] Continue attempt failed for ext=${ext}: ${lastError}`);
+            }
           }
           if (success) {
-            // optimistic: dialplan will own it now
-            setTimeout(() => {
-              if (this.calls.has(channelId)) {
-                this.logger.warn(
-                  `Queue continue HTTP did not handoff (channel still tracked) channel=${channelId}`
-                );
-              }
-            }, 200);
+            // Channel has been handed off to dialplan, clean up immediately
             this.calls.delete(channelId);
+            this.logger.log(`[QUEUE_TRANSITION] Channel ${channelId} handed off to dialplan for queue ${queueName}`);
           } else {
             this.logger.error(
-              `HTTP continue to queue returned non-2xx for all candidates channel=${channelId} queue=${queueName}`
+              `[QUEUE_TRANSITION] All continue attempts failed for channel=${channelId} queue=${queueName}, lastError=${lastError}`
             );
             await this.safeLog({
               channelId,
               nodeId: node.id,
               nodeName: node.name,
               event: 'QUEUE_ENTER',
-              meta: { queue: queueName, attempt: 'failed_http', error: 'non-2xx response' },
+              meta: { queue: queueName, attempt: 'failed_http', error: lastError },
             });
           }
         } catch (e) {
@@ -465,6 +520,8 @@ export class IvrRuntimeService implements OnModuleInit {
         }
       }
       st.activePlaybacks.clear();
+      // Give Asterisk time to process playback stops before proceeding
+      await new Promise(resolve => setTimeout(resolve, 200));
     }
     st.waitingForDigit = true; // ensure timer logic consistent
     await this.safeLog({

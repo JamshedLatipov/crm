@@ -35,13 +35,6 @@ export class ContactCenterGateway
       try {
         const data = await this.svc.tick();
         
-        // Log queue details
-        data.queues.forEach(q => {
-          this.logger.debug(`Queue ${q.name}: waiting=${q.waiting}, callsInService=${q.callsInService}, serviceLevel=${q.serviceLevel}`);
-        });
-        
-        this.logger.debug(`Broadcasting: ${data.operators.length} operators, ${data.queues.length} queues, ${data.activeCalls.length} calls`);
-        
         const opMsg = JSON.stringify({ type: 'operators', payload: data.operators });
         const qMsg = JSON.stringify({ type: 'queues', payload: data.queues });
         const callsMsg = JSON.stringify({ type: 'activeCalls', payload: data.activeCalls });
@@ -61,12 +54,6 @@ export class ContactCenterGateway
             clientCount++;
           }
         });
-        
-        if (clientCount > 0) {
-          this.logger.log(`📤 Sent data to ${clientCount} client(s): ${data.operators.length} ops, ${data.queues.length} queues, ${data.activeCalls.length} calls`);
-        } else {
-          this.logger.debug('No clients connected');
-        }
       } catch (err) {
         this.logger.error('ContactCenter broadcast error', err as Error);
       }

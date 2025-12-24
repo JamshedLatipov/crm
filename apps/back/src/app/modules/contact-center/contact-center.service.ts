@@ -72,7 +72,6 @@ export class ContactCenterService {
       // Get active channels
       const channels = await this.getActiveChannels();
       this.amiCache.channels = channels;
-      this.logger.debug(`Cached ${channels.length} active channels`);
 
       // Get queue status for each queue
       const queues = await this.queueRepo.find();
@@ -82,7 +81,6 @@ export class ContactCenterService {
         try {
           const events = await this.getQueueStatusFromAMI(queue.name);
           if (events && events.length > 0) {
-            this.logger.debug(`Queue ${queue.name}: collected ${events.length} events`);
             queueStatusMap.set(queue.name, events);
           }
         } catch (err) {
@@ -159,8 +157,6 @@ export class ContactCenterService {
       // Wait for events to be collected
       const collectedEvents = await eventPromise;
       
-      this.logger.debug(`Collected ${collectedEvents.length} events for queue ${queueName}`);
-      
       return collectedEvents;
     } catch (err) {
       this.logger.warn(`Failed to get queue status for ${queueName}:`, err);
@@ -175,8 +171,6 @@ export class ContactCenterService {
     const members = await this.membersRepo.find();
     const channels = this.amiCache.channels || [];
     
-    this.logger.debug(`Found ${members.length} queue members`);
-    
     // Get call counts for last 24 hours (not just today since 00:00)
     const last24h = new Date();
     last24h.setHours(last24h.getHours() - 24);
@@ -190,8 +184,6 @@ export class ContactCenterService {
         this.logger.debug(`Skipping member ${m.id} - no interface found`);
         continue;
       }
-      
-      this.logger.debug(`Processing member: ${m.member_name || m.id}, interface: ${operatorInterface}, queue: ${m.queue_name}`);
       
       const memberChannel = channels.find(ch => 
         ch.Channel?.includes(operatorInterface) || 
@@ -217,8 +209,6 @@ export class ContactCenterService {
       const extension = operatorInterface.split('/')[1] || operatorInterface;
       const channelPattern = `%${operatorInterface}%`;
       
-      this.logger.debug(`Searching CDR for operator ${operatorInterface} with pattern: ${channelPattern}, last 24h: ${last24h.toISOString()}`);
-      
       const callsToday = await this.cdrRepo.count({
         where: [
           {
@@ -233,8 +223,6 @@ export class ContactCenterService {
           },
         ],
       });
-
-      this.logger.debug(`Operator ${operatorInterface} handled ${callsToday} calls today (pattern: ${channelPattern})`);
 
       // Calculate average handle time (last 10 calls)
       const recentCalls = await this.cdrRepo.find({
@@ -252,13 +240,9 @@ export class ContactCenterService {
         take: 10,
       });
 
-      this.logger.debug(`Found ${recentCalls.length} recent calls for operator ${operatorInterface}`);
-
       const avgHandleTime = recentCalls.length > 0
         ? Math.round(recentCalls.reduce((sum, c) => sum + (c.billsec || c.duration), 0) / recentCalls.length)
         : null;
-
-      this.logger.debug(`Operator ${operatorInterface} avg handle time: ${avgHandleTime}s from ${recentCalls.length} recent calls`);
 
       operators.push({
         id: m.member_name || String(m.id),
@@ -303,8 +287,6 @@ export class ContactCenterService {
       let longestWaitingSeconds = 0;
 
       if (amiEvents && amiEvents.length > 0) {
-        this.logger.debug(`Processing ${amiEvents.length} AMI events for queue ${q.name}`);
-        
         // Look for QueueParams event (summary info)
         const paramsEvent = amiEvents.find((e: any) => e.Event === 'QueueParams');
         if (paramsEvent) {
@@ -315,20 +297,17 @@ export class ContactCenterService {
           // Holdtime = longest hold time in seconds
           waiting = parseInt(paramsEvent.Calls || '0', 10);
           longestWaitingSeconds = parseInt(paramsEvent.Holdtime || '0', 10);
-          this.logger.debug(`Queue ${q.name} QueueParams: Calls=${waiting}, Holdtime=${longestWaitingSeconds}`);
         }
         
         // Look for QueueEntry events (callers waiting in queue)
         const entryEvents = amiEvents.filter((e: any) => e.Event === 'QueueEntry');
         if (entryEvents.length > 0) {
           waiting = entryEvents.length;
-          this.logger.debug(`Queue ${q.name}: ${waiting} callers in QueueEntry events`);
         }
         
         // Count calls in service (QueueMember events with InCall > 0)
         const memberEvents = amiEvents.filter((e: any) => e.Event === 'QueueMember');
         callsInService = memberEvents.filter((m: any) => parseInt(m.InCall || '0', 10) > 0).length;
-        this.logger.debug(`Queue ${q.name}: ${callsInService} calls in service from ${memberEvents.length} members`);
       }
 
       // Get abandoned calls for last 24h
