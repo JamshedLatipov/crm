@@ -252,13 +252,29 @@ export class ContactCenterService {
       this.logger.debug(`Looking for channel for operator: ${m.memberid}, interface: ${operatorInterface}`);
       
       // Более детальное логирование для отладки
-      const extension = operatorInterface.split('/')[1];
+      // Handle various interface formats: SIP/1001, PJSIP/1001, Local/1001@context
+      let extension = operatorInterface;
+      if (operatorInterface.includes('/')) {
+        const parts = operatorInterface.split('/');
+        // Take the part after the technology (e.g. 1001 from PJSIP/1001)
+        extension = parts[1];
+        // If it contains @ (like Local/1001@from-queue), take the part before @
+        if (extension.includes('@')) {
+          extension = extension.split('@')[0];
+        }
+      }
       this.logger.debug(`  Extension extracted: ${extension}`);
       
       const memberChannel = channels.find(ch => {
-        // Проверяем несколько условий для более надежного поиска
-        const channelMatch = ch.Channel?.includes(operatorInterface);
-        const extensionMatch = ch.Channel?.includes(`/${extension}-`);
+        if (!ch.Channel) return false;
+
+        // 1. Direct match of full interface
+        const channelMatch = ch.Channel.includes(operatorInterface);
+
+        // 2. Match pattern Tech/Extension-Sequence (e.g. PJSIP/1001-0000001)
+        const extensionMatch = ch.Channel.includes(`/${extension}-`);
+
+        // 3. Match CallerID (if reliable)
         const callerIdMatch = ch.CallerIDNum === extension;
         
         this.logger.debug(`    Checking channel ${ch.Channel}: channelMatch=${channelMatch}, extensionMatch=${extensionMatch}, callerIdMatch=${callerIdMatch}`);
@@ -475,12 +491,9 @@ export class ContactCenterService {
           }
         }
         
-        // Look for QueueParams event for additional info (longest wait time)
+        // Look for QueueParams event for additional info
         const paramsEvent = amiEvents.find((e: any) => e.Event === 'QueueParams');
         if (paramsEvent) {
-          // Use Holdtime for longest waiting time
-          longestWaitingSeconds = parseInt(paramsEvent.Holdtime || '0', 10);
-          
           // Log params for debugging
           this.logger.debug(`Queue ${q.name} QueueParams: Calls=${paramsEvent.Calls}, Max=${paramsEvent.Max}, Completed=${paramsEvent.Completed}, Abandoned=${paramsEvent.Abandoned}, ServiceLevel=${paramsEvent.ServiceLevel}, Holdtime=${paramsEvent.Holdtime}s`);
           
@@ -491,17 +504,31 @@ export class ContactCenterService {
             waiting = paramsWaiting;
           }
         }
+
+        // Calculate longest waiting time from QueueEntry events
+        if (entryEvents.length > 0) {
+          longestWaitingSeconds = entryEvents.reduce((max, e) => {
+            const wait = parseInt(e.Wait || '0', 10);
+            return wait > max ? wait : max;
+          }, 0);
+        }
         
         // Count calls in service - but only count each member once across all queues
         const memberEvents = amiEvents.filter((e: any) => e.Event === 'QueueMember');
         let localCallsInService = 0;
         
         memberEvents.forEach((m: any) => {
-          const inCall = parseInt(m.InCall || '0', 10);
-          if (inCall > 0 && m.Name) {
+          // Check Status: 2 (In use), 3 (Busy), 7 (Ringing+Inuse), 8 (On Hold) typically indicate active engagement
+          // Also check 'InCall' if available (some Asterisk versions/configurations)
+          const status = parseInt(m.Status || '0', 10);
+          const inCallProp = parseInt(m.InCall || '0', 10);
+
+          const isBusy = [2, 3, 7, 8].includes(status) || inCallProp > 0;
+
+          if (isBusy && m.Name) {
             // Only count if this member hasn't been counted in another queue
             if (!assignedMembers.has(m.Name)) {
-              localCallsInService += inCall;
+              localCallsInService += 1; // Count as 1 call in service
               assignedMembers.add(m.Name);
             }
           }
