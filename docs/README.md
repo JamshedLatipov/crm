@@ -65,15 +65,9 @@ This directory centralizes project documentation. Use the links below to find gu
 
 ## Asterisk / Telephony
 
-- [Asterisk config notes](asterisk-config/README-queues.md)
-- [pjsip.conf](asterisk-config/pjsip.conf.md)
-- [pjsip.postgresql.sql](asterisk-config/pjsip_postgresql.sql.md)
-- [extensions.conf](asterisk-config/extensions.conf.md)
-- [http.conf](asterisk-config/http.conf.md)
-- [manager.conf](asterisk-config/manager.conf.md)
-- [rtp.conf](asterisk-config/rtp.conf.md)
-- [stun.conf](asterisk-config/stun.conf.md)
-- [keys](asterisk-config/keys.md)
+- [Combined Asterisk configuration and guides](asterisk-config/COMBINED.md)
+
+> All individual Asterisk `.md` files have been consolidated into the single linked document.
 
 ## Load tests
 
