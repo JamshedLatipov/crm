@@ -104,6 +104,7 @@
     "@nestjs/platform-socket.io": "^11.1.7",
     "@nestjs/platform-ws": "^11.1.10",
     "@nestjs/swagger": "^11.2.0",
+    "@nestjs/schedule": "^6.1.0",
     "@nestjs/typeorm": "^11.0.0",
     "@nestjs/websockets": "^11.0.0",
     "@types/passport-jwt": "^4.0.1",

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ContactCenterModule } from '../contact-center/contact-center.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PsEndpoint } from './entities/ps-endpoint.entity';
@@ -36,6 +37,7 @@ import { UserModule } from '../user/user.module';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     AriModule,
     ContactCenterModule,
     PassportModule,

@@ -1,14 +1,14 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan, In } from 'typeorm';
 import { Cdr } from '../entities/cdr.entity';
 import { CallSummary } from '../entities/call-summary.entity';
 import { CallTraceService } from './call-trace.service';
+import { Cron, CronExpression, Interval } from '@nestjs/schedule';
 
 @Injectable()
-export class CallAggregationService implements OnModuleInit, OnModuleDestroy {
+export class CallAggregationService {
   private readonly logger = new Logger(CallAggregationService.name);
-  private timer?: NodeJS.Timeout;
   private isRunning = false;
 
 
@@ -18,16 +18,7 @@ export class CallAggregationService implements OnModuleInit, OnModuleDestroy {
     private readonly traceService: CallTraceService,
   ) {}
 
-  onModuleInit() {
-    this.timer = setInterval(() => this.aggregateRecentCalls().catch(err =>
-      this.logger.error('Error in aggregation loop', err)
-    ), 15000); // Check every 15s
-  }
-
-  onModuleDestroy() {
-    if (this.timer) clearInterval(this.timer);
-  }
-
+  @Cron("*/10 * * * * *")
   async aggregateRecentCalls() {
     if (this.isRunning) return;
     this.isRunning = true;
