@@ -172,6 +172,10 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   // Auto-expand softphone on incoming call
   autoExpandOnIncoming = true;
 
+  // Pin (dock) to the right side and shift the app layout
+  pinned = signal(false);
+  private readonly pinStorageKey = 'softphone.pinned';
+
   // Persisted panel size (user-resizable)
   panelWidth = signal<number | undefined>(undefined);
   panelHeight = signal<number | undefined>(undefined);
@@ -199,7 +203,22 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     this.detachPanelResizeObserver();
     this.expandedPanelEl = ref?.nativeElement ?? null;
     if (!this.expandedPanelEl) return;
+
+    // Apply restored size immediately to avoid ResizeObserver capturing default size first.
+    this.applyPanelSizeToElement(this.expandedPanelEl);
     this.attachPanelResizeObserver(this.expandedPanelEl);
+    this.applyDockOffsetSoon();
+  }
+
+  private applyPanelSizeToElement(el: HTMLElement) {
+    const w = this.panelWidth();
+    const h = this.panelHeight();
+    if (Number.isFinite(w) && w && w > 0) {
+      el.style.width = `${Math.round(Math.max(this.panelMinWidthPx, w))}px`;
+    }
+    if (Number.isFinite(h) && h && h > 0) {
+      el.style.height = `${Math.round(Math.max(this.panelMinHeightPx, h))}px`;
+    }
   }
 
   // Current operator queue member record (if any)
@@ -211,6 +230,8 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     try {
       const saved = localStorage.getItem('softphone.expanded');
       if (saved !== null) this.expanded = saved === '1';
+      const savedPinned = localStorage.getItem(this.pinStorageKey);
+      if (savedPinned !== null) this.pinned.set(savedPinned === '1');
       const savedAuto = localStorage.getItem('softphone.autoExpandOnIncoming');
       if (savedAuto !== null) this.autoExpandOnIncoming = savedAuto === '1';
       const savedMissed = localStorage.getItem('softphone.missedCount');
@@ -227,6 +248,8 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     } catch {
       // ignore
     }
+
+    this.applyDockOffsetSoon();
 
     // Subscribe to softphone events coming from the service
     this.softphone.events$
@@ -528,6 +551,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
     this.stopResizeDrag();
     this.detachPanelResizeObserver();
+    this.clearDockOffset();
     try {
       window.removeEventListener('beforeunload', this.onBeforeUnloadHandler);
       document.removeEventListener('visibilitychange', this.onVisibilityChangeHandler);
@@ -548,7 +572,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     const rect = el.getBoundingClientRect();
     const edge = 10;
     const nearLeft = ev.clientX - rect.left <= edge;
-    const nearTop = ev.clientY - rect.top <= edge;
+    const nearTop = !this.pinned() && ev.clientY - rect.top <= edge;
 
     if (nearLeft && nearTop) el.style.cursor = 'nwse-resize';
     else if (nearLeft) el.style.cursor = 'ew-resize';
@@ -571,7 +595,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     const rect = el.getBoundingClientRect();
     const edge = 10;
     const nearLeft = ev.clientX - rect.left <= edge;
-    const nearTop = ev.clientY - rect.top <= edge;
+    const nearTop = !this.pinned() && ev.clientY - rect.top <= edge;
     if (!nearLeft && !nearTop) return;
 
     ev.preventDefault();
@@ -617,6 +641,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       this.panelWidth.set(Math.round(nextW));
       this.panelHeight.set(Math.round(nextH));
       this.scheduleSavePanelSize(Math.round(nextW), Math.round(nextH));
+      this.applyDockOffset();
     };
 
     this.onPanelResizeDragUp = () => {
@@ -654,9 +679,36 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       const h = Math.round(rect.height);
       if (w <= 0 || h <= 0) return;
 
+      const currentW = this.panelWidth();
+      const currentH = this.panelHeight();
+      const hasPersistedSize =
+        Number.isFinite(currentW) &&
+        currentW !== undefined &&
+        currentW > 0 &&
+        Number.isFinite(currentH) &&
+        currentH !== undefined &&
+        currentH > 0;
+
+      // On initial render, ResizeObserver may fire before bindings settle.
+      // If we already have a persisted size and user is not actively resizing,
+      // do not overwrite the restored size with a default-measured size.
+      if (hasPersistedSize && !this.panelResizing()) {
+        this.applyDockOffset();
+        return;
+      }
+
+      // When pinned, height is derived (100vh). Keep persisted height for unpinned mode.
+      if (this.pinned()) {
+        this.panelWidth.set(w);
+        this.scheduleSavePanelSize(w, this.panelHeight() ?? this.panelMinHeightPx);
+        this.applyDockOffset();
+        return;
+      }
+
       this.panelWidth.set(w);
       this.panelHeight.set(h);
       this.scheduleSavePanelSize(w, h);
+      this.applyDockOffset();
     });
 
     this.panelResizeObserver.observe(el);
@@ -684,11 +736,20 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   }
 
   private persistPanelSizeNow() {
-    const w = this.panelWidth();
-    const h = this.panelHeight();
+    const measured = this.expandedPanelEl?.getBoundingClientRect();
+    const rawW = this.panelWidth();
+    const rawH = this.panelHeight();
+    const w = Number.isFinite(rawW) && rawW && rawW > 0 ? rawW : measured?.width;
+    const h = Number.isFinite(rawH) && rawH && rawH > 0 ? rawH : measured?.height;
     if (!Number.isFinite(w) || !Number.isFinite(h) || !w || !h) return;
     try {
-      localStorage.setItem(this.panelSizeStorageKey, JSON.stringify({ w, h }));
+      localStorage.setItem(
+        this.panelSizeStorageKey,
+        JSON.stringify({
+          w: Math.round(Math.max(this.panelMinWidthPx, w)),
+          h: Math.round(Math.max(this.panelMinHeightPx, h)),
+        })
+      );
     } catch {
       // ignore
     }
@@ -700,7 +761,22 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     }
     this.panelResizeSaveTimer = window.setTimeout(() => {
       try {
-        localStorage.setItem(this.panelSizeStorageKey, JSON.stringify({ w, h }));
+        const safeW = Math.round(
+          Math.max(
+            this.panelMinWidthPx,
+            Number.isFinite(w) && w > 0 ? w : this.panelWidth() ?? this.panelMinWidthPx
+          )
+        );
+        const safeH = Math.round(
+          Math.max(
+            this.panelMinHeightPx,
+            Number.isFinite(h) && h > 0 ? h : this.panelHeight() ?? this.panelMinHeightPx
+          )
+        );
+        localStorage.setItem(
+          this.panelSizeStorageKey,
+          JSON.stringify({ w: safeW, h: safeH })
+        );
       } catch {
         // ignore
       }
@@ -959,6 +1035,63 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
         this.missedCallCount = 0;
         localStorage.setItem('softphone.missedCount', '0');
       }
+    } catch {
+      // ignore
+    }
+
+    this.applyDockOffsetSoon();
+  }
+
+  togglePinned() {
+    const next = !this.pinned();
+    this.pinned.set(next);
+    try {
+      localStorage.setItem(this.pinStorageKey, next ? '1' : '0');
+    } catch {
+      // ignore
+    }
+
+    this.applyDockOffsetSoon();
+  }
+
+  private applyDockOffsetSoon() {
+    // Allow layout to settle (esp. on expand) before measuring.
+    queueMicrotask(() => this.applyDockOffset());
+  }
+
+  private applyDockOffset() {
+    // Only reserve space when panel is actually visible
+    if (!this.expanded || !this.pinned()) {
+      this.clearDockOffset();
+      return;
+    }
+
+    // Don't reserve space in fullscreen scripts mode
+    if (this.expandedPanelEl?.classList.contains('scripts-expanded')) {
+      this.clearDockOffset();
+      return;
+    }
+
+    const measuredWidth = this.expandedPanelEl?.getBoundingClientRect().width;
+    const width = Math.round(
+      (Number.isFinite(measuredWidth) && measuredWidth && measuredWidth > 0
+        ? measuredWidth
+        : this.panelWidth() ?? 480)
+    );
+
+    try {
+      document.documentElement.style.setProperty(
+        '--softphone-dock-width',
+        `${Math.max(0, width)}px`
+      );
+    } catch {
+      // ignore
+    }
+  }
+
+  private clearDockOffset() {
+    try {
+      document.documentElement.style.setProperty('--softphone-dock-width', '0px');
     } catch {
       // ignore
     }

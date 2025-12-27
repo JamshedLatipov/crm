@@ -21,11 +21,12 @@
     *ngIf="expanded"
     #expandedPanel
     class="expanded-panel"
+    [class.docked]="pinned()"
     [class.scripts-expanded]="activeTab === 'scenarios' && viewMode() === 'fullscreen'"
     [class.scripts-with-details]="activeTab === 'scenarios' && viewedScript()"
     [class.resizing]="panelResizing()"
     [style.width.px]="panelWidth()"
-    [style.height.px]="panelHeight()"
+    [style.height]="pinned() ? '100vh' : (panelHeight() ? (panelHeight() + 'px') : null)"
     (mousemove)="onPanelMouseMove($event)"
     (mouseleave)="onPanelMouseLeave()"
     (mousedown)="onPanelMouseDown($event)"
@@ -41,13 +42,23 @@
             (pauseChange)="onMemberPauseChange($event)"
           ></app-softphone-status-bar>
         </div>
-        <button
-          (click)="toggleExpand()"
-          title="Minimize"
-          class="minimize-button"
-        >
-          <span class="material-icons">remove</span>
-        </button>
+        <div class="header-actions">
+          <button
+            (click)="togglePinned()"
+            [title]="pinned() ? 'Открепить' : 'Закрепить справа'"
+            class="pin-button"
+            [class.active]="pinned()"
+          >
+            <span class="material-icons">push_pin</span>
+          </button>
+          <button
+            (click)="toggleExpand()"
+            title="Minimize"
+            class="minimize-button"
+          >
+            <span class="material-icons">remove</span>
+          </button>
+        </div>
       </div>
     </div>
 

@@ -41,6 +41,9 @@ body {
 
   // Reset the user agent margin.
   margin: 0;
+
+  // Softphone docked mode reserves space on the right.
+  padding-right: var(--softphone-dock-width, 0px);
 }
 @tailwind base;
 @tailwind components;
@@ -70,6 +73,9 @@ body {
   --warning-light: rgba(245, 158, 11, 0.1);
   --success-light: rgba(16, 185, 129, 0.1);
   --error-light: rgba(239, 68, 68, 0.1);
+
+  /* Softphone: reserved width when pinned to the right */
+  --softphone-dock-width: 0px;
 
   /* Semantic workload colors (map to MDC/theme variables when available) */
   --workload-low-color: var(--mdc-theme-primary, var(--success-color, #4caf50));

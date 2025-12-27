@@ -106,6 +106,15 @@
   backdrop-filter: blur(20px);
   transition: width 0.3s ease, right 0.3s ease, bottom 0.3s ease;
 
+  &.docked {
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    border-radius: 0;
+  }
+
   // When script details panel is open, expand to accommodate it
   &.scripts-with-details {
     width: 800px;
@@ -172,6 +181,44 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pin-button {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 0.25rem;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+
+  .material-icons {
+    font-size: 1.05rem;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  &.active {
+    background: rgba(255, 255, 255, 0.35);
+  }
 }
 
 .status-bar {
