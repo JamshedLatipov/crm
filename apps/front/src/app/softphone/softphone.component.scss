@@ -95,6 +95,13 @@
   width: 30rem;
   max-height: 85vh;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  resize: none;
+  min-width: 20rem;
+  min-height: 24rem;
+  max-width: calc(100vw - 3rem);
+  max-height: calc(100vh - 3rem);
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
   transition: width 0.3s ease, right 0.3s ease, bottom 0.3s ease;
@@ -113,11 +120,18 @@
     bottom: 0 !important;
     right: 0 !important;
     border-radius: 0;
+    resize: none;
   }
   border-radius: 1rem;
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.2);
   animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.expanded-panel.resizing {
+  user-select: none;
+  transition: none !important;
+  will-change: width, height;
 }
 
 @keyframes slideUp {
@@ -196,7 +210,9 @@
 // Panel Content
 .panel-content {
   padding: 1rem;
-  max-height: calc(85vh - 6rem);
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
   overflow-y: auto;
 
   &::-webkit-scrollbar {

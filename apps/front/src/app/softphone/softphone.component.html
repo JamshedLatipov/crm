@@ -17,7 +17,19 @@
   </button>
 
   <!-- Expanded panel -->
-  <div *ngIf="expanded" class="expanded-panel" [class.scripts-expanded]="activeTab === 'scenarios' && viewMode() === 'fullscreen'" [class.scripts-with-details]="activeTab === 'scenarios' && viewedScript()">
+  <div
+    *ngIf="expanded"
+    #expandedPanel
+    class="expanded-panel"
+    [class.scripts-expanded]="activeTab === 'scenarios' && viewMode() === 'fullscreen'"
+    [class.scripts-with-details]="activeTab === 'scenarios' && viewedScript()"
+    [class.resizing]="panelResizing()"
+    [style.width.px]="panelWidth()"
+    [style.height.px]="panelHeight()"
+    (mousemove)="onPanelMouseMove($event)"
+    (mouseleave)="onPanelMouseLeave()"
+    (mousedown)="onPanelMouseDown($event)"
+  >
     <div class="panel-header">
       <div class="header-content">
         <div class="status-bar">

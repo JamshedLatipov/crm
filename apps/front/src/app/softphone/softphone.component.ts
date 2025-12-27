@@ -1,10 +1,12 @@
 import {
   Component,
+  ElementRef,
   OnInit,
   HostListener,
   OnDestroy,
   inject,
   signal,
+  ViewChild,
 } from '@angular/core';
 import { environment } from '../../environments/environment';
 import { Subject, lastValueFrom } from 'rxjs';
@@ -170,6 +172,36 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   // Auto-expand softphone on incoming call
   autoExpandOnIncoming = true;
 
+  // Persisted panel size (user-resizable)
+  panelWidth = signal<number | undefined>(undefined);
+  panelHeight = signal<number | undefined>(undefined);
+  panelResizing = signal(false);
+  private readonly panelSizeStorageKey = 'softphone.panelSize';
+  private panelResizeObserver: ResizeObserver | null = null;
+  private panelResizeSaveTimer: number | null = null;
+  private expandedPanelEl: HTMLElement | null = null;
+
+  private panelResizeDragStart:
+    | {
+        startX: number;
+        startY: number;
+        startW: number;
+        startH: number;
+      }
+    | null = null;
+  private readonly panelMinWidthPx = 320; // 20rem
+  private readonly panelMinHeightPx = 384; // 24rem
+  private onPanelResizeDragMove?: (ev: MouseEvent) => void;
+  private onPanelResizeDragUp?: (ev: MouseEvent) => void;
+
+  @ViewChild('expandedPanel')
+  set expandedPanelRef(ref: ElementRef<HTMLElement> | undefined) {
+    this.detachPanelResizeObserver();
+    this.expandedPanelEl = ref?.nativeElement ?? null;
+    if (!this.expandedPanelEl) return;
+    this.attachPanelResizeObserver(this.expandedPanelEl);
+  }
+
   // Current operator queue member record (if any)
   currentMember: QueueMemberRecord | null = null;
   memberPaused = signal(false);
@@ -183,6 +215,15 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       if (savedAuto !== null) this.autoExpandOnIncoming = savedAuto === '1';
       const savedMissed = localStorage.getItem('softphone.missedCount');
       if (savedMissed !== null) this.missedCallCount = Number(savedMissed) || 0;
+
+      const savedSizeRaw = localStorage.getItem(this.panelSizeStorageKey);
+      if (savedSizeRaw) {
+        const parsed = JSON.parse(savedSizeRaw) as { w?: unknown; h?: unknown };
+        const w = typeof parsed.w === 'number' ? parsed.w : Number(parsed.w);
+        const h = typeof parsed.h === 'number' ? parsed.h : Number(parsed.h);
+        if (Number.isFinite(w) && w > 0) this.panelWidth.set(Math.round(w));
+        if (Number.isFinite(h) && h > 0) this.panelHeight.set(Math.round(h));
+      }
     } catch {
       // ignore
     }
@@ -485,12 +526,185 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
+    this.stopResizeDrag();
+    this.detachPanelResizeObserver();
     try {
       window.removeEventListener('beforeunload', this.onBeforeUnloadHandler);
       document.removeEventListener('visibilitychange', this.onVisibilityChangeHandler);
     } catch (e) {
       /* ignore */
     }
+  }
+
+  onPanelMouseMove(ev: MouseEvent) {
+    if (this.panelResizing()) return;
+    const el = this.expandedPanelEl;
+    if (!el) return;
+    if (el.classList.contains('scripts-expanded')) {
+      el.style.cursor = '';
+      return;
+    }
+
+    const rect = el.getBoundingClientRect();
+    const edge = 10;
+    const nearLeft = ev.clientX - rect.left <= edge;
+    const nearTop = ev.clientY - rect.top <= edge;
+
+    if (nearLeft && nearTop) el.style.cursor = 'nwse-resize';
+    else if (nearLeft) el.style.cursor = 'ew-resize';
+    else if (nearTop) el.style.cursor = 'ns-resize';
+    else el.style.cursor = '';
+  }
+
+  onPanelMouseLeave() {
+    if (this.panelResizing()) return;
+    const el = this.expandedPanelEl;
+    if (!el) return;
+    el.style.cursor = '';
+  }
+
+  onPanelMouseDown(ev: MouseEvent) {
+    const el = this.expandedPanelEl;
+    if (!el) return;
+    if (el.classList.contains('scripts-expanded')) return;
+
+    const rect = el.getBoundingClientRect();
+    const edge = 10;
+    const nearLeft = ev.clientX - rect.left <= edge;
+    const nearTop = ev.clientY - rect.top <= edge;
+    if (!nearLeft && !nearTop) return;
+
+    ev.preventDefault();
+    ev.stopPropagation();
+
+    this.panelResizing.set(true);
+    this.panelResizeDragStart = {
+      startX: ev.clientX,
+      startY: ev.clientY,
+      startW: Math.round(rect.width),
+      startH: Math.round(rect.height),
+    };
+
+    this.onPanelResizeDragMove = (moveEv: MouseEvent) => {
+      if (!this.panelResizeDragStart) return;
+
+      const dx = this.panelResizeDragStart.startX - moveEv.clientX;
+      const dy = this.panelResizeDragStart.startY - moveEv.clientY;
+
+      const maxW = Math.max(this.panelMinWidthPx, window.innerWidth - 48);
+      const maxH = Math.max(this.panelMinHeightPx, window.innerHeight - 48);
+
+      const nextW = nearLeft
+        ? Math.min(
+            maxW,
+            Math.max(
+              this.panelMinWidthPx,
+              this.panelResizeDragStart.startW + dx
+            )
+          )
+        : this.panelResizeDragStart.startW;
+
+      const nextH = nearTop
+        ? Math.min(
+            maxH,
+            Math.max(
+              this.panelMinHeightPx,
+              this.panelResizeDragStart.startH + dy
+            )
+          )
+        : this.panelResizeDragStart.startH;
+
+      this.panelWidth.set(Math.round(nextW));
+      this.panelHeight.set(Math.round(nextH));
+      this.scheduleSavePanelSize(Math.round(nextW), Math.round(nextH));
+    };
+
+    this.onPanelResizeDragUp = () => {
+      this.stopResizeDrag();
+    };
+
+    window.addEventListener('mousemove', this.onPanelResizeDragMove);
+    window.addEventListener('mouseup', this.onPanelResizeDragUp);
+  }
+
+  private stopResizeDrag() {
+    if (this.onPanelResizeDragMove) {
+      window.removeEventListener('mousemove', this.onPanelResizeDragMove);
+      this.onPanelResizeDragMove = undefined;
+    }
+    if (this.onPanelResizeDragUp) {
+      window.removeEventListener('mouseup', this.onPanelResizeDragUp);
+      this.onPanelResizeDragUp = undefined;
+    }
+    this.panelResizeDragStart = null;
+    this.panelResizing.set(false);
+    if (this.expandedPanelEl) this.expandedPanelEl.style.cursor = '';
+  }
+
+  private attachPanelResizeObserver(el: HTMLElement) {
+    // No-op in environments without ResizeObserver
+    if (typeof ResizeObserver === 'undefined') return;
+
+    this.panelResizeObserver = new ResizeObserver(() => {
+      // Ignore fullscreen scripts mode where size is forced
+      if (el.classList.contains('scripts-expanded')) return;
+
+      const rect = el.getBoundingClientRect();
+      const w = Math.round(rect.width);
+      const h = Math.round(rect.height);
+      if (w <= 0 || h <= 0) return;
+
+      this.panelWidth.set(w);
+      this.panelHeight.set(h);
+      this.scheduleSavePanelSize(w, h);
+    });
+
+    this.panelResizeObserver.observe(el);
+  }
+
+  private detachPanelResizeObserver() {
+    // Ensure we don't lose the latest size due to debounced save
+    this.persistPanelSizeNow();
+    if (this.panelResizeObserver) {
+      try {
+        this.panelResizeObserver.disconnect();
+      } catch {
+        // ignore
+      }
+      this.panelResizeObserver = null;
+    }
+    if (this.panelResizeSaveTimer !== null) {
+      try {
+        window.clearTimeout(this.panelResizeSaveTimer);
+      } catch {
+        // ignore
+      }
+      this.panelResizeSaveTimer = null;
+    }
+  }
+
+  private persistPanelSizeNow() {
+    const w = this.panelWidth();
+    const h = this.panelHeight();
+    if (!Number.isFinite(w) || !Number.isFinite(h) || !w || !h) return;
+    try {
+      localStorage.setItem(this.panelSizeStorageKey, JSON.stringify({ w, h }));
+    } catch {
+      // ignore
+    }
+  }
+
+  private scheduleSavePanelSize(w: number, h: number) {
+    if (this.panelResizeSaveTimer !== null) {
+      window.clearTimeout(this.panelResizeSaveTimer);
+    }
+    this.panelResizeSaveTimer = window.setTimeout(() => {
+      try {
+        localStorage.setItem(this.panelSizeStorageKey, JSON.stringify({ w, h }));
+      } catch {
+        // ignore
+      }
+    }, 250);
   }
   private onBeforeUnloadHandler = (ev?: Event) => {
     try {
@@ -733,6 +947,10 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   }
 
   toggleExpand() {
+    // If we're collapsing the panel, flush latest size first
+    if (this.expanded) {
+      this.persistPanelSizeNow();
+    }
     this.expanded = !this.expanded;
     try {
       localStorage.setItem('softphone.expanded', this.expanded ? '1' : '0');
