@@ -8,6 +8,7 @@ import {
   NotificationPriority, 
   NotificationStatus 
 } from '../entities/notification.entity';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 export interface CreateNotificationDto {
   type: NotificationType;
@@ -38,7 +39,8 @@ export interface NotificationFilter {
 export class NotificationService {
   constructor(
     @InjectRepository(Notification)
-    private notificationRepository: Repository<Notification>
+    private notificationRepository: Repository<Notification>,
+    private eventEmitter: EventEmitter2
   ) {}
 
   async create(dto: CreateNotificationDto): Promise<Notification> {
@@ -49,7 +51,12 @@ export class NotificationService {
       metadata: {}
     });
 
-    return this.notificationRepository.save(notification);
+    const saved = await this.notificationRepository.save(notification);
+
+    // Emit event for other modules to handle (e.g. WebSocket gateway)
+    this.eventEmitter.emit('notification.created', saved);
+
+    return saved;
   }
 
   async createBulk(dtos: CreateNotificationDto[]): Promise<Notification[]> {
@@ -62,7 +69,13 @@ export class NotificationService {
       })
     );
 
-    return this.notificationRepository.save(notifications);
+    const savedNotifications = await this.notificationRepository.save(notifications);
+
+    savedNotifications.forEach(notification => {
+      this.eventEmitter.emit('notification.created', notification);
+    });
+
+    return savedNotifications;
   }
 
   async findByFilter(filter: NotificationFilter): Promise<{ data: Notification[]; total: number }> {
