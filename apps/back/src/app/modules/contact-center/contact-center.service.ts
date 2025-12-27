@@ -50,6 +50,8 @@ export type ActiveCall = {
 @Injectable()
 export class ContactCenterService {
   private readonly logger = new Logger(ContactCenterService.name);
+  private readonly CDR_LOOKBACK_MINUTES = 50; // Time window for CDR data analysis
+  
   private amiCache: {
     channels?: any[];
     queueStatus?: Map<string, any[]>;
@@ -240,17 +242,36 @@ export class ContactCenterService {
     }
   }
 
+  // Batch load all CDR data for the configured time window to avoid N+1 queries
+  private async loadCdrDataBatch() {
+    const lookbackTime = new Date();
+    lookbackTime.setMinutes(lookbackTime.getMinutes() - this.CDR_LOOKBACK_MINUTES);
+    
+    // Load all CDR records for the configured time window in one query
+    const allCdrRecords = await this.cdrRepo.find({
+      where: {
+        calldate: Between(lookbackTime, new Date()),
+      },
+      order: { calldate: 'DESC' },
+    });
+    
+    return { allCdrRecords, lookbackTime };
+  }
+
   // Return operators based on queue_members table enriched with real-time AMI data
   async getOperatorsSnapshot(): Promise<OperatorStatus[]> {
-    await this.refreshAmiCache();
+    // Load all data in parallel for better performance
+    const [_, members, users, cdrData] = await Promise.all([
+      this.refreshAmiCache(),
+      this.membersRepo.find(),
+      this.userRepo.find({
+        select: ['id', 'sipEndpointId', 'firstName', 'lastName', 'username'],
+      }),
+      this.loadCdrDataBatch(),
+    ]);
     
-    const members = await this.membersRepo.find();
     const channels = this.amiCache.channels || [];
-    
-    // Загружаем всех пользователей
-    const users = await this.userRepo.find({
-      select: ['id', 'sipEndpointId', 'firstName', 'lastName', 'username'],
-    });
+    const { allCdrRecords, lookbackTime } = cdrData;
     
     // Создаем маппинг sipEndpointId -> User и username -> User
     const userMap = new Map<string, User>();
@@ -265,10 +286,6 @@ export class ContactCenterService {
     });
     
     this.logger.debug(`Loaded ${users.length} users, created mapping for ${userMap.size} entries`);
-    
-    // Get call counts for last 24 hours (not just today since 00:00)
-    const last24h = new Date();
-    last24h.setHours(last24h.getHours() - 24);
     
     const operators: OperatorStatus[] = [];
     const registeredEndpoints = this.amiCache.registeredEndpoints || new Set<string>();
@@ -384,41 +401,18 @@ export class ContactCenterService {
         statusDuration = null;
       }
 
-      // Get today's call statistics
-      // CDR channel field contains full channel name like "PJSIP/1001-00000042"
-      // We need to search by operator interface pattern (e.g., "PJSIP/1001")
-      const channelPattern = `%${operatorInterface}%`;
+      // Get today's call statistics from pre-loaded CDR data
+      // Filter in memory instead of separate DB queries for each operator
+      const operatorCdrRecords = allCdrRecords.filter(cdr => {
+        const matchChannel = cdr.channel?.includes(operatorInterface);
+        const matchDstChannel = cdr.dstchannel?.includes(operatorInterface);
+        return (matchChannel || matchDstChannel) && cdr.disposition === 'ANSWERED';
+      });
       
-      const callsToday = await this.cdrRepo.count({
-        where: [
-          {
-            channel: Like(channelPattern),
-            calldate: Between(last24h, new Date()),
-            disposition: 'ANSWERED',
-          },
-          {
-            dstchannel: Like(channelPattern),
-            calldate: Between(last24h, new Date()),
-            disposition: 'ANSWERED',
-          },
-        ],
-      });
+      const callsToday = operatorCdrRecords.length;
 
-      // Calculate average handle time (last 10 calls)
-      const recentCalls = await this.cdrRepo.find({
-        where: [
-          { 
-            channel: Like(channelPattern),
-            disposition: 'ANSWERED',
-          },
-          { 
-            dstchannel: Like(channelPattern),
-            disposition: 'ANSWERED',
-          },
-        ],
-        order: { calldate: 'DESC' },
-        take: 10,
-      });
+      // Calculate average handle time (last 10 calls) from filtered data
+      const recentCalls = operatorCdrRecords.slice(0, 10);
 
       const avgHandleTime = recentCalls.length > 0
         ? Math.round(recentCalls.reduce((sum, c) => sum + (c.billsec || c.duration), 0) / recentCalls.length)
@@ -473,11 +467,16 @@ export class ContactCenterService {
 
   // Return queues with real-time statistics from AMI
   async getQueuesSnapshot(): Promise<QueueStatus[]> {
-    await this.refreshAmiCache();
+    // Load all data in parallel
+    const [_, queues, members, cdrData] = await Promise.all([
+      this.refreshAmiCache(),
+      this.queueRepo.find(),
+      this.membersRepo.find(),
+      this.loadCdrDataBatch(),
+    ]);
     
-    const queues = await this.queueRepo.find();
-    const members = await this.membersRepo.find();
     const queueStatusMap = this.amiCache.queueStatus || new Map();
+    const { allCdrRecords, lookbackTime } = cdrData;
     
     // Get active channels for validation
     const activeChannels = new Set<string>();
@@ -486,10 +485,6 @@ export class ContactCenterService {
         activeChannels.add(ch.Channel);
       }
     });
-    
-    // Get calls for last 24 hours (not just today since 00:00)
-    const last24h = new Date();
-    last24h.setHours(last24h.getHours() - 24);
     
     // Track which channels/members are already assigned to queues to avoid double-counting
     const assignedChannels = new Set<string>();
@@ -581,46 +576,29 @@ export class ContactCenterService {
         if (callsInService < 0) callsInService = 0;
       }
 
+      // Filter CDR records for this queue from pre-loaded data
+      const queueCdrRecords = allCdrRecords.filter(cdr => 
+        cdr.lastapp === 'Queue' && cdr.lastdata?.includes(q.name)
+      );
+      
       // Get abandoned calls for last 24h
-      const abandonedToday = await this.cdrRepo.count({
-        where: {
-          lastapp: 'Queue',
-          lastdata: Like(`%${q.name}%`),
-          disposition: 'NO ANSWER',
-          calldate: Between(last24h, new Date()),
-        },
-      });
+      const abandonedToday = queueCdrRecords.filter(cdr => 
+        cdr.disposition === 'NO ANSWER'
+      ).length;
 
       // Calculate service level (calls answered within 20 seconds / total calls)
-      const answeredCalls = await this.cdrRepo.count({
-        where: {
-          lastapp: 'Queue',
-          lastdata: Like(`%${q.name}%`),
-          disposition: 'ANSWERED',
-          calldate: Between(last24h, new Date()),
-          duration: LessThanOrEqual(20),
-        },
-      });
+      const answeredCalls = queueCdrRecords.filter(cdr => 
+        cdr.disposition === 'ANSWERED' && (cdr.duration || 0) <= 20
+      ).length;
 
-      const totalCalls = await this.cdrRepo.count({
-        where: {
-          lastapp: 'Queue',
-          lastdata: Like(`%${q.name}%`),
-          calldate: Between(last24h, new Date()),
-        },
-      });
+      const totalCalls = queueCdrRecords.length;
 
       const serviceLevel = totalCalls > 0 ? Math.round((answeredCalls / totalCalls) * 100) : 0;
 
       // Total answered calls in last 24h
-      const answeredCallsToday = await this.cdrRepo.count({
-        where: {
-          lastapp: 'Queue',
-          lastdata: Like(`%${q.name}%`),
-          disposition: 'ANSWERED',
-          calldate: Between(last24h, new Date()),
-        },
-      });
+      const answeredCallsToday = queueCdrRecords.filter(cdr => 
+        cdr.disposition === 'ANSWERED'
+      ).length;
 
       result.push({
         id: String(q.id),
@@ -756,7 +734,7 @@ export class ContactCenterService {
   // Debug methods
   async getDebugCdrSample(limit: number = 10) {
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0); // Start of today
     
     const recentCalls = await this.cdrRepo.find({
       where: {
