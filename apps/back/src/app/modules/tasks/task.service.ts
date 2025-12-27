@@ -70,6 +70,11 @@ export class TaskService {
       taskData.dealId = data.dealId;
     }
 
+    // Связь с логом звонка
+    if (data.callLogId) {
+      taskData.callLogId = data.callLogId;
+    }
+
     // Обработка типа задачи и автоматический расчет дедлайна
     if (data.taskTypeId) {
       taskData.taskType = { id: data.taskTypeId } as TaskType;

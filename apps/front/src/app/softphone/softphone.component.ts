@@ -818,7 +818,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   }
 
   // Manual CDR / call log registration triggered from scripts panel
-  manualRegisterCall(payload?: {
+  async manualRegisterCall(payload?: {
     branchId?: string | null;
     note?: string;
     createTask?: boolean;
@@ -828,18 +828,22 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       const noteToSave = payload?.note ?? this.callNote();
       const branch = payload?.branchId ?? this.selectedScriptBranch();
 
-      this.callHistoryService
-        .saveCallLog(callId, {
+      // Save call log first and get the log ID
+      let savedLogId: string | null = null;
+      try {
+        const logResult = await this.callHistoryService.saveCallLog(callId, {
           note: noteToSave,
           callType: this.callType(),
           scriptBranch: branch,
-        })
-        .then(() => this.logger.info('Manual CDR registered'))
-        .catch((err) =>
-          this.logger.warn('Manual CDR registration failed', err)
-        );
+        });
+        savedLogId = logResult?.id || logResult?.logId || null;
+        this.logger.info('Manual CDR registered', { logId: savedLogId });
+      } catch (err) {
+        this.logger.warn('Manual CDR registration failed', err);
+        // Continue to task creation even if log failed
+      }
 
-      // If requested, open task modal with prefilled title/description
+      // If requested, open task modal with prefilled title/description and link to call log
       if (payload?.createTask) {
         // find script title by id
         const findTitle = (
@@ -857,7 +861,12 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
         const scriptsList = this.scripts() || [];
         const title = findTitle(scriptsList, branch) || 'Task from script';
         try {
-          this.taskModal.openModal({ mode: 'create', title, note: noteToSave });
+          this.taskModal.openModal({ 
+            mode: 'create', 
+            title, 
+            note: noteToSave,
+            callLogId: savedLogId || undefined
+          });
         } catch (e) {
           this.logger.warn('Opening task modal failed', e);
         }

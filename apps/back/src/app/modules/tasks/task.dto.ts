@@ -24,6 +24,9 @@ export class CreateTaskDto {
 
   @ApiProperty({ required: false, description: 'ID типа задачи' })
   taskTypeId?: number;
+
+  @ApiProperty({ required: false, description: 'ID лога звонка, из которого создана задача' })
+  callLogId?: string;
 }
 
 export class UpdateTaskDto {
@@ -50,4 +53,7 @@ export class UpdateTaskDto {
 
   @ApiProperty({ required: false, description: 'ID типа задачи' })
   taskTypeId?: number;
+
+  @ApiProperty({ required: false, description: 'ID лога звонка' })
+  callLogId?: string;
 }

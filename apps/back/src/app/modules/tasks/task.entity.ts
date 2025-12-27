@@ -40,6 +40,10 @@ export class Task {
   @Column({ nullable: true })
   dealId: string;
 
+  // Связь с логом звонка
+  @Column({ type: 'uuid', nullable: true })
+  callLogId: string;
+
   // Тип задачи
   @ManyToOne(() => TaskType, taskType => taskType.tasks, { nullable: true })
   @JoinColumn({ name: 'taskTypeId' })

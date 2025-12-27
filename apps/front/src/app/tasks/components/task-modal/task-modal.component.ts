@@ -226,7 +226,12 @@ export class TaskModalComponent implements OnInit {
       dealId: formValue.dealId,
     };
 
+    // Link to call log if provided
     const cfg = this.config();
+    if (cfg.callLogId) {
+      taskDto.callLogId = cfg.callLogId;
+    }
+
     const observable =
       cfg.mode === 'edit' && cfg.taskId
         ? this.tasksService.update(cfg.taskId, taskDto)

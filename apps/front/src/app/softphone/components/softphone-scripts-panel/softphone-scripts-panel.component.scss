@@ -413,23 +413,24 @@
 
 // Script details panel
 .script-details-panel {
-  position: fixed;
+  position: absolute;
   top: 0;
   right: 0;
+  bottom: 0;
   width: 380px;
   max-width: 90vw;
-  height: 100vh;
+  height: auto;
   background: var(--surface-color, #fff);
   border-left: 2px solid var(--primary-color, #1976d2);
   box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
   z-index: 10000;
-  padding-bottom: 140px;
-  
+
   animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 
   @media (max-width: 768px) {
     width: 100vw;
@@ -466,7 +467,7 @@
     rgba(25, 118, 210, 0.02) 100%
   );
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  grid-row: 1;
+  flex: 0 0 auto;
 
   h3 {
     margin: 0;
@@ -487,13 +488,15 @@
 }
 
 .details-content {
-  grid-row: 2;
+  flex: 1 1 0;
   overflow-y: auto;
   overflow-x: hidden;
+  overscroll-behavior: contain;
   padding: 20px;
   background: linear-gradient(to bottom, #ffffff 0%, #fafafa 100%);
   -webkit-overflow-scrolling: touch;
   min-height: 0;
+  max-height: none;
 
   &::-webkit-scrollbar {
     width: 8px;
@@ -778,10 +781,8 @@
   color: #9c27b0 !important;
 }
 
-// Inline logging form in details panel
-.inline-logging-form {
-  margin-top: 24px;
-  padding: 20px;
+.logging-form {
+  padding: 16px;
   background: linear-gradient(
     135deg,
     rgba(76, 175, 80, 0.08) 0%,
@@ -791,22 +792,20 @@
   border: 2px solid rgba(76, 175, 80, 0.3);
   box-shadow: 0 4px 12px rgba(76, 175, 80, 0.1);
 
-  .form-section {
-    h4 {
-      margin: 0 0 16px 0;
-      font-size: 16px;
-      font-weight: 600;
-      color: #4caf50;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+  .form-title {
+    margin: 0 0 12px 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: #4caf50;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
   .log-textarea {
     width: 100%;
-    min-height: 100px;
-    padding: 12px;
+    min-height: 70px;
+    padding: 10px;
     border-radius: 8px;
     border: 1px solid var(--border-color, #e0e0e0);
     background: white;
@@ -834,15 +833,22 @@
 }
 
 .detail-actions {
-  grid-row: 3;
+  flex: 0 0 auto;
   padding: 20px;
   border-top: 2px solid var(--border-color, #e0e0e0);
   display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  gap: 16px;
   background: rgba(25, 118, 210, 0.02);
   backdrop-filter: blur(10px);
+
+  .action-buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
 
   button {
     min-width: 180px;
