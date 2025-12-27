@@ -1,0 +1,134 @@
+<button
+  mat-icon-button
+  [matMenuTriggerFor]="notificationMenu"
+  [matBadge]="unreadCount()"
+  [matBadgeHidden]="!hasUnreadNotifications()"
+  matBadgeColor="warn"
+  matBadgeSize="small"
+  [matTooltip]="tooltipText()"
+  (click)="onBellClick()"
+  class="notification-bell"
+  [@notificationAnimation]
+>
+  <mat-icon [class.shake]="hasUnreadNotifications()">notifications</mat-icon>
+</button>
+
+<mat-menu #notificationMenu="matMenu" class="notification-menu" xPosition="before">
+  <div class="notification-header" (click)="$event.stopPropagation()">
+    <div class="header-content">
+      <h3>Уведомления</h3>
+      @if (unreadCount() > 0) {
+        <span class="unread-badge">{{ unreadCount() }}</span>
+      }
+    </div>
+    
+    <!-- Фильтры -->
+    <div class="notification-filters">
+      <button 
+        mat-button 
+        class="filter-btn"
+        [class.active]="selectedFilter() === 'all'"
+        (click)="onFilterChange('all')"
+      >
+        Все
+      </button>
+      <button 
+        mat-button 
+        class="filter-btn"
+        [class.active]="selectedFilter() === 'unread'"
+        (click)="onFilterChange('unread')"
+      >
+        Непрочитано
+      </button>
+      @if (hasUnreadNotifications()) {
+        <button 
+          mat-icon-button 
+          class="mark-all-btn"
+          (click)="markAllAsRead()"
+          [disabled]="isLoading()"
+          matTooltip="Прочитать все"
+        >
+          <mat-icon>done_all</mat-icon>
+        </button>
+      }
+    </div>
+  </div>
+
+  <mat-divider></mat-divider>
+
+  <div class="notification-content">
+    @if (isLoading()) {
+      <div class="loading-container">
+        <mat-spinner diameter="30"></mat-spinner>
+        <p>Загрузка уведомлений...</p>
+      </div>
+    } @else if (error()) {
+      <div class="error-container">
+        <mat-icon color="warn">error</mat-icon>
+        <p>{{ error() }}</p>
+        <button mat-button color="primary" (click)="reload()">
+          <mat-icon>refresh</mat-icon>
+          Повторить
+        </button>
+      </div>
+    } @else if (groupedNotifications().length === 0) {
+      <div class="empty-container">
+        <mat-icon>notifications_none</mat-icon>
+        <p>{{ selectedFilter() === 'unread' ? 'Нет непрочитанных уведомлений' : 'Нет уведомлений' }}</p>
+      </div>
+    } @else {
+      <div class="notifications-list" [@listAnimation]="groupedNotifications().length">
+        @for (group of groupedNotifications(); track group.label) {
+          <div class="notification-group">
+            @if (group.label !== 'Сегодня' || groupedNotifications().length > 1) {
+              <div class="group-label">{{ group.label }}</div>
+            }
+            @for (notification of group.notifications; track notification.id) {
+              <div 
+                class="notification-item"
+                [class.unread]="notification.status !== 'read'"
+                (click)="onNotificationClick(notification)"
+                [@notificationAnimation]
+              >
+                <div class="notification-icon">
+                  {{ getNotificationIcon(notification.type) }}
+                </div>
+                <div class="notification-body">
+                  <div class="notification-title">
+                    {{ notification.title }}
+                    <span class="notification-time">{{ formatTimeAgo(notification.createdAt) }}</span>
+                  </div>
+                  <div class="notification-message">
+                    {{ notification.message }}
+                  </div>
+                </div>
+                @if (notification.status !== 'read') {
+                  <button 
+                    mat-icon-button 
+                    class="mark-read-btn"
+                    (click)="markAsRead(notification.id, $event)"
+                    matTooltip="Отметить"
+                  >
+                    <mat-icon>check</mat-icon>
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      @if (hasMoreNotifications()) {
+        <div class="show-more-container">
+          <button 
+            mat-button 
+            (click)="showAllNotifications()"
+            class="show-more-btn"
+          >
+            Показать ещё ({{ totalNotifications() - maxDisplayedNotifications() }})
+          </button>
+        </div>
+      }
+    }
+  </div>
+</mat-menu>

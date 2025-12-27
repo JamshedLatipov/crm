@@ -289,6 +289,13 @@
   dependencies:
     "@angular-eslint/bundled-angular-compiler" "20.7.0"
 
+"@angular/animations@~20.1.0":
+  version "20.1.8"
+  resolved "https://registry.yarnpkg.com/@angular/animations/-/animations-20.1.8.tgz#233a257943da9f4e3802926c15c8af6fb0ba4661"
+  integrity sha512-Hid/s6hIVmK7xC+rlPoXR0F2+5ylqOrqt+8dNS3dc28xdivsHUegW6/7hz22Rm1bqpBc8xjB28E4mPJXDbpJVg==
+  dependencies:
+    tslib "^2.3.0"
+
 "@angular/build@~20.1.0":
   version "20.1.6"
   resolved "https://registry.npmjs.org/@angular/build/-/build-20.1.6.tgz"
@@ -407,6 +414,13 @@
   version "20.2.14"
   resolved "https://registry.npmjs.org/@angular/material/-/material-20.2.14.tgz"
   integrity sha512-IbAgV6XLsvmHiJzxycVhcNC1PA4M30qi+ERCOir6cT333Bxm8vDV32gsOjfL52uzG5YRARroPC+8s1XqR2oxeA==
+  dependencies:
+    tslib "^2.3.0"
+
+"@angular/platform-browser-dynamic@~20.1.0":
+  version "20.1.8"
+  resolved "https://registry.yarnpkg.com/@angular/platform-browser-dynamic/-/platform-browser-dynamic-20.1.8.tgz#7bae601a9e522c90efdc58dd44dea62044aad44f"
+  integrity sha512-udBN++YbQS6r+Vf1JgafbamU32RiFr/B8B//K3xEv8NGfTH4en/RX8Bm4HKGReS/6V3/Bbj95EAA3dmmMw1Rhg==
   dependencies:
     tslib "^2.3.0"
 

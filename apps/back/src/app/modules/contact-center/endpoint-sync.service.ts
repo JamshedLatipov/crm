@@ -21,16 +21,12 @@ export class EndpointSyncService implements OnModuleInit {
     this.logger.log('✅ Initial endpoint status sync completed');
   }
 
-  // Cron job: sync endpoint status every 30 seconds
-  @Cron(CronExpression.EVERY_30_SECONDS)
+  // Cron job: sync endpoint status every 5 minutes
+  @Cron(CronExpression.EVERY_5_MINUTES)
   async syncEndpointStatus() {
     try {
-      this.logger.debug('🔄 Syncing endpoint status...');
-      
       // Get all registered SIP endpoints
       const registeredEndpoints = await this.getRegisteredSipEndpoints();
-      
-      this.logger.debug(`Found ${registeredEndpoints.size} registered SIP endpoints: [${Array.from(registeredEndpoints).join(', ')}]`);
       
       // Get all queue members
       const members = await this.membersRepo.find();
@@ -104,8 +100,6 @@ export class EndpointSyncService implements OnModuleInit {
       method3.forEach(ep => registered.add(ep));
       method4.forEach(ep => registered.add(ep));
       
-      this.logger.debug(`Methods results: Agents=${method1.size}, PJSIP=${method2.size}, DeviceState=${method3.size}, QueueStatus=${method4.size}`);
-      
       return registered;
     } catch (err) {
       this.logger.warn('Failed to get registered endpoints:', err);
@@ -142,7 +136,6 @@ export class EndpointSyncService implements OnModuleInit {
               const endpoint = agent.split('/')[1];
               registered.add(endpoint);
               registered.add(agent);
-              this.logger.debug(`  ✅ Agent logged in: ${endpoint} (${name}, status=${status})`);
             }
           }
         }
@@ -195,7 +188,6 @@ export class EndpointSyncService implements OnModuleInit {
             const match = uri.match(/sip:([^@]+)@/);
             if (match) {
               registered.add(match[1]);
-              this.logger.debug(`  ✅ Registered (ContactStatus): ${match[1]}`);
             }
           }
         }
@@ -251,7 +243,6 @@ export class EndpointSyncService implements OnModuleInit {
               const endpoint = device.split('/')[1];
               registered.add(endpoint);
               registered.add(device);
-              this.logger.debug(`  ✅ Registered (DeviceState): ${endpoint} (${state})`);
             }
           }
         }
@@ -310,7 +301,6 @@ export class EndpointSyncService implements OnModuleInit {
             const endpoint = location.includes('/') ? location.split('/')[1] : location;
             registered.add(endpoint);
             registered.add(location);
-            this.logger.debug(`  ✅ Available (QueueMember): ${endpoint} (status=${status}, paused=${paused})`);
           }
         }
         

@@ -285,8 +285,6 @@ export class ContactCenterService {
       }
     });
     
-    this.logger.debug(`Loaded ${users.length} users, created mapping for ${userMap.size} entries`);
-    
     const operators: OperatorStatus[] = [];
     const registeredEndpoints = this.amiCache.registeredEndpoints || new Set<string>();
     
@@ -439,9 +437,6 @@ export class ContactCenterService {
       if (user) {
         // Используем метод fullName из User entity, который обрабатывает firstName/lastName/username
         fullName = user.fullName;
-        this.logger.debug(`Found user for ${extension}: ${fullName}`);
-      } else {
-        this.logger.debug(`No user found for ${extension} (operatorInterface: ${operatorInterface})`);
       }
 
       const operatorData = {

@@ -72,11 +72,6 @@ export class ContactCenterGateway
           (sum, q) => sum + q.waiting,
           0
         );
-
-        this.logger.debug(
-          `Broadcasting: ${data.operators.length} operators (${operatorsOnCall} on call), ${totalWaitingSum} waiting (${data.totalUniqueWaiting} unique), ${totalCallsInService} in service, ${data.activeCalls.length} active calls`
-        );
-
         // Prepare messages
         const messages = {
           operators: { type: 'operators', payload: data.operators },
