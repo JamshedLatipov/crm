@@ -5,6 +5,7 @@ import { RedisModule } from './redis.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { MODULES } from './modules';
 import { CALLS_MIGRATIONS } from './modules/calls/migrations';
 import { USER_MIGRATIONS } from './modules/user/migrations';
@@ -75,6 +76,7 @@ import { INTEGRATIONS_MIGRATIONS } from './modules/integrations/migrations';
       },
     ]),
     RedisModule,
+    EventEmitterModule.forRoot(),
     ...MODULES,
   ],
   controllers: [AppController],
