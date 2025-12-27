@@ -194,9 +194,23 @@ export class DashboardComponent {
   }
 
   createNewDeal(): void {
-    // TODO: Implement deal creation dialog when it's available
-    // For now, navigate to pipeline page
-    this.router.navigate(['/deals']);
+    import('../deals/components/deal-form.component/deal-form.component').then(
+      (m) => {
+        const dialogRef = this.dialog.open(m.DealFormComponent, {
+          width: '700px',
+          maxWidth: '95vw',
+          maxHeight: '90vh',
+          data: { mode: 'create' },
+          disableClose: false,
+        });
+
+        dialogRef.afterClosed().subscribe((created) => {
+          if (created) {
+            this.loadData();
+          }
+        });
+      }
+    );
   }
 
   sendEmail(): void {
