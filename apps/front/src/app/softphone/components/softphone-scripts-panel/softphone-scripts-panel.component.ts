@@ -1,4 +1,5 @@
-import { Component, input, output, OnChanges, SimpleChanges, ChangeDetectionStrategy, signal, inject, effect, computed } from '@angular/core';
+import { Component, input, output, OnChanges, SimpleChanges, ChangeDetectionStrategy, signal, inject, effect, computed, HostListener } from '@angular/core';
+import { trigger, transition, style, animate } from '@angular/animations';
 import { TaskModalService } from '../../../tasks/services/task-modal.service';
 import { CallScriptsService } from '../../../shared/services/call-scripts.service';
 import { CommonModule } from '@angular/common';
@@ -27,7 +28,18 @@ export interface Script {
   templateUrl: './softphone-scripts-panel.component.html',
   styleUrls: ['./softphone-scripts-panel.component.scss'],
   // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection
-  changeDetection: ChangeDetectionStrategy.Default
+  changeDetection: ChangeDetectionStrategy.Default,
+  animations: [
+    trigger('slideIn', [
+      transition(':enter', [
+        style({ transform: 'translateX(100%)' }),
+        animate('300ms ease-out', style({ transform: 'translateX(0)' }))
+      ]),
+      transition(':leave', [
+        animate('300ms ease-in', style({ transform: 'translateX(100%)' }))
+      ])
+    ])
+  ]
 })
 export class SoftphoneScriptsPanelComponent implements OnChanges {
   callActive = input<boolean>(false);
@@ -48,12 +60,20 @@ export class SoftphoneScriptsPanelComponent implements OnChanges {
   selectBranch = output<string | null>();
   // Emit when user requests manual CDR/register log — includes branchId, note and createTask flag
   registerCdr = output<{ branchId?: string | null; note?: string; createTask?: boolean }>();
+  // Emit when view mode changes
+  viewModeChange = output<'compact' | 'fullscreen'>();
+  // Emit when viewed script changes
+  viewedScriptChange = output<any>();
 
   // Local UI state
   activeTab = signal<'all' | 'recent' | 'bookmarked'>('all');
   search = signal('');
   expandedCategories = signal<Record<string, boolean>>({});
   expandedNodes = signal<Record<string, boolean>>({});
+  // View mode: 'compact' (default) or 'fullscreen' for better script reading
+  viewMode = signal<'compact' | 'fullscreen'>('compact');
+  // Currently viewed script for detail panel (separate from selection for CDR)
+  viewedScript = signal<Script | null>(null);
 
   constructor() {
     // Auto-expand nodes when search is active
@@ -193,6 +213,61 @@ export class SoftphoneScriptsPanelComponent implements OnChanges {
   toggleBookmark(script: Script) {
     // emit an event later if needed; for now toggle locally if present
     script.bookmarked = !script.bookmarked;
+  }
+
+  toggleViewMode() {
+    const current = this.viewMode();
+    const newMode = current === 'compact' ? 'fullscreen' : 'compact';
+    this.viewMode.set(newMode);
+    try {
+      this.viewModeChange.emit(newMode);
+    } catch {}
+  }
+
+  viewScriptDetails(script: Script) {
+    // Show script details in side panel
+    this.viewedScript.set(script);
+    try {
+      this.viewedScriptChange.emit(script);
+    } catch {}
+  }
+
+  closeScriptDetails() {
+    this.viewedScript.set(null);
+    try {
+      this.viewedScriptChange.emit(null);
+    } catch {}
+  }
+
+  // Helper to check if script has any content to display
+  hasScriptContent(script: Script): boolean {
+    return !!(script.steps?.length || script.questions?.length || script.tips?.length);
+  }
+
+  // Keyboard shortcuts for better UX
+  @HostListener('window:keydown', ['$event'])
+  onKeyDown(event: KeyboardEvent) {
+    // ESC key - close details or fullscreen
+    if (event.key === 'Escape') {
+      if (this.viewedScript()) {
+        event.preventDefault();
+        this.closeScriptDetails();
+      } else if (this.viewMode() === 'fullscreen') {
+        event.preventDefault();
+        this.toggleViewMode();
+      }
+    }
+    
+    // Ctrl/Cmd+F - toggle fullscreen (if search is not focused)
+    if (event.key === 'f' && (event.altKey || event.metaKey)) {
+      const target = event.target as HTMLElement;
+      const isInputFocused = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
+      
+      if (!isInputFocused) {
+        event.preventDefault();
+        this.toggleViewMode();
+      }
+    }
   }
 
   // Recursive helper to check if script or any of its children match search query

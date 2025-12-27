@@ -124,6 +124,9 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   // Call scripts UI
   scripts = signal<any[]>([]);
   showScripts = signal(false);
+  // Expose script panel state for template
+  viewMode = signal<'compact' | 'fullscreen'>('compact');
+  viewedScript = signal<any>(null);
   // Per-call metadata to persist
   callNote = signal<string>('');
   callType = signal<string | null>(null);
@@ -869,6 +872,22 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       this.selectedScriptBranch.set(id);
     } catch (e) {
       this.logger.warn('onSelectedBranch failed', e);
+    }
+  }
+
+  onScriptViewModeChange(mode: 'compact' | 'fullscreen') {
+    try {
+      this.viewMode.set(mode);
+    } catch (e) {
+      this.logger.warn('onScriptViewModeChange failed', e);
+    }
+  }
+
+  onScriptDetailsChange(script: any) {
+    try {
+      this.viewedScript.set(script);
+    } catch (e) {
+      this.logger.warn('onScriptDetailsChange failed', e);
     }
   }
 

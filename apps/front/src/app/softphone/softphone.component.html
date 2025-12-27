@@ -17,7 +17,7 @@
   </button>
 
   <!-- Expanded panel -->
-  <div *ngIf="expanded" class="expanded-panel">
+  <div *ngIf="expanded" class="expanded-panel" [class.scripts-expanded]="activeTab === 'scenarios' && viewMode() === 'fullscreen'" [class.scripts-with-details]="activeTab === 'scenarios' && viewedScript()">
     <div class="panel-header">
       <div class="header-content">
         <div class="status-bar">
@@ -163,6 +163,8 @@
           (selectBranch)="onSelectedBranch($event)"
           (registerCdr)="manualRegisterCall($event)"
           (toggleScripts)="toggleScripts()"
+          (viewModeChange)="onScriptViewModeChange($event)"
+          (viewedScriptChange)="onScriptDetailsChange($event)"
         />
       </ng-container>
     </div>

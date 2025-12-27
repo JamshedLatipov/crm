@@ -1,4 +1,4 @@
-<div class="scripts-panel">
+<div class="scripts-panel" [class.fullscreen]="viewMode() === 'fullscreen'">
   <div class="header">
     <div class="search-wrap">
       <input
@@ -8,6 +8,14 @@
         class="search-input"
       />
     </div>
+    <button
+      mat-icon-button
+      (click)="toggleViewMode()"
+      [title]="viewMode() === 'compact' ? 'Развернуть на весь экран' : 'Свернуть'"
+      class="view-toggle"
+    >
+      <mat-icon>{{ viewMode() === 'compact' ? 'fullscreen' : 'fullscreen_exit' }}</mat-icon>
+    </button>
   </div>
 
   <div class="tabs">
@@ -29,6 +37,10 @@
     >
       Bookmarked
     </button>
+    <div class="keyboard-hint" *ngIf="viewMode() === 'fullscreen'">
+      <mat-icon>keyboard</mat-icon>
+      <span>Esc - выход | Ctrl+F - полный экран</span>
+    </div>
   </div>
 
   <div class="content">
@@ -112,8 +124,14 @@
                     </div>
                     <div class="script-right">
                       <button
-                        mat-icon-button
-                        (click)="toggleBookmark(s); $event.stopPropagation()"
+                        mat-icon-button                        *ngIf="hasScriptContent(s)"
+                        (click)="viewScriptDetails(s); $event.stopPropagation()"
+                        title="Просмотреть детали скрипта"
+                      >
+                        <mat-icon>visibility</mat-icon>
+                      </button>
+                      <button
+                        mat-icon-button                        (click)="toggleBookmark(s); $event.stopPropagation()"
                       >
                         <mat-icon>{{
                           s.bookmarked ? 'bookmark' : 'bookmark_border'
@@ -211,6 +229,108 @@
           </div>
         </div>
       </ng-container>
+    </div>
+  </div>
+
+  <!-- Script details panel -->
+  <div class="script-details-panel" *ngIf="viewedScript()" [@slideIn]>
+    <div class="details-header">
+      <h3>{{ viewedScript()?.title }}</h3>
+      <button mat-icon-button (click)="closeScriptDetails()" title="Закрыть">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <div class="details-content">
+      <div class="detail-section description-section" *ngIf="viewedScript()?.description">
+        <h4><mat-icon class="icon-info">info</mat-icon> Описание</h4>
+        <p>{{ viewedScript()?.description }}</p>
+      </div>
+      
+      <div class="detail-section steps-section" *ngIf="viewedScript()?.steps?.length">
+        <h4><mat-icon class="icon-steps">format_list_numbered</mat-icon> Шаги выполнения</h4>
+        <ol class="steps-list">
+          <li *ngFor="let step of viewedScript()?.steps; let i = index">
+            <span class="step-number">{{i + 1}}</span>
+            <span class="step-text">{{ step }}</span>
+          </li>
+        </ol>
+      </div>
+      
+      <div class="detail-section questions-section" *ngIf="viewedScript()?.questions?.length">
+        <h4><mat-icon class="icon-questions">help_outline</mat-icon> Вопросы клиенту</h4>
+        <ul class="questions-list">
+          <li *ngFor="let q of viewedScript()?.questions">{{ q }}</li>
+        </ul>
+      </div>
+      
+      <div class="detail-section tips-section" *ngIf="viewedScript()?.tips?.length">
+        <h4><mat-icon class="icon-tips">lightbulb_outline</mat-icon> Полезные советы</h4>
+        <ul class="tips-list">
+          <li *ngFor="let tip of viewedScript()?.tips">
+            <mat-icon class="tip-icon">tips_and_updates</mat-icon>
+            {{ tip }}
+          </li>
+        </ul>
+      </div>
+
+      <!-- Empty state when no content -->
+      <div class="empty-content" *ngIf="!hasScriptContent(viewedScript()!)">
+        <mat-icon class="empty-icon">description</mat-icon>
+        <p class="empty-text">У этого скрипта пока нет детального содержимого</p>
+        <p class="empty-hint">Вы можете добавить шаги, вопросы и советы в настройках скрипта</p>
+      </div>
+
+      <!-- Inline logging form when script is selected -->
+      <div class="inline-logging-form" *ngIf="localSelected() === viewedScript()?.id">
+        <div class="form-section">
+          <h4>📝 Логирование звонка</h4>
+          <textarea
+            placeholder="Добавить заметку (необязательно)"
+            class="log-textarea"
+            [ngModel]="branchNote()"
+            (ngModelChange)="branchNote.set($event)"
+            rows="4"
+          ></textarea>
+          <label class="task-toggle-label">
+            <mat-slide-toggle
+              [checked]="createTaskToggle()"
+              (change)="createTaskToggle.set($event.checked)"
+            >
+              Создать задачу сразу
+            </mat-slide-toggle>
+          </label>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Actions outside of scrollable content -->
+    <div class="detail-actions" *ngIf="!viewedScript()?.children?.length">
+      <button
+        *ngIf="localSelected() !== viewedScript()?.id"
+        mat-raised-button
+        color="primary"
+        (click)="selectLeaf(viewedScript()!)"
+      >
+        <mat-icon>check_circle</mat-icon>
+        Использовать этот скрипт
+      </button>
+      <button
+        *ngIf="localSelected() === viewedScript()?.id"
+        mat-raised-button
+        color="accent"
+        (click)="saveForSelected(); closeScriptDetails()"
+        [disabled]="!callActive()"
+      >
+        <mat-icon>save</mat-icon>
+        Сохранить и закрыть
+      </button>
+      <button
+        *ngIf="localSelected() === viewedScript()?.id"
+        mat-stroked-button
+        (click)="cancelSelection()"
+      >
+        Отмена
+      </button>
     </div>
   </div>
 </div>
