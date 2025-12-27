@@ -35,6 +35,7 @@ import { OperatorsReportComponent } from './contact-center/reports/operators-rep
 import { QueuesReportComponent } from './contact-center/reports/queues-report/queues-report.component';
 import { IntegrationsComponent } from './pages/integrations/integrations.component';
 import { ClientInfoPageComponent } from './pages/client-info/client-info.component';
+import { NOTIFICATION_ROUTES } from './notifications/notifications.routes';
 
 export const appRoutes: Route[] = [
     { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
@@ -112,5 +113,7 @@ export const appRoutes: Route[] = [
     { path: 'ads/accounts', component: AdsAccountsComponent, canActivate: [authGuard] },
     { path: 'promo-companies', component: PromoCompaniesComponent, canActivate: [authGuard] },
     { path: 'integrations', component: IntegrationsComponent, canActivate: [authGuard] },
-    { path: 'client-info', component: ClientInfoPageComponent, canActivate: [authGuard] }
+    { path: 'client-info', component: ClientInfoPageComponent, canActivate: [authGuard] },
+    // Notification Center routes
+    ...NOTIFICATION_ROUTES
 ];

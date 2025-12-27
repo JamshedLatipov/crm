@@ -116,6 +116,43 @@ export class SidebarComponent {
         },
       ],
     },
+    {
+      icon: 'notifications_active',
+      label: 'Уведомления',
+      expanded: false,
+      children: [
+        {
+          icon: 'dashboard',
+          label: 'Дашборд',
+          route: '/notifications/dashboard',
+        },
+        {
+          icon: 'campaign',
+          label: 'Кампании',
+          route: '/notifications/campaigns',
+        },
+        {
+          icon: 'sms',
+          label: 'SMS шаблоны',
+          route: '/notifications/sms-templates',
+        },
+        {
+          icon: 'email',
+          label: 'Email шаблоны',
+          route: '/notifications/email-templates',
+        },
+        {
+          icon: 'group',
+          label: 'Сегменты',
+          route: '/notifications/segments',
+        },
+        {
+          icon: 'analytics',
+          label: 'Аналитика',
+          route: '/notifications/analytics',
+        },
+      ],
+    },
     { icon: 'help_outline', label: 'Помощь', route: '/help' },
   ];
 
