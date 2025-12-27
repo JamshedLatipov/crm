@@ -126,9 +126,10 @@ export class CallTraceService {
         const myCdr = cdrMap.get(uid);
         const myApp = appLogMap.get(uid) || [];
 
-        if (myIvr.length === 0 && myQueue.length === 0 && !myCdr && myApp.length === 0) {
-            continue;
-        }
+        // FIXED: Always create trace even if only CDR exists
+        // if (myIvr.length === 0 && myQueue.length === 0 && !myCdr && myApp.length === 0) {
+        //     continue;
+        // }
 
         traces.push(this.buildSingleTrace(uid, myIvr, myQueue, myCdr, myApp));
     }
@@ -197,8 +198,13 @@ export class CallTraceService {
     // Sort timeline
     timeline.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
 
-    // Build summary
-    const startTime = cdr?.calldate || ivrLogs[0]?.createdAt || (queueLogs.length > 0 ? this.parseQueueLogTime(queueLogs[0].time) : new Date());
+    // Build summary - ensure we have at least some start time
+    const startTime = cdr?.calldate || 
+                     ivrLogs[0]?.createdAt || 
+                     appLogs[0]?.createdAt ||
+                     (queueLogs.length > 0 ? this.parseQueueLogTime(queueLogs[0].time) : undefined) ||
+                     timeline[0]?.timestamp ||
+                     new Date();
     let endTime: Date | undefined;
     if (cdr) {
       endTime = new Date(cdr.calldate.getTime() + cdr.duration * 1000);
@@ -210,7 +216,7 @@ export class CallTraceService {
       startTime,
       endTime,
       duration: cdr?.duration,
-      caller: cdr?.clid || ivrLogs[0]?.caller || 'Unknown',
+      caller: cdr?.clid || cdr?.src || ivrLogs[0]?.caller || 'Unknown',
       destination: cdr?.dst || 'Unknown',
       status: cdr?.disposition || 'UNKNOWN',
       queueEntered: false,
@@ -223,10 +229,14 @@ export class CallTraceService {
     const abandon = queueLogs.find(l => l.event === 'ABANDON');
     const exitKey = queueLogs.find(l => l.event === 'EXITWITHKEY');
     const transfer = queueLogs.find(l => l.event === 'TRANSFER' || l.event === 'BLINDTRANSFER' || l.event === 'ATTENDEDTRANSFER');
+    const completeCaller = queueLogs.find(l => l.event === 'COMPLETECALLER');
+    const completeAgent = queueLogs.find(l => l.event === 'COMPLETEAGENT');
+    const exitTimeout = queueLogs.find(l => l.event === 'EXITWITHTIMEOUT');
+    const exitEmpty = queueLogs.find(l => l.event === 'EXITEMPTY');
 
     const ignoredAgents: string[] = [];
     queueLogs.forEach(l => {
-        if (l.event === 'RINGNOANSWER') {
+        if (l.event === 'RINGNOANSWER' || l.event === 'RINGCANCELED') {
             ignoredAgents.push(l.agent);
         }
     });
@@ -257,16 +267,57 @@ export class CallTraceService {
       summary.queueWaitTime = parseInt(connect.data1 || '0', 10);
     }
 
-    if (abandon) {
+    // Determine hangupBy based on events (priority order matters)
+    if (completeCaller) {
+      // Caller hung up after agent answered
+      summary.hangupBy = 'caller';
+    } else if (completeAgent) {
+      // Agent hung up after answering
+      summary.hangupBy = 'agent';
+    } else if (abandon) {
+      // Caller abandoned before agent answered
       summary.answered = false;
       summary.hangupBy = 'caller';
       summary.queueWaitTime = parseInt(abandon.data3 || '0', 10);
+    } else if (exitKey) {
+      // Caller pressed key to exit queue
+      summary.answered = false;
+      summary.hangupBy = 'caller_key';
+      summary.queueWaitTime = parseInt(exitKey.data3 || '0', 10);
+    } else if (exitTimeout) {
+      // Queue timeout
+      summary.answered = false;
+      summary.hangupBy = 'timeout';
+      summary.queueWaitTime = parseInt(exitTimeout.data3 || '0', 10);
+    } else if (exitEmpty) {
+      // No agents available
+      summary.answered = false;
+      summary.hangupBy = 'system';
+    } else if (cdr) {
+      // Fallback: try to determine from CDR
+      const disposition = cdr.disposition?.toLowerCase();
+      const lastApp = cdr.lastapp?.toLowerCase();
+      
+      if (disposition === 'answered') {
+        // Call was answered (either in queue or direct)
+        // If dstchannel is empty/gone first, likely agent hung up
+        if (!cdr.dstchannel || cdr.dstchannel === '') {
+          summary.hangupBy = 'agent';
+        } else {
+          summary.hangupBy = 'caller';
+        }
+      } else if (disposition === 'no answer') {
+        summary.hangupBy = 'timeout';
+      } else if (disposition === 'busy') {
+        summary.hangupBy = 'agent';
+      } else if (disposition === 'failed') {
+        summary.hangupBy = 'system';
+      }
     }
 
-    if (exitKey) {
-       summary.answered = false;
-       summary.hangupBy = 'caller_key';
-       summary.queueWaitTime = parseInt(exitKey.data3 || '0', 10);
+    // Final fallback if still not set and call was answered
+    if (!summary.hangupBy && (summary.answered || (cdr && cdr.disposition === 'ANSWERED'))) {
+      summary.hangupBy = 'unknown';
     }
 
     if (!summary.queueWaitTime && summary.queueEntered) {

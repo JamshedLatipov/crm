@@ -17,3 +17,4 @@ data/asterisk/sounds/custom/*
 turnserver/data/turnserver/turndb
 tmp/*
 tmp/nx-cache
+/data/asterisk/recordings/*

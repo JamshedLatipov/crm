@@ -27,6 +27,7 @@ import { CallAggregationService } from './services/call-aggregation.service';
 import { CallEnrichmentService } from './services/call-enrichment.service';
 import { CallTraceController } from './controllers/call-trace.controller';
 import { CallAnalyticsController } from './controllers/call-analytics.controller';
+import { RecordingsController } from './controllers/recordings.controller';
 import { CallLog } from './entities/call-log.entity';
 import { CallSummary } from './entities/call-summary.entity';
 import { AriModule } from '../ari/ari.module';
@@ -81,6 +82,7 @@ import { UserModule } from '../user/user.module';
     QueueMembersController,
     CallTraceController,
     CallAnalyticsController,
+    RecordingsController,
   ],
   exports: [
     PsEndpointService,
