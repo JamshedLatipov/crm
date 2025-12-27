@@ -8,6 +8,7 @@ import {
   signal,
   ViewChild,
 } from '@angular/core';
+import { trigger, transition, style, animate } from '@angular/animations';
 import { environment } from '../../environments/environment';
 import { Subject, lastValueFrom } from 'rxjs';
 import { takeUntil } from 'rxjs';
@@ -78,6 +79,21 @@ type JsSIPSession = any;
   selector: 'app-softphone',
   templateUrl: './softphone.component.html',
   styleUrls: ['./softphone.component.scss'],
+  animations: [
+    trigger('fadeIn', [
+      transition(':enter', [
+        style({ opacity: 0 }),
+        animate('300ms ease-out', style({ opacity: 1 }))
+      ])
+    ]),
+    trigger('slideUp', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'translateY(50px) scale(0.9)' }),
+        animate('400ms cubic-bezier(0.34, 1.56, 0.64, 1)', 
+          style({ opacity: 1, transform: 'translateY(0) scale(1)' }))
+      ])
+    ])
+  ],
   imports: [
     FormsModule,
     CommonModule,
@@ -360,6 +376,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
                     new Notification('Incoming call', {
                       body: this.callState.incomingFrom() || 'Unknown caller',
                       tag: 'softphone-incoming',
+                      requireInteraction: true,
                     });
                   } else if (Notification.permission !== 'denied') {
                     Notification.requestPermission().then((perm) => {
@@ -367,6 +384,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
                         new Notification('Incoming call', {
                           body: this.callState.incomingFrom() || 'Unknown caller',
                           tag: 'softphone-incoming',
+                          requireInteraction: true,
                         });
                       }
                     });
@@ -374,6 +392,16 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
                 }
               } catch (e) {
                 this.logger.warn('Notification failed', e);
+              }
+
+              // Vibrate device if supported (mobile/touch devices)
+              try {
+                if ('vibrate' in navigator) {
+                  // Vibrate pattern: vibrate 200ms, pause 100ms, repeat 3 times
+                  navigator.vibrate([200, 100, 200, 100, 200]);
+                }
+              } catch (e) {
+                this.logger.warn('Vibration failed', e);
               }
             }
 
