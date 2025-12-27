@@ -5,26 +5,32 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
-import type { Server as WsServer, WebSocket } from 'ws';
+import { Server, Socket } from 'socket.io';
 import { ContactCenterService } from './contact-center.service';
 
-@WebSocketGateway({ path: '/api/contact-center/ws', cors: true })
+@WebSocketGateway({ 
+  path: '/api/contact-center/ws',
+  cors: {
+    origin: '*',
+    credentials: true,
+  },
+})
 export class ContactCenterGateway
   implements OnModuleInit, OnGatewayConnection, OnGatewayDisconnect
 {
   private readonly logger = new Logger(ContactCenterGateway.name);
 
   @WebSocketServer()
-  server: WsServer;
+  server: Server;
 
   constructor(private readonly svc: ContactCenterService) {}
 
-  handleConnection(client: any) {
-    this.logger.log(`✅ Client connected to WebSocket`);
+  handleConnection(client: Socket) {
+    this.logger.log(`✅ Client connected to WebSocket: ${client.id}`);
   }
 
-  handleDisconnect(client: any) {
-    this.logger.log(`❌ Client disconnected from WebSocket`);
+  handleDisconnect(client: Socket) {
+    this.logger.log(`❌ Client disconnected from WebSocket: ${client.id}`);
   }
 
   onModuleInit() {
@@ -72,19 +78,12 @@ export class ContactCenterGateway
         );
 
         // Prepare messages
-        const opMsg = JSON.stringify({
-          type: 'operators',
-          payload: data.operators,
-        });
-        const qMsg = JSON.stringify({ type: 'queues', payload: data.queues });
-        const callsMsg = JSON.stringify({
-          type: 'activeCalls',
-          payload: data.activeCalls,
-        });
-        const statsMsg = JSON.stringify({
-          type: 'stats',
-          payload: { totalUniqueWaiting: data.totalUniqueWaiting },
-        });
+        const messages = {
+          operators: { type: 'operators', payload: data.operators },
+          queues: { type: 'queues', payload: data.queues },
+          activeCalls: { type: 'activeCalls', payload: data.activeCalls },
+          stats: { type: 'stats', payload: { totalUniqueWaiting: data.totalUniqueWaiting } },
+        };
 
         if (!this.server) {
           this.logger.warn(
@@ -93,31 +92,19 @@ export class ContactCenterGateway
           return;
         }
 
-        // Broadcast to all connected WebSocket clients
-        let clientCount = 0;
-        let bytesSent = 0;
-
-        this.server.clients.forEach((client: WebSocket) => {
-          if (client.readyState === 1) {
-            // WebSocket.OPEN = 1
-            try {
-              client.send(opMsg);
-              client.send(qMsg);
-              client.send(callsMsg);
-              client.send(statsMsg);
-              clientCount++;
-              bytesSent +=
-                opMsg.length + qMsg.length + callsMsg.length + statsMsg.length;
-            } catch (err) {
-              this.logger.error(`Failed to send to client:`, err);
-            }
-          }
-        });
-
+        // Broadcast to all connected Socket.IO clients
+        const clientCount = this.server.sockets.sockets.size;
+        
         if (clientCount > 0) {
+          this.server.emit('operators', messages.operators);
+          this.server.emit('queues', messages.queues);
+          this.server.emit('activeCalls', messages.activeCalls);
+          this.server.emit('stats', messages.stats);
+          
+          const totalSize = JSON.stringify(messages).length;
           this.logger.debug(
             `📡 Broadcasted to ${clientCount} clients (${Math.round(
-              bytesSent / 1024
+              totalSize / 1024
             )}KB total)`
           );
         }

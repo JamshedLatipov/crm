@@ -6,6 +6,7 @@ import { NotificationService } from '../shared/services/notification.service';
 import { NotificationRuleService } from '../shared/services/notification-rule.service';
 import { NotificationController } from './controllers/notification.controller';
 import { NotificationRuleController } from './controllers/notification-rule.controller';
+import { NotificationsGateway } from './gateways/notifications.gateway';
 
 @Module({
   imports: [
@@ -20,11 +21,13 @@ import { NotificationRuleController } from './controllers/notification-rule.cont
   ],
   providers: [
     NotificationService,
-    NotificationRuleService
+    NotificationRuleService,
+    NotificationsGateway
   ],
   exports: [
     NotificationService,
-    NotificationRuleService
+    NotificationRuleService,
+    NotificationsGateway
   ]
 })
 export class NotificationModule {}
