@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ContactCenterController } from './contact-center.controller';
 import { ContactCenterGateway } from './contact-center.gateway';
 import { ContactCenterService } from './contact-center.service';
+import { EndpointSyncService } from './endpoint-sync.service';
 import { Queue } from '../calls/entities/queue.entity';
 import { QueueMember } from '../calls/entities/queue-member.entity';
 import { Cdr } from '../calls/entities/cdr.entity';
@@ -14,7 +15,7 @@ import { AmiModule } from '../ami/ami.module';
     AmiModule,
   ],
   controllers: [ContactCenterController],
-  providers: [ContactCenterGateway, ContactCenterService],
+  providers: [ContactCenterGateway, ContactCenterService, EndpointSyncService],
   exports: [ContactCenterService],
 })
 export class ContactCenterModule {}

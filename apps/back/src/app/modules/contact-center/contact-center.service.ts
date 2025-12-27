@@ -51,6 +51,7 @@ export class ContactCenterService {
   private amiCache: {
     channels?: any[];
     queueStatus?: Map<string, any[]>;
+    registeredEndpoints?: Set<string>;
     lastUpdate?: number;
   } = {};
 
@@ -66,26 +67,42 @@ export class ContactCenterService {
     const now = Date.now();
     // Cache for 1 second to avoid hammering AMI (reduced from 2s)
     if (!force && this.amiCache.lastUpdate && now - this.amiCache.lastUpdate < 1000) {
-      this.logger.debug(`Using cached AMI data (age: ${now - this.amiCache.lastUpdate}ms)`);
       return;
     }
-
-    this.logger.debug('Refreshing AMI cache...');
 
     try {
       // Get active channels
       const channels = await this.getActiveChannels();
       this.amiCache.channels = channels;
 
-      // Get queue status for each queue
+      // Get queue status for each queue (includes member status)
       const queues = await this.queueRepo.find();
       const queueStatusMap = new Map<string, any[]>();
+      const registeredEndpoints = new Set<string>();
       
       for (const queue of queues) {
         try {
           const events = await this.getQueueStatusFromAMI(queue.name);
           if (events && events.length > 0) {
             queueStatusMap.set(queue.name, events);
+            
+            // Extract registered endpoints from QueueMember events
+            // Status values: 0=unknown, 1=not in use (available), 2=in use, 5=unavailable, 6=ringing, 8=on hold
+            events.forEach((evt: any) => {
+              if (evt.Event === 'QueueMember') {
+                const location = evt.Location || evt.StateInterface || evt.Name;
+                const paused = evt.Paused === '1' || evt.Paused === 1;
+                const status = parseInt(evt.Status || '0', 10);
+                
+                // Member is available if: not paused AND status is NOT unavailable (5)
+                // Status 5 = AST_DEVICE_UNAVAILABLE means SIP not registered
+                if (location && !paused && status !== 5) {
+                  const endpoint = location.includes('/') ? location.split('/')[1] : location;
+                  registeredEndpoints.add(endpoint);
+                  registeredEndpoints.add(location);
+                }
+              }
+            });
           }
         } catch (err) {
           this.logger.warn(`Failed to get status for queue ${queue.name}:`, err);
@@ -93,6 +110,7 @@ export class ContactCenterService {
       }
       
       this.amiCache.queueStatus = queueStatusMap;
+      this.amiCache.registeredEndpoints = registeredEndpoints;
       this.amiCache.lastUpdate = now;
     } catch (err) {
       this.logger.error('Failed to refresh AMI cache:', err);
@@ -102,18 +120,29 @@ export class ContactCenterService {
   // Get active channels from AMI
   private async getActiveChannels(): Promise<any[]> {
     try {
-      const events: any[] = [];
+      // Get AMI client first
+      const client = this.amiService.getClient();
+      if (!client) {
+        this.logger.warn('getActiveChannels: AMI client not available');
+        return [];
+      }
       
       // Create a promise that collects all events
-      const eventPromise = new Promise<any[]>((resolve) => {
+      const eventPromise = new Promise<any[]>((resolve, reject) => {
         let collected: any[] = [];
+        let resolved = false;
+        
         const timeout = setTimeout(() => {
-          this.logger.debug(`getActiveChannels: Timeout reached, collected ${collected.length} events`);
-          resolve(collected);
+          if (!resolved) {
+            cleanup();
+            resolve(collected);
+          }
         }, 1000); // 1 second timeout
         
         // Listen for events temporarily
         const handler = (evt: any) => {
+          if (resolved) return; // Ignore events after resolution
+          
           const eventName = evt?.Event || evt?.event;
           // Collect CoreShowChannel events
           if (eventName === 'CoreShowChannel') {
@@ -121,41 +150,26 @@ export class ContactCenterService {
           }
           // Stop collecting when we get Complete event
           if (eventName === 'CoreShowChannelsComplete') {
-            this.logger.debug(`getActiveChannels: Complete event received, collected ${collected.length} channels`);
-            clearTimeout(timeout);
+            cleanup();
             resolve(collected);
           }
         };
         
-        // Get AMI client
-        const client = this.amiService.getClient();
-        if (!client) {
-          this.logger.warn('getActiveChannels: AMI client not available');
+        const cleanup = () => {
+          if (resolved) return;
+          resolved = true;
           clearTimeout(timeout);
-          resolve([]);
-          return;
-        }
+          client.off('event', handler);
+        };
         
         client.on('event', handler);
-        
-        // Clean up after timeout
-        setTimeout(() => {
-          client.off('event', handler);
-        }, 1500);
       });
       
       // Send the action
-      this.logger.debug('getActiveChannels: Sending CoreShowChannels action');
       await this.amiService.action('CoreShowChannels', {});
       
       // Wait for events to be collected
       const collectedChannels = await eventPromise;
-      
-      this.logger.debug(`getActiveChannels: Returning ${collectedChannels.length} channels`);
-      if (collectedChannels.length > 0) {
-        this.logger.debug(`Sample channel (full data): ${JSON.stringify(collectedChannels[0], null, 2)}`);
-      }
-      
       return collectedChannels;
     } catch (err) {
       this.logger.warn('Failed to get active channels:', err);
@@ -166,17 +180,29 @@ export class ContactCenterService {
   // Get queue status from AMI
   private async getQueueStatusFromAMI(queueName: string): Promise<any[]> {
     try {
-      const events: any[] = [];
+      // Get AMI client first
+      const client = this.amiService.getClient();
+      if (!client) {
+        this.logger.warn(`getQueueStatusFromAMI: AMI client not available for queue ${queueName}`);
+        return [];
+      }
       
       // Create a promise that collects all events
-      const eventPromise = new Promise<any[]>((resolve) => {
+      const eventPromise = new Promise<any[]>((resolve, reject) => {
         let collected: any[] = [];
+        let resolved = false;
+        
         const timeout = setTimeout(() => {
-          resolve(collected);
+          if (!resolved) {
+            cleanup();
+            resolve(collected);
+          }
         }, 1000); // 1 second timeout
         
         // Listen for events temporarily
         const handler = (evt: any) => {
+          if (resolved) return; // Ignore events after resolution
+          
           const eventName = evt?.Event || evt?.event;
           // Collect queue-related events
           if (eventName && (eventName.startsWith('Queue') || eventName === 'QueueParams' || eventName === 'QueueMember' || eventName === 'QueueEntry')) {
@@ -184,25 +210,19 @@ export class ContactCenterService {
           }
           // Stop collecting when we get Complete event
           if (eventName === 'QueueStatusComplete') {
-            clearTimeout(timeout);
+            cleanup();
             resolve(collected);
           }
         };
         
-        // Get AMI client
-        const client = this.amiService.getClient();
-        if (!client) {
+        const cleanup = () => {
+          if (resolved) return;
+          resolved = true;
           clearTimeout(timeout);
-          resolve([]);
-          return;
-        }
+          client.off('event', handler);
+        };
         
         client.on('event', handler);
-        
-        // Clean up after timeout
-        setTimeout(() => {
-          client.off('event', handler);
-        }, 1500);
       });
       
       // Send the action
@@ -210,7 +230,6 @@ export class ContactCenterService {
       
       // Wait for events to be collected
       const collectedEvents = await eventPromise;
-      
       return collectedEvents;
     } catch (err) {
       this.logger.warn(`Failed to get queue status for ${queueName}:`, err);
@@ -220,58 +239,50 @@ export class ContactCenterService {
 
   // Return operators based on queue_members table enriched with real-time AMI data
   async getOperatorsSnapshot(): Promise<OperatorStatus[]> {
-    this.logger.debug('=== getOperatorsSnapshot() START ===');
     await this.refreshAmiCache();
     
     const members = await this.membersRepo.find();
     const channels = this.amiCache.channels || [];
-    
-    this.logger.debug(`getOperatorsSnapshot: Found ${members.length} members, ${channels.length} active channels`);
-    if (channels.length > 0) {
-      this.logger.debug('=== ACTIVE CHANNELS DUMP ===');
-      channels.forEach((ch, idx) => {
-        this.logger.debug(`  Channel ${idx}: ${ch.Channel} | CallerIDNum: ${ch.CallerIDNum} | ConnectedLineNum: ${ch.ConnectedLineNum} | State: ${ch.ChannelStateDesc} | Seconds: ${ch.Seconds}`);
-      });
-      this.logger.debug('=== END CHANNELS DUMP ===');
-    }
     
     // Get call counts for last 24 hours (not just today since 00:00)
     const last24h = new Date();
     last24h.setHours(last24h.getHours() - 24);
     
     const operators: OperatorStatus[] = [];
+    const registeredEndpoints = this.amiCache.registeredEndpoints || new Set<string>();
     
     for (const m of members) {
       // Find active channel for this operator
       const operatorInterface = m.iface || m.member_interface || m.member_name;
       if (!operatorInterface) {
-        this.logger.debug(`Skipping member ${m.id} - no interface found`);
         continue;
       }
       
-      this.logger.debug(`Looking for channel for operator: ${m.memberid}, interface: ${operatorInterface}`);
-      
-      // Более детальное логирование для отладки
       const extension = operatorInterface.split('/')[1];
-      this.logger.debug(`  Extension extracted: ${extension}`);
       
-      const memberChannel = channels.find(ch => {
-        // Проверяем несколько условий для более надежного поиска
-        const channelMatch = ch.Channel?.includes(operatorInterface);
-        const extensionMatch = ch.Channel?.includes(`/${extension}-`);
-        const callerIdMatch = ch.CallerIDNum === extension;
+      // Ищем активный канал оператора с приоритетом:
+      // 1. Прямое совпадение с interface (PJSIP/1001-xxxxx)
+      // 2. ConnectedLineNum = extension (оператор принял звонок)
+      // Канал должен быть в состоянии "Up" (активный разговор)
+      const operatorChannels = channels.filter(ch => {
+        const isActive = ch.ChannelStateDesc === 'Up' || ch.ChannelState === '6';
+        if (!isActive) return false;
         
-        this.logger.debug(`    Checking channel ${ch.Channel}: channelMatch=${channelMatch}, extensionMatch=${extensionMatch}, callerIdMatch=${callerIdMatch}`);
+        const channelMatch = ch.Channel?.startsWith(operatorInterface + '-');
+        const connectedLineMatch = ch.ConnectedLineNum === extension;
         
-        return channelMatch || extensionMatch || callerIdMatch;
+        // Исключаем Local/ каналы и другие служебные каналы
+        const isServiceChannel = ch.Channel?.startsWith('Local/') || 
+                                 ch.Channel?.includes('/park@') ||
+                                 ch.Channel?.includes('/agent@');
+        
+        return (channelMatch || connectedLineMatch) && !isServiceChannel;
       });
       
-      if (memberChannel) {
-        this.logger.debug(`✅ Found channel for ${m.memberid}`);
-        this.logger.debug(`   Full channel data: ${JSON.stringify(memberChannel, null, 2)}`);
-      } else {
-        this.logger.debug(`❌ No active channel found for ${m.memberid}`);
-      }
+      // Приоритет: канал, где оператор является источником (т.е. его interface в начале)
+      const memberChannel = operatorChannels.find(ch => ch.Channel?.startsWith(operatorInterface + '-')) || 
+                           operatorChannels[0] || 
+                           null;
 
       // Determine status
       let status: OperatorStatus['status'] = 'idle';
@@ -279,45 +290,71 @@ export class ContactCenterService {
       let currentCallDuration: number | null = null;
       let statusDuration: number | null = null;
 
+      // Check if endpoint is registered in PJSIP
+      const isRegistered = registeredEndpoints.has(extension);
+      const interfaceWithoutChannel = operatorInterface.split('-')[0];
+      const isRegisteredByInterface = registeredEndpoints.has(interfaceWithoutChannel);
+      const actuallyRegistered = isRegistered || isRegisteredByInterface;
+
       if (m.paused) {
         status = 'offline';
-        // Для offline: пока не можем точно определить время паузы без дополнительного поля в БД
-        // TODO: Добавить поле paused_since в таблицу queue_members для отслеживания времени паузы
         statusDuration = null;
-        this.logger.debug(`Operator ${m.memberid} is offline/paused`);
+      } else if (!actuallyRegistered) {
+        // If endpoint is not registered, operator is offline
+        status = 'offline';
+        statusDuration = null;
       } else if (memberChannel) {
-        status = 'on_call';
-        currentCall = memberChannel.CallerIDNum || 'Unknown';
+        // Дополнительная проверка: канал должен иметь CallerID или ConnectedLine
+        const hasValidCall = (memberChannel.CallerIDNum && memberChannel.CallerIDNum !== extension) || 
+                            (memberChannel.ConnectedLineNum && memberChannel.ConnectedLineNum !== extension);
         
-        // Парсим длительность из строки формата "HH:MM:SS" в секунды
-        const parseDuration = (durationStr: string): number => {
-          if (!durationStr) return 0;
-          const parts = durationStr.split(':');
-          if (parts.length === 3) {
-            const hours = parseInt(parts[0], 10) || 0;
-            const minutes = parseInt(parts[1], 10) || 0;
-            const seconds = parseInt(parts[2], 10) || 0;
-            return hours * 3600 + minutes * 60 + seconds;
+        if (!hasValidCall) {
+          status = 'idle';
+          currentCall = null;
+        } else {
+          status = 'on_call';
+          // Определяем номер звонящего: если CallerIDNum = extension, то звонок исходящий, берем ConnectedLineNum
+          currentCall = (memberChannel.CallerIDNum === extension) 
+            ? (memberChannel.ConnectedLineNum || 'Unknown')
+            : (memberChannel.CallerIDNum || 'Unknown');
+          
+          // Парсим длительность из строки формата "HH:MM:SS" в секунды
+          const parseDuration = (durationStr: string): number => {
+            if (!durationStr) return 0;
+            const parts = durationStr.split(':');
+            if (parts.length === 3) {
+              const hours = parseInt(parts[0], 10) || 0;
+              const minutes = parseInt(parts[1], 10) || 0;
+              const seconds = parseInt(parts[2], 10) || 0;
+              return hours * 3600 + minutes * 60 + seconds;
+            }
+            return parseInt(durationStr, 10) || 0;
+          };
+          
+          // Проверяем различные поля для длительности в порядке приоритета:
+          // 1. Duration (строка "HH:MM:SS" или число секунд)
+          // 2. Seconds (число секунд)
+          // 3. duration (альтернативное поле)
+          let durationValue: string | number = '0';
+          if (memberChannel.Duration !== undefined && memberChannel.Duration !== null) {
+            durationValue = memberChannel.Duration;
+          } else if (memberChannel.Seconds !== undefined && memberChannel.Seconds !== null) {
+            durationValue = memberChannel.Seconds;
+          } else if (memberChannel.duration !== undefined && memberChannel.duration !== null) {
+            durationValue = memberChannel.duration;
           }
-          return parseInt(durationStr, 10) || 0;
-        };
-        
-        // Проверяем различные поля для длительности
-        const durationValue = memberChannel.Duration || memberChannel.duration || '0';
-        
-        // Конвертируем в секунды
-        currentCallDuration = typeof durationValue === 'string' 
-          ? parseDuration(durationValue) 
-          : durationValue;
-        
-        // Для статуса "на звонке" statusDuration = длительность звонка
-        statusDuration = currentCallDuration;
-        
-        this.logger.debug(`🔥 Channel duration: Duration=${memberChannel.Duration}, parsed=${currentCallDuration}s`);
-        this.logger.debug(`Operator ${m.memberid} on call: ${currentCall}, duration: ${currentCallDuration}s, statusDuration: ${statusDuration}s`);
+          
+          // Конвертируем в секунды
+          currentCallDuration = typeof durationValue === 'string' 
+            ? parseDuration(durationValue) 
+            : (typeof durationValue === 'number' ? durationValue : 0);
+          
+          // Для статуса "на звонке" statusDuration = длительность звонка
+          statusDuration = currentCallDuration;
+        }
       } else {
         // Для idle status можно добавить отслеживание времени простоя
-        // TODO: Добавить отслеживание времени в idle статусе
+        // Operator is registered but not on a call
         status = 'idle';
         statusDuration = null;
       }
@@ -369,7 +406,6 @@ export class ContactCenterService {
           const now = new Date();
           const timeSinceLastCall = Math.floor((now.getTime() - lastCallTime.getTime()) / 1000);
           statusDuration = timeSinceLastCall;
-          this.logger.debug(`Operator ${m.memberid}: ${status}, time since last call: ${timeSinceLastCall}s`);
         }
       }
 
@@ -387,17 +423,14 @@ export class ContactCenterService {
         queue: m.queue_name,
       };
       
-      this.logger.debug(`  ✅ Operator: ${operatorData.name} | status: ${status} | statusDuration: ${statusDuration} | currentCallDuration: ${currentCallDuration}`);
       operators.push(operatorData);
     }
 
-    this.logger.debug(`=== getOperatorsSnapshot() END - Returning ${operators.length} operators ===`);
     return operators;
   }
 
   // Return queues with real-time statistics from AMI
   async getQueuesSnapshot(): Promise<QueueStatus[]> {
-    this.logger.debug('=== getQueuesSnapshot() called ===');
     await this.refreshAmiCache();
     
     const queues = await this.queueRepo.find();
@@ -411,8 +444,6 @@ export class ContactCenterService {
         activeChannels.add(ch.Channel);
       }
     });
-    
-    this.logger.debug(`Found ${queues.length} queues, ${queueStatusMap.size} have AMI data, ${activeChannels.size} active channels`);
     
     // Get calls for last 24 hours (not just today since 00:00)
     const last24h = new Date();
@@ -465,54 +496,47 @@ export class ContactCenterService {
         
         waiting = uniqueChannels.size;
         
-        // Log entry events for debugging
-        if (entryEvents.length > 0) {
-          const duplicates = entryEvents.filter((e: any) => e.Channel && assignedChannels.has(e.Channel) && !uniqueChannels.has(e.Channel)).length;
-          this.logger.debug(`Queue ${q.name}: ${entryEvents.length} QueueEntry, ${uniqueChannels.size} unique, ${staleChannels.length} stale, ${duplicates} in other queues`);
-          
-          if (staleChannels.length > 0) {
-            this.logger.warn(`Queue ${q.name} has ${staleChannels.length} stale channels: ${staleChannels.join(', ')}`);
-          }
-        }
-        
         // Look for QueueParams event for additional info (longest wait time)
         const paramsEvent = amiEvents.find((e: any) => e.Event === 'QueueParams');
         if (paramsEvent) {
-          // Use Holdtime for longest waiting time
           longestWaitingSeconds = parseInt(paramsEvent.Holdtime || '0', 10);
-          
-          // Log params for debugging
-          this.logger.debug(`Queue ${q.name} QueueParams: Calls=${paramsEvent.Calls}, Max=${paramsEvent.Max}, Completed=${paramsEvent.Completed}, Abandoned=${paramsEvent.Abandoned}, ServiceLevel=${paramsEvent.ServiceLevel}, Holdtime=${paramsEvent.Holdtime}s`);
           
           // Only use Calls from QueueParams if we don't have QueueEntry events
           if (waiting === 0 && paramsEvent.Calls) {
             const paramsWaiting = parseInt(paramsEvent.Calls || '0', 10);
-            this.logger.debug(`Queue ${q.name}: No QueueEntry events, using QueueParams.Calls=${paramsWaiting}`);
             waiting = paramsWaiting;
           }
         }
         
-        // Count calls in service - but only count each member once across all queues
+        // Count calls in service based on QueueMember events
+        // Use InCall field which indicates if member is currently on a call
         const memberEvents = amiEvents.filter((e: any) => e.Event === 'QueueMember');
         let localCallsInService = 0;
         
         memberEvents.forEach((m: any) => {
+          // InCall = 1 means member is on a call, InCall = 0 means available
           const inCall = parseInt(m.InCall || '0', 10);
-          if (inCall > 0 && m.Name) {
+          const memberName = m.Name || m.Location || m.StateInterface;
+          
+          if (inCall > 0 && memberName) {
             // Only count if this member hasn't been counted in another queue
-            if (!assignedMembers.has(m.Name)) {
-              localCallsInService += inCall;
-              assignedMembers.add(m.Name);
+            if (!assignedMembers.has(memberName)) {
+              localCallsInService += 1;
+              assignedMembers.add(memberName);
             }
           }
         });
         
         callsInService = localCallsInService;
         
-        // Summary log for this queue
-        this.logger.debug(`Queue ${q.name} summary: waiting=${waiting}, callsInService=${callsInService}`);
-      } else {
-        this.logger.debug(`Queue ${q.name}: No AMI events available`);
+        // Validate: callsInService should not exceed totalMembers
+        if (callsInService > totalMembers) {
+          callsInService = Math.min(callsInService, totalMembers);
+        }
+        
+        // Validation checks
+        if (waiting < 0) waiting = 0;
+        if (callsInService < 0) callsInService = 0;
       }
 
       // Get abandoned calls for last 24h
@@ -585,36 +609,61 @@ export class ContactCenterService {
       }
     }
     
-    // Log total waiting calls across all queues
-    const totalWaiting = result.reduce((sum, q) => sum + q.waiting, 0);
-    const uniqueWaiting = allWaitingChannels.size;
-    this.logger.debug(`Total waiting: ${totalWaiting} (sum across queues), ${uniqueWaiting} unique channels`);
-    if (totalWaiting !== uniqueWaiting) {
-      this.logger.warn(`⚠️ Mismatch detected: ${totalWaiting} total vs ${uniqueWaiting} unique waiting calls. Possible duplicate counting across queues.`);
-    }
-    
-    // Log final result before returning
-    this.logger.debug(`Returning ${result.length} queues with waiting values: [${result.map(q => `${q.name}:${q.waiting}`).join(', ')}]`);
-    
     return result;
   }
 
-  // Get active calls
+  // Get active calls (only real calls, not service channels)
   async getActiveCalls(): Promise<ActiveCall[]> {
     await this.refreshAmiCache();
     
     const channels = this.amiCache.channels || [];
     const activeCalls: ActiveCall[] = [];
+    const processedChannels = new Set<string>();
 
     for (const ch of channels) {
+      // Skip invalid or down channels
       if (!ch.Channel || ch.ChannelStateDesc === 'Down') continue;
+      
+      // Skip service channels (Local/, park, agent, etc.)
+      if (ch.Channel.startsWith('Local/') || 
+          ch.Channel.includes('/park@') ||
+          ch.Channel.includes('/agent@') ||
+          ch.Channel.includes('/conference@')) {
+        continue;
+      }
+      
+      // Skip channels in states other than Up, Ring, or Ringing (exclude Rsrvd, etc.)
+      const validStates = ['Up', 'Ring', 'Ringing'];
+      if (!validStates.includes(ch.ChannelStateDesc)) {
+        continue;
+      }
+      
+      // Skip duplicate channels (sometimes AMI returns the same channel multiple times)
+      if (processedChannels.has(ch.Channel)) {
+        continue;
+      }
+      processedChannels.add(ch.Channel);
+      
+      // Parse duration
+      let duration = 0;
+      if (ch.Seconds) {
+        duration = parseInt(ch.Seconds, 10) || 0;
+      } else if (ch.Duration) {
+        // Parse HH:MM:SS format if needed
+        const parts = String(ch.Duration).split(':');
+        if (parts.length === 3) {
+          duration = parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseInt(parts[2]);
+        } else {
+          duration = parseInt(ch.Duration, 10) || 0;
+        }
+      }
 
       activeCalls.push({
         uniqueid: ch.Uniqueid || ch.Channel,
         channel: ch.Channel,
         callerIdNum: ch.CallerIDNum || 'Unknown',
         callerIdName: ch.CallerIDName || '',
-        duration: parseInt(ch.Seconds || '0', 10),
+        duration,
         state: ch.ChannelStateDesc || 'Unknown',
         operator: ch.ConnectedLineNum || undefined,
         queue: ch.Application === 'Queue' ? ch.ApplicationData : undefined,
@@ -635,15 +684,23 @@ export class ContactCenterService {
       this.getActiveCalls(),
     ]);
     
-    // Calculate unique waiting calls across all queues
+    // Calculate unique waiting calls from active channels (more accurate than summing queue.waiting)
+    const activeChannels = new Set<string>();
+    (this.amiCache.channels || []).forEach((ch: any) => {
+      if (ch.Channel && ch.ChannelStateDesc !== 'Down') {
+        activeChannels.add(ch.Channel);
+      }
+    });
+    
     const uniqueWaitingChannels = new Set<string>();
     const queueStatusMap = this.amiCache.queueStatus || new Map();
+    
     for (const q of queues) {
       const amiEvents = queueStatusMap.get(q.name);
       if (amiEvents && amiEvents.length > 0) {
         const entryEvents = amiEvents.filter((e: any) => e.Event === 'QueueEntry');
         entryEvents.forEach((e: any) => {
-          if (e.Channel) {
+          if (e.Channel && activeChannels.has(e.Channel)) {
             uniqueWaitingChannels.add(e.Channel);
           }
         });
@@ -651,8 +708,6 @@ export class ContactCenterService {
     }
     
     const totalUniqueWaiting = uniqueWaitingChannels.size;
-    this.logger.debug(`tick() result: ${totalUniqueWaiting} unique waiting calls across ${queues.length} queues`);
-    
     return { operators, queues, activeCalls, totalUniqueWaiting };
   }
 

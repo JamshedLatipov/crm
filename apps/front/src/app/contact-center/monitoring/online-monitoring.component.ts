@@ -2,6 +2,7 @@ import {
   Component,
   inject,
   OnInit,
+  OnDestroy,
   ChangeDetectorRef,
   Input,
   TemplateRef,
@@ -11,7 +12,7 @@ import {
   computed,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Observable, share } from 'rxjs';
+import { Observable, share, Subject, takeUntil } from 'rxjs';
 import {
   ContactCenterMonitoringService,
   OperatorStatus,
@@ -48,10 +49,9 @@ Chart.register(...registerables, ChartDataLabels);
   templateUrl: './online-monitoring.component.html',
   styleUrls: ['./online-monitoring.component.scss'],
 })
-export class OnlineMonitoringComponent implements OnInit, AfterViewInit {
+export class OnlineMonitoringComponent implements OnInit, AfterViewInit, OnDestroy {
   private svc = inject(ContactCenterMonitoringService);
-  private cdr = inject(ChangeDetectorRef);
-
+  private cdr = inject(ChangeDetectorRef);  private destroy$ = new Subject<void>();
   @ViewChild('titleTemplate') titleTemplate!: TemplateRef<any>;
   @ViewChild('statusTemplate') statusTemplate!: TemplateRef<any>;
   @ViewChild('currentCallTemplate') currentCallTemplate!: TemplateRef<any>;
@@ -73,20 +73,48 @@ export class OnlineMonitoringComponent implements OnInit, AfterViewInit {
   stats = signal<ContactCenterStats>({ totalUniqueWaiting: 0 });
 
   // Computed values
-  totalOperators = computed(() => this.operators().length);
-  activeOperators = computed(() => this.operators().filter(op => op.status !== 'offline').length);
+  totalOperators = computed(() => {
+    const count = this.operators().length;
+    console.log(`[Computed] totalOperators: ${count}`);
+    return count;
+  });
+  
+  activeOperators = computed(() => {
+    const ops = this.operators().filter(op => op.status !== 'offline');
+    console.log(`[Computed] activeOperators: ${ops.length} / ${this.operators().length}`);
+    return ops.length;
+  });
+  
   totalQueues = computed(() => this.queues().length);
+  
   // Используем уникальное количество ожидающих из stats
-  totalWaiting = computed(() => this.stats().totalUniqueWaiting);
-  // Активные звонки = количество активных звонков (не операторов на звонках)
-  totalActiveCalls = computed(() => this.queues().reduce((sum, q) => sum + (q.callsInService || 0), 0));
-  // Операторы на звонках (для справки)
-  operatorsOnCall = computed(() => this.operators().filter(op => op.status === 'on_call').length);
+  totalWaiting = computed(() => {
+    const waiting = this.stats().totalUniqueWaiting;
+    console.log(`[Computed] totalWaiting (from stats): ${waiting}`);
+    return waiting;
+  });
+  
+  // Активные звонки = сумма callsInService из всех очередей
+  totalActiveCalls = computed(() => {
+    const total = this.queues().reduce((sum, q) => sum + (q.callsInService || 0), 0);
+    console.log(`[Computed] totalActiveCalls (callsInService sum): ${total}`);
+    return total;
+  });
+  
+  // Операторы на звонках (для справки и сравнения)
+  operatorsOnCall = computed(() => {
+    const count = this.operators().filter(op => op.status === 'on_call').length;
+    console.log(`[Computed] operatorsOnCall: ${count}`);
+    return count;
+  });
+  
   avgServiceLevel = computed(() => {
     const queues = this.queues();
     if (queues.length === 0) return 0;
     const total = queues.reduce((sum, q) => sum + (q.serviceLevel || 0), 0);
-    return Math.round(total / queues.length);
+    const avg = Math.round(total / queues.length);
+    console.log(`[Computed] avgServiceLevel: ${avg}%`);
+    return avg;
   });
 
   // Direct WebSocket streams with fallback to polling
@@ -158,12 +186,33 @@ export class OnlineMonitoringComponent implements OnInit, AfterViewInit {
 
   ngOnInit() {
     console.log('[OnlineMonitoring] Component initialized');
-    this.operators$.subscribe((operators) => {
-      console.log('[OnlineMonitoring] Operators received:', operators);
-      // Логируем операторов с их statusDuration
-      operators.forEach(op => {
-        console.log(`Operator ${op.name}: status=${op.status}, statusDuration=${op.statusDuration}, currentCallDuration=${op.currentCallDuration}`);
+    
+    this.operators$.pipe(takeUntil(this.destroy$)).subscribe((operators) => {
+      console.log('[OnlineMonitoring] ===== OPERATORS UPDATE =====');
+      console.log('[OnlineMonitoring] Operators received:', operators.length);
+      
+      // Валидация данных операторов
+      if (!Array.isArray(operators)) {
+        console.error('[OnlineMonitoring] ERROR: operators is not an array!', operators);
+        return;
+      }
+      
+      // Детальный лог операторов
+      operators.forEach((op, idx) => {
+        console.log(`  [${idx}] ${op.name}: status=${op.status}, statusDuration=${op.statusDuration}s, currentCall=${op.currentCall}, currentCallDuration=${op.currentCallDuration}s`);
+        
+        // Валидация полей оператора
+        if (!op.id || !op.name) {
+          console.warn(`  WARNING: Operator ${idx} missing id or name`, op);
+        }
+        if (op.status === 'on_call' && !op.currentCall) {
+          console.warn(`  WARNING: Operator ${op.name} is on_call but has no currentCall`);
+        }
+        if (op.currentCall && !op.currentCallDuration) {
+          console.warn(`  WARNING: Operator ${op.name} has currentCall but no duration`);
+        }
       });
+      
       this.operators.set(operators);
 
       const statusCounts = {
@@ -190,25 +239,75 @@ export class OnlineMonitoringComponent implements OnInit, AfterViewInit {
       this.cdr.detectChanges();
     });
 
-    this.queues$.subscribe((queues) => {
+    this.queues$.pipe(takeUntil(this.destroy$)).subscribe((queues) => {
+      console.log('[OnlineMonitoring] ===== QUEUES UPDATE =====');
       const now = new Date().toISOString();
-      console.log(`[${now}] [OnlineMonitoring] Queues received:`, queues.length);
-      console.log(`[${now}] Raw data:`, JSON.stringify(queues, null, 2));
+      console.log(`[${now}] Queues received:`, queues.length);
+      
+      // Валидация данных очередей
+      if (!Array.isArray(queues)) {
+        console.error('[OnlineMonitoring] ERROR: queues is not an array!', queues);
+        return;
+      }
+      
+      // Детальный лог очередей
+      let totalWaitingSum = 0;
+      let totalCallsInService = 0;
+      
       queues.forEach((q, idx) => {
-        console.log(`  Queue ${idx + 1}: ${q.name} - waiting: ${q.waiting}, callsInService: ${q.callsInService}`);
+        console.log(`  [${idx}] ${q.name}:`);
+        console.log(`      waiting: ${q.waiting}`);
+        console.log(`      callsInService: ${q.callsInService}`);
+        console.log(`      longestWaiting: ${q.longestWaitingSeconds}s`);
+        console.log(`      availableMembers: ${q.availableMembers}/${q.totalMembers}`);
+        console.log(`      serviceLevel: ${q.serviceLevel}%`);
+        
+        totalWaitingSum += q.waiting || 0;
+        totalCallsInService += q.callsInService || 0;
+        
+        // Валидация данных очередей
+        if (!q.id || !q.name) {
+          console.warn(`    WARNING: Queue ${idx} missing id or name`, q);
+        }
+        if (q.waiting < 0 || q.callsInService < 0) {
+          console.error(`    ERROR: Queue ${q.name} has negative values! waiting=${q.waiting}, callsInService=${q.callsInService}`);
+        }
       });
-      console.log('[OnlineMonitoring] Total waiting (sum):', queues.reduce((sum, q) => sum + (q.waiting || 0), 0));
+      
+      console.log(`[OnlineMonitoring] Summary: totalWaiting(sum)=${totalWaitingSum}, totalCallsInService=${totalCallsInService}`);
+      console.log('[OnlineMonitoring] Raw queues data:', JSON.stringify(queues, null, 2));
+      
       this.queues.set(queues);
       this.cdr.detectChanges();
     });
 
-    this.activeCalls$.subscribe((calls) => {
+    this.activeCalls$.pipe(takeUntil(this.destroy$)).subscribe((calls) => {
+      console.log('[OnlineMonitoring] ===== ACTIVE CALLS UPDATE =====');
+      console.log('[OnlineMonitoring] Active calls received:', calls.length);
+      
+      if (!Array.isArray(calls)) {
+        console.error('[OnlineMonitoring] ERROR: activeCalls is not an array!', calls);
+        return;
+      }
+      
+      calls.forEach((call, idx) => {
+        console.log(`  [${idx}] ${call.callerIdNum} -> ${call.operator || 'unknown'}: duration=${call.duration}s, state=${call.state}, queue=${call.queue || 'none'}`);
+      });
+      
       this.activeCalls.set(calls);
       this.cdr.detectChanges();
     });
 
-    this.stats$.subscribe((stats) => {
+    this.stats$.pipe(takeUntil(this.destroy$)).subscribe((stats) => {
+      console.log('[OnlineMonitoring] ===== STATS UPDATE =====');
       console.log('[OnlineMonitoring] Stats received:', stats);
+      
+      if (!stats || typeof stats.totalUniqueWaiting !== 'number') {
+        console.error('[OnlineMonitoring] ERROR: Invalid stats object!', stats);
+        return;
+      }
+      
+      console.log(`[OnlineMonitoring] totalUniqueWaiting: ${stats.totalUniqueWaiting}`);
       this.stats.set(stats);
       this.cdr.detectChanges();
     });
@@ -216,6 +315,12 @@ export class OnlineMonitoringComponent implements OnInit, AfterViewInit {
 
   ngAfterViewInit() {
     // Templates are now available after view init
+  }
+
+  ngOnDestroy() {
+    console.log('[OnlineMonitoring] Component destroyed, cleaning up subscriptions');
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   getPercentage(status: string): number {
