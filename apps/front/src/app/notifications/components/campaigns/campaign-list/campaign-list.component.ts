@@ -7,6 +7,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatMenuModule } from '@angular/material/menu';
+import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.component';
 
 interface Campaign {
   id: string;
@@ -29,107 +31,310 @@ interface Campaign {
     MatIconModule,
     MatChipsModule,
     MatTooltipModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    MatMenuModule,
+    PageLayoutComponent
   ],
   template: `
-    <div class="campaign-list-container">
-      <div class="header">
-        <h1>Кампании уведомлений</h1>
+    <app-page-layout
+      title="Кампании уведомлений"
+      [subtitle]="'Всего: ' + campaigns().length + ' кампаний'"
+    >
+      <div page-actions>
         <button mat-raised-button color="primary" routerLink="/notifications/campaigns/new">
           <mat-icon>add</mat-icon>
           Создать кампанию
         </button>
+        <button mat-stroked-button [matMenuTriggerFor]="filterMenu">
+          <mat-icon>filter_list</mat-icon>
+          Фильтры
+        </button>
       </div>
 
       @if (loading()) {
-        <div class="loading">
-          <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
+        <div class="loading-container">
+          <mat-spinner diameter="40"></mat-spinner>
+        </div>
+      } @else if (campaigns().length === 0) {
+        <div class="empty-state">
+          <mat-icon>campaign</mat-icon>
+          <h3>Нет кампаний</h3>
+          <p>Создайте первую кампанию для рассылки уведомлений</p>
+          <button mat-raised-button color="primary" routerLink="/notifications/campaigns/new">
+            <mat-icon>add</mat-icon>
+            Создать кампанию
+          </button>
         </div>
       } @else {
-        <table mat-table [dataSource]="campaigns()" class="campaigns-table">
-          
-          <ng-container matColumnDef="name">
-            <th mat-header-cell *matHeaderCellDef>Название</th>
-            <td mat-cell *matCellDef="let campaign">{{ campaign.name }}</td>
-          </ng-container>
+        <div class="modern-table-container">
+          <div class="table-wrapper">
+            <table mat-table [dataSource]="campaigns()" class="modern-table">
+              
+              <ng-container matColumnDef="name">
+                <th mat-header-cell *matHeaderCellDef>Название</th>
+                <td mat-cell *matCellDef="let campaign">
+                  <div class="campaign-name">
+                    <strong>{{ campaign.name }}</strong>
+                  </div>
+                </td>
+              </ng-container>
 
-          <ng-container matColumnDef="channel">
-            <th mat-header-cell *matHeaderCellDef>Канал</th>
-            <td mat-cell *matCellDef="let campaign">
-              <mat-chip>{{ campaign.channel }}</mat-chip>
-            </td>
-          </ng-container>
+              <ng-container matColumnDef="channel">
+                <th mat-header-cell *matHeaderCellDef>Канал</th>
+                <td mat-cell *matCellDef="let campaign">
+                  <div class="channel-badge" [class]="'channel-' + campaign.channel.toLowerCase()">
+                    <mat-icon>{{ getChannelIcon(campaign.channel) }}</mat-icon>
+                    <span>{{ campaign.channel }}</span>
+                  </div>
+                </td>
+              </ng-container>
 
-          <ng-container matColumnDef="status">
-            <th mat-header-cell *matHeaderCellDef>Статус</th>
-            <td mat-cell *matCellDef="let campaign">
-              <mat-chip [class]="'status-' + campaign.status">
-                {{ getStatusLabel(campaign.status) }}
-              </mat-chip>
-            </td>
-          </ng-container>
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Статус</th>
+                <td mat-cell *matCellDef="let campaign">
+                  <span class="status-badge" [class]="'status-' + campaign.status">
+                    {{ getStatusLabel(campaign.status) }}
+                  </span>
+                </td>
+              </ng-container>
 
-          <ng-container matColumnDef="progress">
-            <th mat-header-cell *matHeaderCellDef>Прогресс</th>
-            <td mat-cell *matCellDef="let campaign">
-              {{ campaign.sentCount }} / {{ campaign.totalRecipients }}
-            </td>
-          </ng-container>
+              <ng-container matColumnDef="progress">
+                <th mat-header-cell *matHeaderCellDef>Прогресс</th>
+                <td mat-cell *matCellDef="let campaign">
+                  <div class="progress-info">
+                    <span>{{ campaign.sentCount }} / {{ campaign.totalRecipients }}</span>
+                    <div class="progress-bar">
+                      <div class="progress-fill" [style.width.%]="(campaign.sentCount / campaign.totalRecipients) * 100"></div>
+                    </div>
+                  </div>
+                </td>
+              </ng-container>
 
-          <ng-container matColumnDef="scheduledAt">
-            <th mat-header-cell *matHeaderCellDef>Запланировано</th>
-            <td mat-cell *matCellDef="let campaign">
-              {{ campaign.scheduledAt ? (campaign.scheduledAt | date:'short') : '—' }}
-            </td>
-          </ng-container>
+              <ng-container matColumnDef="scheduledAt">
+                <th mat-header-cell *matHeaderCellDef>Запланировано</th>
+                <td mat-cell *matCellDef="let campaign">
+                  {{ campaign.scheduledAt ? (campaign.scheduledAt | date:'dd.MM.yyyy HH:mm') : '—' }}
+                </td>
+              </ng-container>
 
-          <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef>Действия</th>
-            <td mat-cell *matCellDef="let campaign">
-              <button mat-icon-button [routerLink]="['/notifications/campaigns', campaign.id]" matTooltip="Редактировать">
-                <mat-icon>edit</mat-icon>
-              </button>
-              <button mat-icon-button [routerLink]="['/notifications/campaigns', campaign.id, 'stats']" matTooltip="Статистика">
-                <mat-icon>bar_chart</mat-icon>
-              </button>
-            </td>
-          </ng-container>
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef class="actions-column">Действия</th>
+                <td mat-cell *matCellDef="let campaign" class="actions-column">
+                  <button mat-icon-button [routerLink]="['/notifications/campaigns', campaign.id]" matTooltip="Редактировать">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <button mat-icon-button [routerLink]="['/notifications/campaigns', campaign.id, 'stats']" matTooltip="Статистика">
+                    <mat-icon>bar_chart</mat-icon>
+                  </button>
+                  <button mat-icon-button [matMenuTriggerFor]="actionMenu" matTooltip="Еще">
+                    <mat-icon>more_vert</mat-icon>
+                  </button>
+                  
+                  <mat-menu #actionMenu="matMenu">
+                    <button mat-menu-item>
+                      <mat-icon>content_copy</mat-icon>
+                      <span>Дублировать</span>
+                    </button>
+                    <button mat-menu-item>
+                      <mat-icon>delete</mat-icon>
+                      <span>Удалить</span>
+                    </button>
+                  </mat-menu>
+                </td>
+              </ng-container>
 
-          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-        </table>
+              <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
+            </table>
+          </div>
+        </div>
       }
-    </div>
+
+      <mat-menu #filterMenu="matMenu">
+        <button mat-menu-item>
+          <mat-icon>filter_list</mat-icon>
+          <span>По статусу</span>
+        </button>
+        <button mat-menu-item>
+          <mat-icon>swap_vert</mat-icon>
+          <span>По дате</span>
+        </button>
+      </mat-menu>
+    </app-page-layout>
   `,
   styles: [`
-    .campaign-list-container {
-      padding: 24px;
-    }
-
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 24px;
-    }
-
-    .loading {
+    .loading-container {
       display: flex;
       justify-content: center;
-      padding: 48px;
+      align-items: center;
+      padding: 80px 20px;
     }
 
-    .campaigns-table {
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      
+      mat-icon {
+        font-size: 80px;
+        width: 80px;
+        height: 80px;
+        color: #9ca3af;
+        margin-bottom: 16px;
+      }
+      
+      h3 {
+        font-size: 24px;
+        font-weight: 600;
+        color: #374151;
+        margin: 0 0 8px 0;
+      }
+      
+      p {
+        font-size: 16px;
+        color: #6b7280;
+        margin: 0 0 24px 0;
+      }
+    }
+
+    .modern-table-container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+    }
+
+    .modern-table {
       width: 100%;
+      
+      th {
+        background: #f9fafb;
+        color: #374151;
+        font-weight: 600;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 16px 20px;
+        border-bottom: 2px solid #e5e7eb;
+      }
+      
+      td {
+        padding: 16px 20px;
+        border-bottom: 1px solid #f3f4f6;
+      }
+      
+      .table-row {
+        transition: background-color 0.2s;
+        
+        &:hover {
+          background-color: #f9fafb;
+        }
+      }
     }
 
-    mat-chip {
-      &.status-draft { background-color: #9e9e9e; }
-      &.status-scheduled { background-color: #2196f3; }
-      &.status-running { background-color: #ff9800; }
-      &.status-completed { background-color: #4caf50; }
-      &.status-failed { background-color: #f44336; }
-      color: white;
+    .campaign-name {
+      strong {
+        color: #111827;
+        font-size: 15px;
+      }
+    }
+
+    .channel-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      
+      mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+      }
+      
+      &.channel-sms {
+        background: #e0f2fe;
+        color: #0369a1;
+      }
+      
+      &.channel-email {
+        background: #fed7aa;
+        color: #c2410c;
+      }
+      
+      &.channel-webhook {
+        background: #e9d5ff;
+        color: #7c3aed;
+      }
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      
+      &.status-draft {
+        background: #f3f4f6;
+        color: #4b5563;
+      }
+      
+      &.status-scheduled {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+      
+      &.status-running {
+        background: #fef3c7;
+        color: #b45309;
+      }
+      
+      &.status-completed {
+        background: #d1fae5;
+        color: #065f46;
+      }
+      
+      &.status-failed {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+    }
+
+    .progress-info {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 120px;
+      
+      > span {
+        font-size: 13px;
+        color: #6b7280;
+      }
+    }
+
+    .progress-bar {
+      height: 6px;
+      background: #e5e7eb;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4285f4 0%, #667eea 100%);
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+
+    .actions-column {
+      text-align: right;
+      width: 150px;
     }
   `]
 })
@@ -161,5 +366,14 @@ export class CampaignListComponent implements OnInit {
       failed: 'Ошибка'
     };
     return labels[status] || status;
+  }
+
+  getChannelIcon(channel: string): string {
+    const icons: Record<string, string> = {
+      SMS: 'sms',
+      Email: 'email',
+      Webhook: 'webhook'
+    };
+    return icons[channel] || 'notifications';
   }
 }

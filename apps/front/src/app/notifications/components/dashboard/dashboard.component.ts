@@ -1,82 +1,213 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.component';
 
 @Component({
   selector: 'app-notifications-dashboard',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatIconModule],
+  imports: [
+    CommonModule,
+    RouterModule,
+    MatCardModule,
+    MatIconModule,
+    MatButtonModule,
+    PageLayoutComponent
+  ],
   template: `
-    <div class="dashboard-container p-6">
-      <h1 class="text-3xl font-bold mb-6">Центр уведомлений</h1>
-      
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <!-- SMS Card -->
+    <app-page-layout
+      title="Центр уведомлений"
+      subtitle="Управление многоканальными рассылками"
+    >
+      <div page-actions>
+        <button mat-raised-button color="primary" routerLink="/notifications/campaigns/new">
+          <mat-icon>add</mat-icon>
+          Создать кампанию
+        </button>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="stats-grid">
         <mat-card class="stat-card">
-          <mat-card-content class="flex items-center">
-            <mat-icon class="text-cyan-500 text-5xl mr-4">sms</mat-icon>
-            <div>
-              <h3 class="text-lg text-gray-600">SMS</h3>
-              <p class="text-3xl font-bold">Скоро</p>
+          <div class="stat-content">
+            <div class="stat-icon sms">
+              <mat-icon>sms</mat-icon>
             </div>
-          </mat-card-content>
+            <div class="stat-info">
+              <div class="stat-label">SMS рассылки</div>
+              <div class="stat-value">Скоро</div>
+            </div>
+          </div>
         </mat-card>
 
-        <!-- Email Card -->
         <mat-card class="stat-card">
-          <mat-card-content class="flex items-center">
-            <mat-icon class="text-orange-500 text-5xl mr-4">email</mat-icon>
-            <div>
-              <h3 class="text-lg text-gray-600">Email</h3>
-              <p class="text-3xl font-bold">Скоро</p>
+          <div class="stat-content">
+            <div class="stat-icon email">
+              <mat-icon>email</mat-icon>
             </div>
-          </mat-card-content>
+            <div class="stat-info">
+              <div class="stat-label">Email кампании</div>
+              <div class="stat-value">Скоро</div>
+            </div>
+          </div>
         </mat-card>
 
-        <!-- Webhook Card -->
         <mat-card class="stat-card">
-          <mat-card-content class="flex items-center">
-            <mat-icon class="text-purple-500 text-5xl mr-4">webhook</mat-icon>
-            <div>
-              <h3 class="text-lg text-gray-600">Webhooks</h3>
-              <p class="text-3xl font-bold">Скоро</p>
+          <div class="stat-content">
+            <div class="stat-icon webhook">
+              <mat-icon>webhook</mat-icon>
             </div>
-          </mat-card-content>
+            <div class="stat-info">
+              <div class="stat-label">Webhooks</div>
+              <div class="stat-value">Скоро</div>
+            </div>
+          </div>
         </mat-card>
       </div>
 
-      <mat-card>
+      <!-- Info Card -->
+      <mat-card class="info-card">
         <mat-card-header>
-          <mat-card-title>Модуль в разработке</mat-card-title>
+          <mat-card-title>
+            <mat-icon>info</mat-icon>
+            Модуль в разработке
+          </mat-card-title>
         </mat-card-header>
         <mat-card-content>
-          <p class="mb-4">Центр уведомлений находится в разработке. Здесь будет доступно:</p>
-          <ul class="list-disc list-inside space-y-2">
-            <li>📱 SMS рассылки через SMS.RU, SMSC.RU, Twilio</li>
-            <li>📧 Email рассылки через SMTP</li>
-            <li>🔗 REST API/Webhooks для интеграций</li>
-            <li>📊 Многоканальные кампании</li>
-            <li>👥 Сегментация контактов</li>
-            <li>📈 Аналитика и отчеты</li>
+          <p class="description">Центр уведомлений находится в разработке. Здесь будет доступно:</p>
+          <ul class="feature-list">
+            <li><mat-icon>check_circle</mat-icon>SMS рассылки через SMS.RU, SMSC.RU, Twilio</li>
+            <li><mat-icon>check_circle</mat-icon>Email рассылки через SMTP</li>
+            <li><mat-icon>check_circle</mat-icon>REST API/Webhooks для интеграций</li>
+            <li><mat-icon>check_circle</mat-icon>Многоканальные кампании</li>
+            <li><mat-icon>check_circle</mat-icon>Сегментация контактов</li>
+            <li><mat-icon>check_circle</mat-icon>Аналитика и отчеты</li>
           </ul>
         </mat-card-content>
       </mat-card>
-    </div>
+    </app-page-layout>
   `,
   styles: [`
-    .dashboard-container {
-      max-width: 1200px;
-      margin: 0 auto;
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      margin-bottom: 32px;
     }
 
     .stat-card {
-      transition: transform 0.2s;
+      transition: all 0.3s ease;
+      cursor: default;
+      
+      &:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      }
     }
 
-    .stat-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    .stat-content {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 8px;
+    }
+
+    .stat-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      
+      mat-icon {
+        font-size: 32px;
+        width: 32px;
+        height: 32px;
+        color: white;
+      }
+
+      &.sms {
+        background: linear-gradient(135deg, #06B6D4 0%, #0891B2 100%);
+      }
+
+      &.email {
+        background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+      }
+
+      &.webhook {
+        background: linear-gradient(135deg, #A855F7 0%, #9333EA 100%);
+      }
+    }
+
+    .stat-info {
+      flex: 1;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1f2937;
+    }
+
+    .info-card {
+      mat-card-header {
+        margin-bottom: 16px;
+        
+        mat-card-title {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 20px;
+          font-weight: 600;
+          
+          mat-icon {
+            color: var(--primary-color);
+          }
+        }
+      }
+
+      .description {
+        font-size: 16px;
+        color: #4b5563;
+        margin-bottom: 16px;
+      }
+
+      .feature-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        
+        li {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px 0;
+          font-size: 15px;
+          color: #374151;
+          border-bottom: 1px solid #e5e7eb;
+          
+          &:last-child {
+            border-bottom: none;
+          }
+          
+          mat-icon {
+            color: #10b981;
+            font-size: 20px;
+            width: 20px;
+            height: 20px;
+          }
+        }
+      }
     }
   `],
 })
