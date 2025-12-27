@@ -95,7 +95,11 @@
 .notification-content {
   max-height: 480px;
   overflow-y: auto;
-  background: #fafafa;
+  background: #fff;
+}
+
+::ng-deep .mat-mdc-menu-panel .mat-divider {
+  margin: 0 !important;
 }
 
 .loading-container,
