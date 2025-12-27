@@ -99,6 +99,24 @@ export class TaskService {
       user: userId ? { id: userId } as User : null,
     });
     
+    // Отправляем нотификацию о создании задачи
+    try {
+      const assignedUserId = data.assignedToId || userId || null;
+      if (assignedUserId) {
+        await this.notificationService.createTaskNotification(
+          NotificationType.TASK_CREATED,
+          'Новая задача',
+          `Создана новая задача: ${task.title}`,
+          { taskId: task.id, taskTitle: task.title, dueDate: task.dueDate },
+          String(assignedUserId),
+          [NotificationChannel.IN_APP],
+          NotificationPriority.MEDIUM
+        );
+      }
+    } catch (err) {
+      console.warn('Failed to send TASK_CREATED notification:', err?.message || err);
+    }
+    
     // If an assignee was provided, create centralized assignment (AssignmentService will handle notifications)
     if (data.assignedToId) {
       try {
@@ -317,6 +335,30 @@ export class TaskService {
         // ignore
       }
       if (userId) recipientIds.add(userId.toString());
+
+      // Отправляем специальную нотификацию при изменении статуса
+      if (changes.status) {
+        for (const recipientId of recipientIds) {
+          try {
+            await this.notificationService.createTaskNotification(
+              NotificationType.TASK_STATUS_CHANGED,
+              `Статус задачи изменён: ${updated.title}`,
+              `Статус задачи "${updated.title}" изменён с "${changes.status.old}" на "${changes.status.new}"`,
+              {
+                taskId: updated.id,
+                taskTitle: updated.title,
+                oldStatus: changes.status.old,
+                newStatus: changes.status.new,
+              },
+              recipientId,
+              [NotificationChannel.IN_APP],
+              NotificationPriority.MEDIUM
+            );
+          } catch (err) {
+            console.warn('Failed to send TASK_STATUS_CHANGED notification:', err?.message || err);
+          }
+        }
+      }
 
       for (const recipientId of recipientIds) {
         await this.notificationService.createTaskNotification(

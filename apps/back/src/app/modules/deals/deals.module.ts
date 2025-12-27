@@ -12,6 +12,7 @@ import { ContactActivity } from '../contacts/contact-activity.entity';
 import { UserModule } from '../user/user.module';
 import { SharedModule } from '../shared/shared.module';
 import { PipelineModule } from '../pipeline/pipeline.module';
+import { NotificationModule } from '../notifications/notification.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { PipelineModule } from '../pipeline/pipeline.module';
     UserModule,
     SharedModule,
     forwardRef(() => PipelineModule),
+    NotificationModule,
   ],
   providers: [DealsService, DealHistoryService],
   controllers: [DealsController, DealHistoryController],

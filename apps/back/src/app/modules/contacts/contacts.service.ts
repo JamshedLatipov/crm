@@ -8,6 +8,8 @@ import { CreateContactDto } from './dto/create-contact.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
 import { CreateActivityDto } from './dto/create-activity.dto';
 import { CompaniesService } from '../companies/services/companies.service';
+import { NotificationService } from '../shared/services/notification.service';
+import { NotificationType, NotificationPriority } from '../shared/entities/notification.entity';
 
 @Injectable()
 export class ContactsService {
@@ -17,6 +19,7 @@ export class ContactsService {
     @InjectRepository(ContactActivity)
     private readonly activityRepository: Repository<ContactActivity>,
     private readonly companiesService?: CompaniesService,
+    private readonly notificationService?: NotificationService,
   ) {}
 
   // Local helper to avoid spreading 'any' directly in code and satisfy lint rules
@@ -86,6 +89,23 @@ export class ContactsService {
       console.warn('Failed to write contact creation activity:', err?.message || err);
     }
 
+    // Отправляем нотификацию о создании контакта
+    if (this.notificationService) {
+      try {
+        const createdBy = (dto as any).createdBy || 'admin';
+        await this.notificationService.createSystemNotification(
+          NotificationType.SYSTEM_REMINDER,
+          'Новый контакт',
+          `Создан новый контакт: ${saved.name}`,
+          createdBy,
+          { contactId: saved.id, contactName: saved.name, contactEmail: saved.email },
+          NotificationPriority.LOW
+        );
+      } catch (err) {
+        console.warn('Failed to send contact creation notification:', err?.message || err);
+      }
+    }
+
     return saved;
   }
 
@@ -127,9 +147,10 @@ export class ContactsService {
     const saved = await this.contactRepository.save(contact);
 
     // Write an activity record describing the update
+    let changed: string[] = [];
     try {
       const changedKeys = Object.keys((dto as unknown) as Record<string, unknown>);
-      const changed = changedKeys.filter((k) => {
+      changed = changedKeys.filter((k) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const before = (beforeSnapshot as any)[k];
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -153,11 +174,45 @@ export class ContactsService {
       console.warn('Failed to write contact update activity:', err?.message || err);
     }
 
+    // Отправляем нотификацию об обновлении контакта
+    if (this.notificationService && changed.length > 0) {
+      try {
+        const updatedBy = (dto as any).updatedBy || 'admin';
+        await this.notificationService.createSystemNotification(
+          NotificationType.SYSTEM_REMINDER,
+          'Контакт обновлён',
+          `Контакт "${saved.name}" обновлён. Изменены поля: ${changed.join(', ')}`,
+          updatedBy,
+          { contactId: saved.id, contactName: saved.name, changedFields: changed },
+          NotificationPriority.LOW
+        );
+      } catch (err) {
+        console.warn('Failed to send contact update notification:', err?.message || err);
+      }
+    }
+
     return saved;
   }
 
   async deleteContact(id: string): Promise<void> {
     const contact = await this.getContactById(id);
+    
+    // Отправляем нотификацию об удалении контакта
+    if (this.notificationService) {
+      try {
+        await this.notificationService.createSystemNotification(
+          NotificationType.SYSTEM_REMINDER,
+          'Контакт удалён',
+          `Контакт "${contact.name}" удалён из системы`,
+          'admin',
+          { contactId: contact.id, contactName: contact.name },
+          NotificationPriority.LOW
+        );
+      } catch (err) {
+        console.warn('Failed to send contact deletion notification:', err?.message || err);
+      }
+    }
+    
     await this.contactRepository.remove(contact);
   }
 

@@ -19,6 +19,11 @@ import { DealChangeType } from './entities/deal-history.entity';
 import { AssignmentService } from '../shared/services/assignment.service';
 import { UserService } from '../user/user.service';
 import { AutomationService } from '../pipeline/automation.service';
+import { NotificationService } from '../shared/services/notification.service';
+import { NotificationType, NotificationChannel, NotificationPriority } from '../shared/entities/notification.entity';
+
+// Константа для определения высокоценной сделки (можно вынести в конфигурацию)
+const HIGH_VALUE_DEAL_THRESHOLD = 100000; // 100,000
 
 @Injectable()
 export class DealsService {
@@ -33,7 +38,8 @@ export class DealsService {
     private readonly assignmentService: AssignmentService,
     private readonly userService: UserService,
     @Inject(forwardRef(() => AutomationService))
-    private readonly automationService: AutomationService
+    private readonly automationService: AutomationService,
+    private readonly notificationService: NotificationService
   ) {}
 
   /**
@@ -263,6 +269,46 @@ export class DealsService {
       await this.automationService.onDealCreated(savedDeal, userId, userName);
     } catch (error) {
       console.warn('Failed to trigger automation on deal creation:', error);
+    }
+
+    // Отправляем нотификацию о создании сделки
+    try {
+      let assignedUserId = (dto as any).assignedTo;
+      if (Array.isArray(assignedUserId) && assignedUserId.length > 0) {
+        assignedUserId = String(assignedUserId[0]);
+      }
+      await this.notificationService.createDealNotification(
+        NotificationType.DEAL_CREATED,
+        'Новая сделка',
+        `Создана новая сделка: ${savedDeal.title}`,
+        { dealId: savedDeal.id, dealTitle: savedDeal.title, dealValue: savedDeal.amount },
+        assignedUserId || userId || 'admin',
+        [NotificationChannel.IN_APP],
+        NotificationPriority.HIGH
+      );
+    } catch (err) {
+      console.warn('Failed to send DEAL_CREATED notification:', err?.message || err);
+    }
+
+    // Проверяем, является ли сделка высокоценной
+    if (savedDeal.amount >= HIGH_VALUE_DEAL_THRESHOLD) {
+      try {
+        let assignedUserId = (dto as any).assignedTo;
+        if (Array.isArray(assignedUserId) && assignedUserId.length > 0) {
+          assignedUserId = String(assignedUserId[0]);
+        }
+        await this.notificationService.createDealNotification(
+          NotificationType.DEAL_HIGH_VALUE,
+          '💎 Высокоценная сделка!',
+          `Создана высокоценная сделка "${savedDeal.title}" на сумму ${savedDeal.amount} ${savedDeal.currency}!`,
+          { dealId: savedDeal.id, dealTitle: savedDeal.title, dealValue: savedDeal.amount },
+          assignedUserId || userId || 'admin',
+          [NotificationChannel.IN_APP, NotificationChannel.EMAIL],
+          NotificationPriority.URGENT
+        );
+      } catch (err) {
+        console.warn('Failed to send DEAL_HIGH_VALUE notification:', err?.message || err);
+      }
     }
 
     // Если при создании передали assignedTo - создаём запись назначения через AssignmentService
@@ -499,6 +545,35 @@ export class DealsService {
           case 'amount':
             changeType = DealChangeType.AMOUNT_CHANGED;
             description = `Сумма изменена с ${oldValue} на ${newValue}`;
+            
+            // Отправляем нотификацию об изменении суммы
+            try {
+              const assignedUserId = (existingDeal as any)?.assignedTo || null;
+              await this.notificationService.createDealNotification(
+                NotificationType.DEAL_AMOUNT_CHANGED,
+                'Сумма сделки изменена',
+                `Сумма сделки "${existingDeal.title}" изменена с ${oldValue} на ${newValue}`,
+                { dealId: existingDeal.id, dealTitle: existingDeal.title, oldAmount: oldValue, newAmount: newValue },
+                assignedUserId || userId || 'admin',
+                [NotificationChannel.IN_APP],
+                NotificationPriority.MEDIUM
+              );
+              
+              // Если новая сумма превышает порог высокоценной сделки
+              if (Number(newValue) >= HIGH_VALUE_DEAL_THRESHOLD && Number(oldValue) < HIGH_VALUE_DEAL_THRESHOLD) {
+                await this.notificationService.createDealNotification(
+                  NotificationType.DEAL_HIGH_VALUE,
+                  '💎 Сделка стала высокоценной!',
+                  `Сделка "${existingDeal.title}" теперь высокоценная! Новая сумма: ${newValue} ${existingDeal.currency}`,
+                  { dealId: existingDeal.id, dealTitle: existingDeal.title, dealValue: newValue },
+                  assignedUserId || userId || 'admin',
+                  [NotificationChannel.IN_APP, NotificationChannel.EMAIL],
+                  NotificationPriority.URGENT
+                );
+              }
+            } catch (err) {
+              console.warn('Failed to send DEAL_AMOUNT_CHANGED notification:', err?.message || err);
+            }
             break;
           case 'probability':
             changeType = DealChangeType.PROBABILITY_CHANGED;
@@ -597,6 +672,22 @@ export class DealsService {
       },
     });
 
+    // Отправляем нотификацию о перемещении сделки
+    try {
+      const assignedUserId = (result as any)?.assignedTo || null;
+      await this.notificationService.createDealNotification(
+        NotificationType.DEAL_STAGE_CHANGED,
+        'Сделка перемещена',
+        `Сделка "${result.title}" перемещена на стадию "${stage?.name || 'Неизвестно'}"`,
+        { dealId: id, dealTitle: result.title, newStage: stage?.name, newStageId: stageId, oldStageId },
+        assignedUserId || userId || 'admin',
+        [NotificationChannel.IN_APP],
+        NotificationPriority.MEDIUM
+      );
+    } catch (err) {
+      console.warn('Failed to send DEAL_STAGE_CHANGED notification:', err?.message || err);
+    }
+
     // После перемещения применяем общую логику этапа — например, дефолтную вероятность
     try {
       if (stage) {
@@ -683,6 +774,22 @@ export class DealsService {
       },
     });
 
+    // Отправляем нотификацию о выигрыше сделки
+    try {
+      const assignedUserId = (result as any)?.assignedTo || null;
+      await this.notificationService.createDealNotification(
+        NotificationType.DEAL_WON,
+        '🎉 Сделка выиграна!',
+        `Поздравляем! Сделка "${result.title}" на сумму ${actualAmount || result.amount} выиграна!`,
+        { dealId: id, dealTitle: result.title, dealValue: actualAmount || result.amount },
+        assignedUserId || userId || 'admin',
+        [NotificationChannel.IN_APP, NotificationChannel.EMAIL],
+        NotificationPriority.URGENT
+      );
+    } catch (err) {
+      console.warn('Failed to send DEAL_WON notification:', err?.message || err);
+    }
+
     return result;
   }
 
@@ -751,6 +858,22 @@ export class DealsService {
         'Время закрытия': new Date().toLocaleTimeString('ru-RU'),
       },
     });
+
+    // Отправляем нотификацию о проигрыше сделки
+    try {
+      const assignedUserId = (result as any)?.assignedTo || null;
+      await this.notificationService.createDealNotification(
+        NotificationType.DEAL_LOST,
+        'Сделка проиграна',
+        `Сделка "${result.title}" проиграна. Причина: ${reason}`,
+        { dealId: id, dealTitle: result.title, reason },
+        assignedUserId || userId || 'admin',
+        [NotificationChannel.IN_APP],
+        NotificationPriority.HIGH
+      );
+    } catch (err) {
+      console.warn('Failed to send DEAL_LOST notification:', err?.message || err);
+    }
 
     return result;
   }

@@ -26,6 +26,8 @@ import { CreateDealDto } from '../deals/dto/create-deal.dto';
 import { DealsService } from '../deals/deals.service';
 import { AssignmentService } from '../shared/services/assignment.service';
 import { PromoCompaniesService } from '../promo-companies/services/promo-companies.service';
+import { NotificationService } from '../shared/services/notification.service';
+import { NotificationType, NotificationChannel, NotificationPriority } from '../shared/entities/notification.entity';
 
 // Интерфейс для создания лида с дополнительными полями
 interface CreateLeadData extends Partial<Lead> {
@@ -83,7 +85,8 @@ export class LeadService {
     private readonly dealsService: DealsService,
     private readonly assignmentService: AssignmentService,
     private readonly pipelineService: PipelineService,
-    private readonly promoCompaniesService: PromoCompaniesService
+    private readonly promoCompaniesService: PromoCompaniesService,
+    private readonly notificationService: NotificationService
   ) {}
 
   async create(data: CreateLeadData, userId?: string, userName?: string): Promise<Lead> {
@@ -191,6 +194,22 @@ export class LeadService {
     // Начальная оценка лида
     if (lead.source || lead.email || lead.phone) {
       await this.scoringService.calculateScore(lead.id, { lead });
+    }
+
+    // Отправляем нотификацию о создании лида
+    try {
+      const assignedUserId = (fullLead as any)?.assignedTo || null;
+      await this.notificationService.createLeadNotification(
+        NotificationType.LEAD_CREATED,
+        'Новый лид',
+        `Создан новый лид: ${lead.name}`,
+        { leadId: lead.id, leadName: lead.name, source: lead.source, priority: lead.priority },
+        assignedUserId || userId || 'admin',
+        [NotificationChannel.IN_APP],
+        NotificationPriority.MEDIUM
+      );
+    } catch (err) {
+      console.warn('Failed to send LEAD_CREATED notification:', err?.message || err);
     }
 
     return fullLead || lead;
@@ -506,6 +525,23 @@ export class LeadService {
     // Если изменился статус, обновляем вероятность конверсии
     if (data.status && data.status !== existingLead.status) {
       await this.scoringService.updateConversionProbability(id);
+      
+      // Отправляем нотификацию об изменении статуса
+      try {
+        const assignedUserId = (updatedLead as any)?.assignedTo || null;
+        await this.notificationService.createLeadNotification(
+          NotificationType.LEAD_STATUS_CHANGED,
+          'Статус лида изменён',
+          `Статус лида "${updatedLead.name}" изменён с ${existingLead.status} на ${data.status}`,
+          { leadId: id, leadName: updatedLead.name, oldStatus: existingLead.status, newStatus: data.status },
+          assignedUserId || userId || 'admin',
+          [NotificationChannel.IN_APP],
+          NotificationPriority.MEDIUM
+        );
+      } catch (err) {
+        console.warn('Failed to send LEAD_STATUS_CHANGED notification:', err?.message || err);
+      }
+      
       // If lead moved to a final state, complete assignments and decrement counters
       const finalStatuses = [LeadStatus.CONVERTED, LeadStatus.REJECTED, LeadStatus.LOST];
       if (finalStatuses.includes(data.status as LeadStatus)) {
@@ -585,6 +621,22 @@ export class LeadService {
       reason: 'Lead assigned to manager',
       notifyAssignees: false // Отключаем уведомления, так как это внутреннее действие
     });
+
+    // Отправляем нотификацию о назначении лида
+    try {
+      const assignedByUserNameFinal = assignedByUserName || 'системой';
+      await this.notificationService.createLeadNotification(
+        NotificationType.LEAD_ASSIGNED,
+        'Лид назначен вам',
+        `Вам назначен лид: ${existingLead.name} (назначил: ${assignedByUserNameFinal})`,
+        { leadId: id, leadName: existingLead.name, assignedBy: assignedByUserNameFinal },
+        String(userId),
+        [NotificationChannel.IN_APP, NotificationChannel.EMAIL],
+        NotificationPriority.HIGH
+      );
+    } catch (err) {
+      console.warn('Failed to send LEAD_ASSIGNED notification:', err?.message || err);
+    }
 
     // Записываем назначение в историю
     await this.historyService.createHistoryEntry({
