@@ -171,9 +171,9 @@
     <!-- Operator Templates -->
     <ng-template #titleTemplate let-operator>
       <div class="operator-info">
-        <div class="operator-name">{{ operator.name || '—' }}</div>
+        <div class="operator-name">{{ operator.fullName || operator.name || '—' }}</div>
         @if (operator.extension) {
-        <div class="operator-extension">Доб. {{ operator.extension }}</div>
+        <div class="operator-extension">SIP: {{ operator.extension }}</div>
         }
       </div>
     </ng-template>

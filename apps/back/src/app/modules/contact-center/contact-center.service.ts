@@ -1,14 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, Like, LessThanOrEqual } from 'typeorm';
+import { Repository, Between, Like, LessThanOrEqual, Not, IsNull } from 'typeorm';
 import { QueueMember } from '../calls/entities/queue-member.entity';
 import { Queue } from '../calls/entities/queue.entity';
 import { Cdr } from '../calls/entities/cdr.entity';
+import { User } from '../user/user.entity';
 import { AmiService } from '../ami/ami.service';
 
 export type OperatorStatus = {
   id: string;
   name: string;
+  fullName?: string | null; // ФИО пользователя, связанного с оператором
   extension?: string;
   status: 'idle' | 'on_call' | 'wrap_up' | 'offline';
   currentCall?: string | null;
@@ -59,6 +61,7 @@ export class ContactCenterService {
     @InjectRepository(QueueMember) private readonly membersRepo: Repository<QueueMember>,
     @InjectRepository(Queue) private readonly queueRepo: Repository<Queue>,
     @InjectRepository(Cdr) private readonly cdrRepo: Repository<Cdr>,
+    @InjectRepository(User) private readonly userRepo: Repository<User>,
     private readonly amiService: AmiService,
   ) {}
 
@@ -244,6 +247,25 @@ export class ContactCenterService {
     const members = await this.membersRepo.find();
     const channels = this.amiCache.channels || [];
     
+    // Загружаем всех пользователей
+    const users = await this.userRepo.find({
+      select: ['id', 'sipEndpointId', 'firstName', 'lastName', 'username'],
+    });
+    
+    // Создаем маппинг sipEndpointId -> User и username -> User
+    const userMap = new Map<string, User>();
+    users.forEach(user => {
+      if (user.sipEndpointId) {
+        userMap.set(user.sipEndpointId, user);
+      }
+      // Также добавляем по username на случай если username совпадает с operator ID
+      if (user.username) {
+        userMap.set(user.username, user);
+      }
+    });
+    
+    this.logger.debug(`Loaded ${users.length} users, created mapping for ${userMap.size} entries`);
+    
     // Get call counts for last 24 hours (not just today since 00:00)
     const last24h = new Date();
     last24h.setHours(last24h.getHours() - 24);
@@ -258,7 +280,10 @@ export class ContactCenterService {
         continue;
       }
       
-      const extension = operatorInterface.split('/')[1];
+      // Извлекаем extension: если есть слеш (PJSIP/operator1), берем часть после слеша, иначе - весь operatorInterface
+      const extension = operatorInterface.includes('/') 
+        ? operatorInterface.split('/')[1] 
+        : operatorInterface;
       
       // Ищем активный канал оператора с приоритетом:
       // 1. Прямое совпадение с interface (PJSIP/1001-xxxxx)
@@ -409,10 +434,27 @@ export class ContactCenterService {
         }
       }
 
+      // Находим пользователя по extension (убирая PJSIP/ префикс)
+      // Пробуем найти по extension, по полному operatorInterface, или по member_name
+      const user = userMap.get(extension) || 
+                   userMap.get(operatorInterface) || 
+                   userMap.get(m.member_name || '');
+      
+      // Формируем fullName: приоритет - fullName пользователя, затем username, затем extension
+      let fullName: string | null = null;
+      if (user) {
+        // Используем метод fullName из User entity, который обрабатывает firstName/lastName/username
+        fullName = user.fullName;
+        this.logger.debug(`Found user for ${extension}: ${fullName}`);
+      } else {
+        this.logger.debug(`No user found for ${extension} (operatorInterface: ${operatorInterface})`);
+      }
+
       const operatorData = {
         id: m.member_name || String(m.id),
         name: m.memberid || m.member_name || 'Unknown',
-        extension: operatorInterface.split('/')[1] || operatorInterface,
+        fullName,
+        extension,
         status,
         currentCall,
         currentCallDuration,

@@ -7,11 +7,12 @@ import { EndpointSyncService } from './endpoint-sync.service';
 import { Queue } from '../calls/entities/queue.entity';
 import { QueueMember } from '../calls/entities/queue-member.entity';
 import { Cdr } from '../calls/entities/cdr.entity';
+import { User } from '../user/user.entity';
 import { AmiModule } from '../ami/ami.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Queue, QueueMember, Cdr]),
+    TypeOrmModule.forFeature([Queue, QueueMember, Cdr, User]),
     AmiModule,
   ],
   controllers: [ContactCenterController],

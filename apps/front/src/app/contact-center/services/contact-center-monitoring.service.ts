@@ -20,6 +20,7 @@ import { environment } from '../../../environments/environment';
 export interface OperatorStatus {
   id: string;
   name: string;
+  fullName?: string | null; // ФИО пользователя, связанного с оператором
   extension?: string;
   status: 'idle' | 'on_call' | 'wrap_up' | 'offline';
   currentCall?: string | null;
