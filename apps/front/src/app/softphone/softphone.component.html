@@ -60,6 +60,27 @@
           </button>
         </div>
       </div>
+      
+      <!-- Active Call Info Bar (always visible) -->
+      <div class="active-call-bar" *ngIf="callState.callActive()">
+        <div class="call-bar-content">
+          <div class="call-bar-left">
+            <span class="pulse-indicator"></span>
+            <div class="call-info-compact">
+              <div class="caller-number">{{ callState.incomingFrom() || callee || 'Неизвестный' }}</div>
+              <div class="call-badges" *ngIf="callState.muted() || callState.onHold()">
+                <span class="badge badge-mute" *ngIf="callState.muted()" title="Микрофон выключен">
+                  <span class="material-icons">mic_off</span>
+                </span>
+                <span class="badge badge-hold" *ngIf="callState.onHold()" title="На удержании">
+                  <span class="material-icons">pause</span>
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="call-timer">{{ callState.callDuration() }}</div>
+        </div>
+      </div>
     </div>
 
     <div class="panel-content">
@@ -154,13 +175,6 @@
         (removeLast)="removeLast()"
         (clearNumber)="clearNumber()"
       ></app-softphone-dial-tab>
-
-      <!-- Call Info (when active call) -->
-      <app-softphone-call-info
-        *ngIf="callState.callActive() && activeTab === 'dial'"
-        [callee]="callee"
-        [callDuration]="callState.callDuration()"
-      ></app-softphone-call-info>
 
       <!-- DTMF moved into call actions component -->
 
