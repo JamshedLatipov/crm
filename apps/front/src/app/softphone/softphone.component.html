@@ -2,14 +2,14 @@
 <div class="fixed bottom-4 right-4 z-50">
   <!-- Minimized floating button -->
   <button
-    *ngIf="!expanded"
+    *ngIf="!panelSvc.expanded()"
     (click)="toggleExpand()"
     title="Open softphone"
     class="floating-button"
   >
     <span class="material-icons">call</span>
     <!-- Active call indicator -->
-    <span *ngIf="callActive()" class="active-call-indicator"></span>
+    <span *ngIf="callState.callActive()" class="active-call-indicator"></span>
     <!-- Missed call badge -->
     <span *ngIf="missedCallCount" class="missed-call-badge">{{
       missedCallCount > 99 ? '99+' : missedCallCount
@@ -18,15 +18,15 @@
 
   <!-- Expanded panel -->
   <div
-    *ngIf="expanded"
+    *ngIf="panelSvc.expanded()"
     #expandedPanel
     class="expanded-panel"
-    [class.docked]="pinned()"
+    [class.docked]="panelSvc.pinned()"
     [class.scripts-expanded]="activeTab === 'scenarios' && viewMode() === 'fullscreen'"
     [class.scripts-with-details]="activeTab === 'scenarios' && viewedScript()"
-    [class.resizing]="panelResizing()"
-    [style.width.px]="panelWidth()"
-    [style.height]="pinned() ? '100vh' : (panelHeight() ? (panelHeight() + 'px') : null)"
+    [class.resizing]="panelSvc.panelResizing()"
+    [style.width.px]="panelSvc.panelWidth()"
+    [style.height]="panelSvc.pinned() ? '100vh' : (panelSvc.panelHeight() ? (panelSvc.panelHeight() + 'px') : null)"
     (mousemove)="onPanelMouseMove($event)"
     (mouseleave)="onPanelMouseLeave()"
     (mousedown)="onPanelMouseDown($event)"
@@ -36,7 +36,7 @@
         <div class="status-bar">
           <app-softphone-status-bar
             [status]="status()"
-            [callActive]="callActive()"
+            [callActive]="callState.callActive()"
             [paused]="memberPaused()"
             [reason]="memberReason()"
             (pauseChange)="onMemberPauseChange($event)"
@@ -45,9 +45,9 @@
         <div class="header-actions">
           <button
             (click)="togglePinned()"
-            [title]="pinned() ? 'Открепить' : 'Закрепить справа'"
+            [title]="panelSvc.pinned() ? 'Открепить' : 'Закрепить справа'"
             class="pin-button"
-            [class.active]="pinned()"
+            [class.active]="panelSvc.pinned()"
           >
             <span class="material-icons">push_pin</span>
           </button>
@@ -102,14 +102,14 @@
       </div>
 
       <!-- Incoming call alert -->
-      <div *ngIf="incoming()" class="incoming-call-alert">
+      <div *ngIf="callState.incoming()" class="incoming-call-alert">
         <div class="incoming-call-header">
           <div class="incoming-call-info">
             <span class="material-icons call-type-icon">call</span>
             <div>
               <div class="caller-name">Входящий звонок</div>
               <div class="caller-number">
-                {{ incomingFrom() || 'Неизвестный абонент' }}
+                {{ callState.incomingFrom() || 'Неизвестный абонент' }}
               </div>
             </div>
           </div>
@@ -128,10 +128,10 @@
       <!-- Call Actions -->
       <app-softphone-call-actions
         [status]="status()"
-        [callActive]="callActive()"
-        [muted]="muted()"
-        [onHold]="onHold()"
-        [holdInProgress]="holdInProgress()"
+        [callActive]="callState.callActive()"
+        [muted]="callState.muted()"
+        [onHold]="callState.onHold()"
+        [holdInProgress]="callState.holdInProgress()"
         (connect)="connect()"
         (call)="call()"
         (hangup)="hangup()"
@@ -146,7 +146,7 @@
 
       <!-- Dial Tab Content (extracted to component) -->
       <app-softphone-dial-tab
-        *ngIf="activeTab === 'dial' && !callActive()"
+        *ngIf="activeTab === 'dial' && !callState.callActive()"
         [callee]="callee"
         (calleeChange)="callee = $event"
         (pressKey)="pressKey($event)"
@@ -157,9 +157,9 @@
 
       <!-- Call Info (when active call) -->
       <app-softphone-call-info
-        *ngIf="callActive() && activeTab === 'dial'"
+        *ngIf="callState.callActive() && activeTab === 'dial'"
         [callee]="callee"
-        [callDuration]="callDuration()"
+        [callDuration]="callState.callDuration()"
       ></app-softphone-call-info>
 
       <!-- DTMF moved into call actions component -->
@@ -173,16 +173,16 @@
       <!-- Info Tab (extracted to component) -->
       <app-softphone-info-tab
         *ngIf="activeTab === 'info'"
-        [phone]="incoming() ? incomingFrom() : callee"
+        [phone]="callState.incoming() ? callState.incomingFrom() : callee"
       ></app-softphone-info-tab>
 
       <!-- Scripts Panel -->
       <ng-container *ngIf="activeTab === 'scenarios'">
         <app-softphone-scripts-panel
-          [callActive]="callActive()"
+          [callActive]="callState.callActive()"
           [showScripts]="showScripts()"
           [scripts]="scripts()"
-          [selectedBranch]="selectedScriptBranch()"
+          [selectedBranch]="callState.selectedScriptBranch()"
           (selectBranch)="onSelectedBranch($event)"
           (registerCdr)="manualRegisterCall($event)"
           (toggleScripts)="toggleScripts()"

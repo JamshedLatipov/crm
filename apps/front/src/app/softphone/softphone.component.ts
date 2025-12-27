@@ -44,6 +44,9 @@ import {
   QueueMembersService,
   QueueMemberRecord,
 } from '../contact-center/services/queue-members.service';
+import { SoftphonePanelService } from './services/softphone-panel.service';
+import { SoftphoneCallStateService } from './services/softphone-call-state.service';
+import { SoftphoneSessionService } from './services/softphone-session.service';
 
 // Define custom interfaces to avoid 'any' types
 interface JsSIPSessionEvent {
@@ -90,21 +93,8 @@ type JsSIPSession = any;
 })
 export class SoftphoneComponent implements OnInit, OnDestroy {
   status = signal('Disconnected');
-  // Incoming call state
-  incoming = signal(false);
-  incomingFrom = signal<string | null>(null);
-  callActive = signal(false);
-  muted = signal(false);
-  onHold = signal(false);
-  holdInProgress = signal(false);
   microphoneError = signal(false);
   private currentSession: JsSIPSession | null = null;
-  // Таймер звонка
-  private callStart: number | null = null;
-  callDuration = signal('00:00');
-  private durationTimer: number | null = null;
-  // Remember whether microphone was muted before placing on hold
-  private preHoldMuted: boolean | null = null;
 
   // Ringback tone (WebAudio) while outgoing call is ringing
   // ringback state moved to RingtoneService
@@ -129,10 +119,6 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   // Expose script panel state for template
   viewMode = signal<'compact' | 'fullscreen'>('compact');
   viewedScript = signal<any>(null);
-  // Per-call metadata to persist
-  callNote = signal<string>('');
-  callType = signal<string | null>(null);
-  selectedScriptBranch = signal<string | null>(null);
 
   // Asterisk host is read from environment config (moved from hardcoded value)
   private readonly asteriskHost = environment.asteriskHost || '127.0.0.1';
@@ -151,6 +137,9 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   private readonly callHistoryService = inject(SoftphoneCallHistoryService);
   private readonly taskModal = inject(TaskModalService);
   private readonly queueMembersSvc = inject(QueueMembersService);
+  readonly panelSvc = inject(SoftphonePanelService);
+  readonly callState = inject(SoftphoneCallStateService);
+  private readonly sessionSvc = inject(SoftphoneSessionService);
 
   constructor() {
     // Автоподстановка сохранённых SIP реквизитов оператора
@@ -165,26 +154,14 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   }
   // UI tab state
   activeTab: 'dial' | 'history' | 'info' | 'scenarios' = 'dial';
-  // Expand/collapse softphone UI
-  expanded = true;
   // Missed calls counter shown on minimized badge
   missedCallCount = 0;
   // Auto-expand softphone on incoming call
   autoExpandOnIncoming = true;
 
-  // Pin (dock) to the right side and shift the app layout
-  pinned = signal(false);
-  private readonly pinStorageKey = 'softphone.pinned';
-
-  // Persisted panel size (user-resizable)
-  panelWidth = signal<number | undefined>(undefined);
-  panelHeight = signal<number | undefined>(undefined);
-  panelResizing = signal(false);
-  private readonly panelSizeStorageKey = 'softphone.panelSize';
+  // Panel resize handling
   private panelResizeObserver: ResizeObserver | null = null;
-  private panelResizeSaveTimer: number | null = null;
   private expandedPanelEl: HTMLElement | null = null;
-
   private panelResizeDragStart:
     | {
         startX: number;
@@ -193,8 +170,6 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
         startH: number;
       }
     | null = null;
-  private readonly panelMinWidthPx = 320; // 20rem
-  private readonly panelMinHeightPx = 384; // 24rem
   private onPanelResizeDragMove?: (ev: MouseEvent) => void;
   private onPanelResizeDragUp?: (ev: MouseEvent) => void;
 
@@ -211,13 +186,13 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   }
 
   private applyPanelSizeToElement(el: HTMLElement) {
-    const w = this.panelWidth();
-    const h = this.panelHeight();
+    const w = this.panelSvc.panelWidth();
+    const h = this.panelSvc.panelHeight();
     if (Number.isFinite(w) && w && w > 0) {
-      el.style.width = `${Math.round(Math.max(this.panelMinWidthPx, w))}px`;
+      el.style.width = `${Math.round(Math.max(this.panelSvc.minWidthPx, w))}px`;
     }
     if (Number.isFinite(h) && h && h > 0) {
-      el.style.height = `${Math.round(Math.max(this.panelMinHeightPx, h))}px`;
+      el.style.height = `${Math.round(Math.max(this.panelSvc.minHeightPx, h))}px`;
     }
   }
 
@@ -228,23 +203,10 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     try {
-      const saved = localStorage.getItem('softphone.expanded');
-      if (saved !== null) this.expanded = saved === '1';
-      const savedPinned = localStorage.getItem(this.pinStorageKey);
-      if (savedPinned !== null) this.pinned.set(savedPinned === '1');
       const savedAuto = localStorage.getItem('softphone.autoExpandOnIncoming');
       if (savedAuto !== null) this.autoExpandOnIncoming = savedAuto === '1';
       const savedMissed = localStorage.getItem('softphone.missedCount');
       if (savedMissed !== null) this.missedCallCount = Number(savedMissed) || 0;
-
-      const savedSizeRaw = localStorage.getItem(this.panelSizeStorageKey);
-      if (savedSizeRaw) {
-        const parsed = JSON.parse(savedSizeRaw) as { w?: unknown; h?: unknown };
-        const w = typeof parsed.w === 'number' ? parsed.w : Number(parsed.w);
-        const h = typeof parsed.h === 'number' ? parsed.h : Number(parsed.h);
-        if (Number.isFinite(w) && w > 0) this.panelWidth.set(Math.round(w));
-        if (Number.isFinite(h) && h > 0) this.panelHeight.set(Math.round(h));
-      }
     } catch {
       // ignore
     }
@@ -308,32 +270,41 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
             break;
           case 'hold':
             // Session confirmed placed on hold (remote or local)
-            this.onHold.set(true);
-            this.holdInProgress.set(false);
+            this.callState.setHold(true, false);
             this.status.set('Call on hold');
             try {
-              this.applyHoldState(true);
+              this.callState.savePreHoldMuteState();
+              this.sessionSvc.applyHoldState(
+                this.currentSession,
+                true,
+                REMOTE_AUDIO_ELEMENT_ID,
+                (muted) => this.callState.setMuted(muted)
+              );
             } catch (e) {
               this.logger.warn('applyHoldState on hold failed', e);
             }
             break;
           case 'unhold':
             // Session resumed from hold
-            this.onHold.set(false);
-            this.holdInProgress.set(false);
+            this.callState.setHold(false, false);
             this.status.set(
-              this.callActive()
+              this.callState.callActive()
                 ? 'Call in progress'
                 : this.isRegistered()
                 ? 'Registered!'
                 : 'Disconnected'
             );
             try {
-              this.applyHoldState(false);
+              this.callState.restorePreHoldMuteState();
+              this.sessionSvc.applyHoldState(
+                this.currentSession,
+                false,
+                REMOTE_AUDIO_ELEMENT_ID,
+                (muted) => this.callState.setMuted(muted)
+              );
             } catch (e) {
               this.logger.warn('applyHoldState on unhold failed', e);
             }
-            break;
             break;
           case 'newRTCSession': {
             const sess = ev.payload?.session as JsSIPSession;
@@ -346,7 +317,6 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
               'outgoing';
 
             if (dir === 'incoming' || dir === 'inbound') {
-              this.incoming.set(true);
               this.activeTab = 'info';
 
               // try to extract caller display or remote identity
@@ -356,19 +326,18 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
                     sess.remote_identity?.display_name)) ||
                 (ev.payload && ev.payload.from) ||
                 null;
-              this.incomingFrom.set(
-                typeof from === 'string' ? from : from?.toString?.() ?? null
-              );
+              const fromStr = typeof from === 'string' ? from : from?.toString?.() ?? null;
+              this.callState.setIncomingCall(fromStr);
               this.status.set(
                 `Incoming call${
-                  this.incomingFrom() ? ' from ' + this.incomingFrom() : ''
+                  this.callState.incomingFrom() ? ' from ' + this.callState.incomingFrom() : ''
                 }`
               );
-              this.logger.info('Incoming call from:', this.incomingFrom());
+              this.logger.info('Incoming call from:', this.callState.incomingFrom());
 
               // Auto-expand if user prefers
               try {
-                if (this.autoExpandOnIncoming && !this.expanded)
+                if (this.autoExpandOnIncoming && !this.panelSvc.expanded())
                   this.toggleExpand();
               } catch {
                 /* ignore */
@@ -389,14 +358,14 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
                 if (typeof Notification !== 'undefined') {
                   if (Notification.permission === 'granted') {
                     new Notification('Incoming call', {
-                      body: this.incomingFrom() || 'Unknown caller',
+                      body: this.callState.incomingFrom() || 'Unknown caller',
                       tag: 'softphone-incoming',
                     });
                   } else if (Notification.permission !== 'denied') {
                     Notification.requestPermission().then((perm) => {
                       if (perm === 'granted') {
                         new Notification('Incoming call', {
-                          body: this.incomingFrom() || 'Unknown caller',
+                          body: this.callState.incomingFrom() || 'Unknown caller',
                           tag: 'softphone-incoming',
                         });
                       }
@@ -551,7 +520,9 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
     this.stopResizeDrag();
     this.detachPanelResizeObserver();
-    this.clearDockOffset();
+    this.panelSvc.clearDockOffset();
+    this.panelSvc.cleanup();
+    this.callState.cleanup();
     try {
       window.removeEventListener('beforeunload', this.onBeforeUnloadHandler);
       document.removeEventListener('visibilitychange', this.onVisibilityChangeHandler);
@@ -561,7 +532,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   }
 
   onPanelMouseMove(ev: MouseEvent) {
-    if (this.panelResizing()) return;
+    if (this.panelSvc.panelResizing()) return;
     const el = this.expandedPanelEl;
     if (!el) return;
     if (el.classList.contains('scripts-expanded')) {
@@ -572,7 +543,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     const rect = el.getBoundingClientRect();
     const edge = 10;
     const nearLeft = ev.clientX - rect.left <= edge;
-    const nearTop = !this.pinned() && ev.clientY - rect.top <= edge;
+    const nearTop = !this.panelSvc.pinned() && ev.clientY - rect.top <= edge;
 
     if (nearLeft && nearTop) el.style.cursor = 'nwse-resize';
     else if (nearLeft) el.style.cursor = 'ew-resize';
@@ -581,7 +552,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   }
 
   onPanelMouseLeave() {
-    if (this.panelResizing()) return;
+    if (this.panelSvc.panelResizing()) return;
     const el = this.expandedPanelEl;
     if (!el) return;
     el.style.cursor = '';
@@ -595,13 +566,13 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     const rect = el.getBoundingClientRect();
     const edge = 10;
     const nearLeft = ev.clientX - rect.left <= edge;
-    const nearTop = !this.pinned() && ev.clientY - rect.top <= edge;
+    const nearTop = !this.panelSvc.pinned() && ev.clientY - rect.top <= edge;
     if (!nearLeft && !nearTop) return;
 
     ev.preventDefault();
     ev.stopPropagation();
 
-    this.panelResizing.set(true);
+    this.panelSvc.panelResizing.set(true);
     this.panelResizeDragStart = {
       startX: ev.clientX,
       startY: ev.clientY,
@@ -615,14 +586,14 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       const dx = this.panelResizeDragStart.startX - moveEv.clientX;
       const dy = this.panelResizeDragStart.startY - moveEv.clientY;
 
-      const maxW = Math.max(this.panelMinWidthPx, window.innerWidth - 48);
-      const maxH = Math.max(this.panelMinHeightPx, window.innerHeight - 48);
+      const maxW = Math.max(this.panelSvc.minWidthPx, window.innerWidth - 48);
+      const maxH = Math.max(this.panelSvc.minHeightPx, window.innerHeight - 48);
 
       const nextW = nearLeft
         ? Math.min(
             maxW,
             Math.max(
-              this.panelMinWidthPx,
+              this.panelSvc.minWidthPx,
               this.panelResizeDragStart.startW + dx
             )
           )
@@ -632,15 +603,13 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
         ? Math.min(
             maxH,
             Math.max(
-              this.panelMinHeightPx,
+              this.panelSvc.minHeightPx,
               this.panelResizeDragStart.startH + dy
             )
           )
         : this.panelResizeDragStart.startH;
 
-      this.panelWidth.set(Math.round(nextW));
-      this.panelHeight.set(Math.round(nextH));
-      this.scheduleSavePanelSize(Math.round(nextW), Math.round(nextH));
+      this.panelSvc.setPanelSize(Math.round(nextW), Math.round(nextH));
       this.applyDockOffset();
     };
 
@@ -662,7 +631,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       this.onPanelResizeDragUp = undefined;
     }
     this.panelResizeDragStart = null;
-    this.panelResizing.set(false);
+    this.panelSvc.panelResizing.set(false);
     if (this.expandedPanelEl) this.expandedPanelEl.style.cursor = '';
   }
 
@@ -679,8 +648,8 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       const h = Math.round(rect.height);
       if (w <= 0 || h <= 0) return;
 
-      const currentW = this.panelWidth();
-      const currentH = this.panelHeight();
+      const currentW = this.panelSvc.panelWidth();
+      const currentH = this.panelSvc.panelHeight();
       const hasPersistedSize =
         Number.isFinite(currentW) &&
         currentW !== undefined &&
@@ -692,22 +661,19 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       // On initial render, ResizeObserver may fire before bindings settle.
       // If we already have a persisted size and user is not actively resizing,
       // do not overwrite the restored size with a default-measured size.
-      if (hasPersistedSize && !this.panelResizing()) {
+      if (hasPersistedSize && !this.panelSvc.panelResizing()) {
         this.applyDockOffset();
         return;
       }
 
       // When pinned, height is derived (100vh). Keep persisted height for unpinned mode.
-      if (this.pinned()) {
-        this.panelWidth.set(w);
-        this.scheduleSavePanelSize(w, this.panelHeight() ?? this.panelMinHeightPx);
+      if (this.panelSvc.pinned()) {
+        this.panelSvc.setPanelSize(w, this.panelSvc.panelHeight() ?? this.panelSvc.minHeightPx);
         this.applyDockOffset();
         return;
       }
 
-      this.panelWidth.set(w);
-      this.panelHeight.set(h);
-      this.scheduleSavePanelSize(w, h);
+      this.panelSvc.setPanelSize(w, h);
       this.applyDockOffset();
     });
 
@@ -716,7 +682,8 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
 
   private detachPanelResizeObserver() {
     // Ensure we don't lose the latest size due to debounced save
-    this.persistPanelSizeNow();
+    const measured = this.expandedPanelEl?.getBoundingClientRect();
+    this.panelSvc.persistPanelSizeNow(measured?.width, measured?.height);
     if (this.panelResizeObserver) {
       try {
         this.panelResizeObserver.disconnect();
@@ -725,63 +692,8 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       }
       this.panelResizeObserver = null;
     }
-    if (this.panelResizeSaveTimer !== null) {
-      try {
-        window.clearTimeout(this.panelResizeSaveTimer);
-      } catch {
-        // ignore
-      }
-      this.panelResizeSaveTimer = null;
-    }
   }
 
-  private persistPanelSizeNow() {
-    const measured = this.expandedPanelEl?.getBoundingClientRect();
-    const rawW = this.panelWidth();
-    const rawH = this.panelHeight();
-    const w = Number.isFinite(rawW) && rawW && rawW > 0 ? rawW : measured?.width;
-    const h = Number.isFinite(rawH) && rawH && rawH > 0 ? rawH : measured?.height;
-    if (!Number.isFinite(w) || !Number.isFinite(h) || !w || !h) return;
-    try {
-      localStorage.setItem(
-        this.panelSizeStorageKey,
-        JSON.stringify({
-          w: Math.round(Math.max(this.panelMinWidthPx, w)),
-          h: Math.round(Math.max(this.panelMinHeightPx, h)),
-        })
-      );
-    } catch {
-      // ignore
-    }
-  }
-
-  private scheduleSavePanelSize(w: number, h: number) {
-    if (this.panelResizeSaveTimer !== null) {
-      window.clearTimeout(this.panelResizeSaveTimer);
-    }
-    this.panelResizeSaveTimer = window.setTimeout(() => {
-      try {
-        const safeW = Math.round(
-          Math.max(
-            this.panelMinWidthPx,
-            Number.isFinite(w) && w > 0 ? w : this.panelWidth() ?? this.panelMinWidthPx
-          )
-        );
-        const safeH = Math.round(
-          Math.max(
-            this.panelMinHeightPx,
-            Number.isFinite(h) && h > 0 ? h : this.panelHeight() ?? this.panelMinHeightPx
-          )
-        );
-        localStorage.setItem(
-          this.panelSizeStorageKey,
-          JSON.stringify({ w: safeW, h: safeH })
-        );
-      } catch {
-        // ignore
-      }
-    }, 250);
-  }
   private onBeforeUnloadHandler = (ev?: Event) => {
     try {
       this.queueMembersSvc.notifyOffline('beforeunload');
@@ -802,7 +714,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     this.logger.info('Call is in progress', e);
     this.status.set('Ringing...');
     // Use outgoing ringtone while dialing
-    if (this.incoming()) {
+    if (this.callState.incoming()) {
       this.ringtone.startRingback(RINGBACK_DEFAULT_LEVEL, RINGTONE_SRC);
     } else {
       this.ringtone.startRingback(
@@ -815,9 +727,8 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   private handleCallConfirmed(e: JsSIPSessionEvent) {
     this.logger.info('Call confirmed', e);
     this.status.set('Call in progress');
-    this.callActive.set(true);
+    this.callState.setCallActive(true);
     this.activeTab = 'info'; // Switch to info tab when call connects
-    this.startCallTimer();
     this.ringtone.stopRingback();
     // Debug: list RTCPeerConnection senders/receivers and track state for diagnosing one-way audio
     try {
@@ -862,12 +773,9 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   private handleCallEnded(e: JsSIPSessionEvent) {
     this.logger.info('Call ended with cause:', e.data?.cause);
     // detect missed incoming calls (incoming shown but never answered)
-    const wasMissed = this.incoming() && !this.callActive();
-    this.callActive.set(false);
+    const wasMissed = this.callState.incoming() && !this.callState.callActive();
     this.ringtone.stopRingback();
-    // Stop local timer but keep the displayed elapsed time until we reconcile with CDR
-    this.stopCallTimer();
-    this.onHold.set(false);
+    this.callState.resetCallState();
     // If missed, increment counter
     if (wasMissed) {
       try {
@@ -881,8 +789,6 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       }
     }
 
-    this.incoming.set(false);
-    this.incomingFrom.set(null);
     this.currentSession = null;
     // play busy tone if ended due to busy or other error-like cause
     const causeStr = e.data?.cause ? String(e.data?.cause) : '';
@@ -898,14 +804,11 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
 
   private handleCallFailed(e: JsSIPSessionEvent) {
     this.logger.info('Call failed with cause:', e);
-    this.callActive.set(false);
-    this.stopCallTimer();
     // stop any ringback and play busy/error tone to signal failure
     this.ringtone.stopRingback();
     this.ringtone.playOneShot(BUSY_RINGTONE_SRC, 0.8, 1000);
     // Ensure incoming UI/state is cleared when call fails
-    this.incoming.set(false);
-    this.incomingFrom.set(null);
+    this.callState.resetCallState();
     this.currentSession = null;
     this.status.set(
       this.isRegistered()
@@ -926,62 +829,6 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
 
   private isRegistered(): boolean {
     return this.softphone.isRegistered();
-  }
-
-  private startCallTimer() {
-    this.callStart = Date.now();
-    this.updateDuration();
-    this.durationTimer = setInterval(() => this.updateDuration(), 1000);
-  }
-  // ringtone logic handled by RingtoneService
-  private stopCallTimer() {
-    if (this.durationTimer !== null) {
-      clearInterval(this.durationTimer);
-      this.durationTimer = null;
-    }
-    this.callStart = null;
-  }
-  private updateDuration() {
-    if (!this.callStart) return;
-    const diff = Math.floor((Date.now() - this.callStart) / 1000);
-    const mm = String(Math.floor(diff / 60)).padStart(2, '0');
-    const ss = String(diff % 60).padStart(2, '0');
-    this.callDuration.set(`${mm}:${ss}`);
-  }
-
-  // Generate a lightweight client-side id to correlate frontend logs with Asterisk
-  private generateClientCallId(): string {
-    return `c-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-  }
-
-  // Unified extraction of an identifier to use when saving call logs.
-  // Prefer client-generated id (attached to session), fall back to session id or call_id.
-  private getSessionCallKey(session: JsSIPSession | null): string | null {
-    try {
-      if (!session) return null;
-      const s = session as any;
-      if (s.__clientCallId) return String(s.__clientCallId);
-      if (s.call_id) return String(s.call_id);
-      if (s.id) return String(s.id);
-      // attempt to read SIP Call-ID from request headers
-      try {
-        const hdr =
-          s.request?.getHeader?.('Call-ID') ??
-          s.request?.headers?.['call-id']?.[0]?.raw;
-        if (hdr) return String(hdr);
-      } catch {}
-      return null;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  private extractNumber(s: string) {
-    if (!s) return '';
-    // extract continuous digits and optional leading +
-    const m = s.match(/\+?\d+/g);
-    if (!m) return s.replace(/\D/g, '');
-    return m.join('');
   }
 
   connect() {
@@ -1024,13 +871,13 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
 
   toggleExpand() {
     // If we're collapsing the panel, flush latest size first
-    if (this.expanded) {
-      this.persistPanelSizeNow();
+    if (this.panelSvc.expanded()) {
+      const measured = this.expandedPanelEl?.getBoundingClientRect();
+      this.panelSvc.persistPanelSizeNow(measured?.width, measured?.height);
     }
-    this.expanded = !this.expanded;
+    this.panelSvc.toggleExpanded();
     try {
-      localStorage.setItem('softphone.expanded', this.expanded ? '1' : '0');
-      if (this.expanded) {
+      if (this.panelSvc.expanded()) {
         // clearing missed count when the user opens the softphone
         this.missedCallCount = 0;
         localStorage.setItem('softphone.missedCount', '0');
@@ -1043,14 +890,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   }
 
   togglePinned() {
-    const next = !this.pinned();
-    this.pinned.set(next);
-    try {
-      localStorage.setItem(this.pinStorageKey, next ? '1' : '0');
-    } catch {
-      // ignore
-    }
-
+    this.panelSvc.togglePinned();
     this.applyDockOffsetSoon();
   }
 
@@ -1060,49 +900,16 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   }
 
   private applyDockOffset() {
-    // Only reserve space when panel is actually visible
-    if (!this.expanded || !this.pinned()) {
-      this.clearDockOffset();
-      return;
-    }
-
-    // Don't reserve space in fullscreen scripts mode
-    if (this.expandedPanelEl?.classList.contains('scripts-expanded')) {
-      this.clearDockOffset();
-      return;
-    }
-
-    const measuredWidth = this.expandedPanelEl?.getBoundingClientRect().width;
-    const width = Math.round(
-      (Number.isFinite(measuredWidth) && measuredWidth && measuredWidth > 0
-        ? measuredWidth
-        : this.panelWidth() ?? 480)
-    );
-
-    try {
-      document.documentElement.style.setProperty(
-        '--softphone-dock-width',
-        `${Math.max(0, width)}px`
-      );
-    } catch {
-      // ignore
-    }
-  }
-
-  private clearDockOffset() {
-    try {
-      document.documentElement.style.setProperty('--softphone-dock-width', '0px');
-    } catch {
-      // ignore
-    }
+    const isScriptsExpanded = this.expandedPanelEl?.classList.contains('scripts-expanded') ?? false;
+    this.panelSvc.applyDockOffset(this.expandedPanelEl, isScriptsExpanded);
   }
 
   // User answers the incoming call
   answerIncoming() {
-    if (!this.incoming() || !this.currentSession) return;
+    if (!this.callState.incoming() || !this.currentSession) return;
     try {
       this.softphone.answer(this.currentSession);
-      this.incoming.set(false);
+      this.callState.clearIncomingCall();
       this.status.set('Call answered');
       this.ringtone.stopRingback();
     } catch (err) {
@@ -1113,10 +920,10 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
 
   // User rejects the incoming call
   rejectIncoming() {
-    if (!this.incoming() || !this.currentSession) return;
+    if (!this.callState.incoming() || !this.currentSession) return;
     try {
       this.softphone.reject(this.currentSession);
-      this.incoming.set(false);
+      this.callState.clearIncomingCall();
       this.status.set('Call rejected');
       this.ringtone.stopRingback();
     } catch (err) {
@@ -1138,7 +945,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     this.status.set(`Calling ${this.callee}...`);
     try {
       // generate a client-side id we can correlate with Asterisk via SIP header
-      const clientCallId = this.generateClientCallId();
+      const clientCallId = this.sessionSvc.generateClientCallId();
       const opts = {
         extraHeaders: [
           `X-Client-Call-ID: ${clientCallId}`,
@@ -1156,7 +963,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
         (session as any).__clientCallId = clientCallId;
       } catch {}
       this.currentSession = session;
-      this.callActive.set(true);
+      this.callState.setCallActive(true);
       this.logger.info('Call session created:', session, { clientCallId });
     } catch (error) {
       this.logger.error('Error initiating call:', error);
@@ -1175,16 +982,16 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     createTask?: boolean;
   }) {
     try {
-      const callId = this.getSessionCallKey(this.currentSession);
-      const noteToSave = payload?.note ?? this.callNote();
-      const branch = payload?.branchId ?? this.selectedScriptBranch();
+      const callId = this.sessionSvc.getSessionCallKey(this.currentSession);
+      const noteToSave = payload?.note ?? this.callState.callNote();
+      const branch = payload?.branchId ?? this.callState.selectedScriptBranch();
 
       // Save call log first and get the log ID
       let savedLogId: string | null = null;
       try {
         const logResult = await this.callHistoryService.saveCallLog(callId, {
           note: noteToSave,
-          callType: this.callType(),
+          callType: this.callState.callType(),
           scriptBranch: branch,
         });
         savedLogId = logResult?.id || logResult?.logId || null;
@@ -1229,7 +1036,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
 
   onSelectedBranch(id: string | null) {
     try {
-      this.selectedScriptBranch.set(id);
+      this.callState.setCallMetadata(undefined, undefined, id);
     } catch (e) {
       this.logger.warn('onSelectedBranch failed', e);
     }
@@ -1253,9 +1060,9 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
 
   // Toggle local audio track enabled state
   toggleMute() {
-    if (!this.callActive() || !this.currentSession) return;
+    if (!this.callState.callActive() || !this.currentSession) return;
     try {
-      const newMuted = !this.muted();
+      const newMuted = !this.callState.muted();
       const pc: RTCPeerConnection | undefined =
         this.currentSession['connection'];
       if (pc) {
@@ -1265,8 +1072,8 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
           }
         });
       }
-      this.muted.set(newMuted);
-      this.status.set(this.muted() ? 'Microphone muted' : 'Call in progress');
+      this.callState.setMuted(newMuted);
+      this.status.set(this.callState.muted() ? 'Microphone muted' : 'Call in progress');
     } catch (e) {
       this.logger.error('Mute toggle failed', e);
     }
@@ -1274,11 +1081,11 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
 
   // Hold / Unhold using JsSIP built-in re-INVITE logic
   toggleHold() {
-    if (!this.callActive() || !this.currentSession) return;
-    if (this.holdInProgress()) return;
+    if (!this.callState.callActive() || !this.currentSession) return;
+    if (this.callState.holdInProgress()) return;
     try {
-      this.holdInProgress.set(true);
-      const goingToHold = !this.onHold();
+      this.callState.setHold(this.callState.onHold(), true);
+      const goingToHold = !this.callState.onHold();
       if (goingToHold) {
         this.status.set('Placing on hold...');
         this.softphone.hold();
@@ -1288,7 +1095,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       }
     } catch (e) {
       this.logger.error('Hold toggle failed', e);
-      this.holdInProgress.set(false);
+      this.callState.setHold(this.callState.onHold(), false);
     }
   }
 
@@ -1311,10 +1118,10 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   // Dial pad interactions
   pressKey(key: string) {
     if (/[0-9*#]/.test(key)) {
-      if (this.callActive()) {
+      if (this.callState.callActive()) {
         try {
           this.softphone.sendDTMF(key);
-          this.dtmfSequence = (this.dtmfSequence + key).slice(-32); // keep last 32 keys
+          this.callState.addDTMF(key);
           this.status.set(`DTMF: ${key}`);
         } catch (e) {
           this.logger.warn('DTMF send failed', e);
@@ -1326,7 +1133,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     }
   }
   clearDtmf() {
-    this.dtmfSequence = '';
+    this.callState.clearDTMF();
   }
   clearNumber() {
     this.callee = '';
@@ -1339,7 +1146,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   @HostListener('window:paste', ['$event'])
   onPaste(e: ClipboardEvent) {
     // If a call is active we don't change the dialer
-    if (this.callActive) return;
+    if (this.callState.callActive()) return;
 
     // If user has focus inside an editable element (input/textarea/contenteditable)
     // let the native paste happen so app-wide text fields still accept paste.
@@ -1366,7 +1173,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
 
   // Initiate transfer via backend
   async transfer(type: 'blind' | 'attended' = 'blind') {
-    if (!this.callActive()) {
+    if (!this.callState.callActive()) {
       this.status.set('No active call to transfer');
       return;
     }
@@ -1384,7 +1191,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   }
 
   private applyClipboardNumber(raw: string) {
-    const cleaned = raw.replace(/[^0-9*#+]/g, '');
+    const cleaned = this.sessionSvc.extractNumberFromClipboard(raw);
     if (!cleaned) return;
     this.callee = cleaned;
     this.status.set(`Number pasted (${cleaned.length} digits)`);
@@ -1402,81 +1209,4 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     // TODO: Navigate to contact page
   }
 
-  // Apply hold state locally: disable outgoing audio senders and pause/resume remote audio playback
-  private applyHoldState(hold: boolean) {
-    try {
-      // Remember/restore microphone muted state around hold
-      const pc: RTCPeerConnection | undefined = this.currentSession?.connection;
-
-      if (hold) {
-        // store whether user had microphone muted before placing on hold
-        this.preHoldMuted = this.preHoldMuted ?? this.muted();
-      }
-
-      // Disable or enable local audio senders
-      try {
-        if (pc) {
-          pc.getSenders()?.forEach((sender) => {
-            if (sender.track && sender.track.kind === 'audio') {
-              try {
-                sender.track.enabled = !hold;
-              } catch (e) {
-                // Some browsers may not allow changing track state; ignore
-              }
-            }
-          });
-        }
-      } catch (e) {
-        this.logger.warn('applyHoldState: manipulating senders failed', e);
-      }
-
-      // Update component muted state: when placed on hold we show muted, on resume restore previous state
-      if (hold) {
-        this.muted.set(true);
-      } else {
-        this.muted.set(this.preHoldMuted ?? false);
-        this.preHoldMuted = null;
-      }
-
-      // Mute or restore remote audio element to avoid hearing hold music/tones locally
-      try {
-        const audio = document.getElementById(
-          REMOTE_AUDIO_ELEMENT_ID
-        ) as HTMLAudioElement | null;
-        if (audio) {
-          if (hold) {
-            // store previous volume so we can restore it
-            try {
-              (audio as any).dataset.__preHoldVolume = String(
-                audio.volume ?? 1
-              );
-            } catch {}
-            audio.muted = true;
-            audio.volume = 0;
-          } else {
-            const prev = (audio as any).dataset?.__preHoldVolume;
-            if (prev !== undefined) {
-              audio.volume = Number(prev) || 1;
-              try {
-                delete (audio as any).dataset.__preHoldVolume;
-              } catch {}
-            } else {
-              audio.volume = 1;
-            }
-            audio.muted = false;
-            // try to resume playback if it was paused
-            try {
-              const p = audio.play();
-              if (p && typeof (p as any).then === 'function')
-                (p as Promise<void>).catch(() => {});
-            } catch {}
-          }
-        }
-      } catch (e) {
-        this.logger.warn('applyHoldState: remote audio handling failed', e);
-      }
-    } catch (e) {
-      this.logger.warn('applyHoldState failed', e);
-    }
-  }
 }
