@@ -155,3 +155,82 @@ export interface QueuePerformance {
   overallAnswerRate: number;
   overallAvgWaitTime: number;
 }
+
+export interface IvrPath {
+  path: string;
+  callCount: number;
+  percentage: number;
+  avgTimeInIvr: number;
+  completionRate: number;
+}
+
+export interface IvrNode {
+  nodeName: string;
+  visits: number;
+  avgTimeSpent: number;
+  exitCount: number;
+  exitRate: number;
+}
+
+export interface IvrDtmf {
+  digit: string;
+  count: number;
+  percentage: number;
+  nodeName: string;
+}
+
+export interface IvrEventStats {
+  event: string;
+  count: number;
+}
+
+export interface IvrAnalysis {
+  totalSessions: number;
+  completedSessions: number;
+  completionRate: number;
+  avgIvrDuration: number;
+  paths: IvrPath[];
+  nodes: IvrNode[];
+  dtmfSelections: IvrDtmf[];
+  eventStats: IvrEventStats[];
+}
+
+export interface ConversionByAgent {
+  agent: string;
+  totalCalls: number;
+  callsWithLeads: number;
+  callsWithDeals: number;
+  leadConversionRate: number;
+  dealConversionRate: number;
+  totalRevenue: number;
+  avgRevenue: number;
+}
+
+export interface ConversionTrend {
+  date: string;
+  totalCalls: number;
+  callsWithLeads: number;
+  callsWithDeals: number;
+  leadConversionRate: number;
+  dealConversionRate: number;
+}
+
+export interface DealStage {
+  status: string;
+  count: number;
+  totalValue: number;
+}
+
+export interface CallConversion {
+  totalCalls: number;
+  callsWithLeads: number;
+  callsWithDeals: number;
+  leadConversionRate: number;
+  dealConversionRate: number;
+  totalRevenue: number;
+  avgRevenue: number;
+  revenuePerCall: number;
+  byAgent: ConversionByAgent[];
+  trend: ConversionTrend[];
+  dealStages: DealStage[];
+}

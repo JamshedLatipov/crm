@@ -3,7 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { JwtAuthGuard } from '../../user/jwt-auth.guard';
 import { RolesGuard } from '../../user/roles.guard';
 import { Roles } from '../../user/roles.decorator';
-import { AgentPerformanceService, CallsOverviewService, SlaMetricsService, AbandonedCallsService, QueuePerformanceService } from '../services';
+import { AgentPerformanceService, CallsOverviewService, SlaMetricsService, AbandonedCallsService, QueuePerformanceService, IvrAnalysisService, CallConversionService } from '../services';
 import {
   CallFiltersDto,
   AgentPerformanceResponseDto,
@@ -11,6 +11,8 @@ import {
   SlaMetricsDto,
   AbandonedCallsDto,
   QueuePerformanceDto,
+  IvrAnalysisDto,
+  CallConversionDto,
 } from '../dto';
 
 @ApiTags('Analytics')
@@ -24,6 +26,8 @@ export class CallsAnalyticsController {
     private readonly slaMetricsService: SlaMetricsService,
     private readonly abandonedCallsService: AbandonedCallsService,
     private readonly queuePerformanceService: QueuePerformanceService,
+    private readonly ivrAnalysisService: IvrAnalysisService,
+    private readonly callConversionService: CallConversionService,
   ) {}
 
   @Get('agent-performance')
@@ -109,5 +113,39 @@ export class CallsAnalyticsController {
     @Query() filters: CallFiltersDto
   ): Promise<QueuePerformanceDto> {
     return this.queuePerformanceService.getQueuePerformance(filters);
+  }
+
+  @Get('ivr-analysis')
+  @Roles('admin', 'manager')
+  @ApiOperation({
+    summary: 'Get IVR analysis',
+    description: 'Returns IVR statistics including popular paths, nodes, DTMF selections and events',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'IVR analysis data',
+    type: IvrAnalysisDto,
+  })
+  async getIvrAnalysis(
+    @Query() filters: CallFiltersDto
+  ): Promise<IvrAnalysisDto> {
+    return this.ivrAnalysisService.getIvrAnalysis(filters);
+  }
+
+  @Get('conversion')
+  @Roles('admin', 'manager')
+  @ApiOperation({
+    summary: 'Get call conversion metrics',
+    description: 'Returns conversion statistics for calls to leads and deals, including ROI metrics',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Call conversion data',
+    type: CallConversionDto,
+  })
+  async getCallConversion(
+    @Query() filters: CallFiltersDto
+  ): Promise<CallConversionDto> {
+    return this.callConversionService.getCallConversion(filters);
   }
 }

@@ -8,6 +8,8 @@ import {
   SlaMetrics,
   AbandonedCalls,
   QueuePerformance,
+  IvrAnalysis,
+  CallConversion,
 } from '../models/analytics.models';
 import { environment } from '@crm/front/environments/environment';
 
@@ -41,6 +43,16 @@ export class AnalyticsApiService {
   getQueuePerformance(filters: CallFilters): Observable<QueuePerformance> {
     const params = this.buildParams(filters);
     return this.http.get<QueuePerformance>(`${this.baseUrl}/queue-performance`, { params });
+  }
+
+  getIvrAnalysis(filters: CallFilters): Observable<IvrAnalysis> {
+    const params = this.buildParams(filters);
+    return this.http.get<IvrAnalysis>(`${this.baseUrl}/ivr-analysis`, { params });
+  }
+
+  getCallConversion(filters: CallFilters): Observable<CallConversion> {
+    const params = this.buildParams(filters);
+    return this.http.get<CallConversion>(`${this.baseUrl}/conversion`, { params });
   }
 
   private buildParams(filters: CallFilters): HttpParams {

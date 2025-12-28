@@ -8,6 +8,8 @@ import { CallsOverviewComponent } from '../../reports/calls-overview/calls-overv
 import { SlaMetricsComponent } from '../../reports/sla-metrics/sla-metrics.component';
 import { AbandonedCallsComponent } from '../../reports/abandoned-calls/abandoned-calls.component';
 import { QueuePerformanceComponent } from '../../reports/queue-performance/queue-performance.component';
+import { IvrAnalysisComponent } from '../../reports/ivr-analysis/ivr-analysis.component';
+import { CallConversionComponent } from '../../reports/call-conversion/call-conversion.component';
 
 @Component({
   selector: 'app-analytics-dashboard',
@@ -22,6 +24,8 @@ import { QueuePerformanceComponent } from '../../reports/queue-performance/queue
     SlaMetricsComponent,
     AbandonedCallsComponent,
     QueuePerformanceComponent,
+    IvrAnalysisComponent,
+    CallConversionComponent,
   ],
   template: `
     <div class="analytics-dashboard">
@@ -64,6 +68,22 @@ import { QueuePerformanceComponent } from '../../reports/queue-performance/queue
             <span>Эффективность очередей</span>
           </ng-template>
           <app-queue-performance></app-queue-performance>
+        </mat-tab>
+
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon>phone_forwarded</mat-icon>
+            <span>Анализ IVR</span>
+          </ng-template>
+          <app-ivr-analysis></app-ivr-analysis>
+        </mat-tab>
+
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon>trending_up</mat-icon>
+            <span>Конверсия звонков</span>
+          </ng-template>
+          <app-call-conversion></app-call-conversion>
         </mat-tab>
       </mat-tab-group>
     </div>

@@ -5,3 +5,5 @@ export * from './calls-overview.dto';
 export * from './sla-metrics.dto';
 export * from './abandoned-calls.dto';
 export * from './queue-performance.dto';
+export * from './ivr-analysis.dto';
+export * from './call-conversion.dto';

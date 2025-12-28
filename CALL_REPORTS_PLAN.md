@@ -92,7 +92,7 @@
 **API Endpoint:** `GET /api/analytics/calls/queue-performance` ✅
 **Компонент:** `apps/front/src/app/analytics/reports/queue-performance/` ✅
 
-#### 3.2 Отчет "Анализ IVR"
+#### 3.2 Отчет "Анализ IVR" ✅
 **Таблица:** ivr_logs, call_summaries
 **Метрики:**
 - Популярные пути в IVR (ivrPath)
@@ -101,15 +101,15 @@
 - Точки выхода из IVR
 - Воронка IVR (где клиенты бросают)
 
-**API Endpoint:** `GET /api/analytics/calls/ivr-analysis`
-**Компонент:** `apps/front/src/app/analytics/reports/ivr-analysis/`
+**API Endpoint:** `GET /api/analytics/calls/ivr-analysis` ✅
+**Компонент:** `apps/front/src/app/analytics/reports/ivr-analysis/` ✅
 
 ---
 
 ### Этап 4: Бизнес-отчеты (ROI)
 **Цель:** Связать звонки с бизнес-результатами
 
-#### 4.1 Отчет "Конверсия звонков"
+#### 4.1 Отчет "Конверсия звонков" ✅
 **Таблица:** call_summaries + leads + deals
 **Метрики:**
 - Звонки → Лиды (конверсия %)
@@ -118,8 +118,8 @@
 - ROI звонков
 - Эффективность по агентам
 
-**API Endpoint:** `GET /api/analytics/calls/conversion`
-**Компонент:** `apps/front/src/app/analytics/reports/call-conversion/`
+**API Endpoint:** `GET /api/analytics/calls/conversion` ✅
+**Компонент:** `apps/front/src/app/analytics/reports/call-conversion/` ✅
 
 #### 4.2 Отчет "История взаимодействий"
 **Таблица:** call_summaries + contacts + leads + deals
