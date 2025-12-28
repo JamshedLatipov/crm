@@ -99,7 +99,6 @@ type JsSIPSession = any;
     CommonModule,
     MatIconModule,
     SoftphoneStatusBarComponent,
-    SoftphoneCallInfoComponent,
     SoftphoneCallActionsComponent,
     SoftphoneScriptsPanelComponent,
     SoftphoneDialTabComponent,

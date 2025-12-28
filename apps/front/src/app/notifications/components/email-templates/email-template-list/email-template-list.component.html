@@ -1,0 +1,78 @@
+<app-page-layout
+  title="Email Шаблоны"
+  [subtitle]="'Всего: ' + (templates()?.length || 0) + ' шаблонов'"
+>
+  <div page-actions>
+    <button mat-raised-button color="primary" routerLink="/notifications/email-templates/new">
+      <mat-icon>add</mat-icon>
+      Создать шаблон
+    </button>
+  </div>
+
+  @if (templates()?.length === 0 && !loading()) {
+    <div class="empty-state">
+      <mat-icon>mail</mat-icon>
+      <h3>Нет шаблонов</h3>
+      <p>Создайте первый Email шаблон для использования в кампаниях</p>
+      <button mat-raised-button color="primary" routerLink="/notifications/email-templates/new">
+        <mat-icon>add</mat-icon>
+        Создать шаблон
+      </button>
+    </div>
+  } @else {
+    <crm-table
+      [columns]="columns"
+      [data]="templates()"
+      [pageSize]="20"
+      [templates]="tableTemplates"
+    ></crm-table>
+  }
+
+  <ng-template #subjectTemplate let-template>
+    <div class="subject-preview">{{ template.subject }}</div>
+  </ng-template>
+
+  <ng-template #variablesTemplate let-template>
+    <div class="variables-list">
+      @for (variable of template.variables; track variable) {
+        <span class="variable-chip">{{ variable }}</span>
+      }
+      @if (template.variables.length === 0) {
+        <span class="text-muted">—</span>
+      }
+    </div>
+  </ng-template>
+
+  <ng-template #statusTemplate let-template>
+    <span class="status-badge" [class.active]="template.isActive">
+      {{ template.isActive ? 'Активен' : 'Неактивен' }}
+    </span>
+  </ng-template>
+
+  <ng-template #actionsTemplate let-template>
+    <button mat-icon-button [routerLink]="['/notifications/email-templates', template.id]" matTooltip="Редактировать">
+      <mat-icon>edit</mat-icon>
+    </button>
+    <button mat-icon-button [routerLink]="['/notifications/email-templates', template.id, 'preview']" matTooltip="Предпросмотр">
+      <mat-icon>visibility</mat-icon>
+    </button>
+    <button mat-icon-button [matMenuTriggerFor]="actionMenu" matTooltip="Еще">
+      <mat-icon>more_vert</mat-icon>
+    </button>
+    
+    <mat-menu #actionMenu="matMenu">
+      <button mat-menu-item (click)="duplicateTemplate(template)">
+        <mat-icon>content_copy</mat-icon>
+        <span>Дублировать</span>
+      </button>
+      <button mat-menu-item (click)="sendTestEmail(template)">
+        <mat-icon>send</mat-icon>
+        <span>Отправить тест</span>
+      </button>
+      <button mat-menu-item (click)="deleteTemplate(template)">
+        <mat-icon>delete</mat-icon>
+        <span>Удалить</span>
+      </button>
+    </mat-menu>
+  </ng-template>
+</app-page-layout>

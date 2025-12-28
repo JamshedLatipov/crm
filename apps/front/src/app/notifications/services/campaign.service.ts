@@ -1,8 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { Observable, tap, finalize } from 'rxjs';
 import { Campaign, CreateCampaignDto, CampaignStatus, CampaignType } from '../models/notification.models';
-import { PaginatedResponse } from '../../shared/types/common.types';
 import { environment } from '@crm/front/environments/environment';
 
 @Injectable({
@@ -20,7 +19,8 @@ export class CampaignService {
   /**
    * Получить все кампании
    */
-  getAll(page = 1, limit = 20, status?: CampaignStatus, type?: CampaignType): Observable<PaginatedResponse<Campaign>> {
+  getAll(page = 1, limit = 20, status?: CampaignStatus, type?: CampaignType): Observable<Campaign[]> {
+
     this.isLoading.set(true);
     this.error.set(null);
 
@@ -35,17 +35,18 @@ export class CampaignService {
       params = params.set('type', type);
     }
 
-    return this.http.get<PaginatedResponse<Campaign>>(this.apiUrl, { params }).pipe(
+    return this.http.get<Campaign[]>(this.apiUrl, { params }).pipe(
       tap({
         next: (response) => {
-          this.campaigns.set(response.data);
-          this.isLoading.set(false);
+          const data = response;
+          this.campaigns.set(data as Campaign[]);
         },
         error: (error) => {
-          this.error.set(error.message || 'Ошибка загрузки кампаний');
-          this.isLoading.set(false);
+          this.error.set(error?.message || 'Ошибка загрузки кампаний');
+          this.campaigns.set([]);
         },
-      })
+      }),
+      finalize(() => this.isLoading.set(false))
     );
   }
 
