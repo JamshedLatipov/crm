@@ -9,7 +9,7 @@ import {
   HealthCheckResponse,
   ChannelStat,
 } from '../models/notification.models';
-import { environment } from '@crm/front/environments/environment.prod';
+import { environment } from '@crm/front/environments/environment';
 
 @Injectable({
   providedIn: 'root',

@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, ViewChild, TemplateRef, AfterViewInit } from '@angular/core';
+import { Component, OnInit, signal, ViewChild, TemplateRef, AfterViewInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -6,16 +6,11 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.component';
 import { CrmTableComponent, CrmColumn } from '../../../../shared/components/crm-table/crm-table.component';
-
-interface EmailTemplate {
-  id: string;
-  name: string;
-  subject: string;
-  variables: string[];
-  isActive: boolean;
-}
+import { EmailTemplateService } from '../../../services/email-template.service';
+import { EmailTemplate } from '../../../models/notification.models';
 
 @Component({
   selector: 'app-email-template-list',
@@ -29,12 +24,13 @@ interface EmailTemplate {
     MatChipsModule,
     MatTooltipModule,
     MatMenuModule,
+    MatSnackBarModule,
     PageLayoutComponent
   ],
   template: `
     <app-page-layout
       title="Email Шаблоны"
-      [subtitle]="'Всего: ' + templates().length + ' шаблонов'"
+      [subtitle]="'Всего: ' + (templates()?.length || 0) + ' шаблонов'"
     >
       <div page-actions>
         <button mat-raised-button color="primary" routerLink="/notifications/email-templates/new">
@@ -43,7 +39,7 @@ interface EmailTemplate {
         </button>
       </div>
 
-      @if (templates().length === 0) {
+      @if (templates()?.length === 0 && !loading()) {
         <div class="empty-state">
           <mat-icon>mail</mat-icon>
           <h3>Нет шаблонов</h3>
@@ -95,15 +91,15 @@ interface EmailTemplate {
         </button>
         
         <mat-menu #actionMenu="matMenu">
-          <button mat-menu-item>
+          <button mat-menu-item (click)="duplicateTemplate(template)">
             <mat-icon>content_copy</mat-icon>
             <span>Дублировать</span>
           </button>
-          <button mat-menu-item>
+          <button mat-menu-item (click)="sendTestEmail(template)">
             <mat-icon>send</mat-icon>
             <span>Отправить тест</span>
           </button>
-          <button mat-menu-item>
+          <button mat-menu-item (click)="deleteTemplate(template)">
             <mat-icon>delete</mat-icon>
             <span>Удалить</span>
           </button>
@@ -188,7 +184,11 @@ interface EmailTemplate {
   `]
 })
 export class EmailTemplateListComponent implements OnInit, AfterViewInit {
+  private readonly emailTemplateService = inject(EmailTemplateService);
+  private readonly snackBar = inject(MatSnackBar);
+
   templates = signal<EmailTemplate[]>([]);
+  loading = signal<boolean>(false);
 
   @ViewChild('subjectTemplate') subjectTemplate!: TemplateRef<any>;
   @ViewChild('variablesTemplate') variablesTemplate!: TemplateRef<any>;
@@ -213,19 +213,55 @@ export class EmailTemplateListComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit() {
-    // TODO: Загрузить через сервис
-    this.templates.set([
-      {
-        id: '1',
-        name: 'Приветственное письмо',
-        subject: 'Добро пожаловать, {{name}}!',
-        variables: ['name', 'email'],
-        isActive: true
-      }
-    ]);
+    this.loadTemplates();
   }
 
   ngAfterViewInit() {
     // Templates are now available
+  }
+
+  loadTemplates() {
+    this.loading.set(true);
+    this.emailTemplateService.getAll().subscribe({
+      next: (response) => {
+        this.templates.set(response.data);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.snackBar.open('Ошибка загрузки шаблонов', 'Закрыть', { duration: 3000 });
+        this.loading.set(false);
+      }
+    });
+  }
+
+  deleteTemplate(template: EmailTemplate) {
+    if (confirm(`Удалить шаблон "${template.name}"?`)) {
+      this.emailTemplateService.delete(template.id).subscribe({
+        next: () => {
+          this.snackBar.open('Шаблон удален', 'Закрыть', { duration: 3000 });
+          this.loadTemplates();
+        },
+        error: () => {
+          this.snackBar.open('Ошибка удаления шаблона', 'Закрыть', { duration: 3000 });
+        }
+      });
+    }
+  }
+
+  duplicateTemplate(template: EmailTemplate) {
+    this.emailTemplateService.duplicate(template.id).subscribe({
+      next: () => {
+        this.snackBar.open('Шаблон скопирован', 'Закрыть', { duration: 3000 });
+        this.loadTemplates();
+      },
+      error: () => {
+        this.snackBar.open('Ошибка копирования шаблона', 'Закрыть', { duration: 3000 });
+      }
+    });
+  }
+
+  sendTestEmail(template: EmailTemplate) {
+    // TODO: Реализовать диалог для ввода email и переменных
+    this.snackBar.open('Функция в разработке', 'Закрыть', { duration: 3000 });
   }
 }

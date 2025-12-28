@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { Campaign, CreateCampaignDto, CampaignStatus, CampaignType } from '../models/notification.models';
 import { PaginatedResponse } from '../../shared/types/common.types';
-import { environment } from '@crm/front/environments/environment.prod';
+import { environment } from '@crm/front/environments/environment';
 
 @Injectable({
   providedIn: 'root',

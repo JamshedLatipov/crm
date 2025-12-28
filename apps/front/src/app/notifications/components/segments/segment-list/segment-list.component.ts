@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, ViewChild, TemplateRef, AfterViewInit } from '@angular/core';
+import { Component, OnInit, signal, ViewChild, TemplateRef, AfterViewInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -6,16 +6,11 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.component';
 import { CrmTableComponent, CrmColumn } from '../../../../shared/components/crm-table/crm-table.component';
-
-interface Segment {
-  id: string;
-  name: string;
-  description: string;
-  contactCount: number;
-  filterCount: number;
-}
+import { SegmentService } from '../../../services/segment.service';
+import { Segment } from '../../../models/notification.models';
 
 @Component({
   selector: 'app-segment-list',
@@ -29,12 +24,13 @@ interface Segment {
     MatChipsModule,
     MatTooltipModule,
     MatMenuModule,
+    MatSnackBarModule,
     PageLayoutComponent
   ],
   template: `
     <app-page-layout
       title="Сегменты контактов"
-      [subtitle]="'Всего: ' + segments().length + ' сегментов'"
+      [subtitle]="'Всего: ' + (segments()?.length || 0) + ' сегментов'"
     >
       <div page-actions>
         <button mat-raised-button color="primary" routerLink="/notifications/segments/new">
@@ -43,7 +39,7 @@ interface Segment {
         </button>
       </div>
 
-      @if (segments().length === 0) {
+      @if (segments()?.length === 0 && !loading()) {
         <div class="empty-state">
           <mat-icon>group_work</mat-icon>
           <h3>Нет сегментов</h3>
@@ -69,14 +65,14 @@ interface Segment {
       <ng-template #contactCountTemplate let-segment>
         <div class="count-badge">
           <mat-icon>people</mat-icon>
-          <span>{{ segment.contactCount }}</span>
+          <span>{{ segment.contactsCount || 0 }}</span>
         </div>
       </ng-template>
 
       <ng-template #filterCountTemplate let-segment>
         <div class="filter-badge">
           <mat-icon>filter_alt</mat-icon>
-          <span>{{ segment.filterCount }}</span>
+          <span>{{ segment.filters?.length || 0 }}</span>
         </div>
       </ng-template>
 
@@ -92,15 +88,15 @@ interface Segment {
         </button>
         
         <mat-menu #actionMenu="matMenu">
-          <button mat-menu-item>
+          <button mat-menu-item (click)="duplicateSegment(segment)">
             <mat-icon>content_copy</mat-icon>
             <span>Дублировать</span>
           </button>
-          <button mat-menu-item>
+          <button mat-menu-item (click)="refreshSegment(segment)">
             <mat-icon>refresh</mat-icon>
             <span>Обновить</span>
           </button>
-          <button mat-menu-item>
+          <button mat-menu-item (click)="deleteSegment(segment)">
             <mat-icon>delete</mat-icon>
             <span>Удалить</span>
           </button>
@@ -181,7 +177,11 @@ interface Segment {
   `]
 })
 export class SegmentListComponent implements OnInit, AfterViewInit {
-  segments = signal<Segment[]>([]);
+  private readonly segmentService = inject(SegmentService);
+  private readonly snackBar = inject(MatSnackBar);
+
+  segments = this.segmentService.segments;
+  loading = this.segmentService.isLoading;
 
   @ViewChild('descriptionTemplate') descriptionTemplate!: TemplateRef<any>;
   @ViewChild('contactCountTemplate') contactCountTemplate!: TemplateRef<any>;
@@ -191,7 +191,7 @@ export class SegmentListComponent implements OnInit, AfterViewInit {
   columns: CrmColumn[] = [
     { key: 'name', label: 'Название', sortable: true },
     { key: 'description', label: 'Описание', template: 'descriptionTemplate' },
-    { key: 'contactCount', label: 'Контактов', template: 'contactCountTemplate' },
+    { key: 'contactsCount', label: 'Контактов', template: 'contactCountTemplate' },
     { key: 'filterCount', label: 'Фильтров', template: 'filterCountTemplate' },
     { key: 'actions', label: 'Действия', template: 'actionsTemplate' },
   ];
@@ -206,19 +206,56 @@ export class SegmentListComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit() {
-    // TODO: Загрузить через сервис
-    this.segments.set([
-      {
-        id: '1',
-        name: 'Активные клиенты',
-        description: 'Клиенты с активными сделками',
-        contactCount: 250,
-        filterCount: 2
-      }
-    ]);
+    this.loadSegments();
   }
 
   ngAfterViewInit() {
     // Templates are now available
+  }
+
+  loadSegments() {
+    this.segmentService.getAll().subscribe({
+      error: () => {
+        this.snackBar.open('Ошибка загрузки сегментов', 'Закрыть', { duration: 3000 });
+      }
+    });
+  }
+
+  deleteSegment(segment: Segment) {
+    if (confirm(`Удалить сегмент "${segment.name}"?`)) {
+      this.segmentService.delete(segment.id).subscribe({
+        next: () => {
+          this.snackBar.open('Сегмент удален', 'Закрыть', { duration: 3000 });
+          this.loadSegments();
+        },
+        error: () => {
+          this.snackBar.open('Ошибка удаления сегмента', 'Закрыть', { duration: 3000 });
+        }
+      });
+    }
+  }
+
+  duplicateSegment(segment: Segment) {
+    this.segmentService.duplicate(segment.id).subscribe({
+      next: () => {
+        this.snackBar.open('Сегмент скопирован', 'Закрыть', { duration: 3000 });
+        this.loadSegments();
+      },
+      error: () => {
+        this.snackBar.open('Ошибка копирования сегмента', 'Закрыть', { duration: 3000 });
+      }
+    });
+  }
+
+  refreshSegment(segment: Segment) {
+    this.segmentService.refreshContactCount(segment.id).subscribe({
+      next: (result) => {
+        this.snackBar.open(`Обновлено: ${result.count} контактов`, 'Закрыть', { duration: 3000 });
+        this.loadSegments();
+      },
+      error: () => {
+        this.snackBar.open('Ошибка обновления сегмента', 'Закрыть', { duration: 3000 });
+      }
+    });
   }
 }

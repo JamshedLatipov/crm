@@ -6,7 +6,7 @@ import {
   CreateEmailTemplateDto,
 } from '../models/notification.models';
 import { PaginatedResponse } from '../../shared/types/common.types';
-import { environment } from '@crm/front/environments/environment.prod';
+import { environment } from '@crm/front/environments/environment';
 
 @Injectable({
   providedIn: 'root',
