@@ -4,15 +4,16 @@ import { Observable } from 'rxjs';
 import {
   EmailTemplate,
   CreateEmailTemplateDto,
-  PaginatedResponse,
 } from '../models/notification.models';
+import { PaginatedResponse } from '../../shared/types/common.types';
+import { environment } from '@crm/front/environments/environment.prod';
 
 @Injectable({
   providedIn: 'root',
 })
 export class EmailTemplateService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = '/api/email-templates';
+  private readonly apiUrl = environment.apiBase + '/email-templates';
 
   /**
    * Получить все Email шаблоны

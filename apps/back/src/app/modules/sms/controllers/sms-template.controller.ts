@@ -10,7 +10,7 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { SmsTemplateService } from '../services/sms-template.service';
 import { SmsProviderService } from '../services/sms-provider.service';
 import {
@@ -18,6 +18,7 @@ import {
   UpdateTemplateDto,
   TestTemplateDto,
 } from '../dto/template.dto';
+import { PaginationDto } from '../../../common/dto/pagination.dto';
 
 @ApiTags('SMS Templates')
 @ApiBearerAuth()
@@ -37,13 +38,25 @@ export class SmsTemplateController {
 
   @Get()
   @ApiOperation({ summary: 'Получить список всех шаблонов' })
-  @ApiResponse({ status: 200, description: 'Список шаблонов' })
+  @ApiResponse({ status: 200, description: 'Список шаблонов с пагинацией' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'category', required: false, type: String })
+  @ApiQuery({ name: 'isActive', required: false, type: String })
+  @ApiQuery({ name: 'search', required: false, type: String })
   async findAll(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
     @Query('category') category?: string,
     @Query('isActive') isActive?: string,
     @Query('search') search?: string
   ) {
-    return this.templateService.findAll({
+    const paginationDto: PaginationDto = {
+      page: page ? parseInt(page) : 1,
+      limit: limit ? parseInt(limit) : 20,
+    };
+
+    return this.templateService.findAll(paginationDto, {
       category,
       isActive: isActive ? isActive === 'true' : undefined,
       search,

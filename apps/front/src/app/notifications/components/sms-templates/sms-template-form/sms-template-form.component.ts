@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -9,7 +9,11 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.component';
+import { SmsTemplateService } from '../../../services/sms-template.service';
+import { SmsTemplate, CreateSmsTemplateDto } from '../../../models/notification.models';
 
 @Component({
   selector: 'app-sms-template-form',
@@ -24,6 +28,8 @@ import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.
     MatSlideToggleModule,
     MatChipsModule,
     MatIconModule,
+    MatProgressSpinnerModule,
+    MatSnackBarModule,
     PageLayoutComponent
   ],
   template: `
@@ -32,18 +38,27 @@ import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.
       [subtitle]="templateId() ? 'Изменение настроек шаблона' : 'Создание нового SMS шаблона'"
     >
       <div page-actions>
-        <button mat-stroked-button (click)="cancel()">
+        <button mat-stroked-button (click)="cancel()" [disabled]="loading()">
           <mat-icon>close</mat-icon>
           Отмена
         </button>
-        <button mat-raised-button color="primary" (click)="save()" [disabled]="form.invalid">
-          <mat-icon>save</mat-icon>
+        <button mat-raised-button color="primary" (click)="save()" [disabled]="form.invalid || loading()">
+          @if (loading()) {
+            <mat-spinner diameter="20"></mat-spinner>
+          } @else {
+            <mat-icon>save</mat-icon>
+          }
           Сохранить
         </button>
       </div>
 
-      <div class="form-container">
-        <div class="form-layout">
+      @if (loading() && !form.value.name) {
+        <div class="loading-container">
+          <mat-spinner diameter="40"></mat-spinner>
+        </div>
+      } @else {
+        <div class="form-container">
+          <div class="form-layout">
           <mat-card class="form-card">
             <form [formGroup]="form">
               <div class="form-section">
@@ -129,9 +144,17 @@ import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.
           </mat-card>
         </div>
       </div>
+      }
     </app-page-layout>
   `,
   styles: [`
+    .loading-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 80px 20px;
+    }
+
     .form-container {
       max-width: 1200px;
       margin: 0 auto;
@@ -295,16 +318,19 @@ import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.
   `]
 })
 export class SmsTemplateFormComponent implements OnInit {
+  private readonly fb = inject(FormBuilder);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly smsTemplateService = inject(SmsTemplateService);
+  private readonly snackBar = inject(MatSnackBar);
+
   form!: FormGroup;
   templateId = signal<string | null>(null);
   charCount = signal(0);
   detectedVariables = signal<string[]>([]);
+  loading = signal(false);
 
-  constructor(
-    private fb: FormBuilder,
-    private route: ActivatedRoute,
-    private router: Router
-  ) {
+  constructor() {
     this.initForm();
   }
 
@@ -313,8 +339,27 @@ export class SmsTemplateFormComponent implements OnInit {
     this.templateId.set(id);
     
     if (id && id !== 'new') {
-      // TODO: Загрузить данные шаблона
+      this.loadTemplate(id);
     }
+  }
+
+  loadTemplate(id: string) {
+    this.loading.set(true);
+    this.smsTemplateService.getById(id).subscribe({
+      next: (template) => {
+        this.form.patchValue({
+          name: template.name,
+          content: template.content,
+          isActive: template.isActive
+        });
+        this.loading.set(false);
+      },
+      error: () => {
+        this.snackBar.open('Ошибка загрузки шаблона', 'Закрыть', { duration: 3000 });
+        this.loading.set(false);
+        this.router.navigate(['/notifications/sms-templates']);
+      }
+    });
   }
 
   initForm() {
@@ -345,11 +390,41 @@ export class SmsTemplateFormComponent implements OnInit {
   }
 
   save() {
-    if (this.form.valid) {
-      // TODO: Сохранить через сервис
-      console.log('Saving template:', this.form.value);
-      this.router.navigate(['/notifications/sms-templates']);
+    if (this.form.invalid || this.loading()) {
+      return;
     }
+
+    const dto: CreateSmsTemplateDto = {
+      name: this.form.value.name!,
+      content: this.form.value.content!,
+      variables: this.detectedVariables(),
+      isActive: this.form.value.isActive ?? true
+    };
+
+    this.loading.set(true);
+
+    const operation = this.templateId()
+      ? this.smsTemplateService.update(this.templateId()!, dto)
+      : this.smsTemplateService.create(dto);
+
+    operation.subscribe({
+      next: () => {
+        this.snackBar.open(
+          this.templateId() ? 'Шаблон обновлен' : 'Шаблон создан',
+          'Закрыть',
+          { duration: 3000 }
+        );
+        this.router.navigate(['/notifications/sms-templates']);
+      },
+      error: (error) => {
+        this.snackBar.open(
+          error.error?.message || 'Ошибка сохранения шаблона',
+          'Закрыть',
+          { duration: 5000 }
+        );
+        this.loading.set(false);
+      }
+    });
   }
 
   cancel() {

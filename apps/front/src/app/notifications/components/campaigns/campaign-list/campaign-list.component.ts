@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatTableModule } from '@angular/material/table';
@@ -8,17 +8,11 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.component';
-
-interface Campaign {
-  id: string;
-  name: string;
-  status: string;
-  channel: string;
-  scheduledAt?: Date;
-  sentCount: number;
-  totalRecipients: number;
-}
+import { CampaignService } from '../../../services/campaign.service';
+import { Campaign } from '../../../models/notification.models';
 
 @Component({
   selector: 'app-campaign-list',
@@ -33,6 +27,8 @@ interface Campaign {
     MatTooltipModule,
     MatProgressSpinnerModule,
     MatMenuModule,
+    MatSnackBarModule,
+    MatDialogModule,
     PageLayoutComponent
   ],
   template: `
@@ -120,6 +116,16 @@ interface Campaign {
               <ng-container matColumnDef="actions">
                 <th mat-header-cell *matHeaderCellDef class="actions-column">Действия</th>
                 <td mat-cell *matCellDef="let campaign" class="actions-column">
+                  @if (campaign.status === 'draft') {
+                    <button mat-icon-button (click)="startCampaign(campaign)" matTooltip="Запустить">
+                      <mat-icon>play_arrow</mat-icon>
+                    </button>
+                  }
+                  @if (campaign.status === 'running') {
+                    <button mat-icon-button (click)="pauseCampaign(campaign)" matTooltip="Приостановить">
+                      <mat-icon>pause</mat-icon>
+                    </button>
+                  }
                   <button mat-icon-button [routerLink]="['/notifications/campaigns', campaign.id]" matTooltip="Редактировать">
                     <mat-icon>edit</mat-icon>
                   </button>
@@ -131,11 +137,7 @@ interface Campaign {
                   </button>
                   
                   <mat-menu #actionMenu="matMenu">
-                    <button mat-menu-item>
-                      <mat-icon>content_copy</mat-icon>
-                      <span>Дублировать</span>
-                    </button>
-                    <button mat-menu-item>
+                    <button mat-menu-item (click)="deleteCampaign(campaign)">
                       <mat-icon>delete</mat-icon>
                       <span>Удалить</span>
                     </button>
@@ -339,22 +341,60 @@ interface Campaign {
   `]
 })
 export class CampaignListComponent implements OnInit {
-  loading = signal(false);
-  campaigns = signal<Campaign[]>([]);
+  private readonly campaignService = inject(CampaignService);
+  private readonly snackBar = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
+
+  loading = this.campaignService.isLoading;
+  campaigns = this.campaignService.campaigns;
+  error = this.campaignService.error;
   displayedColumns = ['name', 'channel', 'status', 'progress', 'scheduledAt', 'actions'];
 
   ngOnInit() {
-    // TODO: Загрузить кампании через сервис
-    this.campaigns.set([
-      {
-        id: '1',
-        name: 'Пример кампании',
-        status: 'draft',
-        channel: 'SMS',
-        sentCount: 0,
-        totalRecipients: 100
+    this.loadCampaigns();
+  }
+
+  loadCampaigns() {
+    this.campaignService.getAll().subscribe({
+      error: (error) => {
+        this.snackBar.open('Ошибка загрузки кампаний', 'Закрыть', { duration: 3000 });
       }
-    ]);
+    });
+  }
+
+  startCampaign(campaign: Campaign) {
+    this.campaignService.start(campaign.id).subscribe({
+      next: () => {
+        this.snackBar.open('Кампания запущена', 'Закрыть', { duration: 3000 });
+      },
+      error: () => {
+        this.snackBar.open('Ошибка запуска кампании', 'Закрыть', { duration: 3000 });
+      }
+    });
+  }
+
+  pauseCampaign(campaign: Campaign) {
+    this.campaignService.pause(campaign.id).subscribe({
+      next: () => {
+        this.snackBar.open('Кампания приостановлена', 'Закрыть', { duration: 3000 });
+      },
+      error: () => {
+        this.snackBar.open('Ошибка приостановки кампании', 'Закрыть', { duration: 3000 });
+      }
+    });
+  }
+
+  deleteCampaign(campaign: Campaign) {
+    if (confirm(`Удалить кампанию "${campaign.name}"?`)) {
+      this.campaignService.delete(campaign.id).subscribe({
+        next: () => {
+          this.snackBar.open('Кампания удалена', 'Закрыть', { duration: 3000 });
+        },
+        error: () => {
+          this.snackBar.open('Ошибка удаления кампании', 'Закрыть', { duration: 3000 });
+        }
+      });
+    }
   }
 
   getStatusLabel(status: string): string {
@@ -362,7 +402,9 @@ export class CampaignListComponent implements OnInit {
       draft: 'Черновик',
       scheduled: 'Запланирована',
       running: 'Выполняется',
+      paused: 'Приостановлена',
       completed: 'Завершена',
+      cancelled: 'Отменена',
       failed: 'Ошибка'
     };
     return labels[status] || status;
@@ -371,8 +413,8 @@ export class CampaignListComponent implements OnInit {
   getChannelIcon(channel: string): string {
     const icons: Record<string, string> = {
       SMS: 'sms',
-      Email: 'email',
-      Webhook: 'webhook'
+      EMAIL: 'email',
+      WEBHOOK: 'webhook'
     };
     return icons[channel] || 'notifications';
   }

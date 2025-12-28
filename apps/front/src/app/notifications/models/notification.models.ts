@@ -61,8 +61,9 @@ export interface SmsTemplate {
 export interface CreateSmsTemplateDto {
   name: string;
   content: string;
-  category: TemplateCategory;
+  category?: TemplateCategory;
   variables?: string[];
+  isActive?: boolean;
 }
 
 // Email Template
@@ -320,15 +321,6 @@ export interface HealthCheckResponse {
   sms: ChannelHealth;
   email: ChannelHealth;
   webhook: ChannelHealth;
-}
-
-// Pagination
-export interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
 }
 
 // Filter and Sort

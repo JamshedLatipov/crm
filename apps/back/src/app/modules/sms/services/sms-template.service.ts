@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { SmsTemplate } from '../entities/sms-template.entity';
 import { CreateTemplateDto, UpdateTemplateDto } from '../dto/template.dto';
 import { User } from '../../user/user.entity';
+import { PaginationDto, PaginatedResponse } from '../../../common/dto/pagination.dto';
 
 @Injectable()
 export class SmsTemplateService {
@@ -29,13 +30,18 @@ export class SmsTemplateService {
   }
 
   /**
-   * Получение всех шаблонов
+   * Получение всех шаблонов с пагинацией
    */
-  async findAll(filters?: {
-    category?: string;
-    isActive?: boolean;
-    search?: string;
-  }): Promise<SmsTemplate[]> {
+  async findAll(
+    paginationDto: PaginationDto,
+    filters?: {
+      category?: string;
+      isActive?: boolean;
+      search?: string;
+    }
+  ): Promise<PaginatedResponse<SmsTemplate>> {
+    const { page, limit } = paginationDto;
+    
     const query = this.templateRepository.createQueryBuilder('template')
       .leftJoinAndSelect('template.createdBy', 'createdBy')
       .orderBy('template.createdAt', 'DESC');
@@ -55,7 +61,20 @@ export class SmsTemplateService {
       );
     }
 
-    return await query.getMany();
+    // Применяем пагинацию
+    query.skip((page - 1) * limit).take(limit);
+
+    // Получаем данные и общее количество
+    const [data, total] = await query.getManyAndCount();
+
+    // Возвращаем paginated response в стандартном формате
+    return {
+      data,
+      total,
+      page,
+      limit,
+      hasMore: page * limit < total,
+    };
   }
 
   /**

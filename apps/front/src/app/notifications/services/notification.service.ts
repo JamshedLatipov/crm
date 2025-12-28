@@ -9,13 +9,14 @@ import {
   HealthCheckResponse,
   ChannelStat,
 } from '../models/notification.models';
+import { environment } from '@crm/front/environments/environment.prod';
 
 @Injectable({
   providedIn: 'root',
 })
 export class NotificationService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = '/api/notifications';
+  private readonly apiUrl = environment.apiBase + '/notifications';
 
   /**
    * Отправить уведомление через один канал

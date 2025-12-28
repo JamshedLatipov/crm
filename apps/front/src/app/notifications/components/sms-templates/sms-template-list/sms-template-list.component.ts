@@ -1,21 +1,16 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, ViewChild, TemplateRef, AfterViewInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.component';
-
-interface SmsTemplate {
-  id: string;
-  name: string;
-  content: string;
-  variables: string[];
-  isActive: boolean;
-}
+import { CrmTableComponent, CrmColumn } from '../../../../shared/components/crm-table/crm-table.component';
+import { SmsTemplateService } from '../../../services/sms-template.service';
+import { SmsTemplate } from '../../../models/notification.models';
 
 @Component({
   selector: 'app-sms-template-list',
@@ -23,12 +18,13 @@ interface SmsTemplate {
   imports: [
     CommonModule,
     RouterModule,
-    MatTableModule,
+    CrmTableComponent,
     MatButtonModule,
     MatIconModule,
     MatChipsModule,
     MatTooltipModule,
     MatMenuModule,
+    MatSnackBarModule,
     PageLayoutComponent
   ],
   template: `
@@ -54,85 +50,62 @@ interface SmsTemplate {
           </button>
         </div>
       } @else {
-        <div class="modern-table-container">
-          <div class="table-wrapper">
-            <table mat-table [dataSource]="templates()" class="modern-table">
-              
-              <ng-container matColumnDef="name">
-                <th mat-header-cell *matHeaderCellDef>Название</th>
-                <td mat-cell *matCellDef="let template">
-                  <strong>{{ template.name }}</strong>
-                </td>
-              </ng-container>
-
-              <ng-container matColumnDef="content">
-                <th mat-header-cell *matHeaderCellDef>Содержимое</th>
-                <td mat-cell *matCellDef="let template">
-                  <div class="content-preview">{{ template.content }}</div>
-                </td>
-              </ng-container>
-
-              <ng-container matColumnDef="variables">
-                <th mat-header-cell *matHeaderCellDef>Переменные</th>
-                <td mat-cell *matCellDef="let template">
-                  <div class="variables-list">
-                    @for (variable of template.variables; track variable) {
-                      <span class="variable-chip">{{ variable }}</span>
-                    }
-                    @if (template.variables.length === 0) {
-                      <span class="text-muted">—</span>
-                    }
-                  </div>
-                </td>
-              </ng-container>
-
-              <ng-container matColumnDef="isActive">
-                <th mat-header-cell *matHeaderCellDef>Статус</th>
-                <td mat-cell *matCellDef="let template">
-                  <span class="status-badge" [class.active]="template.isActive">
-                    {{ template.isActive ? 'Активен' : 'Неактивен' }}
-                  </span>
-                </td>
-              </ng-container>
-
-              <ng-container matColumnDef="actions">
-                <th mat-header-cell *matHeaderCellDef class="actions-column">Действия</th>
-                <td mat-cell *matCellDef="let template" class="actions-column">
-                  <button mat-icon-button [routerLink]="['/notifications/sms-templates', template.id]" matTooltip="Редактировать">
-                    <mat-icon>edit</mat-icon>
-                  </button>
-                  <button mat-icon-button [routerLink]="['/notifications/sms-templates', template.id, 'preview']" matTooltip="Предпросмотр">
-                    <mat-icon>visibility</mat-icon>
-                  </button>
-                  <button mat-icon-button [matMenuTriggerFor]="actionMenu" matTooltip="Еще">
-                    <mat-icon>more_vert</mat-icon>
-                  </button>
-                  
-                  <mat-menu #actionMenu="matMenu">
-                    <button mat-menu-item>
-                      <mat-icon>content_copy</mat-icon>
-                      <span>Дублировать</span>
-                    </button>
-                    <button mat-menu-item>
-                      <mat-icon>delete</mat-icon>
-                      <span>Удалить</span>
-                    </button>
-                  </mat-menu>
-                </td>
-              </ng-container>
-
-              <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-              <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
-            </table>
-          </div>
-        </div>
+        <crm-table
+          [columns]="columns"
+          [data]="templates()"
+          [pageSize]="20"
+          [templates]="tableTemplates"
+        ></crm-table>
       }
+
+      <ng-template #contentTemplate let-template>
+        <div class="content-preview">{{ template.content }}</div>
+      </ng-template>
+
+      <ng-template #variablesTemplate let-template>
+        <div class="variables-list">
+          @for (variable of template.variables; track variable) {
+            <span class="variable-chip">{{ variable }}</span>
+          }
+          @if (template.variables.length === 0) {
+            <span class="text-muted">—</span>
+          }
+        </div>
+      </ng-template>
+
+      <ng-template #statusTemplate let-template>
+        <span class="status-badge" [class.active]="template.isActive">
+          {{ template.isActive ? 'Активен' : 'Неактивен' }}
+        </span>
+      </ng-template>
+
+      <ng-template #actionsTemplate let-template>
+        <button mat-icon-button [routerLink]="['/notifications/sms-templates', template.id]" matTooltip="Редактировать">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button mat-icon-button [routerLink]="['/notifications/sms-templates', template.id, 'preview']" matTooltip="Предпросмотр">
+          <mat-icon>visibility</mat-icon>
+        </button>
+        <button mat-icon-button [matMenuTriggerFor]="actionMenu" matTooltip="Еще">
+          <mat-icon>more_vert</mat-icon>
+        </button>
+        
+        <mat-menu #actionMenu="matMenu">
+          <button mat-menu-item (click)="deleteTemplate(template)">
+            <mat-icon>delete</mat-icon>
+            <span>Удалить</span>
+          </button>
+        </mat-menu>
+      </ng-template>
     </app-page-layout>
   `,
   styles: [`
     .empty-state {
       text-align: center;
       padding: 80px 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
       
       mat-icon {
         font-size: 80px;
@@ -153,45 +126,6 @@ interface SmsTemplate {
         font-size: 16px;
         color: #6b7280;
         margin: 0 0 24px 0;
-      }
-    }
-
-    .modern-table-container {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-      overflow: hidden;
-    }
-
-    .table-wrapper {
-      overflow-x: auto;
-    }
-
-    .modern-table {
-      width: 100%;
-      
-      th {
-        background: #f9fafb;
-        color: #374151;
-        font-weight: 600;
-        font-size: 13px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        padding: 16px 20px;
-        border-bottom: 2px solid #e5e7eb;
-      }
-      
-      td {
-        padding: 16px 20px;
-        border-bottom: 1px solid #f3f4f6;
-      }
-      
-      .table-row {
-        transition: background-color 0.2s;
-        
-        &:hover {
-          background-color: #f9fafb;
-        }
       }
     }
 
@@ -239,27 +173,63 @@ interface SmsTemplate {
         color: #065f46;
       }
     }
-
-    .actions-column {
-      text-align: right;
-      width: 150px;
-    }
   `]
 })
-export class SmsTemplateListComponent implements OnInit {
-  templates = signal<SmsTemplate[]>([]);
-  displayedColumns = ['name', 'content', 'variables', 'isActive', 'actions'];
+export class SmsTemplateListComponent implements OnInit, AfterViewInit {
+  private readonly smsTemplateService = inject(SmsTemplateService);
+  private readonly snackBar = inject(MatSnackBar);
+
+  loading = this.smsTemplateService.isLoading;
+  templates = this.smsTemplateService.templates;
+
+  @ViewChild('contentTemplate') contentTemplate!: TemplateRef<any>;
+  @ViewChild('variablesTemplate') variablesTemplate!: TemplateRef<any>;
+  @ViewChild('statusTemplate') statusTemplate!: TemplateRef<any>;
+  @ViewChild('actionsTemplate') actionsTemplate!: TemplateRef<any>;
+
+  columns: CrmColumn[] = [
+    { key: 'name', label: 'Название', sortable: true },
+    { key: 'content', label: 'Содержимое', template: 'contentTemplate' },
+    { key: 'variables', label: 'Переменные', template: 'variablesTemplate' },
+    { key: 'isActive', label: 'Статус', template: 'statusTemplate' },
+    { key: 'actions', label: 'Действия', template: 'actionsTemplate' },
+  ];
+
+  get tableTemplates(): { [key: string]: TemplateRef<any> } {
+    return {
+      contentTemplate: this.contentTemplate,
+      variablesTemplate: this.variablesTemplate,
+      statusTemplate: this.statusTemplate,
+      actionsTemplate: this.actionsTemplate,
+    };
+  }
 
   ngOnInit() {
-    // TODO: Загрузить через сервис
-    this.templates.set([
-      {
-        id: '1',
-        name: 'Приветствие',
-        content: 'Здравствуйте, {{name}}! Добро пожаловать в нашу систему.',
-        variables: ['name'],
-        isActive: true
+    this.loadTemplates();
+  }
+
+  ngAfterViewInit() {
+    // Templates are now available
+  }
+
+  loadTemplates() {
+    this.smsTemplateService.getAll().subscribe({
+      error: () => {
+        this.snackBar.open('Ошибка загрузки шаблонов', 'Закрыть', { duration: 3000 });
       }
-    ]);
+    });
+  }
+
+  deleteTemplate(template: SmsTemplate) {
+    if (confirm(`Удалить шаблон "${template.name}"?`)) {
+      this.smsTemplateService.delete(template.id).subscribe({
+        next: () => {
+          this.snackBar.open('Шаблон удален', 'Закрыть', { duration: 3000 });
+        },
+        error: () => {
+          this.snackBar.open('Ошибка удаления шаблона', 'Закрыть', { duration: 3000 });
+        }
+      });
+    }
   }
 }
