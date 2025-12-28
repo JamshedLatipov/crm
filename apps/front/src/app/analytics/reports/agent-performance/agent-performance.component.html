@@ -1,0 +1,91 @@
+<div class="agent-performance-container">
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>
+        <h2>Производительность операторов</h2>
+      </mat-card-title>
+      <div class="header-actions">
+        <button
+          mat-raised-button
+          color="accent"
+          (click)="exportToCSV()"
+          [disabled]="loading() || data().length === 0"
+        >
+          <mat-icon>download</mat-icon>
+          Экспорт CSV
+        </button>
+      </div>
+    </mat-card-header>
+
+    <mat-card-content>
+      <app-report-filters (filtersChange)="onFiltersChange($event)"></app-report-filters>
+
+      <div class="table-container" *ngIf="!loading() && !error()">
+        <table mat-table [dataSource]="data()" class="performance-table">
+          <ng-container matColumnDef="agent">
+            <th mat-header-cell *matHeaderCellDef>Оператор</th>
+            <td mat-cell *matCellDef="let row">{{ row.agent }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="totalCalls">
+            <th mat-header-cell *matHeaderCellDef>Всего звонков</th>
+            <td mat-cell *matCellDef="let row">{{ row.totalCalls }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="answeredCalls">
+            <th mat-header-cell *matHeaderCellDef>Отвечено</th>
+            <td mat-cell *matCellDef="let row" class="success">
+              {{ row.answeredCalls }}
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="missedCalls">
+            <th mat-header-cell *matHeaderCellDef>Пропущено</th>
+            <td mat-cell *matCellDef="let row" class="warning">
+              {{ row.missedCalls }}
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="avgTalkTime">
+            <th mat-header-cell *matHeaderCellDef>Ср. время разговора</th>
+            <td mat-cell *matCellDef="let row">
+              {{ formatTime(row.avgTalkTime) }}
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="avgWaitTime">
+            <th mat-header-cell *matHeaderCellDef>Ср. время ожидания</th>
+            <td mat-cell *matCellDef="let row">
+              {{ formatTime(row.avgWaitTime) }}
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="totalTalkTime">
+            <th mat-header-cell *matHeaderCellDef>Общее время</th>
+            <td mat-cell *matCellDef="let row">
+              {{ formatTime(row.totalTalkTime) }}
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+        </table>
+
+        <div *ngIf="data().length === 0" class="no-data">
+          <mat-icon>info</mat-icon>
+          <p>Нет данных за выбранный период</p>
+        </div>
+      </div>
+
+      <div *ngIf="loading()" class="loading-container">
+        <mat-spinner></mat-spinner>
+        <p>Загрузка данных...</p>
+      </div>
+
+      <div *ngIf="error()" class="error-container">
+        <mat-icon color="warn">error</mat-icon>
+        <p>{{ error() }}</p>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

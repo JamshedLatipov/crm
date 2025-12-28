@@ -11,6 +11,7 @@ import { registerLocaleData } from '@angular/common';
 import localeRu from '@angular/common/locales/ru';
 import { appRoutes } from './app.routes';
 import { authInterceptor } from './auth/auth.interceptor';
+import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
 
 registerLocaleData(localeRu);
 
@@ -22,5 +23,6 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
     provideNativeDateAdapter(),
     provideAnimations(),
+    provideCharts(withDefaultRegisterables()),
   ],
 };

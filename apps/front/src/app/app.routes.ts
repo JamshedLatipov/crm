@@ -114,6 +114,12 @@ export const appRoutes: Route[] = [
     { path: 'promo-companies', component: PromoCompaniesComponent, canActivate: [authGuard] },
     { path: 'integrations', component: IntegrationsComponent, canActivate: [authGuard] },
     { path: 'client-info', component: ClientInfoPageComponent, canActivate: [authGuard] },
+    // Analytics routes
+    {
+        path: 'analytics',
+        canActivate: [authGuard],
+        loadChildren: () => import('./analytics/analytics.routes').then(m => m.analyticsRoutes)
+    },
     // Notification Center routes
     ...NOTIFICATION_ROUTES
 ];

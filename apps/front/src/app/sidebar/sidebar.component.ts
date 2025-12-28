@@ -100,6 +100,18 @@ export class SidebarComponent {
       ],
     },
     {
+      icon: 'analytics',
+      label: 'Аналитика',
+      expanded: false,
+      children: [
+        {
+          icon: 'bar_chart',
+          label: 'Аналитика звонков',
+          route: '/analytics',
+        },
+      ],
+    },
+    {
       icon: 'integration_instructions',
       label: 'Интеграции',
       expanded: false,
