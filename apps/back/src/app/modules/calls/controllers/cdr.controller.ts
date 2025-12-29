@@ -54,20 +54,28 @@ export class CdrController {
     return this.cdrService.findOne(id);
   }
 
+  @Get('channel-uniqueid')
+  @ApiOperation({ summary: 'Get UNIQUEID of active channel by caller number' })
+  @ApiQuery({ name: 'callerNumber', required: true, description: 'Caller ID number to search for' })
+  @ApiOkResponse({ schema: { properties: { uniqueid: { type: 'string', nullable: true } } } })
+  async getChannelUniqueId(@Query('callerNumber') callerNumber: string) {
+    const uniqueid = await this.cdrService.getChannelUniqueId(callerNumber);
+    return { uniqueid };
+  }
+
   @Post('log')
   async saveLog(@Body() body: SaveCallLogDto, @CurrentUser() user: CurrentUserPayload) {
     const rec = await this.cdrService.createCallLog({
-      callId: body.callId ?? null,
+      asteriskUniqueId: body.asteriskUniqueId ?? null,
       clientCallId: body.clientCallId ?? null,
       createdBy: user?.sub ?? null,
-      sipCallId: body.sipCallId ?? null,
       note: body.note ?? null,
       callType: body.callType ?? null,
       scriptBranch: body.scriptBranch ?? null,
       duration: typeof body.duration === 'number' ? body.duration : null,
       disposition: body.disposition ?? null,
     });
-    return { ok: true, id: rec.id };
+    return { ok: true, id: rec.id, asteriskUniqueId: rec.asteriskUniqueId };
   }
 
   @Get('logs')

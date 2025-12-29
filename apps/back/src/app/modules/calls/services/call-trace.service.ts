@@ -56,7 +56,7 @@ export class CallTraceService {
 
     // 1. Bulk Fetch
     // Optimized: Split CallLogs query to avoid OR scan, then merge
-    const [ivrLogs, queueLogs, callLogsById, callLogsByCallId] = await Promise.all([
+    const [ivrLogs, queueLogs, callLogsById] = await Promise.all([
       this.ivrLogRepo.find({
         where: { channelId: In(uniqueIds) },
         order: { createdAt: 'ASC' },
@@ -69,14 +69,10 @@ export class CallTraceService {
         where: { asteriskUniqueId: In(uniqueIds) },
         order: { createdAt: 'ASC' },
       }),
-      this.callLogRepo.find({
-        where: { callId: In(uniqueIds) },
-        order: { createdAt: 'ASC' },
-      })
     ]);
 
     // Merge and deduplicate call logs
-    const allCallLogs = [...callLogsById, ...callLogsByCallId];
+    const allCallLogs = [...callLogsById];
     const uniqueCallLogs = Array.from(new Map(allCallLogs.map(item => [item.id, item])).values())
       .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 
@@ -108,7 +104,7 @@ export class CallTraceService {
 
     const appLogMap = new Map<string, CallLog[]>();
     uniqueCallLogs.forEach(log => {
-      const uid = log.asteriskUniqueId || log.callId;
+      const uid = log.asteriskUniqueId;
       if (!uid) return;
       // Handle potential cross-linking where uniqueId matches one but not the other
       // We'll trust the caller provided valid uniqueIds

@@ -173,4 +173,23 @@ export class AriService {
   getClient(): any {
     return this.client;
   }
+
+  /**
+   * Get list of active channels via ARI REST API
+   */
+  async getChannels(): Promise<any[]> {
+    if (!this.connected || !this.client) {
+      throw new Error('ARI not connected');
+    }
+
+    try {
+      // ARI REST API: GET /channels
+      const channels = await this.client.channels.list();
+      this.logger.debug(`[ARI] Retrieved ${channels.length} active channels`);
+      return channels;
+    } catch (err) {
+      this.logger.error(`[ARI] Failed to get channels: ${(err as Error).message}`);
+      throw err;
+    }
+  }
 }

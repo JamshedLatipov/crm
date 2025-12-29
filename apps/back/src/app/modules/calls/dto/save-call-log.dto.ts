@@ -1,4 +1,5 @@
 export class SaveCallLogDto {
+  asteriskUniqueId?: string | null; // Asterisk uniqueid - надежный идентификатор
   callId?: string | null;
   clientCallId?: string | null;
   sipCallId?: string | null;

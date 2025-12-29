@@ -12,7 +12,6 @@ import { PsEndpointService } from './services/ps-endpoint.service';
 import { PsAorService } from './services/ps-aor.service';
 import { PsAuthService } from './services/ps-auth.service';
 import { CdrService } from './services/cdr.service';
-import { ReconciliationService } from './services/reconciliation.service';
 // import { AriReconciliationService } from './services/ari-reconciliation.service';
 import { CdrController } from './controllers/cdr.controller';
 import { PsEndpointController } from './controllers/ps-endpoint.controller';
@@ -65,12 +64,6 @@ import { UserModule } from '../user/user.module';
     CallAggregationService,
     CallEnrichmentService,
     CallTransferService,
-    // reconciliation background worker
-    ReconciliationService,
-    // ARI-based near-realtime reconciliation
-    // AriReconciliationService will subscribe to ARI events and update call_logs quickly
-    // to reduce latency between frontend saveCallLog and Asterisk CDR
-    // AriReconciliationService,
   ],
   controllers: [
     PsEndpointController,

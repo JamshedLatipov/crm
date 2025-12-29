@@ -10,6 +10,7 @@ import {
 import { Cdr } from '../entities/cdr.entity';
 import { CallLog } from '../entities/call-log.entity';
 import { CallScript } from '../../call-scripts/entities/call-script.entity';
+import { AriService } from '../../ari/ari.service';
 
 export interface CdrFilterDto {
   fromDate?: string; // ISO
@@ -29,7 +30,8 @@ export interface CdrFilterDto {
 export class CdrService {
   constructor(
     @InjectRepository(Cdr) private readonly repo: Repository<Cdr>,
-    @InjectRepository(CallLog) private readonly callLogRepo: Repository<CallLog>
+    @InjectRepository(CallLog) private readonly callLogRepo: Repository<CallLog>,
+    private readonly ariService: AriService
   ) {}
 
   async find(filter: CdrFilterDto) {
@@ -89,19 +91,30 @@ export class CdrService {
 
   /**
    * Persist auxiliary call log / metadata record
+   * Prioritizes asteriskUniqueId as the primary reliable identifier
    */
   async createCallLog(data: Partial<CallLog>): Promise<CallLog> {
-    // determine initial status: if duration/disposition provided - completed, else awaiting_cdr when call identifier present
-    const status =
-      typeof data.duration === 'number' || data.disposition
-        ? 'completed'
-        : data.clientCallId || data.callId || data.sipCallId
-        ? 'awaiting_cdr'
-        : 'completed';
+    // If asteriskUniqueId is provided, check for duplicates
+    if (data.asteriskUniqueId) {
+      const existing = await this.callLogRepo.findOne({
+        where: { asteriskUniqueId: data.asteriskUniqueId },
+      });
+      if (existing) {
+        // Update existing log instead of creating duplicate
+        Object.assign(existing, {
+          ...data,
+          updatedAt: new Date(),
+        });
+        const updated = await this.callLogRepo.save(existing as any);
+        return Array.isArray(updated) ? updated[0] : (updated as CallLog);
+      }
+    }
+
+    // determine initial status: if asteriskUniqueId provided - awaiting_cdr, if duration/disposition - completed
     const now = new Date();
     const ent = this.callLogRepo.create({
       ...data,
-      status,
+      status: 'completed',
       updatedAt: now,
     } as any);
     const saved = await this.callLogRepo.save(ent as any);
@@ -129,5 +142,36 @@ export class CdrService {
       ...e,
       scriptTitle: raw[i]?.s_title ?? null,
     }));
+  }
+
+  /**
+   * Get UNIQUEID of active channel by endpoint name via ARI
+   * Returns null if channel not found
+   */
+  async getChannelUniqueId(endpointName: string): Promise<string | null> {
+    try {
+      // Get active channels via ARI REST API
+      const channels = await this.ariService.getChannels();
+
+      // Find channel matching endpoint
+      // Channel name format: PJSIP/operator1-00000005
+      const channel = channels.find((ch: any) => {
+        const matchesName = ch.name && ch.name.includes(`/${endpointName}-`);
+        const matchesCaller = ch.caller?.number === endpointName;
+        const matchesConnected = ch.connected?.number === endpointName;
+        // Также проверяем dialplan.exten - это куда звонят (100, 2001, etc)
+        const matchesDialplanExten = ch.dialplan?.exten === endpointName;
+       
+        return matchesName || matchesCaller || matchesConnected || matchesDialplanExten;
+      });
+
+      if (channel) {
+        return channel.id; // ARI использует id как UNIQUEID
+      } else {
+        console.log('[CdrService] No active channel found, trying CDR lookup');
+      }
+    } catch (err) {
+      console.error('[CdrService] ARI lookup failed, falling back to CDR:', err);
+    }
   }
 }

@@ -3,21 +3,20 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  Index,
 } from 'typeorm';
 
 @Entity({ name: 'call_logs' })
+@Index('IDX_call_logs_asteriskUniqueId', ['asteriskUniqueId'], { 
+  unique: true,
+  where: '"asteriskUniqueId" IS NOT NULL'
+})
 export class CallLog {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
-  callId: string | null;
-
-  @Column({ type: 'varchar', length: 255, nullable: true })
   clientCallId: string | null;
-
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  sipCallId: string | null;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   createdBy: string | null;

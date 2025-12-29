@@ -99,8 +99,9 @@ export class SoftphoneCallHistoryService {
    * Posts to `/api/cdr/log` with optional callId and payload
    */
   saveCallLog(
-    callId: string | null,
     payload: {
+      asteriskUniqueId?: string | null;
+      sipCallId?: string | null;
       note?: string;
       callType?: string | null;
       scriptBranch?: string | null;
@@ -108,7 +109,7 @@ export class SoftphoneCallHistoryService {
       disposition?: string | null;
     }
   ): Promise<any> {
-    const body = { callId, ...payload };
+    const body = { ...payload };
     return firstValueFrom(this.http.post(`${this.apiUrl}/log`, body));
   }
 
@@ -118,5 +119,15 @@ export class SoftphoneCallHistoryService {
   listCallLogs(limit = 50, offset = 0) {
     const params = new HttpParams().set('limit', String(limit)).set('offset', String(offset));
     return this.http.get<any>(`${this.apiUrl}/logs`, { params });
+  }
+
+  /**
+   * Get Asterisk UNIQUEID for active channel by caller number
+   */
+  getChannelUniqueId(callerNumber: string): Promise<{ uniqueid: string | null }> {
+    const params = new HttpParams().set('callerNumber', callerNumber);
+    return firstValueFrom(
+      this.http.get<{ uniqueid: string | null }>(`${this.apiUrl}/channel-uniqueid`, { params })
+    );
   }
 }

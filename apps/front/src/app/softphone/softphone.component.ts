@@ -110,6 +110,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   status = signal('Disconnected');
   microphoneError = signal(false);
   private currentSession: JsSIPSession | null = null;
+  private callLogSaved = false; // Флаг для предотвращения повторного сохранения
 
   // Ringback tone (WebAudio) while outgoing call is ringing
   // ringback state moved to RingtoneService
@@ -134,6 +135,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   // Expose script panel state for template
   viewMode = signal<'compact' | 'fullscreen'>('compact');
   viewedScript = signal<any>(null);
+  private currentCallId = signal<string>(null);
 
   // Asterisk host is read from environment config (moved from hardcoded value)
   private readonly asteriskHost = environment.asteriskHost || '127.0.0.1';
@@ -757,6 +759,10 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     this.callState.setCallActive(true);
     this.activeTab = 'info'; // Switch to info tab when call connects
     this.ringtone.stopRingback();
+
+    // Получаем UNIQUEID через AMI и сохраняем лог с правильным ID
+    this.fetchCurrentCallID();
+
     // Debug: list RTCPeerConnection senders/receivers and track state for diagnosing one-way audio
     try {
       const pc: RTCPeerConnection | undefined = this.currentSession?.connection;
@@ -803,6 +809,10 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     const wasMissed = this.callState.incoming() && !this.callState.callActive();
     this.ringtone.stopRingback();
     this.callState.resetCallState();
+    
+    // Сбрасываем флаг сохранения лога для следующего звонка
+    this.callLogSaved = false;
+    
     // If missed, increment counter
     if (wasMissed) {
       try {
@@ -837,6 +847,10 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     // Ensure incoming UI/state is cleared when call fails
     this.callState.resetCallState();
     this.currentSession = null;
+    
+    // Сбрасываем флаг сохранения лога для следующего звонка
+    this.callLogSaved = false;
+    
     this.status.set(
       this.isRegistered()
         ? 'Registered!'
@@ -971,27 +985,29 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
 
     this.status.set(`Calling ${this.callee}...`);
     try {
-      // generate a client-side id we can correlate with Asterisk via SIP header
-      const clientCallId = this.sessionSvc.generateClientCallId();
-      const opts = {
-        extraHeaders: [
-          `X-Client-Call-ID: ${clientCallId}`,
-          'X-Custom-Header: CRM Call',
-        ],
-        mediaConstraints: { audio: true, video: false },
-        pcConfig: { iceServers: [], rtcpMuxPolicy: 'require' },
-      };
-
+      // Получаем SIP Call-ID который будет использоваться для reconciliation
       const session = this.softphone.call(
         `sip:${this.callee}@${this.asteriskHost}`,
-        opts
+        {
+          mediaConstraints: { audio: true, video: false },
+          pcConfig: { iceServers: [], rtcpMuxPolicy: 'require' },
+        }
       );
-      try {
-        (session as any).__clientCallId = clientCallId;
-      } catch {}
+      
+      // Отправляем SIP Call-ID в Asterisk через заголовок для сохранения в CDR userfield
+      const sipCallId = session?.call_id;
+      if (sipCallId) {
+        try {
+          // Добавляем заголовок после создания session
+          (session as any).request?.setHeader?.('X-SIP-Call-ID', sipCallId);
+        } catch (e) {
+          this.logger.warn('Failed to set X-SIP-Call-ID header', e);
+        }
+      }
+      
       this.currentSession = session;
       this.callState.setCallActive(true);
-      this.logger.info('Call session created:', session, { clientCallId });
+      this.logger.info('Call session created:', session, { sipCallId });
     } catch (error) {
       this.logger.error('Error initiating call:', error);
       this.status.set('Ошибка при совершении вызова');
@@ -1009,22 +1025,24 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     createTask?: boolean;
   }) {
     try {
-      const callId = this.sessionSvc.getSessionCallKey(this.currentSession);
       const noteToSave = payload?.note ?? this.callState.callNote();
       const branch = payload?.branchId ?? this.callState.selectedScriptBranch();
-
       // Save call log first and get the log ID
       let savedLogId: string | null = null;
       try {
-        const logResult = await this.callHistoryService.saveCallLog(callId, {
+        const logResult = await this.callHistoryService.saveCallLog({
+          asteriskUniqueId: this.currentCallId(),  // Asterisk UNIQUEID для прямого сопоставления
           note: noteToSave,
           callType: this.callState.callType(),
           scriptBranch: branch,
         });
         savedLogId = logResult?.id || logResult?.logId || null;
-        this.logger.info('Manual CDR registered', { logId: savedLogId });
+        this.logger.info('Call log saved', { 
+          logId: savedLogId, 
+          asteriskUniqueId: this.currentCallId(),
+        });
       } catch (err) {
-        this.logger.warn('Manual CDR registration failed', err);
+        this.logger.warn('Call log save failed', err);
         // Continue to task creation even if log failed
       }
 
@@ -1058,6 +1076,51 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       }
     } catch (e) {
       this.logger.warn('manualRegisterCall failed', e);
+    }
+  }
+
+  /**
+   * Получить UNIQUEID через AMI и сохранить лог звонка
+   * Вызывается при подключении звонка (confirmed event)
+   */
+  private async fetchCurrentCallID() {
+    // Защита от повторных вызовов
+    if (this.callLogSaved) {
+      this.logger.info('Call log already saved, skipping duplicate request');
+      return;
+    }
+
+    try {
+      console.log(this.currentSession)
+      if (!this.currentSession) {
+        this.logger.warn('No active session to save log for');
+        return;
+      }
+
+      // Извлекаем CallerID number из remote_identity
+      const remoteIdentity = this.currentSession.remote_identity;
+      let callerNumber: string | null = null;
+
+      if (remoteIdentity && remoteIdentity.uri && remoteIdentity.uri.user) {
+        callerNumber = remoteIdentity.uri.user;
+      }
+
+      if (!callerNumber) {
+        this.logger.warn('Could not extract caller number from session');
+        // Fallback: save log without UNIQUEID
+        return;
+      }
+
+      this.logger.info('Fetching UNIQUEID for caller:', callerNumber);
+
+      // Запрашиваем UNIQUEID через API
+      const response = await this.callHistoryService.getChannelUniqueId(callerNumber);
+      this.currentCallId.set(response?.uniqueid);
+      
+      // Отмечаем что лог сохранен
+      this.callLogSaved = true;
+    } catch (err) {
+      this.logger.error('Failed to fetch/save call log:', err);
     }
   }
 
