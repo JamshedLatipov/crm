@@ -67,6 +67,16 @@ interface JsSIPRegisterEvent {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type JsSIPSession = any;
 
+interface JsSIPSessionMeta {
+  id?: string | number | null;
+  call_id?: string | null;
+  request?: {
+    getHeader?: (name: string) => string | null | undefined;
+    headers?: Record<string, Array<{ raw?: string | null | undefined }>>;
+  };
+  __clientCallId?: string | null;
+}
+
 // Ringtone constants and behavior are provided by RingtoneService
 
 @Component({
@@ -666,19 +676,51 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   private getSessionCallKey(session: JsSIPSession | null): string | null {
     try {
       if (!session) return null;
-      const s = session as any;
+      const s = session as JsSIPSessionMeta;
       if (s.__clientCallId) return String(s.__clientCallId);
       if (s.call_id) return String(s.call_id);
       if (s.id) return String(s.id);
-      // attempt to read SIP Call-ID from request headers
-      try {
-        const hdr =
-          s.request?.getHeader?.('Call-ID') ??
-          s.request?.headers?.['call-id']?.[0]?.raw;
-        if (hdr) return String(hdr);
-      } catch {}
-      return null;
+      return this.getCallIdFromHeaders(s);
     } catch (e) {
+      return null;
+    }
+  }
+
+  private getSipCallId(session: JsSIPSession | null): string | null {
+    try {
+      if (!session) return null;
+      return this.getCallIdFromHeaders(session as JsSIPSessionMeta);
+    } catch {
+      return null;
+    }
+  }
+
+  private getCallIdFromHeaders(s: JsSIPSessionMeta): string | null {
+    try {
+      const hdrFromMethod = s?.request?.getHeader?.('Call-ID');
+      if (hdrFromMethod) return String(hdrFromMethod);
+
+      const hdrMap = s?.request?.headers;
+      if (hdrMap) {
+        const key = Object.keys(hdrMap).find(
+          (k) => k.toLowerCase() === 'call-id'
+        );
+        if (key) {
+          const entry = hdrMap[key]?.[0]?.raw;
+          if (entry) return String(entry);
+        }
+      }
+    } catch {
+      // if header is missing we simply return null
+    }
+    return null;
+  }
+
+  private getClientCallId(session: JsSIPSession | null): string | null {
+    try {
+      const id = (session as JsSIPSessionMeta | null)?.__clientCallId;
+      return id != null ? String(id) : null;
+    } catch {
       return null;
     }
   }
@@ -822,11 +864,15 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   }) {
     try {
       const callId = this.getSessionCallKey(this.currentSession);
+      const clientCallId = this.getClientCallId(this.currentSession);
+      const sipCallId = this.getSipCallId(this.currentSession);
       const noteToSave = payload?.note ?? this.callNote();
       const branch = payload?.branchId ?? this.selectedScriptBranch();
 
       this.callHistoryService
         .saveCallLog(callId, {
+          clientCallId,
+          sipCallId,
           note: noteToSave,
           callType: this.callType(),
           scriptBranch: branch,

@@ -106,6 +106,8 @@ export class SoftphoneCallHistoryService {
       scriptBranch?: string | null;
       duration?: number;
       disposition?: string | null;
+      clientCallId?: string | null;
+      sipCallId?: string | null;
     }
   ): Promise<any> {
     const body = { callId, ...payload };
