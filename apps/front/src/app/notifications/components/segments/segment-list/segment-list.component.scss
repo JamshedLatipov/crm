@@ -1,0 +1,55 @@
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  
+  mat-icon {
+    font-size: 80px;
+    width: 80px;
+    height: 80px;
+    color: #9ca3af;
+    margin-bottom: 16px;
+  }
+  
+  h3 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #374151;
+    margin: 0 0 8px 0;
+  }
+  
+  p {
+    font-size: 16px;
+    color: #6b7280;
+    margin: 0 0 24px 0;
+  }
+}
+
+.description-text {
+  color: #6b7280;
+  font-size: 14px;
+  max-width: 400px;
+}
+
+.count-badge,
+.filter-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.count-badge {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  color: #1e40af;
+}
+
+.filter-badge {
+  background: #f3f4f6;
+  color: #4b5563;
+}

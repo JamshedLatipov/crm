@@ -1,4 +1,5 @@
 <div class="flex items-center gap-2">
+  
   <button
     mat-button
     [matMenuTriggerFor]="pauseMenu"
@@ -16,12 +17,12 @@
           : 'inline-block w-2.5 h-2.5 rounded-full bg-yellow-500 mr-2'
       "
     ></span>
-    <span class="text-sm font-medium status-text"
-      >{{ status() }}{{ paused() && reason() ? ' — ' + reason() : '' }}</span
-    >
+    <span 
+      class="text-sm font-medium status-text"
+      [class.call-active]="callActive()"
+    >{{ status() }}{{ paused() && reason() ? ' — ' + reason() : '' }}</span>
     <span class="material-icons" style="font-size: 18px; margin-left: 6px; color: white;"
-      >arrow_drop_down</span
-    >
+      >arrow_drop_down</span>
   </button>
 
   <mat-menu

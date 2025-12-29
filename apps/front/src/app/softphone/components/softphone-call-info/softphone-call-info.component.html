@@ -1,9 +1,37 @@
-<div class="space-y-4">
-  <h2 class="text-xl font-bold">Вызов с {{ callee() }}</h2>
-  <div class="flex items-center justify-between text-[var(--text-secondary)] flex-wrap gap-y-2">
-    <div class="flex items-center gap-2">
-      <span class="material-icons text-base">call</span>
-      <span>Активный вызов - {{ callDuration() }}</span>
+<div class="call-info-card">
+  <!-- Contact info -->
+  <div class="flex items-center justify-center gap-2 mb-3">
+    <div class="pulse-indicator"></div>
+    <span class="text-sm font-medium" style="color: #10b981;">В процессе</span>
+  </div>
+
+  <!-- Contact name or number -->
+  <div class="space-y-1 mb-4">
+    <div class="contact-name">
+      {{ contactName() || callee() || 'Неизвестный абонент' }}
+    </div>
+    <div class="contact-number" *ngIf="contactName() && callee()">
+      {{ callee() }}
+    </div>
+    <div class="contact-number" *ngIf="contactCompany()">
+      {{ contactCompany() }}
+    </div>
+  </div>
+
+  <!-- Call duration -->
+  <div class="timer-display">
+    {{ callDuration() }}
+  </div>
+
+  <!-- Status badges -->
+  <div class="flex items-center justify-center gap-2 flex-wrap mt-4" *ngIf="muted() || onHold()">
+    <div class="status-badge muted" *ngIf="muted()">
+      <mat-icon class="!w-4 !h-4 !text-sm">mic_off</mat-icon>
+      <span>Микрофон выключен</span>
+    </div>
+    <div class="status-badge on-hold" *ngIf="onHold()">
+      <mat-icon class="!w-4 !h-4 !text-sm">pause</mat-icon>
+      <span>На удержании</span>
     </div>
   </div>
 </div>

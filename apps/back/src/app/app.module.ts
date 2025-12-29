@@ -4,6 +4,7 @@ import { AppService } from './app.service';
 import { RedisModule } from './redis.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { MODULES } from './modules';
 import { CALLS_MIGRATIONS } from './modules/calls/migrations';
@@ -24,6 +25,7 @@ import { INTEGRATIONS_MIGRATIONS } from './modules/integrations/migrations';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
   // NOTE: project policy changed — migration lists now include only seeder
   // migrations (data/seed insertions). Structural/schema migrations were
   // removed from module migration exports so that schema changes are
@@ -61,7 +63,7 @@ import { INTEGRATIONS_MIGRATIONS } from './modules/integrations/migrations';
         ...USER_ACTIVITY_MIGRATIONS,
         ...INTEGRATIONS_MIGRATIONS,
       ],
-      migrationsRun: true,
+      migrationsRun: false,
     }),
     ClientsModule.register([
       {

@@ -6,20 +6,19 @@ import {
   switchMap,
   of,
   startWith,
-  map,
   catchError,
-  shareReplay,
-  filter,
   retryWhen,
   delay,
   tap,
+  BehaviorSubject,
 } from 'rxjs';
-import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
+import { io, Socket } from 'socket.io-client';
 import { environment } from '../../../environments/environment';
 
 export interface OperatorStatus {
   id: string;
   name: string;
+  fullName?: string | null; // ФИО пользователя, связанного с оператором
   extension?: string;
   status: 'idle' | 'on_call' | 'wrap_up' | 'offline';
   currentCall?: string | null;
@@ -65,149 +64,84 @@ export class ContactCenterMonitoringService {
   private http = inject(HttpClient);
   private base = environment.apiBase + '/contact-center';
 
-  // WebSocket subject (lazy init)
-  private ws$: WebSocketSubject<any> | null = null;
+  // Socket.IO client
+  private socket: Socket | null = null;
+  private socketInitialized = false;
+  
+  // BehaviorSubjects to cache last values
+  private operatorsSubject = new BehaviorSubject<OperatorStatus[]>([]);
+  private queuesSubject = new BehaviorSubject<QueueStatus[]>([]);
+  private activeCallsSubject = new BehaviorSubject<ActiveCall[]>([]);
+  private statsSubject = new BehaviorSubject<ContactCenterStats>({ totalUniqueWaiting: 0 });
 
-  // Shared parsed message stream when WS is available
-  private messages$ = null as unknown as Observable<any> | null;
+  constructor() {
+    // Initialize socket on service creation
+    this.initializeSocket();
+  }
 
   private getWsUrl() {
-    const api = environment.apiBase;
-    // Backend expects /api/contact-center/ws path
-    const wsUrl = api.startsWith('https') 
-      ? api.replace(/^https/, 'wss') + '/contact-center/ws'
-      : api.replace(/^http/, 'ws') + '/contact-center/ws';
-    return wsUrl;
+    // Remove /api prefix for WebSocket connection
+    return environment.apiBase
+      .replace('http', 'ws')
+      .replace('/api', '');
   }
 
-  private ensureWs() {
-    if (this.ws$) return this.ws$;
+  private initializeSocket() {
+    if (this.socketInitialized) return;
+    
     try {
-      const url = this.getWsUrl();
-      this.ws$ = webSocket({
-        url,
-        // accept any data type and let parsing happen downstream
-        deserializer: (e: any) => e.data,
-        // prevent WebSocketSubject from closing on error so our retry logic can handle reconnects
-        openObserver: {
-          next: () => {
-            console.log('[ContactCenter] WebSocket connected!');
-            // reset messages$ on new connection
-            this.messages$ = null;
-          },
-        },
-        closeObserver: {
-          next: () => {
-            console.warn('[ContactCenter] WebSocket closed');
-            this.ws$ = null;
-            this.messages$ = null;
-          },
-        },
+      const wsUrl = this.getWsUrl();
+      this.socket = io(wsUrl, {
+        path: '/api/contact-center/ws',
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionAttempts: Infinity,
+        reconnectionDelay: 2000,
       });
 
-      return this.ws$;
+      this.socket.on('connect', () => {
+        console.log('[ContactCenter] Socket.IO connected!');
+      });
+
+      this.socket.on('disconnect', () => {
+        console.warn('[ContactCenter] Socket.IO disconnected');
+      });
+
+      this.socket.on('operators', (data: any) => {
+        this.operatorsSubject.next(data.payload);
+      });
+
+      this.socket.on('queues', (data: any) => {
+        console.log('[ContactCenterService] Received queues via Socket.IO:', JSON.stringify(data.payload));
+        this.queuesSubject.next(data.payload);
+      });
+
+      this.socket.on('activeCalls', (data: any) => {
+        this.activeCallsSubject.next(data.payload);
+      });
+
+      this.socket.on('stats', (data: any) => {
+        this.statsSubject.next(data.payload);
+      });
+
+      this.socket.on('connect_error', (error) => {
+        console.error('[ContactCenter] Socket.IO connection error:', error);
+      });
+
+      this.socketInitialized = true;
     } catch (err) {
-      console.warn('WS init failed', err);
-      this.ws$ = null;
-      return null;
+      console.warn('Socket.IO init failed', err);
+      this.socket = null;
     }
   }
 
-  private ensureMessages(): Observable<any> | null {
-    const ws = this.ensureWs();
-    if (!ws) return null;
-
-    if (!this.messages$) {
-      this.messages$ = ws.pipe(
-        // incoming raw data can be string (JSON) or object (socket.io emits)
-        map((raw) => {
-          try {
-            if (typeof raw === 'string') return JSON.parse(raw);
-            // socket.io may wrap payloads under { type, payload } or under { data }
-            if (raw && raw.type) return raw;
-            if (raw && raw.data) {
-              // sometimes socket.io emits { data: { type, payload } }
-              return raw.data;
-            }
-            // if raw is already an object with expected shape
-            return raw;
-          } catch (e) {
-            // if parse failed, return null and let filter drop it
-            return null;
-          }
-        }),
-        filter((m) => !!m),
-        shareReplay({ bufferSize: 1, refCount: true })
-      );
-    }
-
-    return this.messages$;
-  }
-
-  // Prefer WebSocket stream; fallback to polling
+  // Always use Socket.IO stream (BehaviorSubject caches last value)
   getOperators(): Observable<OperatorStatus[]> {
-    const messages$ = this.ensureMessages();
-    if (messages$) {
-      return messages$.pipe(
-        filter((m) => m && m.type === 'operators'),
-        map((m) => m.payload as OperatorStatus[]),
-        // if the socket errors upstream, clear ws so next subscription will recreate it
-        retryWhen((errors) =>
-          errors.pipe(
-            tap(() => {
-              this.ws$ = null;
-              this.messages$ = null;
-            }),
-            delay(2000)
-          )
-        )
-      );
-    }
-
-    return interval(2000).pipe(
-      startWith(0),
-      switchMap(() =>
-        this.http.get<OperatorStatus[]>(`${this.base}/operators`).pipe(
-          catchError((err) => {
-            console.error('Failed to load operators', err);
-            return of([] as OperatorStatus[]);
-          })
-        )
-      )
-    );
+    return this.operatorsSubject.asObservable();
   }
 
   getQueues(): Observable<QueueStatus[]> {
-    const messages$ = this.ensureMessages();
-    if (messages$) {
-      return messages$.pipe(
-        filter((m) => m && m.type === 'queues'),
-        tap((m) => console.log('[ContactCenterService] Received queues via WS:', JSON.stringify(m.payload))),
-        map((m) => m.payload as QueueStatus[]),
-        retryWhen((errors) =>
-          errors.pipe(
-            tap(() => {
-              this.ws$ = null;
-              this.messages$ = null;
-            }),
-            delay(2000)
-          )
-        )
-      );
-    }
-
-    return interval(3000).pipe(
-      startWith(0),
-      switchMap(() =>
-        this.http.get<QueueStatus[]>(`${this.base}/queues`).pipe(
-          tap((queues) => console.log('[ContactCenterService] Received queues via HTTP:', JSON.stringify(queues))),
-          catchError((err) => {
-            console.error('Failed to load queues', err);
-            return of([] as QueueStatus[]);
-          })
-        )
-      )
-    );
+    return this.queuesSubject.asObservable();
   }
 
   // One-time snapshot via REST (useful for initial UI render before WS messages arrive)
@@ -229,36 +163,9 @@ export class ContactCenterMonitoringService {
     );
   }
 
-  // Active calls with WebSocket
+  // Active calls with Socket.IO
   getActiveCalls(): Observable<ActiveCall[]> {
-    const messages$ = this.ensureMessages();
-    if (messages$) {
-      return messages$.pipe(
-        filter((m) => m && m.type === 'activeCalls'),
-        map((m) => m.payload as ActiveCall[]),
-        retryWhen((errors) =>
-          errors.pipe(
-            tap(() => {
-              this.ws$ = null;
-              this.messages$ = null;
-            }),
-            delay(2000)
-          )
-        )
-      );
-    }
-
-    return interval(3000).pipe(
-      startWith(0),
-      switchMap(() =>
-        this.http.get<ActiveCall[]>(`${this.base}/active-calls`).pipe(
-          catchError((err) => {
-            console.error('Failed to load active calls', err);
-            return of([] as ActiveCall[]);
-          })
-        )
-      )
-    );
+    return this.activeCallsSubject.asObservable();
   }
 
   fetchActiveCallsSnapshot(): Observable<ActiveCall[]> {
@@ -272,24 +179,6 @@ export class ContactCenterMonitoringService {
 
   // Get stats (totalUniqueWaiting, etc.)
   getStats(): Observable<ContactCenterStats> {
-    const messages$ = this.ensureMessages();
-    if (messages$) {
-      return messages$.pipe(
-        filter((m) => m && m.type === 'stats'),
-        map((m) => m.payload as ContactCenterStats),
-        retryWhen((errors) =>
-          errors.pipe(
-            tap(() => {
-              this.ws$ = null;
-              this.messages$ = null;
-            }),
-            delay(2000)
-          )
-        )
-      );
-    }
-
-    // Fallback: calculate from queues data (not ideal but better than nothing)
-    return of({ totalUniqueWaiting: 0 });
+    return this.statsSubject.asObservable();
   }
 }

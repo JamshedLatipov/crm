@@ -1,0 +1,274 @@
+<app-page-layout title="Панель управления" subtitle="Добро пожаловать в CRM">
+  <div class="dashboard-grid">
+    <div class="main-column">
+      
+      <!-- Stats Cards Row 1 -->
+      <mat-card class="stat-card leads">
+        <div class="stat-header">
+          <div class="stat-icon">
+            <mat-icon>trending_up</mat-icon>
+          </div>
+          <mat-chip class="trend-chip positive">+{{ leadsStats()?.newLeads ?? 0 }}</mat-chip>
+        </div>
+        <div class="stat-body">
+          <h3>{{ leadsStats()?.totalLeads ?? '—' }}</h3>
+          <p>Лиды</p>
+        </div>
+        <div class="stat-footer">
+          <div class="progress-info">
+            <span class="label">Конверсия</span>
+            <span class="value">{{ leadConversionRate() }}%</span>
+          </div>
+          <mat-progress-bar 
+            mode="determinate" 
+            [value]="leadConversionRate()"
+            class="conversion-bar">
+          </mat-progress-bar>
+        </div>
+      </mat-card>
+
+      <mat-card class="stat-card deals">
+        <div class="stat-header">
+          <div class="stat-icon">
+            <mat-icon>handshake</mat-icon>
+          </div>
+          <mat-chip class="trend-chip active">Активны</mat-chip>
+        </div>
+        <div class="stat-body">
+          <h3>{{ dealsCount() ?? '—' }}</h3>
+          <p>Сделки</p>
+        </div>
+        <div class="stat-footer">
+          <div class="progress-info">
+            <span class="label">Успешность</span>
+            <span class="value">{{ dealSuccessRate() }}%</span>
+          </div>
+          <mat-progress-bar 
+            mode="determinate" 
+            [value]="dealSuccessRate()"
+            class="conversion-bar">
+          </mat-progress-bar>
+        </div>
+      </mat-card>
+
+      <mat-card class="stat-card contacts">
+        <div class="stat-header">
+          <div class="stat-icon">
+            <mat-icon>people</mat-icon>
+          </div>
+          <mat-chip class="trend-chip neutral">{{ contactsStats()?.recentlyCreated ?? 0 }} новых</mat-chip>
+        </div>
+        <div class="stat-body">
+          <h3>{{ contactsStats()?.total ?? '—' }}</h3>
+          <p>Контакты</p>
+        </div>
+        <div class="stat-footer">
+          <button mat-button color="primary" class="footer-action" [routerLink]="['/contacts']">
+            <mat-icon>arrow_forward</mat-icon>
+            Перейти
+          </button>
+        </div>
+      </mat-card>
+
+      <!-- Stats Cards Row 2 -->
+      <mat-card class="stat-card calls">
+        <div class="stat-header">
+          <div class="stat-icon">
+            <mat-icon>call</mat-icon>
+          </div>
+          <mat-chip class="trend-chip info">{{ callStats()?.callsStartedToday ?? 0 }} сегодня</mat-chip>
+        </div>
+        <div class="stat-body">
+          <h3>{{ callStats()?.activeCalls ?? '—' }}</h3>
+          <p>Активные звонки</p>
+        </div>
+        <div class="stat-footer">
+          <div class="call-metrics">
+            <div class="metric">
+              <mat-icon class="small-icon">schedule</mat-icon>
+              <span>{{ avgCallDuration() }}</span>
+            </div>
+            <div class="metric">
+              <mat-icon class="small-icon">phone_in_talk</mat-icon>
+              <span>{{ callStats()?.totalCalls ?? 0 }}</span>
+            </div>
+          </div>
+        </div>
+      </mat-card>
+
+      <mat-card class="stat-card revenue">
+        <div class="stat-header">
+          <div class="stat-icon">
+            <mat-icon>attach_money</mat-icon>
+          </div>
+          <mat-chip class="trend-chip success">{{ revenueForecast()?.dealsCount ?? 0 }} сделок</mat-chip>
+        </div>
+        <div class="stat-body">
+          <h3>{{ revenueForecast()?.totalAmount ? (revenueForecast()?.totalAmount | number:'1.0-0') : '—' }}</h3>
+          <p>Прогноз выручки (мес.)</p>
+        </div>
+        <div class="stat-footer">
+          <div class="revenue-trend">
+            <mat-icon class="trend-icon up">trending_up</mat-icon>
+            <span class="trend-text">+15% к прошлому месяцу</span>
+          </div>
+        </div>
+      </mat-card>
+
+      <mat-card class="stat-card performance">
+        <div class="stat-header">
+          <div class="stat-icon">
+            <mat-icon>assessment</mat-icon>
+          </div>
+          <mat-chip class="trend-chip info">Аналитика</mat-chip>
+        </div>
+        <div class="stat-body">
+          <h3>{{ ((leadsStats()?.totalLeads ?? 0) + (dealsCount() ?? 0)) }}</h3>
+          <p>Активность</p>
+        </div>
+        <div class="stat-footer">
+          <div class="performance-indicators">
+            <div class="indicator">
+              <span class="dot green"></span>
+              <span class="text">Система работает</span>
+            </div>
+          </div>
+        </div>
+      </mat-card>
+
+      <!-- Quick Actions -->
+      <mat-card class="quick-actions-card">
+        <div class="card-header">
+          <div class="header-content">
+            <mat-icon class="header-icon">flash_on</mat-icon>
+            <h2>Быстрые действия</h2>
+          </div>
+        </div>
+        <div class="actions-grid">
+          <button mat-raised-button color="primary" class="action-btn" (click)="createNewLead()">
+            <mat-icon>add_circle</mat-icon>
+            <span>Новый лид</span>
+          </button>
+          <button mat-raised-button class="action-btn" (click)="addNewContact()">
+            <mat-icon>person_add</mat-icon>
+            <span>Добавить контакт</span>
+          </button>
+          <button mat-raised-button class="action-btn" (click)="createNewDeal()">
+            <mat-icon>note_add</mat-icon>
+            <span>Создать сделку</span>
+          </button>
+          <button mat-raised-button class="action-btn" (click)="sendEmail()">
+            <mat-icon>email</mat-icon>
+            <span>Отправить email</span>
+          </button>
+        </div>
+      </mat-card>
+
+      <!-- Top Users -->
+      <mat-card class="top-users-card">
+        <div class="card-header">
+          <div class="header-content">
+            <mat-icon class="header-icon">emoji_events</mat-icon>
+            <h2>Топ пользователей</h2>
+          </div>
+          <button mat-button class="view-all-btn">Все</button>
+        </div>
+        <div class="top-users-list">
+          <div *ngIf="topUsers()?.length; else noUsers">
+            <div class="top-user-item" *ngFor="let u of topUsers(); let i = index">
+              <div class="user-rank" [class]="'rank-' + (i + 1)">
+                <span>#{{ i + 1 }}</span>
+              </div>
+              <div class="user-info">
+                <div class="user-avatar">
+                  <mat-icon>account_circle</mat-icon>
+                </div>
+                <div class="user-details">
+                  <strong>{{ u.userName }}</strong>
+                  <div class="user-stats">
+                    <mat-icon class="mini-icon">edit</mat-icon>
+                    <span>{{ u.changesCount }} изменений</span>
+                  </div>
+                </div>
+              </div>
+              <div class="user-time">
+                <mat-icon class="time-icon">access_time</mat-icon>
+                <span>{{ u.lastActivity | date:'short' }}</span>
+              </div>
+            </div>
+          </div>
+          <ng-template #noUsers>
+            <div class="empty-state">
+              <mat-icon>people_outline</mat-icon>
+              <p>Нет данных по активности пользователей</p>
+            </div>
+          </ng-template>
+        </div>
+      </mat-card>
+
+    </div>
+
+    <!-- Recent Activity (right sidebar) -->
+    <mat-card class="activity-card" role="region" aria-label="Последние действия">
+      <div class="card-header sticky-header">
+        <div class="header-content">
+          <mat-icon class="header-icon">history</mat-icon>
+          <h2>Последние действия</h2>
+        </div>
+        <button mat-icon-button class="refresh-btn" (click)="loadData()" matTooltip="Обновить">
+          <mat-icon>refresh</mat-icon>
+        </button>
+      </div>
+      <div class="activity-list">
+        <ng-container *ngIf="recentActivity()?.length; else noActivity">
+          <ng-container *ngFor="let act of recentActivity()">
+            <a *ngIf="getActivityLink(act); else plainItem"
+               [routerLink]="getActivityLink(act)"
+               class="activity-item link">
+              <div class="activity-icon" [ngClass]="{
+                'leads': act.source === 'lead',
+                'deals': act.source === 'deal',
+                'contacts': act.source === 'contact'
+              }">
+                <mat-icon>{{ act.icon || 'history' }}</mat-icon>
+              </div>
+              <div class="activity-content">
+                <p [innerHTML]="act.title"></p>
+                <span class="activity-time">
+                  <mat-icon class="time-icon">schedule</mat-icon>
+                  {{ act.createdAt | date:'short' }}
+                </span>
+              </div>
+              <mat-icon class="chevron">chevron_right</mat-icon>
+            </a>
+            <ng-template #plainItem>
+              <div class="activity-item">
+                <div class="activity-icon" [ngClass]="{
+                  'leads': act.source === 'lead',
+                  'deals': act.source === 'deal',
+                  'contacts': act.source === 'contact'
+                }">
+                  <mat-icon>{{ act.icon || 'history' }}</mat-icon>
+                </div>
+                <div class="activity-content">
+                  <p [innerHTML]="act.title"></p>
+                  <span class="activity-time">
+                    <mat-icon class="time-icon">schedule</mat-icon>
+                    {{ act.createdAt | date:'short' }}
+                  </span>
+                </div>
+              </div>
+            </ng-template>
+          </ng-container>
+        </ng-container>
+        <ng-template #noActivity>
+          <div class="empty-state">
+            <mat-icon>history</mat-icon>
+            <p>Нет недавней активности</p>
+          </div>
+        </ng-template>
+      </div>
+    </mat-card>
+
+  </div>
+</app-page-layout>

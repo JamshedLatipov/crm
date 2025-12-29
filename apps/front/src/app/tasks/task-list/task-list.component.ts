@@ -77,7 +77,6 @@ interface Task {
 })
 export class TaskListComponent implements OnInit {
   tasks = signal<Task[]>([]);
-  filteredTasks = signal<Task[]>([]);
   paginatedTasks = signal<Task[]>([]);
   isLoading = signal(true);
   

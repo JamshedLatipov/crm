@@ -18,7 +18,7 @@
     <div class="kpi-card highlight">
       <div class="kpi-title">Активные звонки</div>
       <div class="kpi-value">{{ totalActiveCalls() }}</div>
-      <div class="kpi-sub">В работе · {{ totalWaiting() }} в ожидании</div>
+      <div class="kpi-sub">В работе · {{ totalWaiting() }} ожидают</div>
     </div>
   </div>
 
@@ -54,7 +54,7 @@
                 {{ totalActiveCalls() }} Активных /
                 {{ totalWaiting() }} Ожидающих
               </h3>
-              <p>Статус очереди</p>
+              <p>Статус очереди <small>(уникальных: {{ totalWaiting() }})</small></p>
             </div>
             <div class="stat-icon">
               <mat-icon>queue</mat-icon>
@@ -171,9 +171,9 @@
     <!-- Operator Templates -->
     <ng-template #titleTemplate let-operator>
       <div class="operator-info">
-        <div class="operator-name">{{ operator.name || '—' }}</div>
+        <div class="operator-name">{{ operator.fullName || operator.name || '—' }}</div>
         @if (operator.extension) {
-        <div class="operator-extension">Доб. {{ operator.extension }}</div>
+        <div class="operator-extension">SIP: {{ operator.extension }}</div>
         }
       </div>
     </ng-template>

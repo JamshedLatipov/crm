@@ -2,14 +2,14 @@
 <div class="fixed bottom-4 right-4 z-50">
   <!-- Minimized floating button -->
   <button
-    *ngIf="!expanded"
+    *ngIf="!panelSvc.expanded()"
     (click)="toggleExpand()"
     title="Open softphone"
     class="floating-button"
   >
     <span class="material-icons">call</span>
     <!-- Active call indicator -->
-    <span *ngIf="callActive()" class="active-call-indicator"></span>
+    <span *ngIf="callState.callActive()" class="active-call-indicator"></span>
     <!-- Missed call badge -->
     <span *ngIf="missedCallCount" class="missed-call-badge">{{
       missedCallCount > 99 ? '99+' : missedCallCount
@@ -17,25 +17,69 @@
   </button>
 
   <!-- Expanded panel -->
-  <div *ngIf="expanded" class="expanded-panel">
+  <div
+    *ngIf="panelSvc.expanded()"
+    #expandedPanel
+    class="expanded-panel"
+    [class.docked]="panelSvc.pinned()"
+    [class.scripts-expanded]="activeTab === 'scenarios' && viewMode() === 'fullscreen'"
+    [class.scripts-with-details]="activeTab === 'scenarios' && viewedScript()"
+    [class.resizing]="panelSvc.panelResizing()"
+    [style.width.px]="panelSvc.panelWidth()"
+    [style.height]="panelSvc.pinned() ? '100vh' : (panelSvc.panelHeight() ? (panelSvc.panelHeight() + 'px') : null)"
+    (mousemove)="onPanelMouseMove($event)"
+    (mouseleave)="onPanelMouseLeave()"
+    (mousedown)="onPanelMouseDown($event)"
+  >
     <div class="panel-header">
       <div class="header-content">
         <div class="status-bar">
           <app-softphone-status-bar
             [status]="status()"
-            [callActive]="callActive()"
+            [callActive]="callState.callActive()"
             [paused]="memberPaused()"
             [reason]="memberReason()"
             (pauseChange)="onMemberPauseChange($event)"
           ></app-softphone-status-bar>
         </div>
-        <button
-          (click)="toggleExpand()"
-          title="Minimize"
-          class="minimize-button"
-        >
-          <span class="material-icons">remove</span>
-        </button>
+        <div class="header-actions">
+          <button
+            (click)="togglePinned()"
+            [title]="panelSvc.pinned() ? 'Открепить' : 'Закрепить справа'"
+            class="pin-button"
+            [class.active]="panelSvc.pinned()"
+          >
+            <span class="material-icons">push_pin</span>
+          </button>
+          <button
+            (click)="toggleExpand()"
+            title="Minimize"
+            class="minimize-button"
+          >
+            <span class="material-icons">remove</span>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Active Call Info Bar (always visible) -->
+      <div class="active-call-bar" *ngIf="callState.callActive()">
+        <div class="call-bar-content">
+          <div class="call-bar-left">
+            <span class="pulse-indicator"></span>
+            <div class="call-info-compact">
+              <div class="caller-number">{{ callState.incomingFrom() || callee || 'Неизвестный' }}</div>
+              <div class="call-badges" *ngIf="callState.muted() || callState.onHold()">
+                <span class="badge badge-mute" *ngIf="callState.muted()" title="Микрофон выключен">
+                  <span class="material-icons">mic_off</span>
+                </span>
+                <span class="badge badge-hold" *ngIf="callState.onHold()" title="На удержании">
+                  <span class="material-icons">pause</span>
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="call-timer">{{ callState.callDuration() }}</div>
+        </div>
       </div>
     </div>
 
@@ -78,37 +122,14 @@
         </div>
       </div>
 
-      <!-- Incoming call alert -->
-      <div *ngIf="incoming()" class="incoming-call-alert">
-        <div class="incoming-call-header">
-          <div class="incoming-call-info">
-            <span class="material-icons call-type-icon">call</span>
-            <div>
-              <div class="caller-name">Входящий звонок</div>
-              <div class="caller-number">
-                {{ incomingFrom() || 'Неизвестный абонент' }}
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="incoming-call-actions">
-          <button (click)="answerIncoming()" class="answer-button">
-            <span class="material-icons">call</span>
-            Принять
-          </button>
-          <button (click)="rejectIncoming()" class="reject-button">
-            <span class="material-icons">call_end</span>
-            Отклонить
-          </button>
-        </div>
-      </div>
+
       <!-- Call Actions -->
       <app-softphone-call-actions
         [status]="status()"
-        [callActive]="callActive()"
-        [muted]="muted()"
-        [onHold]="onHold()"
-        [holdInProgress]="holdInProgress()"
+        [callActive]="callState.callActive()"
+        [muted]="callState.muted()"
+        [onHold]="callState.onHold()"
+        [holdInProgress]="callState.holdInProgress()"
         (connect)="connect()"
         (call)="call()"
         (hangup)="hangup()"
@@ -123,7 +144,7 @@
 
       <!-- Dial Tab Content (extracted to component) -->
       <app-softphone-dial-tab
-        *ngIf="activeTab === 'dial' && !callActive()"
+        *ngIf="activeTab === 'dial' && !callState.callActive()"
         [callee]="callee"
         (calleeChange)="callee = $event"
         (pressKey)="pressKey($event)"
@@ -131,13 +152,6 @@
         (removeLast)="removeLast()"
         (clearNumber)="clearNumber()"
       ></app-softphone-dial-tab>
-
-      <!-- Call Info (when active call) -->
-      <app-softphone-call-info
-        *ngIf="callActive() && activeTab === 'dial'"
-        [callee]="callee"
-        [callDuration]="callDuration()"
-      ></app-softphone-call-info>
 
       <!-- DTMF moved into call actions component -->
 
@@ -150,25 +164,72 @@
       <!-- Info Tab (extracted to component) -->
       <app-softphone-info-tab
         *ngIf="activeTab === 'info'"
-        [phone]="incoming() ? incomingFrom() : callee"
+        [phone]="callState.incoming() ? callState.incomingFrom() : callee"
       ></app-softphone-info-tab>
 
       <!-- Scripts Panel -->
       <ng-container *ngIf="activeTab === 'scenarios'">
         <app-softphone-scripts-panel
-          [callActive]="callActive()"
+          [callActive]="callState.callActive()"
           [showScripts]="showScripts()"
           [scripts]="scripts()"
-          [selectedBranch]="selectedScriptBranch()"
+          [selectedBranch]="callState.selectedScriptBranch()"
           (selectBranch)="onSelectedBranch($event)"
           (registerCdr)="manualRegisterCall($event)"
           (toggleScripts)="toggleScripts()"
+          (viewModeChange)="onScriptViewModeChange($event)"
+          (viewedScriptChange)="onScriptDetailsChange($event)"
         />
       </ng-container>
+
+      <!-- Incoming Call Modal (inside panel-content) -->
+      <div class="incoming-call-modal" *ngIf="callState.incoming()" @fadeIn>
+        <div class="incoming-call-overlay" (click)="rejectIncoming()"></div>
+        <div class="incoming-call-content" @slideUp>
+          <!-- Avatar/Icon -->
+          <div class="caller-avatar">
+            <div class="avatar-ring"></div>
+            <div class="avatar-icon">
+              <span class="material-icons">person</span>
+            </div>
+          </div>
+
+          <!-- Caller Info -->
+          <div class="caller-details">
+            <h2 class="caller-title">Входящий звонок</h2>
+            <div class="caller-name">{{ callState.incomingFrom() || 'Неизвестный абонент' }}</div>
+            <div class="caller-meta">Softphone</div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="incoming-call-actions">
+            <button class="call-action-btn decline-btn" (click)="rejectIncoming()" title="Отклонить">
+              <div class="btn-icon-wrapper decline">
+                <span class="material-icons">call_end</span>
+              </div>
+              <span class="btn-label">Отклонить</span>
+            </button>
+
+            <button class="call-action-btn accept-btn" (click)="answerIncoming()" title="Принять">
+              <div class="btn-icon-wrapper accept">
+                <span class="material-icons">call</span>
+              </div>
+              <span class="btn-label">Принять</span>
+            </button>
+          </div>
+
+          <!-- Quick Actions -->
+          <div class="quick-actions">
+            <button class="quick-action-btn" title="Отправить SMS">
+              <span class="material-icons">message</span>
+            </button>
+            <button class="quick-action-btn" title="Напомнить позже">
+              <span class="material-icons">schedule</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- Audio elements -->
-<audio id="remoteAudio" autoplay class="audio-element"></audio>
 <audio id="ringtoneAudio" loop class="audio-element"></audio>

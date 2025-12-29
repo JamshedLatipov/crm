@@ -17,6 +17,7 @@ export interface TaskDto {
   deal?: any;
   taskTypeId?: number;
   taskType?: any;
+  callLogId?: string;
   createdAt?: string;
   updatedAt?: string;
 }

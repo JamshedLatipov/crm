@@ -1,9 +1,14 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatBadgeModule } from '@angular/material/badge';
+import { MatDialog } from '@angular/material/dialog';
 import { LeadService } from '../leads/services/lead.service';
 import { DealsService } from '../pipeline/deals.service';
 import { ContactsService } from '../contacts/contacts.service';
@@ -16,455 +21,50 @@ import { PageLayoutComponent } from '../shared/page-layout/page-layout.component
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, MatCardModule, MatIconModule, MatButtonModule, PageLayoutComponent],
-  template: `
-    <app-page-layout title="Панель управления" subtitle="Добро пожаловать в CRM">
-      <div class="dashboard-grid">
-        <div class="main-column">
-        <!-- Stats Cards -->
-        <mat-card class="stat-card leads">
-          <div class="stat-content">
-            <div class="stat-info">
-              <h3>{{ leadsStats()?.totalLeads ?? '—' }}</h3>
-              <p>Лиды</p>
-            </div>
-            <div class="stat-icon">
-              <mat-icon>trending_up</mat-icon>
-            </div>
-          </div>
-          <div class="stat-change positive" *ngIf="leadsStats()">+{{ leadsStats()?.newLeads ?? 0 }} новых</div>
-        </mat-card>
-
-        <mat-card class="stat-card deals">
-          <div class="stat-content">
-            <div class="stat-info">
-              <h3>{{ dealsCount() ?? '—' }}</h3>
-              <p>Сделки</p>
-            </div>
-            <div class="stat-icon">
-              <mat-icon>handshake</mat-icon>
-            </div>
-          </div>
-          <div class="stat-change positive">активны</div>
-        </mat-card>
-
-        <mat-card class="stat-card contacts">
-          <div class="stat-content">
-            <div class="stat-info">
-              <h3>{{ contactsStats()?.total ?? '—' }}</h3>
-              <p>Контакты</p>
-            </div>
-            <div class="stat-icon">
-              <mat-icon>people</mat-icon>
-            </div>
-          </div>
-          <div class="stat-change neutral">{{ contactsStats()?.recentlyCreated ?? 0 }} новых</div>
-        </mat-card>
-
-        <mat-card class="stat-card calls">
-          <div class="stat-content">
-            <div class="stat-info">
-              <h3>{{ callStats()?.activeCalls ?? '—' }}</h3>
-              <p>Колл-центр (активные)</p>
-            </div>
-            <div class="stat-icon">
-              <mat-icon>call</mat-icon>
-            </div>
-          </div>
-          <div class="stat-change neutral">Сегодня: {{ callStats()?.callsStartedToday ?? 0 }} звонков</div>
-        </mat-card>
-
-  <mat-card class="stat-card revenue">
-          <div class="stat-content">
-            <div class="stat-info">
-              <h3>{{ revenueForecast()?.totalAmount ? (revenueForecast()?.totalAmount | number:'1.0-0') : '—' }}</h3>
-              <p>Прогноз выручки (мес.)</p>
-            </div>
-            <div class="stat-icon">
-              <mat-icon>attach_money</mat-icon>
-            </div>
-          </div>
-          <div class="stat-change positive">{{ revenueForecast()?.dealsCount ?? 0 }} сделок</div>
-        </mat-card>
-
-        <!-- Quick Actions -->
-        <mat-card class="quick-actions-card">
-          <div class="card-header">
-            <h2>Quick Actions</h2>
-          </div>
-          <div class="actions-grid">
-            <button mat-raised-button color="primary" class="action-btn">
-              <mat-icon>add</mat-icon>
-              New Lead
-            </button>
-            <button mat-raised-button class="action-btn">
-              <mat-icon>person_add</mat-icon>
-              Add Contact
-            </button>
-            <button mat-raised-button class="action-btn">
-              <mat-icon>call</mat-icon>
-              Make Call
-            </button>
-            <button mat-raised-button class="action-btn">
-              <mat-icon>email</mat-icon>
-              Send Email
-            </button>
-          </div>
-        </mat-card>
-
-        <!-- Top Users -->
-        <mat-card class="top-users-card">
-          <div class="card-header">
-            <h2>Топ пользователей</h2>
-          </div>
-          <div class="top-users-list">
-            <div *ngIf="topUsers()?.length; else noUsers">
-              <div class="top-user-item" *ngFor="let u of topUsers()">
-                <div>
-                  <strong>{{ u.userName }}</strong>
-                  <div class="muted">{{ u.changesCount }} изменений</div>
-                </div>
-                <div class="muted small">{{ u.lastActivity | date:'short' }}</div>
-              </div>
-            </div>
-            <ng-template #noUsers>
-              <div class="muted">Нет данных по активности пользователей</div>
-            </ng-template>
-          </div>
-        </mat-card>
-
-        </div>
-
-        <!-- Recent Activity (right sidebar) -->
-        <mat-card class="activity-card" role="region" aria-label="Последние действия">
-          <div class="card-header">
-            <h2>Recent Activity</h2>
-            <button mat-button aria-label="Просмотреть все события">View All</button>
-          </div>
-          <div class="activity-list">
-            <ng-container *ngIf="recentActivity()?.length; else noActivity">
-              <ng-container *ngFor="let act of recentActivity()">
-                <a *ngIf="getActivityLink(act); else plainItem"
-                   [routerLink]="getActivityLink(act)"
-                   class="activity-item link">
-                  <div class="activity-icon" [ngClass]="{
-                    'leads': act.source === 'lead',
-                    'deals': act.source === 'deal',
-                    'contacts': act.source === 'contact'
-                  }">
-                    <mat-icon>{{ act.icon || 'history' }}</mat-icon>
-                  </div>
-                  <div class="activity-content">
-                    <p [innerHTML]="act.title"></p>
-                    <span class="activity-time">{{ act.createdAt | date:'short' }}</span>
-                  </div>
-                </a>
-                <ng-template #plainItem>
-                  <div class="activity-item">
-                    <div class="activity-icon" [ngClass]="{
-                      'leads': act.source === 'lead',
-                      'deals': act.source === 'deal',
-                      'contacts': act.source === 'contact'
-                    }">
-                      <mat-icon>{{ act.icon || 'history' }}</mat-icon>
-                    </div>
-                    <div class="activity-content">
-                      <p [innerHTML]="act.title"></p>
-                      <span class="activity-time">{{ act.createdAt | date:'short' }}</span>
-                    </div>
-                  </div>
-                </ng-template>
-              </ng-container>
-            </ng-container>
-            <ng-template #noActivity>
-              <div class="activity-item empty">
-                <div class="activity-content">
-                  <p>Нет недавней активности</p>
-                </div>
-              </div>
-            </ng-template>
-          </div>
-        </mat-card>
-
-      </div>
-    </app-page-layout>
-  `,
-  styles: [`
-    .dashboard-grid {
-      display: grid;
-      /* Left: main content, Right: activity sidebar */
-      grid-template-columns: 1fr 360px;
-      gap: 24px;
-      align-items: start;
-      /* Ensure grid takes available vertical space so sidebar can span full height */
-      align-content: start;
-    }
-
-    .main-column {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 24px;
-      align-items: start;
-    }
-
-    /* Stat Cards */
-    .stat-card {
-      padding: 24px;
-      border-radius: 16px;
-      border: 1px solid #e5e7eb;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-      transition: all 0.2s ease;
-    }
-
-    .stat-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
-
-    .stat-content {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-
-    .stat-info h3 {
-      font-size: 28px;
-      font-weight: 700;
-      margin: 0 0 4px 0;
-      color: #1f2937;
-    }
-
-    .stat-info p {
-      margin: 0;
-      color: #6b7280;
-      font-weight: 500;
-    }
-
-    .stat-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .stat-card.leads .stat-icon {
-      background: rgba(34, 197, 94, 0.1);
-      color: #22c55e;
-    }
-
-    .stat-card.deals .stat-icon {
-      background: rgba(59, 130, 246, 0.1);
-      color: #3b82f6;
-    }
-
-    .stat-card.contacts .stat-icon {
-      background: rgba(168, 85, 247, 0.1);
-      color: #a855f7;
-    }
-
-    .stat-card.revenue .stat-icon {
-      background: rgba(245, 158, 11, 0.1);
-      color: #f59e0b;
-    }
-
-    .stat-icon mat-icon {
-      font-size: 24px;
-      width: 24px;
-      height: 24px;
-      display: block;
-      margin: auto;
-      line-height: 1;
-    }
-
-    .stat-change {
-      font-size: 14px;
-      font-weight: 600;
-    }
-
-    .stat-change.positive {
-      color: #22c55e;
-    }
-
-    .stat-change.neutral {
-      color: #6b7280;
-    }
-
-    /* Activity Card */
-    .activity-card {
-      /* Force the activity card into the right column and span full grid rows */
-      grid-column: 2 / 3;
-      grid-row: 1 / -1;
-      padding: 24px;
-      border-radius: 16px;
-      border: 1px solid #e5e7eb;
-      /* Let the activity area be its own scrollable column that fills the viewport */
-      height: calc(100vh - 140px);
-      overflow: auto;
-      position: sticky;
-      top: 20px;
-    }
-
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-
-    .card-header h2 {
-      font-size: 20px;
-      font-weight: 600;
-      color: #1f2937;
-      margin: 0;
-    }
-
-    .activity-list {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .activity-item {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      padding: 16px;
-      background: #f9fafb;
-      border-radius: 12px;
-    }
-
-    .activity-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-    }
-
-    .activity-icon.leads {
-      background: #22c55e;
-    }
-
-    .activity-icon.deals {
-      background: #3b82f6;
-    }
-
-    .activity-icon.contacts {
-      background: #a855f7;
-    }
-
-    .activity-content {
-      flex: 1;
-    }
-
-    .activity-content p {
-      margin: 0 0 4px 0;
-      color: #1f2937;
-      font-size: 14px;
-    }
-
-    .activity-time {
-      color: #6b7280;
-      font-size: 12px;
-    }
-
-    .activity-item.link {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      padding: 16px;
-      background: #fff;
-      border-radius: 12px;
-      text-decoration: none;
-      color: inherit;
-      transition: transform 0.12s ease, box-shadow 0.12s ease;
-    }
-
-    .activity-item.link:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
-    }
-
-    /* Quick Actions */
-    .quick-actions-card {
-      padding: 24px;
-      border-radius: 16px;
-      border: 1px solid #e5e7eb;
-    }
-
-    /* Make quick actions and top-users span full width of main-column */
-    .main-column .quick-actions-card,
-    .main-column .top-users-card {
-      grid-column: 1 / -1;
-    }
-
-    .actions-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    .action-btn {
-      padding: 16px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 500;
-    }
-
-    .top-users-card {
-      padding: 16px;
-      border-radius: 12px;
-      border: 1px solid #e5e7eb;
-    }
-
-    .top-users-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .top-user-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px;
-      border-radius: 8px;
-      background: #fafafa;
-    }
-
-    .muted {
-      color: #6b7280;
-      font-size: 13px;
-    }
-
-    /* Responsive */
-    @media (max-width: 1024px) {
-      /* Collapse to single column on smaller screens; activity moves inline */
-      .dashboard-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .activity-card {
-        position: relative;
-        grid-column: span 1;
-        grid-row: auto;
-        height: auto;
-        overflow: visible;
-        top: auto;
-      }
-    }
-  `]
+  imports: [
+    CommonModule, 
+    RouterModule, 
+    MatCardModule, 
+    MatIconModule, 
+    MatButtonModule, 
+    MatProgressBarModule,
+    MatChipsModule,
+    MatTooltipModule,
+    MatBadgeModule,
+    PageLayoutComponent
+  ],
+  templateUrl: './dashboard.component.html',
+  styleUrls: ['./dashboard.component.scss']
 })
 export class DashboardComponent {
   private readonly leadService = inject(LeadService);
   private readonly dealsService = inject(DealsService);
+  
+  // Computed signals для трендов и процентов
+  leadConversionRate = computed(() => {
+    const stats = this.leadsStats();
+    if (!stats || !stats.totalLeads) return 0;
+    const converted = (stats as any).convertedLeads ?? 0;
+    return Math.round((converted / stats.totalLeads) * 100);
+  });
+  
+  dealSuccessRate = computed(() => {
+    const forecast = this.revenueForecast();
+    if (!forecast) return 0;
+    const closed = (forecast as any).closedDeals ?? 0;
+    const total = (forecast as any).dealsCount ?? 0;
+    if (total === 0) return 0;
+    return Math.round((closed / total) * 100);
+  });
+  
+  avgCallDuration = computed(() => {
+    const stats = this.callStats();
+    if (!stats || !stats.totalCalls || stats.totalCalls === 0) return '0:00';
+    const avgSeconds = Math.round(stats.totalDuration / stats.totalCalls);
+    const minutes = Math.floor(avgSeconds / 60);
+    const seconds = avgSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  });
   private readonly contactsService = inject(ContactsService);
 
   loading = signal(true);
@@ -480,6 +80,7 @@ export class DashboardComponent {
   private readonly activityService = inject(ActivityService);
   private readonly callsApi = inject(CallsApiService);
   private readonly router = inject(Router);
+  private readonly dialog = inject(MatDialog);
 
   ngOnInit(): void {
     this.loadData();
@@ -559,5 +160,61 @@ export class DashboardComponent {
       // fallthrough
     }
     return null;
+  }
+
+  // Quick Actions methods
+  createNewLead(): void {
+    import('../leads/components/create-lead-dialog/create-lead-dialog.component').then((m) => {
+      const dialogRef = this.dialog.open(m.CreateLeadDialogComponent, {
+        width: '600px',
+        maxWidth: '90vw',
+      });
+
+      dialogRef.afterClosed().subscribe((result) => {
+        if (result) {
+          this.loadData(); // Refresh dashboard data
+        }
+      });
+    });
+  }
+
+  addNewContact(): void {
+    import('../contacts/components/create-contact-dialog/create-contact-dialog.component').then((m) => {
+      const dialogRef = this.dialog.open(m.CreateContactDialogComponent, {
+        width: '520px',
+        maxWidth: '90vw',
+      });
+
+      dialogRef.afterClosed().subscribe((created) => {
+        if (created) {
+          this.loadData(); // Refresh dashboard data
+        }
+      });
+    });
+  }
+
+  createNewDeal(): void {
+    import('../deals/components/deal-form.component/deal-form.component').then(
+      (m) => {
+        const dialogRef = this.dialog.open(m.DealFormComponent, {
+          width: '700px',
+          maxWidth: '95vw',
+          maxHeight: '90vh',
+          data: { mode: 'create' },
+          disableClose: false,
+        });
+
+        dialogRef.afterClosed().subscribe((created) => {
+          if (created) {
+            this.loadData();
+          }
+        });
+      }
+    );
+  }
+
+  sendEmail(): void {
+    // TODO: Implement email functionality
+    console.log('Send email action - to be implemented');
   }
 }

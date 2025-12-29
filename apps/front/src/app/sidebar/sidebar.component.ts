@@ -100,6 +100,18 @@ export class SidebarComponent {
       ],
     },
     {
+      icon: 'analytics',
+      label: 'Аналитика',
+      expanded: false,
+      children: [
+        {
+          icon: 'bar_chart',
+          label: 'Аналитика звонков',
+          route: '/analytics',
+        },
+      ],
+    },
+    {
       icon: 'integration_instructions',
       label: 'Интеграции',
       expanded: false,
@@ -113,6 +125,43 @@ export class SidebarComponent {
           icon: 'person_search',
           label: 'Поиск клиента',
           route: '/client-info',
+        },
+      ],
+    },
+    {
+      icon: 'notifications_active',
+      label: 'Уведомления',
+      expanded: false,
+      children: [
+        {
+          icon: 'dashboard',
+          label: 'Дашборд',
+          route: '/notifications/dashboard',
+        },
+        {
+          icon: 'campaign',
+          label: 'Кампании',
+          route: '/notifications/campaigns',
+        },
+        {
+          icon: 'sms',
+          label: 'SMS шаблоны',
+          route: '/notifications/sms-templates',
+        },
+        {
+          icon: 'email',
+          label: 'Email шаблоны',
+          route: '/notifications/email-templates',
+        },
+        {
+          icon: 'group',
+          label: 'Сегменты',
+          route: '/notifications/segments',
+        },
+        {
+          icon: 'analytics',
+          label: 'Аналитика',
+          route: '/notifications/analytics',
         },
       ],
     },

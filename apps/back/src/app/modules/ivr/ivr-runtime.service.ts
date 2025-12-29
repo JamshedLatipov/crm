@@ -64,8 +64,16 @@ export class IvrRuntimeService implements OnModuleInit {
    * the default `root` node.
    */
   private async getRootNode(entryKey?: string): Promise<IvrNode | null> {
+    if (!entryKey) {
+      // Fallback to default 'root' node
+      const root = await this.repo.findOne({
+        where: { name: 'root', parentId: IsNull() },
+      });
+      return root;
+    }
+    
     const root = await this.repo.findOne({
-      where: { name: entryKey.trim().toString(), parentId: IsNull() },
+      where: { name: entryKey.trim(), parentId: IsNull() },
     });
 
     return root;
@@ -93,7 +101,7 @@ export class IvrRuntimeService implements OnModuleInit {
     }
     const root = await this.getRootNode(entryKey);
     if (!root) {
-      this.logger.warn('No root IVR node defined');
+      this.logger.warn(`No root IVR node defined${entryKey ? ` for entryKey='${entryKey}'` : ''}`);
       return;
     }
     this.calls.set(channelId, {
@@ -110,6 +118,7 @@ export class IvrRuntimeService implements OnModuleInit {
       nodeName: root.name,
       event: 'CALL_START',
     });
+    
     await this.executeNode(root, channelId, channel as { id?: string });
   }
 
@@ -211,6 +220,21 @@ export class IvrRuntimeService implements OnModuleInit {
           break;
         }
 
+        // Ensure channel is answered before any operations
+        try {
+          const channelInfo = await client.channels.get({ channelId });
+          if (channelInfo && channelInfo.state !== 'Up') {
+            this.logger.log(`[QUEUE_TRANSITION] Channel ${channelId} not Up (state=${channelInfo.state}), answering now`);
+            await client.channels.answer({ channelId });
+            // Give channel time to fully transition to Up state
+            await new Promise(resolve => setTimeout(resolve, 300));
+          }
+        } catch (err) {
+          this.logger.error(`[QUEUE_TRANSITION] Failed to check/answer channel ${channelId}: ${err}`);
+          this.calls.delete(channelId);
+          break;
+        }
+
         // Disable DTMF handling completely before queue transition
         st.waitingForDigit = false;
         if (st.digitTimer) {
@@ -252,8 +276,7 @@ export class IvrRuntimeService implements OnModuleInit {
           break;
         }
 
-        console.log(JSON.stringify(node), '-------------------------------------------------');
-        const queueName = (node as IvrNode).queueName || 'support';
+        const queueName = node.queueName || 'support';
         this.logger.log(`[QUEUE_TRANSITION] Starting continue to queue=${queueName} for channel=${channelId}`);
         
         // Use 'default' context so operators registered there can receive calls
@@ -625,7 +648,17 @@ export class IvrRuntimeService implements OnModuleInit {
     if (!channelId) return;
     const st = this.calls.get(channelId);
     if (!st) return; // already cleaned or not an IVR tracked call
-    if (st.digitTimer) clearTimeout(st.digitTimer);
+    
+    // Clear all timers
+    if (st.digitTimer) {
+      clearTimeout(st.digitTimer);
+      st.digitTimer = undefined;
+    }
+    if (st.allocRetryTimer) {
+      clearTimeout(st.allocRetryTimer);
+      st.allocRetryTimer = undefined;
+    }
+    
     st.activePlaybacks.clear();
     if (!st.ended) {
       st.ended = true;

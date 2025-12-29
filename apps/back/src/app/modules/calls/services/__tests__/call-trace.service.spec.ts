@@ -79,16 +79,16 @@ describe('CallTraceService', () => {
 
     const trace = await service.getCallTrace(uniqueId);
 
-    expect(trace.uniqueId).toBe(uniqueId);
-    expect(trace.timeline).toHaveLength(6); // 3 IVR + 2 Queue + 1 CDR
+    expect(trace!.uniqueId).toBe(uniqueId);
+    expect(trace!.timeline).toHaveLength(6); // 3 IVR + 2 Queue + 1 CDR
 
     // Check Summary
-    expect(trace.summary.queueEntered).toBe(true);
-    expect(trace.summary.queueName).toBe('support');
-    expect(trace.summary.answered).toBe(true);
-    expect(trace.summary.agentAnswered).toBe('Agent/101');
-    expect(trace.summary.queueWaitTime).toBe(10);
-    expect(trace.summary.duration).toBe(60);
+    expect(trace!.summary.queueEntered).toBe(true);
+    expect(trace!.summary.queueName).toBe('support');
+    expect(trace!.summary.answered).toBe(true);
+    expect(trace!.summary.agentAnswered).toBe('Agent/101');
+    expect(trace!.summary.queueWaitTime).toBe(10);
+    expect(trace!.summary.duration).toBe(60);
   });
 
   it('should handle abandoned calls', async () => {
@@ -105,11 +105,11 @@ describe('CallTraceService', () => {
 
     const trace = await service.getCallTrace(uniqueId);
 
-    expect(trace.summary.queueEntered).toBe(true);
-    expect(trace.summary.queueName).toBe('sales');
-    expect(trace.summary.answered).toBe(false);
-    expect(trace.summary.hangupBy).toBe('caller');
-    expect(trace.summary.queueWaitTime).toBe(30);
+    expect(trace!.summary.queueEntered).toBe(true);
+    expect(trace!.summary.queueName).toBe('sales');
+    expect(trace!.summary.answered).toBe(false);
+    expect(trace!.summary.hangupBy).toBe('caller');
+    expect(trace!.summary.queueWaitTime).toBe(30);
   });
 
   it('should detect ignored agents and transfers', async () => {
@@ -128,10 +128,10 @@ describe('CallTraceService', () => {
 
     const trace = await service.getCallTrace(uniqueId);
 
-    expect(trace.summary.queueEntered).toBe(true);
-    expect(trace.summary.ignoredAgents).toEqual(['Agent/100', 'Agent/101']);
-    expect(trace.summary.wasTransferred).toBe(true);
-    expect(trace.summary.transferTarget).toBe('2000');
+    expect(trace!.summary.queueEntered).toBe(true);
+    expect(trace!.summary.ignoredAgents).toEqual(['Agent/100', 'Agent/101']);
+    expect(trace!.summary.wasTransferred).toBe(true);
+    expect(trace!.summary.transferTarget).toBe('2000');
   });
 
   it('should detect ignored agents with RINGCANCELED event', async () => {
@@ -150,10 +150,10 @@ describe('CallTraceService', () => {
 
     const trace = await service.getCallTrace(uniqueId);
 
-    expect(trace.summary.queueEntered).toBe(true);
-    expect(trace.summary.ignoredAgents).toEqual(['PJSIP/operator1', 'PJSIP/operator2']);
-    expect(trace.summary.answered).toBe(false);
-    expect(trace.summary.hangupBy).toBe('caller_key');
+    expect(trace!.summary.queueEntered).toBe(true);
+    expect(trace!.summary.ignoredAgents).toEqual(['PJSIP/operator1', 'PJSIP/operator2']);
+    expect(trace!.summary.answered).toBe(false);
+    expect(trace!.summary.hangupBy).toBe('caller_key');
   });
 
   it('should handle multiple CDRs for single call (queue then menu)', async () => {
@@ -182,13 +182,13 @@ describe('CallTraceService', () => {
     const trace = await service.getCallTrace(uniqueId);
 
     // Should use last CDR (sequence 12) as primary
-    expect(trace.summary.duration).toBe(13);
-    expect(trace.summary.status).toBe('ANSWERED');
-    expect(trace.summary.destination).toBe('2');
-    expect(trace.summary.queueEntered).toBe(true);
-    expect(trace.summary.ignoredAgents).toEqual(['PJSIP/operator2']);
-    expect(trace.summary.answered).toBe(false); // Not answered by agent in queue
-    expect(trace.summary.hangupBy).toBe('caller_key');
-    expect(trace.timeline.length).toBe(10); // 5 IVR + 3 Queue + 2 CDR
+    expect(trace!.summary.duration).toBe(13);
+    expect(trace!.summary.status).toBe('ANSWERED');
+    expect(trace!.summary.destination).toBe('2');
+    expect(trace!.summary.queueEntered).toBe(true);
+    expect(trace!.summary.ignoredAgents).toEqual(['PJSIP/operator2']);
+    expect(trace!.summary.answered).toBe(false); // Not answered by agent in queue
+    expect(trace!.summary.hangupBy).toBe('caller_key');
+    expect(trace!.timeline.length).toBe(10); // 5 IVR + 3 Queue + 2 CDR
   });
 });

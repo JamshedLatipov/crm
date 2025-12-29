@@ -56,11 +56,27 @@ export class CallAggregationService {
       // Optimize: Fetch all traces in bulk
       // Deduplicate uniqueIds since one call can have multiple CDR records
       const uniqueIds = Array.from(new Set(newCdrs.map(c => c.uniqueid)));
+      this.logger.log(`Processing ${uniqueIds.length} unique calls (from ${newCdrs.length} CDR records)`);
+      
       const traces = await this.traceService.getCallTraces(uniqueIds, newCdrs);
-      this.logger.debug(`Traces returned: ${traces.length} from ${uniqueIds.length} unique calls`);
+      this.logger.log(`Traces returned: ${traces.length} from ${uniqueIds.length} unique calls`);
+      
+      // Log missing traces early
+      if (traces.length < uniqueIds.length) {
+        const traceIds = new Set(traces.map(t => t.uniqueId));
+        const missingIds = uniqueIds.filter(id => !traceIds.has(id));
+        this.logger.warn(`${missingIds.length} calls did not produce traces. Sample IDs: ${missingIds.slice(0, 5).join(', ')}`);
+        // Log corresponding CDR info for first missing ID
+        if (missingIds.length > 0) {
+          const sampleCdr = newCdrs.find(c => c.uniqueid === missingIds[0]);
+          if (sampleCdr) {
+            this.logger.debug(`Sample missing CDR: uniqueid=${sampleCdr.uniqueid}, src=${sampleCdr.src}, dst=${sampleCdr.dst}, disposition=${sampleCdr.disposition}, calldate=${sampleCdr.calldate}`);
+          }
+        }
+      }
 
       const summaries: CallSummary[] = [];
-      this.logger.debug(`Building summaries from traces`);
+      this.logger.debug(`Building summaries from ${traces.length} traces`);
 
       for (const trace of traces) {
         // Check if uniqueId already exists in database is expensive in loop if not batched
@@ -102,11 +118,11 @@ export class CallAggregationService {
         // Find corresponding CDR for ID (may be missing if CDR not included in this batch)
         const cdr = newCdrs.find(c => c.uniqueid === trace.uniqueId);
         if (!cdr) {
-          this.logger.debug(`No matching CDR found for trace ${trace.uniqueId}, creating summary without cdrId`);
+          this.logger.warn(`No matching CDR found for trace ${trace.uniqueId}, creating summary without cdrId`);
         }
 
         // Calculate additional metrics
-        const talkTime = cdr?.billsec ?? null;
+        const talkTime = this.calculateTalkTime(trace, cdr, answeredAt || s.agentAnswerTime);
         const ringTime = this.calculateRingTime(trace);
         const abandonTime = this.calculateAbandonTime(trace);
         const direction = this.detectDirection(cdr, trace);
@@ -117,6 +133,9 @@ export class CallAggregationService {
         // SLA: violated if wait time > 30 seconds or abandoned after 20+ seconds
         const slaViolated = (s.queueWaitTime && s.queueWaitTime > 30) || 
                            (abandonTime && abandonTime > 20) || false;
+
+        // Recording URL - check if recording file exists
+        const recordingUrl = this.buildRecordingUrl(trace.uniqueId);
 
         summaries.push(this.summaryRepo.create({
           uniqueId: trace.uniqueId,
@@ -150,7 +169,7 @@ export class CallAggregationService {
           leadId: null,
           dealId: null,
           contactId: null,
-          recordingUrl: null,
+          recordingUrl,
           tags: null
         }));
       }
@@ -175,16 +194,41 @@ export class CallAggregationService {
       const toSave = dedupedSummaries.filter(s => !existingIds.has(s.uniqueId));
       this.logger.debug(`To save after filtering existing: ${toSave.length}`);
 
-      // Log up to 20 uniqueIds that didn't produce summaries
+      // Log uniqueIds that didn't produce summaries (should match missing traces)
       const builtIds = new Set(dedupedSummaries.map(s => s.uniqueId));
       const missingFromSummaries = uniqueIds.filter(id => !builtIds.has(id));
       if (missingFromSummaries.length > 0) {
-        this.logger.warn(`UniqueIds with no summary built: count=${missingFromSummaries.length} sample=${missingFromSummaries.slice(0,20).join(',')}`);
+        this.logger.error(`⚠️ ${missingFromSummaries.length} uniqueIds failed to create summaries. Sample IDs: ${missingFromSummaries.slice(0, 10).join(', ')}`);
+        // Log details of first few missing
+        for (let i = 0; i < Math.min(3, missingFromSummaries.length); i++) {
+          const missId = missingFromSummaries[i];
+          const missTrace = traces.find(t => t.uniqueId === missId);
+          const missCdr = newCdrs.find(c => c.uniqueid === missId);
+          this.logger.debug(`Missing summary detail [${i}]: uniqueId=${missId}, hasTrace=${!!missTrace}, hasCdr=${!!missCdr}`);
+          if (missCdr) {
+            this.logger.debug(`  CDR: src=${missCdr.src}, dst=${missCdr.dst}, disposition=${missCdr.disposition}`);
+          }
+        }
       }
 
       if (toSave.length > 0) {
-        await this.summaryRepo.save(toSave);
-        this.logger.log(`Saved ${toSave.length} summaries`);
+        try {
+          await this.summaryRepo.save(toSave);
+          this.logger.log(`✅ Successfully saved ${toSave.length} summaries`);
+        } catch (err) {
+          this.logger.error(`❌ Error saving summaries: ${err.message}`, err.stack);
+          // Try to save individually to identify problematic records
+          let savedCount = 0;
+          for (const summary of toSave) {
+            try {
+              await this.summaryRepo.save(summary);
+              savedCount++;
+            } catch (e) {
+              this.logger.error(`Failed to save summary for uniqueId=${summary.uniqueId}: ${e.message}`);
+            }
+          }
+          this.logger.log(`Saved ${savedCount}/${toSave.length} summaries individually`);
+        }
       } else {
         this.logger.log('No new summaries to save for this batch');
       }
@@ -200,6 +244,30 @@ export class CallAggregationService {
     if (enterQueue && connect) {
       return Math.floor((connect.timestamp.getTime() - enterQueue.timestamp.getTime()) / 1000);
     }
+    return null;
+  }
+
+  private calculateTalkTime(trace: any, cdr: any, answeredAt: Date | null): number | null {
+    // TalkTime = время от момента ответа до завершения звонка
+    
+    // Приоритет 1: Вычисляем от answeredAt до endTime (наиболее точно)
+    if (answeredAt && trace.summary.endTime) {
+      const talkSeconds = Math.floor((trace.summary.endTime.getTime() - answeredAt.getTime()) / 1000);
+      return talkSeconds > 0 ? talkSeconds : null;
+    }
+    
+    // Приоритет 2: Для звонков через очередь - от CONNECT до конца
+    const connect = trace.timeline.find((e: any) => e.type === 'QUEUE' && (e.event === 'CONNECT' || e.event === 'AGENTCONNECT'));
+    if (connect && trace.summary.endTime) {
+      const talkSeconds = Math.floor((trace.summary.endTime.getTime() - connect.timestamp.getTime()) / 1000);
+      return talkSeconds > 0 ? talkSeconds : null;
+    }
+    
+    // Приоритет 3: Используем billsec из CDR (может быть неточным для очередей)
+    if (cdr?.billsec && cdr.billsec > 0 && cdr.billsec < (cdr.duration || Infinity)) {
+      return cdr.billsec;
+    }
+    
     return null;
   }
 
@@ -246,5 +314,15 @@ export class CallAggregationService {
     }
     
     return null;
+  }
+
+  private buildRecordingUrl(uniqueId: string): string | null {
+    // For now, always generate URL - the controller will handle 404 if file doesn't exist
+    // In production, you might want to check file existence here
+    if (!uniqueId) return null;
+    
+    // Sanitize uniqueId
+    const sanitized = uniqueId.replace(/[^a-zA-Z0-9.\-_]/g, '');
+    return `/api/calls/recordings/${sanitized}`;
   }
 }

@@ -5,7 +5,6 @@
 
 import { Logger, ClassSerializerInterceptor } from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
-import { WsAdapter } from '@nestjs/platform-ws';
 import { AppModule } from './app/app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
@@ -14,8 +13,8 @@ async function bootstrap() {
   const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix);
 
-  // Use native WebSockets instead of Socket.IO
-  app.useWebSocketAdapter(new WsAdapter(app));
+  // Socket.IO adapter is used by default for WebSocket gateways
+  // No need to set adapter explicitly
 
   // CORS disabled
   app.enableCors(

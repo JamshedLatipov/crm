@@ -11,6 +11,7 @@ export interface TaskModalConfig {
   mode?: 'create' | 'edit';
   taskId?: number;
   note?: string; // optional prefilled note/description from callers
+  callLogId?: string; // link to call log when task is created from call
 }
 
 @Injectable({
