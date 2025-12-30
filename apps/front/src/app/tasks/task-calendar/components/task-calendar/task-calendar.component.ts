@@ -10,6 +10,8 @@ import { TaskModalComponent } from '../../../components/task-modal/task-modal.co
 import { TaskModalService } from '../../../services/task-modal.service';
 import { TaskCalendarService, CalendarTask } from '../../task-calendar.service';
 import { TasksService, TaskDto } from '../../../tasks.service';
+import { UsersService } from '../../../../users/users.service';
+import { TaskTypeService } from '../../../../services/task-type.service';
 import {
   startOfMonth,
   getDaysInMonth,
@@ -79,6 +81,10 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
   public months: Array<{ index: number; name: string; tasksCount: number }> =
     [];
   public tasks: CalendarTask[] = [];
+  // filters
+  public currentFilters: any = {};
+  public users: Array<{ id: number; name: string }> = [];
+  public taskTypes: Array<{ id: number; name: string; color?: string }> = [];
   // maximum number of tasks to show per day cell before collapsing into "+N"
   public maxTasksPerCell = 3;
   // view mode: 'month' | 'week' | 'work-week' | 'year'
@@ -93,7 +99,13 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
   public createDateStr = '';
   public createTimeStr = '';
 
-  constructor(private svc: TaskCalendarService, private tasksApi: TasksService, private taskModalService: TaskModalService) {}
+  constructor(
+    private svc: TaskCalendarService, 
+    private tasksApi: TasksService, 
+    private taskModalService: TaskModalService,
+    private usersService: UsersService,
+    private taskTypeService: TaskTypeService
+  ) {}
 
   private subs: Array<any> = [];
   private isRendering = false;
@@ -101,6 +113,23 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.activeDate = new Date();
     this.savedWeekDate = new Date(); // initialize with current date
+    
+    // Load users for filter
+    this.usersService.getAllManagers().subscribe({
+      next: (managers) => {
+        this.users = managers.map(m => ({ id: Number(m.id), name: m.name }));
+      },
+      error: (err) => console.error('Failed to load managers:', err)
+    });
+    
+    // Load task types for filter
+    this.taskTypeService.getAll(false).subscribe({
+      next: (types) => {
+        this.taskTypes = types.map(t => ({ id: t.id, name: t.name, color: t.color }));
+      },
+      error: (err) => console.error('Failed to load task types:', err)
+    });
+    
     this.renderView();
     // re-render when types/sample are ready (only if we don't have server tasks)
     this.subs.push(
@@ -148,6 +177,13 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
         this.active.getMonth(),
         1
       );
+    this.renderView();
+  }
+
+  onFiltersChange(filters: any) {
+    console.log('[TaskCalendar] Filters changed:', filters);
+    this.currentFilters = filters;
+    // Re-render current view with filters applied
     this.renderView();
   }
 
@@ -220,9 +256,15 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
 
     for (let i = 0; i < days; i++) {
       const d = addDays(start, i);
-      const allTasks = this.svc
+      let allTasks = this.svc
         .getTasksForMonth(d.getFullYear(), d.getMonth())
         .filter((t) => isSameDay(new Date(t.dueDate), d));
+      
+      // Apply filters
+      if (this.currentFilters && (this.currentFilters.status?.length || this.currentFilters.priority?.length || this.currentFilters.assignedTo?.length || this.currentFilters.taskType?.length)) {
+        allTasks = this.svc.applyFilters(allTasks, this.currentFilters);
+      }
+      
       const isToday = isSameDay(d, new Date());
       // compute span info for tasks: start hour derived from createdAt (or dueDate)
       const tasksByHour: CalendarTask[][] = this.weekHours.map(() => []);
@@ -465,9 +507,15 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
     // fill days
     for (let d = 1; d <= total; d++) {
       const date = addDays(first, d - 1);
-      const tasks = this.tasks.filter((t) =>
+      let tasks = this.tasks.filter((t) =>
         isSameDay(new Date(t.dueDate), date)
       );
+      
+      // Apply filters if any
+      if (this.currentFilters && (this.currentFilters.status?.length || this.currentFilters.priority?.length || this.currentFilters.assignedTo?.length || this.currentFilters.taskType?.length)) {
+        tasks = this.svc.applyFilters(tasks, this.currentFilters);
+      }
+      
       const isToday = isSameDay(date, new Date());
       cells.push({ date, tasks, isToday });
     }

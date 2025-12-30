@@ -10,8 +10,13 @@ export interface CalendarTask {
   dueDate: string; // ISO date string
   createdAt?: string;
   status?: string;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
   color?: string;
   icon?: string;
+  assignedToId?: number;
+  assignedTo?: any;
+  taskTypeId?: number;
+  taskType?: any;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -141,13 +146,40 @@ export class TaskCalendarService {
   }
 
   private mapDtoToCalendar(td: TaskDto): CalendarTask {
+    // Определяем цвет по приоритету, если нет пользовательского цвета
+    let taskColor = (td as any).color;
+    if (!taskColor && td.priority) {
+      const priorityColors: Record<string, string> = {
+        low: '#10b981',
+        medium: '#f59e0b',
+        high: '#ef4444',
+        urgent: '#dc2626'
+      };
+      taskColor = priorityColors[td.priority];
+    }
+    // Если нет приоритета, используем цвет по статусу
+    if (!taskColor && td.status) {
+      const statusColors: Record<string, string> = {
+        pending: '#94a3b8',
+        in_progress: '#3b82f6',
+        done: '#10b981',
+        overdue: '#ef4444'
+      };
+      taskColor = statusColors[td.status];
+    }
+
     return {
       id: td.id ?? 't-' + Math.random().toString(36).slice(2, 9),
       title: td.title ?? 'Без названия',
       dueDate: td.dueDate ?? td.createdAt ?? new Date().toISOString(),
       createdAt: td.createdAt,
       status: td.status,
-      color: (td as any).color ?? undefined,
+      priority: td.priority,
+      color: taskColor,
+      assignedToId: td.assignedToId,
+      assignedTo: td.assignedTo,
+      taskTypeId: td.taskTypeId,
+      taskType: td.taskType,
     };
   }
 
@@ -176,6 +208,48 @@ export class TaskCalendarService {
     } else {
       this.typesUpdated$.next(true);
     }
+  }
+
+  // Apply filters to tasks array
+  applyFilters(tasks: CalendarTask[], filters: {
+    status?: string[];
+    priority?: string[];
+    assignedTo?: number[];
+    taskType?: number[];
+  }): CalendarTask[] {
+    if (!filters) return tasks;
+
+    return tasks.filter(task => {
+      // Status filter
+      if (filters.status && filters.status.length > 0) {
+        if (!task.status || !filters.status.includes(task.status)) {
+          return false;
+        }
+      }
+
+      // Priority filter
+      if (filters.priority && filters.priority.length > 0) {
+        if (!task.priority || !filters.priority.includes(task.priority)) {
+          return false;
+        }
+      }
+
+      // Assignee filter
+      if (filters.assignedTo && filters.assignedTo.length > 0) {
+        if (!task.assignedToId || !filters.assignedTo.includes(task.assignedToId)) {
+          return false;
+        }
+      }
+
+      // Task type filter
+      if (filters.taskType && filters.taskType.length > 0) {
+        if (!task.taskTypeId || !filters.taskType.includes(task.taskTypeId)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
   }
 
   hasCachedTasks(): boolean {

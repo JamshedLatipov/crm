@@ -8,6 +8,7 @@ export interface TaskDto {
   title: string;
   description?: string;
   status?: string;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
   dueDate?: string;
   assignedToId?: number;
   assignedTo?: any;

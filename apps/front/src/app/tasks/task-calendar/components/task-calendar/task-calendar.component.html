@@ -2,9 +2,12 @@
   <crm-task-calendar-header
     [active]="active"
     [viewMode]="viewMode"
+    [users]="users"
+    [taskTypes]="taskTypes"
     (prev)="prevMonth()"
     (next)="nextMonth()"
     (setView)="setView($event)"
+    (filtersChange)="onFiltersChange($event)"
   ></crm-task-calendar-header>
 
   <div *ngIf="viewMode==='month'">

@@ -10,10 +10,68 @@
     <button class="btn" (click)="onNext()">›</button>
   </div>
 
-  <div class="view-modes">
-    <button class="mode-btn" [class.active]="viewMode==='month'" (click)="onSet('month')">Месяц</button>
-    <button class="mode-btn" [class.active]="viewMode==='week'" (click)="onSet('week')">Неделя</button>
-    <button class="mode-btn" [class.active]="viewMode==='work-week'" (click)="onSet('work-week')">Раб. неделя</button>
-    <button class="mode-btn" [class.active]="viewMode==='year'" (click)="onSet('year')">Год</button>
+  <div class="header-actions">
+    <button mat-icon-button (click)="toggleFilters()" [class.active]="showFilters" matTooltip="Фильтры">
+      <mat-icon>filter_list</mat-icon>
+    </button>
+
+    <div class="view-modes">
+      <button class="mode-btn" [class.active]="viewMode==='month'" (click)="onSet('month')">Месяц</button>
+      <button class="mode-btn" [class.active]="viewMode==='week'" (click)="onSet('week')">Неделя</button>
+      <button class="mode-btn" [class.active]="viewMode==='work-week'" (click)="onSet('work-week')">Раб. неделя</button>
+      <button class="mode-btn" [class.active]="viewMode==='year'" (click)="onSet('year')">Год</button>
+    </div>
+  </div>
+</div>
+
+<!-- Filters Panel -->
+<div class="filters-panel" *ngIf="showFilters">
+  <div class="filters-content">
+    <!-- Status Filter -->
+    <mat-form-field appearance="outline" class="filter-field">
+      <mat-label>Статус</mat-label>
+      <mat-select [(ngModel)]="selectedStatuses" multiple (selectionChange)="onFiltersChange()">
+        <mat-option *ngFor="let status of statusOptions" [value]="status.value">
+          {{ status.label }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <!-- Priority Filter -->
+    <mat-form-field appearance="outline" class="filter-field">
+      <mat-label>Приоритет</mat-label>
+      <mat-select [(ngModel)]="selectedPriorities" multiple (selectionChange)="onFiltersChange()">
+        <mat-option *ngFor="let priority of priorityOptions" [value]="priority.value">
+          <span class="priority-badge" [style.background-color]="priority.color"></span>
+          {{ priority.label }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <!-- Assignee Filter -->
+    <mat-form-field appearance="outline" class="filter-field" *ngIf="users.length > 0">
+      <mat-label>Исполнитель</mat-label>
+      <mat-select [(ngModel)]="selectedAssignees" multiple (selectionChange)="onFiltersChange()">
+        <mat-option *ngFor="let user of users" [value]="user.id">
+          {{ user.name }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <!-- Task Type Filter -->
+    <mat-form-field appearance="outline" class="filter-field" *ngIf="taskTypes.length > 0">
+      <mat-label>Тип задачи</mat-label>
+      <mat-select [(ngModel)]="selectedTaskTypes" multiple (selectionChange)="onFiltersChange()">
+        <mat-option *ngFor="let type of taskTypes" [value]="type.id">
+          <span class="type-badge" [style.background-color]="type.color"></span>
+          {{ type.name }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <button mat-stroked-button (click)="clearFilters()" class="clear-btn">
+      <mat-icon>clear</mat-icon>
+      Очистить
+    </button>
   </div>
 </div>

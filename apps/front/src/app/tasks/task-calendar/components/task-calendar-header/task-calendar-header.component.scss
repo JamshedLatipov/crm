@@ -5,9 +5,10 @@
   margin-bottom: 20px;
   padding: 16px 20px;
   background: #ffffff;
-  border-radius: 12px;
+  border-radius: 12px 12px 0 0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid #e2e8f0;
+  border-bottom: none;
 }
 
 .nav-left {
@@ -22,6 +23,12 @@
   color: #334155;
   min-width: 200px;
   text-transform: capitalize;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .view-modes {
@@ -82,6 +89,58 @@
 
 .btn:active {
   transform: translateY(0);
+}
+
+// Filters Panel
+.filters-panel {
+  padding: 20px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.filters-content {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filter-field {
+  min-width: 200px;
+  
+  ::ng-deep {
+    .mat-mdc-text-field-wrapper {
+      background: #f8fafc;
+    }
+  }
+}
+
+.priority-badge,
+.type-badge {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.clear-btn {
+  height: 48px;
+  
+  mat-icon {
+    margin-right: 4px;
+  }
+}
+
+mat-icon-button {
+  &.active {
+    background: #eff6ff;
+    color: #3b82f6;
+  }
 }
 
 /* Mobile responsive */

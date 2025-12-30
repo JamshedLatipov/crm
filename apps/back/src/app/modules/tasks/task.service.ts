@@ -224,6 +224,24 @@ export class TaskService {
     return tasks;
   }
 
+  async findByDateRange(from: string, to: string): Promise<Task[]> {
+    const fromDate = new Date(from);
+    const toDate = new Date(to);
+    
+    const tasks = await this.taskRepo
+      .createQueryBuilder('task')
+      .leftJoinAndSelect('task.lead', 'lead')
+      .leftJoinAndSelect('task.deal', 'deal')
+      .leftJoinAndSelect('task.taskType', 'taskType')
+      .where('task.dueDate >= :from', { from: fromDate })
+      .andWhere('task.dueDate <= :to', { to: toDate })
+      .orderBy('task.dueDate', 'ASC')
+      .getMany();
+    
+    await this.attachAssignments(tasks);
+    return tasks;
+  }
+
   async findById(id: number): Promise<Task | null> {
     const task = await this.taskRepo.findOne({ where: { id }, relations: ['lead', 'deal', 'taskType'] });
     if (!task) return null;

@@ -28,6 +28,8 @@ export class TaskController {
   @ApiQuery({ name: 'limit', required: false, description: 'Количество записей на странице' })
   @ApiQuery({ name: 'status', required: false, description: 'Статус задачи' })
   @ApiQuery({ name: 'search', required: false, description: 'Поиск' })
+  @ApiQuery({ name: 'from', required: false, description: 'Начальная дата диапазона (ISO)' })
+  @ApiQuery({ name: 'to', required: false, description: 'Конечная дата диапазона (ISO)' })
   async findAll(
     @Query('leadId') leadId?: string,
     @Query('dealId') dealId?: string,
@@ -35,12 +37,19 @@ export class TaskController {
     @Query('limit') limit?: string,
     @Query('status') status?: string,
     @Query('search') search?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
   ): Promise<any> {
     if (leadId) {
       return this.taskService.findByLeadId(Number(leadId));
     }
     if (dealId) {
       return this.taskService.findByDealId(dealId);
+    }
+    
+    // If from/to are provided, fetch tasks in date range
+    if (from && to) {
+      return this.taskService.findByDateRange(from, to);
     }
 
     const pageNum = page ? parseInt(page, 10) : 1;
