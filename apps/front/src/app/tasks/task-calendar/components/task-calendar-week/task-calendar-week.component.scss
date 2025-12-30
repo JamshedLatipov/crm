@@ -113,6 +113,7 @@
   overflow: hidden;
   align-items: stretch;
   width: 100%;
+  flex: 1;
 }
 
 .hour-tasks .task {
@@ -121,37 +122,81 @@
   text-overflow: ellipsis;
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  padding: 4px 8px;
+  gap: 4px;
+  font-size: 11px;
+  padding: 3px 6px;
   border-radius: 6px;
   background: #f8fafc;
   color: #334155;
   transition: all 0.2s ease;
   cursor: pointer;
+  min-height: 22px;
+  flex-shrink: 0;
 }
 
 .hour-tasks .task:hover {
   background: #dbeafe;
   transform: translateX(2px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .hour-tasks .task .task-title {
-  display: inline-block;
-  max-width: calc(100% - 12px);
+  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-weight: 500;
 }
 
+.priority-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.priority-indicator.priority-low {
+  background: #10b981;
+}
+
+.priority-indicator.priority-medium {
+  background: #f59e0b;
+}
+
+.priority-indicator.priority-high {
+  background: #ef4444;
+}
+
+.priority-indicator.priority-urgent {
+  background: #dc2626;
+  box-shadow: 0 0 8px rgba(220, 38, 38, 0.5);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 .more {
   color: #64748b;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
-  padding: 2px 6px;
+  padding: 2px 4px;
   border-radius: 4px;
   background: #f1f5f9;
+  border: 1px dashed #cbd5e1;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  align-self: flex-start;
+  flex-shrink: 0;
+}
+
+.more:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+  color: #475569;
+  transform: translateX(2px);
 }
 
 /* Overlay spans layer */

@@ -480,6 +480,34 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
     this.createTask();
   }
 
+  onTaskClick(task: CalendarTask): void {
+    // Open task in modal using the task modal service
+    if (task.id && typeof task.id === 'number') {
+      this.taskModalService.openEditModal(task.id);
+    }
+  }
+
+  onShowMore(cell: any): void {
+    // Show all tasks for this day - could open a dialog or expand the cell
+    // For now, just log or you could implement a dialog showing all tasks
+    console.log('[TaskCalendar] Show more tasks for date:', cell.date, 'Total tasks:', cell.tasks?.length);
+    
+    // Alternative: temporarily increase maxTasksPerCell for this view
+    // Or open a dialog with all tasks for the day
+    if (cell.tasks && cell.tasks.length > 0) {
+      // You could create a simple dialog showing all tasks
+      alert(`Задачи на ${cell.date.toLocaleDateString()}:\n\n${cell.tasks.map((t: CalendarTask, i: number) => `${i+1}. ${t.title} (${t.status})`).join('\n')}`);
+    }
+  }
+
+  onShowMoreForHour(data: { date: Date; hour: number; tasks: CalendarTask[] }): void {
+    console.log('[TaskCalendar] Show more tasks for hour:', data.date, data.hour, 'Total:', data.tasks?.length);
+    
+    if (data.tasks && data.tasks.length > 0) {
+      alert(`Задачи на ${data.date.toLocaleDateString()} в ${data.hour}:00:\n\n${data.tasks.map((t: CalendarTask, i: number) => `${i+1}. ${t.title} (${t.status})`).join('\n')}`);
+    }
+  }
+
   private startOfMonthDate(year: number, month: number): Date {
     return startOfMonth(new Date(year, month, 1));
   }
@@ -530,14 +558,14 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
       if (c && c.date) {
         return { 
           ...c, 
-          tasksWithSpan: [] as Array<{ task: CalendarTask; spanDays?: number; continuesFromPrev?: boolean; continuesToNext?: boolean }> 
+          tasksWithSpan: [] as Array<{ task: CalendarTask; spanDays?: number; continuesFromPrev?: boolean; continuesToNext?: boolean; spanIndex?: number }> 
         };
       } else {
         return { 
           date: null as any, 
           tasks: [], 
           isToday: false, 
-          tasksWithSpan: [] as Array<{ task: CalendarTask; spanDays?: number; continuesFromPrev?: boolean; continuesToNext?: boolean }> 
+          tasksWithSpan: [] as Array<{ task: CalendarTask; spanDays?: number; continuesFromPrev?: boolean; continuesToNext?: boolean; spanIndex?: number }> 
         };
       }
     });
@@ -555,6 +583,11 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
         let startIdx = differenceInCalendarDays(clippedStart, gridStart);
         let remainingDays = Math.max(1, differenceInCalendarDays(clippedEnd, clippedStart) + 1);
 
+        // log multi-day tasks for debugging
+        if (remainingDays > 1) {
+          console.log(`Multi-day task: ${t.title}, spanDays=${remainingDays}, start=${startDate.toLocaleDateString()}, end=${endDate.toLocaleDateString()}`);
+        }
+
         // split across calendar rows (weeks)
         const eventStartIdx = differenceInCalendarDays(startDate, gridStart);
         const eventEndIdx = differenceInCalendarDays(endDate, gridStart);
@@ -569,7 +602,8 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
           const continuesToNext = segEndIdx < eventEndIdx;
           // attach a span segment starting at startIdx that covers availableInRow days
           if (augmented[startIdx] && augmented[startIdx].tasksWithSpan) {
-            augmented[startIdx].tasksWithSpan.push({ task: t, spanDays: availableInRow, continuesFromPrev, continuesToNext });
+            const spanIndex = augmented[startIdx].tasksWithSpan.length; // index for vertical stacking
+            augmented[startIdx].tasksWithSpan.push({ task: t, spanDays: availableInRow, continuesFromPrev, continuesToNext, spanIndex });
           }
           remainingDays -= availableInRow;
           startIdx += availableInRow; // move to next day's index (may be start of next row)
@@ -579,7 +613,7 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
       }
     }
 
-    const weeks: Array<Array<{ date: Date; tasks: CalendarTask[]; isToday?: boolean; tasksWithSpan?: Array<{ task: CalendarTask; spanDays?: number; continuesFromPrev?: boolean; continuesToNext?: boolean }> }>> = [];
+    const weeks: Array<Array<{ date: Date; tasks: CalendarTask[]; isToday?: boolean; tasksWithSpan?: Array<{ task: CalendarTask; spanDays?: number; continuesFromPrev?: boolean; continuesToNext?: boolean; spanIndex?: number }> }>> = [];
     for (let i = 0; i < augmented.length; i += 7) {
       const slice = augmented.slice(i, i + 7);
       weeks.push(slice);

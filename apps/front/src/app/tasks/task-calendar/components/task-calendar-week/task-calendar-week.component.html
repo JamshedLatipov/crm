@@ -23,8 +23,9 @@
           [style.width.px]="computeSpanLayoutWidth(di, s)"
           [style.top.px]="computeTop(s.startIdx)"
           [style.height.px]="computeHeight(s.span)"
-          [attr.title]="s.task.title"
-          [style.border-left]="s.task.color ? '4px solid ' + s.task.color : '4px solid rgba(59,130,246,0.16)'">
+          [attr.title]="getTaskTooltip(s.task)"
+          [style.border-left]="s.task.color ? '4px solid ' + s.task.color : '4px solid rgba(59,130,246,0.16)'"
+          (click)="taskClick.emit(s.task); $event.stopPropagation()">
           <div class="span-title">{{ s.task.title }}</div>
         </div>
       </ng-container>
@@ -35,8 +36,9 @@
           [style.width.px]="computeSpanWidth(m.startDay, m.daySpan)"
           [style.top.px]="computeTop(m.startIdx)"
           [style.height.px]="computeHeight(m.spanHours)"
-          [attr.title]="m.task.title"
-          [style.border-left]="m.task.color ? '4px solid ' + m.task.color : '4px solid rgba(59,130,246,0.16)'">
+          [attr.title]="getTaskTooltip(m.task)"
+          [style.border-left]="m.task.color ? '4px solid ' + m.task.color : '4px solid rgba(59,130,246,0.16)'"
+          (click)="taskClick.emit(m.task); $event.stopPropagation()">
           <div class="span-title">{{ m.task.title }}</div>
         </div>
       </ng-container>
@@ -50,8 +52,20 @@
       <div class="hour-cell" [class.today]="wd.isToday && weekHours[hi] === currentHour">
         <button class="small-add" (click)="openCreate.emit({ date: wd.date, hour: weekHours[hi] }); $event.stopPropagation()">+</button>
         <div class="hour-tasks">
-          <div class="task" *ngFor="let t of (wd.tasksByHour?.[hi] || []) | slice:0:maxTasksPerCell" [attr.title]="t.title" [style.border-left]="t.color ? '4px solid ' + t.color : '4px solid rgba(59,130,246,0.16)'"><span class="task-title">{{ t.title }}</span></div>
-          <div class="more" *ngIf="(wd.tasksByHour?.[hi]?.length || 0) > maxTasksPerCell">+{{ (wd.tasksByHour?.[hi].length || 0) - maxTasksPerCell }}</div>
+          <div class="task" 
+               *ngFor="let t of (wd.tasksByHour?.[hi] || []) | slice:0:maxTasksPerCell" 
+               [attr.title]="getTaskTooltip(t)" 
+               [style.border-left]="t.color ? '4px solid ' + t.color : '4px solid rgba(59,130,246,0.16)'"
+               (click)="taskClick.emit(t); $event.stopPropagation()">
+            <span class="priority-indicator" [class]="'priority-' + (t.priority || 'medium')"></span>
+            <span class="task-title">{{ t.title }}</span>
+          </div>
+          <div class="more" 
+               *ngIf="(wd.tasksByHour?.[hi]?.length || 0) > maxTasksPerCell"
+               [attr.title]="'Ещё ' + ((wd.tasksByHour?.[hi].length || 0) - maxTasksPerCell) + ' задач(и)'"
+               (click)="showMoreForHour.emit({ date: wd.date, hour: weekHours[hi], tasks: wd.tasksByHour?.[hi] }); $event.stopPropagation()">
+            +{{ (wd.tasksByHour?.[hi].length || 0) - maxTasksPerCell }}
+          </div>
         </div>
       </div>
     </ng-container>

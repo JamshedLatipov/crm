@@ -9,12 +9,14 @@ import { CalendarTask } from '../../task-calendar.service';
   templateUrl: './task-calendar-week.component.html',
   styleUrls: ['./task-calendar-week.component.scss'],
 })
-export class TaskCalendarWeekComponent implements OnChanges {
+export class TaskCalendarWeekComponent implements AfterViewInit, OnChanges {
   @Input() weekDays: Array<{ date: Date; tasks: CalendarTask[]; tasksByHour?: CalendarTask[][]; tasksWithSpan?: Array<{ task: CalendarTask; startIdx: number; span: number }>; multiDaySpans?: Array<{ task: CalendarTask; startDay: number; daySpan: number; startIdx: number; spanHours: number }>; isToday?: boolean }> = [];
   @Input() weekHours: number[] = [];
   @Input() maxTasksPerCell = 3;
   @Input() currentHour = -1;
   @Output() openCreate = new EventEmitter<{ date: Date; hour?: number }>();
+  @Output() taskClick = new EventEmitter<CalendarTask>();
+  @Output() showMoreForHour = new EventEmitter<{ date: Date; hour: number; tasks: CalendarTask[] }>();
 
   // layout constants (keep in sync with SCSS variables)
   public hourRowHeight = 48; // px
@@ -172,5 +174,34 @@ export class TaskCalendarWeekComponent implements OnChanges {
 
   trackByDate(i: number, cell: { date: Date; tasks?: CalendarTask[] }) {
     return cell?.date ? cell.date.toDateString() : 'empty-' + i;
+  }
+
+  getTaskTooltip(task: CalendarTask): string {
+    const parts = [task.title];
+    if (task.priority) parts.push(`Приоритет: ${this.getPriorityLabel(task.priority)}`);
+    if (task.status) parts.push(`Статус: ${this.getStatusLabel(task.status)}`);
+    if (task.assignedTo) parts.push(`Ответственный: ${task.assignedTo}`);
+    if (task.taskType) parts.push(`Тип: ${task.taskType}`);
+    return parts.join('\n');
+  }
+
+  getPriorityLabel(priority: string): string {
+    const labels: Record<string, string> = {
+      low: 'Низкий',
+      medium: 'Средний',
+      high: 'Высокий',
+      urgent: 'Срочный'
+    };
+    return labels[priority] || priority;
+  }
+
+  getStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      pending: 'В ожидании',
+      in_progress: 'В работе',
+      done: 'Выполнена',
+      cancelled: 'Отменена'
+    };
+    return labels[status] || status;
   }
 }

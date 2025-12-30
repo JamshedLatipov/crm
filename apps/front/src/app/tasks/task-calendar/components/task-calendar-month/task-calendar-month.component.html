@@ -6,39 +6,48 @@
       <div class="day" [class.empty]="!cell?.date" [class.today]="cell?.isToday">
         <div class="day-number" *ngIf="cell?.date">{{ cell.date.getDate() }}</div>
         <button class="add-btn" *ngIf="cell?.date" (click)="openCreate.emit(cell.date); $event.stopPropagation()">+</button>
-        <div class="tasks">
-          <div
-            class="task"
-            *ngFor="let t of (cell?.tasks || []) | slice:0:maxTasksPerCell"
-            [attr.title]="t.title"
-            [style.border-left]="t.color ? '4px solid ' + t.color : '4px solid rgba(59,130,246,0.16)'"
-          >
-            <span class="task-title">{{ t.title }}</span>
-          </div>
-          <div class="more" *ngIf="(cell?.tasks?.length || 0) > maxTasksPerCell">+{{ (cell?.tasks.length || 0) - maxTasksPerCell }}</div>
-        </div>
       </div>
     </ng-container>
   </ng-container>
   
-  <!-- absolute overlays for multi-day spans (optional: render when cell.tasksWithSpan exists) -->
+  <!-- absolute overlays for multi-day spans -->
   <div class="spans-layer" *ngIf="weeks?.length">
     <ng-container *ngFor="let week of weeks; let wi = index">
       <ng-container *ngFor="let cell of week; let di = index">
         <ng-container *ngFor="let s of (cell?.tasksWithSpan || [])">
           <div class="span-task"
+              [class.single-day]="s.spanDays === 1"
               [class.continues-from-prev]="s.continuesFromPrev"
               [class.continues-to-next]="s.continuesToNext"
               [style.left.px]="computeSpanLeft(wi, di)"
-              [style.top.px]="computeSpanTop(wi, di, s.continuesFromPrev)"
+              [style.top.px]="computeSpanTop(wi, di, s.continuesFromPrev, s.spanIndex || 0)"
               [style.width.px]="computeSpanWidth(wi, di, s.spanDays || 1)"
-              [style.height.px]="computeSpanHeight(s.continuesFromPrev, s.continuesToNext)"
-              [attr.title]="s.task.title"
-              [style.border-left]="s.task.color ? '4px solid ' + s.task.color : '4px solid rgba(59,130,246,0.16)'">
-              <div class="span-title">{{ s.task.title }}</div>
+              [attr.title]="getTaskTooltip(s.task)"
+              [style.border-left]="s.task.color ? '3px solid ' + s.task.color : '3px solid rgba(59,130,246,0.16)'"
+              (click)="taskClick.emit(s.task); $event.stopPropagation()">
+              <span class="priority-indicator" [class]="'priority-' + (s.task.priority || 'medium')"></span>
+              <span class="span-title">{{ s.task.title }}</span>
             </div>
         </ng-container>
       </ng-container>
     </ng-container>
   </div>
 </div>
+
+<!-- Menu для показа всех задач -->
+<mat-menu #taskMenu="matMenu" class="task-list-menu">
+  <ng-template matMenuContent let-tasks="tasks" let-date="date">
+    <div class="task-menu-header" (click)="$event.stopPropagation()">
+      <strong>Задачи на {{ date | date:'d MMMM':'':'ru' }}</strong>
+      <span class="task-menu-count">({{ tasks?.length || 0 }})</span>
+    </div>
+    <button 
+      mat-menu-item 
+      *ngFor="let task of tasks"
+      (click)="taskClick.emit(task)">
+      <span class="priority-indicator" [class]="'priority-' + (task.priority || 'medium')"></span>
+      <span class="task-menu-title">{{ task.title }}</span>
+      <span class="task-menu-status" [class]="'status-' + task.status">{{ getStatusLabel(task.status) }}</span>
+    </button>
+  </ng-template>
+</mat-menu>

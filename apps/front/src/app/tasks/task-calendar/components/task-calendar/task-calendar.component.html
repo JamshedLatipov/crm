@@ -11,7 +11,13 @@
   ></crm-task-calendar-header>
 
   <div *ngIf="viewMode==='month'">
-    <crm-task-calendar-month [weeks]="weeks" [maxTasksPerCell]="maxTasksPerCell" (openCreate)="openCreate($event)"></crm-task-calendar-month>
+    <crm-task-calendar-month 
+      [weeks]="weeks" 
+      [maxTasksPerCell]="maxTasksPerCell" 
+      (openCreate)="openCreate($event)"
+      (taskClick)="onTaskClick($event)"
+      (showMore)="onShowMore($event)">
+    </crm-task-calendar-month>
   </div>
 
   <div *ngIf="viewMode==='week' || viewMode==='work-week'">
@@ -21,6 +27,8 @@
       [maxTasksPerCell]="maxTasksPerCell"
       [currentHour]="currentHour"
       (openCreate)="openCreate($event.date, $event.hour)"
+      (taskClick)="onTaskClick($event)"
+      (showMoreForHour)="onShowMoreForHour($event)"
     ></crm-task-calendar-week>
   </div>
 

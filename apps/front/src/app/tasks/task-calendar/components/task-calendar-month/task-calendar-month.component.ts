@@ -1,18 +1,23 @@
 import { Component, EventEmitter, Input, Output, ViewChild, ElementRef, AfterViewInit, HostListener, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 import { CalendarTask } from '../../task-calendar.service';
 
 @Component({
   selector: 'crm-task-calendar-month',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MatMenuModule, MatIconModule, MatButtonModule],
   templateUrl: './task-calendar-month.component.html',
   styleUrls: ['./task-calendar-month.component.scss'],
 })
 export class TaskCalendarMonthComponent implements AfterViewInit, OnChanges {
-  @Input() weeks: Array<Array<{ date: Date; tasks: CalendarTask[]; isToday?: boolean; tasksWithSpan?: Array<{ task: CalendarTask; spanDays?: number; continuesFromPrev?: boolean; continuesToNext?: boolean }> }>> = [];
+  @Input() weeks: Array<Array<{ date: Date; tasks: CalendarTask[]; isToday?: boolean; tasksWithSpan?: Array<{ task: CalendarTask; spanDays?: number; continuesFromPrev?: boolean; continuesToNext?: boolean; spanIndex?: number }> }>> = [];
   @Input() maxTasksPerCell = 3;
   @Output() openCreate = new EventEmitter<Date | null>();
+  @Output() taskClick = new EventEmitter<CalendarTask>();
+  @Output() showMore = new EventEmitter<any>();
 
   // layout metrics for absolute overlay positioning
   @ViewChild('grid', { read: ElementRef, static: true }) gridRef!: ElementRef<HTMLElement>;
@@ -90,22 +95,34 @@ export class TaskCalendarMonthComponent implements AfterViewInit, OnChanges {
     return this.columnLefts[col] ?? 0;
   }
 
-  computeSpanTop(weekIndex: number, _dayIndex: number, continuesFromPrev = false) {
-    const overlap = 8; // px overlap between rows to visually stitch segments
+  computeSpanTop(weekIndex: number, _dayIndex: number, continuesFromPrev = false, spanIndex = 0) {
+    const headerOffset = 35; // offset to avoid covering day header/add button
+    const spanHeight = 20; // height + gap for each span task
     const top = this.rowTops[weekIndex] ?? 0;
-    return continuesFromPrev ? top - overlap : top;
+    return top + headerOffset + (spanIndex * spanHeight);
   }
 
   computeSpanWidth(_weekIndex: number, dayIndex: number, spanDays: number) {
-    const colW = this.columnWidths[dayIndex] ?? 0;
-    // include gaps between columns
+    if (spanDays <= 0) return 0;
+    
+    const startColW = this.columnWidths[dayIndex] ?? 0;
     const computed = window.getComputedStyle(this.gridRef.nativeElement);
     const gap = parseFloat(computed.getPropertyValue('gap') || '') || 10;
-    const raw = colW * spanDays + Math.max(0, spanDays - 1) * gap;
-    // clamp so the span doesn't overflow the grid container
-    const left = this.columnLefts[dayIndex] ?? 0;
-    const maxAvailable = Math.max(0, this.gridWidth - left - 8); // 8px padding safety
-    return Math.min(raw, maxAvailable);
+    
+    // Calculate width by summing individual column widths + gaps between them
+    let totalWidth = 0;
+    for (let i = 0; i < spanDays; i++) {
+      const colIdx = dayIndex + i;
+      if (colIdx < this.columnWidths.length) {
+        totalWidth += this.columnWidths[colIdx];
+        // Add gap after each column except the last one
+        if (i < spanDays - 1) {
+          totalWidth += gap;
+        }
+      }
+    }
+    
+    return totalWidth;
   }
 
   computeSpanHeight(continuesFromPrev = false, continuesToNext = false) {
@@ -118,5 +135,39 @@ export class TaskCalendarMonthComponent implements AfterViewInit, OnChanges {
 
   trackByDate(i: number, cell: { date: Date; tasks: CalendarTask[]; isToday?: boolean }) {
     return cell?.date ? cell.date.toDateString() : 'empty-' + i;
+  }
+
+  getTaskTooltip(task: CalendarTask): string {
+    const parts = [task.title];
+    if (task.priority) parts.push(`Приоритет: ${this.getPriorityLabel(task.priority)}`);
+    if (task.status) parts.push(`Статус: ${this.getStatusLabel(task.status)}`);
+    if (task.assignedTo) parts.push(`Ответственный: ${task.assignedTo}`);
+    if (task.taskType) parts.push(`Тип: ${task.taskType}`);
+    return parts.join('\n');
+  }
+
+  getPriorityLabel(priority: string): string {
+    const labels: Record<string, string> = {
+      low: 'Низкий',
+      medium: 'Средний',
+      high: 'Высокий',
+      urgent: 'Срочный'
+    };
+    return labels[priority] || priority;
+  }
+
+  getStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      pending: 'В ожидании',
+      in_progress: 'В работе',
+      done: 'Выполнена',
+      cancelled: 'Отменена'
+    };
+    return labels[status] || status;
+  }
+
+  getMultiDayTaskCount(cell: any): number {
+    if (!cell?.tasksWithSpan) return 0;
+    return cell.tasksWithSpan.filter((s: any) => s.spanDays && s.spanDays > 1).length;
   }
 }
