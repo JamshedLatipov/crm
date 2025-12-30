@@ -4,10 +4,6 @@ import {
   OnInit,
   OnDestroy,
   ChangeDetectorRef,
-  Input,
-  TemplateRef,
-  ViewChild,
-  AfterViewInit,
   signal,
   computed,
 } from '@angular/core';
@@ -20,7 +16,7 @@ import {
   ActiveCall,
   ContactCenterStats,
 } from '../services/contact-center-monitoring.service';
-import { CrmTableComponent } from '../../shared/components/crm-table/crm-table.component';
+import { CrmTableComponent, CrmColumnTemplateDirective } from '../../shared/components/crm-table/crm-table.component';
 import type { CrmColumn } from '../../shared/components/crm-table/crm-table.component';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartData, ChartOptions } from 'chart.js';
@@ -40,6 +36,7 @@ Chart.register(...registerables, ChartDataLabels);
   imports: [
     CommonModule,
     CrmTableComponent,
+    CrmColumnTemplateDirective,
     BaseChartDirective,
     MatIconModule,
     PageLayoutComponent,
@@ -49,22 +46,10 @@ Chart.register(...registerables, ChartDataLabels);
   templateUrl: './online-monitoring.component.html',
   styleUrls: ['./online-monitoring.component.scss'],
 })
-export class OnlineMonitoringComponent implements OnInit, AfterViewInit, OnDestroy {
+export class OnlineMonitoringComponent implements OnInit, OnDestroy {
   private svc = inject(ContactCenterMonitoringService);
-  private cdr = inject(ChangeDetectorRef);  private destroy$ = new Subject<void>();
-  @ViewChild('titleTemplate') titleTemplate!: TemplateRef<any>;
-  @ViewChild('statusTemplate') statusTemplate!: TemplateRef<any>;
-  @ViewChild('currentCallTemplate') currentCallTemplate!: TemplateRef<any>;
-  @ViewChild('avgHandleTimeTemplate') avgHandleTimeTemplate!: TemplateRef<any>;
-  @ViewChild('serviceTemplate') serviceTemplate!: TemplateRef<any>;
-  @ViewChild('actionsTemplate') actionsTemplate!: TemplateRef<any>;
-  @ViewChild('tableTitleTemplate') tableTitleTemplate!: TemplateRef<any>;
-  @ViewChild('queueTitleTemplate') queueTitleTemplate!: TemplateRef<any>;
-  @ViewChild('queueWaitingTemplate') queueWaitingTemplate!: TemplateRef<any>;
-  @ViewChild('queueServiceLevelTemplate') queueServiceLevelTemplate!: TemplateRef<any>;
-  @ViewChild('queueMembersTemplate') queueMembersTemplate!: TemplateRef<any>;
-
-  @Input() templates: { [key: string]: TemplateRef<any> } = {};
+  private cdr = inject(ChangeDetectorRef);
+  private destroy$ = new Subject<void>();
 
   // Signals for reactive state
   operators = signal<OperatorStatus[]>([]);
@@ -313,10 +298,6 @@ export class OnlineMonitoringComponent implements OnInit, AfterViewInit, OnDestr
     });
   }
 
-  ngAfterViewInit() {
-    // Templates are now available after view init
-  }
-
   ngOnDestroy() {
     console.log('[OnlineMonitoring] Component destroyed, cleaning up subscriptions');
     this.destroy$.next();
@@ -477,20 +458,4 @@ export class OnlineMonitoringComponent implements OnInit, AfterViewInit, OnDestr
       width: '10%',
     },
   ];
-
-  get tableTemplates(): { [key: string]: TemplateRef<any> } {
-    return {
-      titleTemplate: this.titleTemplate,
-      statusTemplate: this.statusTemplate,
-      currentCallTemplate: this.currentCallTemplate,
-      avgHandleTimeTemplate: this.avgHandleTimeTemplate,
-      serviceTemplate: this.serviceTemplate,
-      actionsTemplate: this.actionsTemplate,
-      tableTitleTemplate: this.tableTitleTemplate,
-      queueTitleTemplate: this.queueTitleTemplate,
-      queueWaitingTemplate: this.queueWaitingTemplate,
-      queueServiceLevelTemplate: this.queueServiceLevelTemplate,
-      queueMembersTemplate: this.queueMembersTemplate,
-    };
-  }
 }

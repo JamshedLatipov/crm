@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, ViewChild, TemplateRef } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -13,7 +13,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { environment } from '../../../../environments/environment';
 import { CallScriptCategory, CallScriptCategoryDialogComponent } from '../call-script-category-dialog/call-script-category-dialog.component';
-import { CrmTableComponent, CrmColumn } from '../../../shared/components/crm-table/crm-table.component';
+import { CrmTableComponent, CrmColumn, CrmColumnTemplateDirective } from '../../../shared/components/crm-table/crm-table.component';
 import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.component';
 
 @Component({
@@ -31,6 +31,7 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
     MatCardModule,
     MatDialogModule,
     CrmTableComponent,
+    CrmColumnTemplateDirective,
     PageLayoutComponent
   ],
   templateUrl: './call-script-categories-list-page.component.html',
@@ -41,10 +42,6 @@ export class CallScriptCategoriesListPageComponent implements OnInit {
   private router = inject(Router);
   private dialog = inject(MatDialog);
   private apiBase = environment.apiBase;
-
-  @ViewChild('nameTemplate') nameTemplate!: TemplateRef<any>;
-  @ViewChild('statusTemplate') statusTemplate!: TemplateRef<any>;
-  @ViewChild('actionsTemplate') actionsTemplate!: TemplateRef<any>;
 
   categories = signal<CallScriptCategory[]>([]);
   filteredCategories = signal<CallScriptCategory[]>([]);
@@ -82,14 +79,6 @@ export class CallScriptCategoriesListPageComponent implements OnInit {
   // Prepare data for table
   get tableData(): any[] {
     return this.filteredCategories();
-  }
-
-  get tableTemplates(): { [key: string]: TemplateRef<any> } {
-    return {
-      nameTemplate: this.nameTemplate,
-      statusTemplate: this.statusTemplate,
-      actionsTemplate: this.actionsTemplate
-    };
   }
 
   ngOnInit() {

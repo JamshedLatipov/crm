@@ -51,6 +51,7 @@ export class SidebarComponent {
     { icon: 'trending_up', label: 'Лиды', route: '/leads' },
     { icon: 'account_tree', label: 'Воронка', route: '/pipeline' },
     { icon: 'handshake', label: 'Сделки', route: '/deals' },
+    { icon: 'query_stats', label: 'Прогнозирование', route: '/forecasting' },
     { icon: 'business', label: 'Промо-компании', route: '/promo-companies' },
     // { icon: 'campaign', label: 'Рекламные аккаунты', route: '/ads/accounts' },
     { icon: 'task', label: 'Задачи', route: '/tasks' },

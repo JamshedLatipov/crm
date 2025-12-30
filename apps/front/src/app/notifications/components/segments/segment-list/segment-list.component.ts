@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, ViewChild, TemplateRef, AfterViewInit, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -8,7 +8,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.component';
-import { CrmTableComponent, CrmColumn } from '../../../../shared/components/crm-table/crm-table.component';
+import { CrmTableComponent, CrmColumn, CrmColumnTemplateDirective } from '../../../../shared/components/crm-table/crm-table.component';
 import { SegmentService } from '../../../services/segment.service';
 import { Segment } from '../../../models/notification.models';
 
@@ -19,6 +19,7 @@ import { Segment } from '../../../models/notification.models';
     CommonModule,
     RouterModule,
     CrmTableComponent,
+    CrmColumnTemplateDirective,
     MatButtonModule,
     MatIconModule,
     MatChipsModule,
@@ -30,17 +31,12 @@ import { Segment } from '../../../models/notification.models';
   templateUrl: './segment-list.component.html',
   styleUrl: './segment-list.component.scss'
 })
-export class SegmentListComponent implements OnInit, AfterViewInit {
+export class SegmentListComponent implements OnInit {
   private readonly segmentService = inject(SegmentService);
   private readonly snackBar = inject(MatSnackBar);
 
   segments = this.segmentService.segments;
   loading = this.segmentService.isLoading;
-
-  @ViewChild('descriptionTemplate') descriptionTemplate!: TemplateRef<any>;
-  @ViewChild('contactCountTemplate') contactCountTemplate!: TemplateRef<any>;
-  @ViewChild('filterCountTemplate') filterCountTemplate!: TemplateRef<any>;
-  @ViewChild('actionsTemplate') actionsTemplate!: TemplateRef<any>;
 
   columns: CrmColumn[] = [
     { key: 'name', label: 'Название', sortable: true },
@@ -50,21 +46,8 @@ export class SegmentListComponent implements OnInit, AfterViewInit {
     { key: 'actions', label: 'Действия', template: 'actionsTemplate' },
   ];
 
-  get tableTemplates(): { [key: string]: TemplateRef<any> } {
-    return {
-      descriptionTemplate: this.descriptionTemplate,
-      contactCountTemplate: this.contactCountTemplate,
-      filterCountTemplate: this.filterCountTemplate,
-      actionsTemplate: this.actionsTemplate,
-    };
-  }
-
   ngOnInit() {
     this.loadSegments();
-  }
-
-  ngAfterViewInit() {
-    // Templates are now available
   }
 
   loadSegments() {

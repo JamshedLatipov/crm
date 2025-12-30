@@ -1,0 +1,120 @@
+<app-page-layout title="Прогнозирование продаж" subtitle="Анализ и прогнозирование показателей">
+  <div page-actions>
+    <button mat-raised-button color="primary" routerLink="/forecasting/create">
+      <mat-icon>add</mat-icon>
+      Создать прогноз
+    </button>
+  </div>
+
+  <div class="summary-cards" *ngIf="!loading()">
+    <mat-card class="stat-card stat-card-primary">
+      <div class="stat-icon">
+        <mat-icon>assessment</mat-icon>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">Активные прогнозы</div>
+        <div class="stat-value">{{ forecasts().length }}</div>
+      </div>
+    </mat-card>
+
+    <mat-card class="stat-card stat-card-success">
+      <div class="stat-icon">
+        <mat-icon>trending_up</mat-icon>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">Средняя уверенность</div>
+        <div class="stat-value">
+          {{ formatPercentage(getAverageConfidence()) }}
+        </div>
+      </div>
+    </mat-card>
+
+    <mat-card class="stat-card stat-card-info">
+      <div class="stat-icon">
+        <mat-icon>check_circle</mat-icon>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">Средняя точность</div>
+        <div class="stat-value">
+          {{ formatPercentage(getAverageAccuracy()) }}
+        </div>
+      </div>
+    </mat-card>
+  </div>
+
+  <mat-card class="forecasts-table">
+    <mat-card-content>
+      <div *ngIf="loading()" class="loading-spinner">
+        <mat-spinner></mat-spinner>
+      </div>
+
+      <crm-table 
+        *ngIf="!loading()" 
+        [columns]="columns" 
+        [data]="forecasts()" 
+        [pageSize]="10"
+      >
+        <ng-template crmColumnTemplate="nameTemplate" let-row>
+          <strong [matTooltip]="row.description">{{ row.name }}</strong>
+        </ng-template>
+
+        <ng-template crmColumnTemplate="typeTemplate" let-row>
+          {{ typeLabels[row.type] }}
+        </ng-template>
+
+        <ng-template crmColumnTemplate="methodTemplate" let-row>
+          {{ methodLabels[row.method] }}
+        </ng-template>
+
+        <ng-template crmColumnTemplate="periodTemplate" let-row>
+          {{ formatDateRange(row.startDate, row.endDate) }}
+        </ng-template>
+
+        <ng-template crmColumnTemplate="targetTemplate" let-row>
+          {{ formatCurrency(row.targetValue) }}
+        </ng-template>
+
+        <ng-template crmColumnTemplate="predictedTemplate" let-row>
+          {{ row.predictedValue > 0 ? formatCurrency(row.predictedValue) : '-' }}
+        </ng-template>
+
+        <ng-template crmColumnTemplate="actualTemplate" let-row>
+          {{ row.actualValue > 0 ? formatCurrency(row.actualValue) : '-' }}
+        </ng-template>
+
+        <ng-template crmColumnTemplate="confidenceTemplate" let-row>
+          <span class="badge" [style.background-color]="getConfidenceColor(row.confidence)">
+            {{ formatPercentage(row.confidence) }}
+          </span>
+        </ng-template>
+
+        <ng-template crmColumnTemplate="statusTemplate" let-row>
+          <span class="badge" [style.background-color]="getStatusColor(row.status)">
+            {{ statusLabels[row.status] }}
+          </span>
+        </ng-template>
+
+        <ng-template crmColumnTemplate="actionsTemplate" let-row>
+          <button mat-icon-button [routerLink]="['/forecasting', row.id]" matTooltip="Просмотр">
+            <mat-icon>visibility</mat-icon>
+          </button>
+          <button mat-icon-button (click)="calculateForecast(row.id)" matTooltip="Пересчитать">
+            <mat-icon>refresh</mat-icon>
+          </button>
+          <button mat-icon-button (click)="deleteForecast(row.id)" matTooltip="Удалить" color="warn">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </ng-template>
+      </crm-table>
+
+      <div *ngIf="!loading() && forecasts().length === 0" class="empty-state">
+        <mat-icon>assessment</mat-icon>
+        <h3>Нет активных прогнозов</h3>
+        <p>Создайте свой первый прогноз для начала работы</p>
+        <button mat-raised-button color="primary" routerLink="/forecasting/create">
+          Создать прогноз
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</app-page-layout>

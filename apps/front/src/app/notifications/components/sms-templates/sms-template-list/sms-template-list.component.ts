@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, ViewChild, TemplateRef, AfterViewInit, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -8,7 +8,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.component';
-import { CrmTableComponent, CrmColumn } from '../../../../shared/components/crm-table/crm-table.component';
+import { CrmTableComponent, CrmColumn, CrmColumnTemplateDirective } from '../../../../shared/components/crm-table/crm-table.component';
 import { SmsTemplateService } from '../../../services/sms-template.service';
 import { SmsTemplate } from '../../../models/notification.models';
 
@@ -19,6 +19,7 @@ import { SmsTemplate } from '../../../models/notification.models';
     CommonModule,
     RouterModule,
     CrmTableComponent,
+    CrmColumnTemplateDirective,
     MatButtonModule,
     MatIconModule,
     MatChipsModule,
@@ -30,17 +31,12 @@ import { SmsTemplate } from '../../../models/notification.models';
   templateUrl: './sms-template-list.component.html',
   styleUrl: './sms-template-list.component.scss'
 })
-export class SmsTemplateListComponent implements OnInit, AfterViewInit {
+export class SmsTemplateListComponent implements OnInit {
   private readonly smsTemplateService = inject(SmsTemplateService);
   private readonly snackBar = inject(MatSnackBar);
 
   loading = this.smsTemplateService.isLoading;
   templates = this.smsTemplateService.templates;
-
-  @ViewChild('contentTemplate') contentTemplate!: TemplateRef<any>;
-  @ViewChild('variablesTemplate') variablesTemplate!: TemplateRef<any>;
-  @ViewChild('statusTemplate') statusTemplate!: TemplateRef<any>;
-  @ViewChild('actionsTemplate') actionsTemplate!: TemplateRef<any>;
 
   columns: CrmColumn[] = [
     { key: 'name', label: 'Название', sortable: true },
@@ -50,21 +46,8 @@ export class SmsTemplateListComponent implements OnInit, AfterViewInit {
     { key: 'actions', label: 'Действия', template: 'actionsTemplate' },
   ];
 
-  get tableTemplates(): { [key: string]: TemplateRef<any> } {
-    return {
-      contentTemplate: this.contentTemplate,
-      variablesTemplate: this.variablesTemplate,
-      statusTemplate: this.statusTemplate,
-      actionsTemplate: this.actionsTemplate,
-    };
-  }
-
   ngOnInit() {
     this.loadTemplates();
-  }
-
-  ngAfterViewInit() {
-    // Templates are now available
   }
 
   loadTemplates() {

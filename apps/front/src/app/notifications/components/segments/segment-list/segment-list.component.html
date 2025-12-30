@@ -24,52 +24,51 @@
       [columns]="columns"
       [data]="segments()"
       [pageSize]="20"
-      [templates]="tableTemplates"
-    ></crm-table>
+    >
+      <ng-template crmColumnTemplate="descriptionTemplate" let-segment>
+        <div class="description-text">{{ segment.description }}</div>
+      </ng-template>
+
+      <ng-template crmColumnTemplate="contactCountTemplate" let-segment>
+        <div class="count-badge">
+          <mat-icon>people</mat-icon>
+          <span>{{ segment.contactsCount || 0 }}</span>
+        </div>
+      </ng-template>
+
+      <ng-template crmColumnTemplate="filterCountTemplate" let-segment>
+        <div class="filter-badge">
+          <mat-icon>filter_alt</mat-icon>
+          <span>{{ segment.filters?.length || 0 }}</span>
+        </div>
+      </ng-template>
+
+      <ng-template crmColumnTemplate="actionsTemplate" let-segment>
+        <button mat-icon-button [routerLink]="['/notifications/segments', segment.id]" matTooltip="Редактировать">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button mat-icon-button matTooltip="Просмотр контактов">
+          <mat-icon>people</mat-icon>
+        </button>
+        <button mat-icon-button [matMenuTriggerFor]="actionMenu" matTooltip="Еще">
+          <mat-icon>more_vert</mat-icon>
+        </button>
+        
+        <mat-menu #actionMenu="matMenu">
+          <button mat-menu-item (click)="duplicateSegment(segment)">
+            <mat-icon>content_copy</mat-icon>
+            <span>Дублировать</span>
+          </button>
+          <button mat-menu-item (click)="refreshSegment(segment)">
+            <mat-icon>refresh</mat-icon>
+            <span>Обновить</span>
+          </button>
+          <button mat-menu-item (click)="deleteSegment(segment)">
+            <mat-icon>delete</mat-icon>
+            <span>Удалить</span>
+          </button>
+        </mat-menu>
+      </ng-template>
+    </crm-table>
   }
-
-  <ng-template #descriptionTemplate let-segment>
-    <div class="description-text">{{ segment.description }}</div>
-  </ng-template>
-
-  <ng-template #contactCountTemplate let-segment>
-    <div class="count-badge">
-      <mat-icon>people</mat-icon>
-      <span>{{ segment.contactsCount || 0 }}</span>
-    </div>
-  </ng-template>
-
-  <ng-template #filterCountTemplate let-segment>
-    <div class="filter-badge">
-      <mat-icon>filter_alt</mat-icon>
-      <span>{{ segment.filters?.length || 0 }}</span>
-    </div>
-  </ng-template>
-
-  <ng-template #actionsTemplate let-segment>
-    <button mat-icon-button [routerLink]="['/notifications/segments', segment.id]" matTooltip="Редактировать">
-      <mat-icon>edit</mat-icon>
-    </button>
-    <button mat-icon-button matTooltip="Просмотр контактов">
-      <mat-icon>people</mat-icon>
-    </button>
-    <button mat-icon-button [matMenuTriggerFor]="actionMenu" matTooltip="Еще">
-      <mat-icon>more_vert</mat-icon>
-    </button>
-    
-    <mat-menu #actionMenu="matMenu">
-      <button mat-menu-item (click)="duplicateSegment(segment)">
-        <mat-icon>content_copy</mat-icon>
-        <span>Дублировать</span>
-      </button>
-      <button mat-menu-item (click)="refreshSegment(segment)">
-        <mat-icon>refresh</mat-icon>
-        <span>Обновить</span>
-      </button>
-      <button mat-menu-item (click)="deleteSegment(segment)">
-        <mat-icon>delete</mat-icon>
-        <span>Удалить</span>
-      </button>
-    </mat-menu>
-  </ng-template>
 </app-page-layout>

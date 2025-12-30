@@ -12,34 +12,33 @@
       [columns]="columns"
       [data]="configs()"
       [pageSize]="10"
-      [templates]="tableTemplates"
-    ></crm-table>
+    >
+      <ng-template crmColumnTemplate="isActiveTemplate" let-row>
+        <mat-slide-toggle
+          [checked]="row.isActive"
+          (change)="toggleActive(row)"
+          color="primary"
+        >
+        </mat-slide-toggle>
+      </ng-template>
+
+      <ng-template crmColumnTemplate="sourcesTemplate" let-row>
+        <div class="flex gap-2">
+          @for (source of row.sources; track source) {
+          <span class="px-2 py-1 bg-gray-100 rounded text-xs">{{
+            source.key
+          }}</span>
+          }
+        </div>
+      </ng-template>
+
+      <ng-template crmColumnTemplate="actionsTemplate" let-row>
+        <button mat-icon-button color="primary" (click)="editConfig(row)">
+          <mat-icon>edit</mat-icon>
+        </button>
+      </ng-template>
+    </crm-table>
     }
-
-    <ng-template #isActiveTemplate let-row>
-      <mat-slide-toggle
-        [checked]="row.isActive"
-        (change)="toggleActive(row)"
-        color="primary"
-      >
-      </mat-slide-toggle>
-    </ng-template>
-
-    <ng-template #sourcesTemplate let-row>
-      <div class="flex gap-2">
-        @for (source of row.sources; track source) {
-        <span class="px-2 py-1 bg-gray-100 rounded text-xs">{{
-          source.key
-        }}</span>
-        }
-      </div>
-    </ng-template>
-
-    <ng-template #actionsTemplate let-row>
-      <button mat-icon-button color="primary" (click)="editConfig(row)">
-        <mat-icon>edit</mat-icon>
-      </button>
-    </ng-template>
 
     @if (configs().length === 0) {
     <div class="p-8 text-center text-gray-500">Нет настроенных интеграций</div>

@@ -90,61 +90,59 @@
         [columns]="columns"
         [data]="tableData"
         [pageSize]="10"
-        [templates]="tableTemplates"
-      ></crm-table>
-
-      <!-- Templates -->
-      <ng-template #titleTemplate let-script>
-        <div class="title-cell">
-          <div class="script-hierarchy">
-            <div class="hierarchy-indent" [style.padding-left.px]="(script.level || 0) * 20">
-              <div class="avatar circle">
-                {{ (script.title || '?').charAt(0) }}
+      >
+        <ng-template crmColumnTemplate="titleTemplate" let-script>
+          <div class="title-cell">
+            <div class="script-hierarchy">
+              <div class="hierarchy-indent" [style.padding-left.px]="(script.level || 0) * 20">
+                <div class="avatar circle">
+                  {{ (script.title || '?').charAt(0) }}
+                </div>
               </div>
-            </div>
-            <div class="title-meta">
-              <div class="title-main">
-                <a (click)="viewScript(script)" class="script-link">
-                  {{ script.title }}
-                </a>
-              </div>
-              <div class="title-sub" *ngIf="script.subtitle">
-                {{ script.subtitle }}
+              <div class="title-meta">
+                <div class="title-main">
+                  <a (click)="viewScript(script)" class="script-link">
+                    {{ script.title }}
+                  </a>
+                </div>
+                <div class="title-sub" *ngIf="script.subtitle">
+                  {{ script.subtitle }}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </ng-template>
+        </ng-template>
 
-      <ng-template #categoryTemplate let-script>
-        {{ script.category?.name || 'Без категории' }}
-      </ng-template>
+        <ng-template crmColumnTemplate="categoryTemplate" let-script>
+          {{ script.category?.name || 'Без категории' }}
+        </ng-template>
 
-      <ng-template #statusTemplate let-script>
-        <mat-chip
-          [class]="'status-chip ' + (script.isActive ? 'active' : 'inactive')"
-        >
-          <mat-icon *ngIf="script.isActive">check_circle</mat-icon>
-          <mat-icon *ngIf="!script.isActive">cancel</mat-icon>
-          {{ script.isActive ? 'Активен' : 'Неактивен' }}
-        </mat-chip>
-      </ng-template>
+        <ng-template crmColumnTemplate="statusTemplate" let-script>
+          <mat-chip
+            [class]="'status-chip ' + (script.isActive ? 'active' : 'inactive')"
+          >
+            <mat-icon *ngIf="script.isActive">check_circle</mat-icon>
+            <mat-icon *ngIf="!script.isActive">cancel</mat-icon>
+            {{ script.isActive ? 'Активен' : 'Неактивен' }}
+          </mat-chip>
+        </ng-template>
 
-      <ng-template #updatedAtTemplate let-script>
-        {{ script.updatedAt | date:'shortDate':'':'ru-RU' }}
-      </ng-template>
+        <ng-template crmColumnTemplate="updatedAtTemplate" let-script>
+          {{ script.updatedAt | date:'shortDate':'':'ru-RU' }}
+        </ng-template>
 
-      <ng-template #actionsTemplate let-script>
-        <button (click)="createNewScript(script)" mat-icon-button color="accent" class="add-child-btn" [attr.data-script-id]="script.id" title="Создать дочерний скрипт">
-          <mat-icon>add</mat-icon>
-        </button>
-        <button (click)="editScript(script)" mat-icon-button color="primary" class="edit-btn" [attr.data-script-id]="script.id">
-          <mat-icon>edit</mat-icon>
-        </button>
-        <button (click)="deleteScript(script)" mat-icon-button color="warn" class="delete-btn" [attr.data-script-id]="script.id">
-          <mat-icon>delete</mat-icon>
-        </button>
-      </ng-template>
+        <ng-template crmColumnTemplate="actionsTemplate" let-script>
+          <button (click)="createNewScript(script)" mat-icon-button color="accent" class="add-child-btn" [attr.data-script-id]="script.id" title="Создать дочерний скрипт">
+            <mat-icon>add</mat-icon>
+          </button>
+          <button (click)="editScript(script)" mat-icon-button color="primary" class="edit-btn" [attr.data-script-id]="script.id">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button (click)="deleteScript(script)" mat-icon-button color="warn" class="delete-btn" [attr.data-script-id]="script.id">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </ng-template>
+      </crm-table>
 
       <!-- Empty state -->
       <div *ngIf="filteredScripts.length === 0 && !loading()" class="empty-state">

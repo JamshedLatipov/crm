@@ -1,0 +1,110 @@
+<app-page-layout title="Создать прогноз" subtitle="Настройка параметров прогнозирования">
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>Параметры прогноза</mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+      <form [formGroup]="forecastForm" (ngSubmit)="onSubmit()">
+        <!-- Название -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Название прогноза</mat-label>
+          <input matInput formControlName="name" placeholder="Например: Q1 2026 Revenue">
+          <mat-error *ngIf="forecastForm.get('name')?.hasError('required')">
+            Название обязательно
+          </mat-error>
+          <mat-error *ngIf="forecastForm.get('name')?.hasError('minlength')">
+            Минимум 3 символа
+          </mat-error>
+        </mat-form-field>
+
+        <!-- Тип прогноза -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Тип прогноза</mat-label>
+          <mat-select formControlName="type">
+            <mat-option *ngFor="let type of forecastTypes" [value]="type">
+              {{ typeLabels[type] }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Метод прогнозирования -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Метод прогнозирования</mat-label>
+          <mat-select formControlName="method">
+            <mat-option *ngFor="let method of forecastMethods" [value]="method">
+              {{ methodLabels[method] }}
+            </mat-option>
+          </mat-select>
+          <mat-hint *ngIf="forecastForm.get('method')?.value">
+            {{ getMethodDescription(forecastForm.get('method')?.value) }}
+          </mat-hint>
+        </mat-form-field>
+
+        <!-- Период -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Тип периода</mat-label>
+          <mat-select formControlName="periodType">
+            <mat-option *ngFor="let period of periodTypes" [value]="period">
+              {{ periodLabels[period] }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Даты -->
+        <div class="date-range">
+          <mat-form-field appearance="outline" class="date-field">
+            <mat-label>Дата начала</mat-label>
+            <input matInput [matDatepicker]="startPicker" formControlName="startDate">
+            <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+            <mat-datepicker #startPicker></mat-datepicker>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="date-field">
+            <mat-label>Дата окончания</mat-label>
+            <input matInput [matDatepicker]="endPicker" formControlName="endDate">
+            <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
+            <mat-datepicker #endPicker></mat-datepicker>
+          </mat-form-field>
+        </div>
+
+        <!-- Целевое значение -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Целевое значение</mat-label>
+          <input matInput type="number" formControlName="targetValue" placeholder="1000000">
+          <span matSuffix>₽</span>
+          <mat-error *ngIf="forecastForm.get('targetValue')?.hasError('required')">
+            Целевое значение обязательно
+          </mat-error>
+          <mat-error *ngIf="forecastForm.get('targetValue')?.hasError('min')">
+            Значение должно быть положительным
+          </mat-error>
+        </mat-form-field>
+
+        <!-- Описание -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Описание (опционально)</mat-label>
+          <textarea matInput formControlName="description" rows="3" 
+                    placeholder="Дополнительная информация о прогнозе"></textarea>
+        </mat-form-field>
+
+        <!-- Ошибка -->
+        <div *ngIf="error()" class="error-message">
+          <mat-icon>error</mat-icon>
+          {{ error() }}
+        </div>
+
+        <!-- Действия -->
+        <div class="form-actions">
+          <button mat-button type="button" (click)="cancel()" [disabled]="loading()">
+            Отмена
+          </button>
+          <button mat-raised-button color="primary" type="submit" [disabled]="loading() || forecastForm.invalid">
+            <mat-spinner *ngIf="loading()" diameter="20"></mat-spinner>
+            <span *ngIf="!loading()">Создать и рассчитать</span>
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</app-page-layout>

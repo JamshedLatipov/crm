@@ -45,35 +45,33 @@
             [columns]="columns"
             [data]="tableData"
             [pageSize]="10"
-            [templates]="tableTemplates"
-          ></crm-table>
+          >
+            <ng-template crmColumnTemplate="nameTemplate" let-row>
+              <div class="category-name-cell">
+                <div class="color-indicator" [style.background-color]="row.color || '#6366f1'"></div>
+                <span class="name-text">{{ row.name }}</span>
+              </div>
+            </ng-template>
 
-          <!-- Templates for table columns -->
-          <ng-template #nameTemplate let-row>
-            <div class="category-name-cell">
-              <div class="color-indicator" [style.background-color]="row.color || '#6366f1'"></div>
-              <span class="name-text">{{ row.name }}</span>
-            </div>
-          </ng-template>
+            <ng-template crmColumnTemplate="statusTemplate" let-row>
+              <mat-chip
+                [class]="'status-chip ' + (row.isActive ? 'active' : 'inactive')"
+              >
+                {{ row.isActive ? 'Активна' : 'Неактивна' }}
+              </mat-chip>
+            </ng-template>
 
-          <ng-template #statusTemplate let-row>
-            <mat-chip
-              [class]="'status-chip ' + (row.isActive ? 'active' : 'inactive')"
-            >
-              {{ row.isActive ? 'Активна' : 'Неактивна' }}
-            </mat-chip>
-          </ng-template>
-
-          <ng-template #actionsTemplate let-row>
-            <div class="actions-cell">
-              <button class="edit-btn" [attr.data-category-id]="row.id" title="Редактировать" (click)="onTableActionClick($event)">
-                <mat-icon>edit</mat-icon>
-              </button>
-              <button class="delete-btn" [attr.data-category-id]="row.id" title="Удалить" (click)="onTableActionClick($event)">
-                <mat-icon>delete</mat-icon>
-              </button>
-            </div>
-          </ng-template>
+            <ng-template crmColumnTemplate="actionsTemplate" let-row>
+              <div class="actions-cell">
+                <button class="edit-btn" [attr.data-category-id]="row.id" title="Редактировать" (click)="onTableActionClick($event)">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button class="delete-btn" [attr.data-category-id]="row.id" title="Удалить" (click)="onTableActionClick($event)">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+            </ng-template>
+          </crm-table>
         </div>
 
         <div *ngIf="filteredCategories().length === 0" class="empty-state">

@@ -22,6 +22,7 @@ import { UserActivityModule } from './user-activity/user-activity.module';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { SmsModule } from './sms/sms.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { ForecastingModule } from './forecasting/forecasting.module';
 
 export const MODULES = [
     LeadModule,
@@ -48,4 +49,5 @@ export const MODULES = [
     IntegrationsModule,
     SmsModule,
     AnalyticsModule,
+    ForecastingModule,
 ];

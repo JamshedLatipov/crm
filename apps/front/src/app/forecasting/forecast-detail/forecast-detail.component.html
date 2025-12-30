@@ -1,0 +1,120 @@
+<app-page-layout [title]="forecast?.name || 'Прогноз'" subtitle="Детальная информация о прогнозе">
+  <div page-actions>
+    <button mat-button routerLink="/forecasting">
+      <mat-icon>arrow_back</mat-icon>
+      Назад к списку
+    </button>
+    <button mat-raised-button color="primary" (click)="calculate()" [disabled]="loading">
+      <mat-icon>refresh</mat-icon>
+      Пересчитать
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="loading-container">
+    <mat-spinner></mat-spinner>
+  </div>
+
+  <div *ngIf="!loading && forecast" class="forecast-detail-container">
+    <!-- Summary Cards -->
+    <div class="summary-cards">
+      <mat-card class="stat-card stat-card-target">
+        <div class="stat-icon">
+          <mat-icon>flag</mat-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-label">Целевое значение</div>
+          <div class="stat-value">{{ formatCurrency(forecast.targetValue) }}</div>
+        </div>
+      </mat-card>
+
+      <mat-card class="stat-card stat-card-predicted">
+        <div class="stat-icon">
+          <mat-icon>insights</mat-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-label">Прогноз</div>
+          <div class="stat-value">{{ forecast.predictedValue ? formatCurrency(forecast.predictedValue) : '-' }}</div>
+        </div>
+      </mat-card>
+
+      <mat-card class="stat-card stat-card-actual">
+        <div class="stat-icon">
+          <mat-icon>analytics</mat-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-label">Факт</div>
+          <div class="stat-value">{{ forecast.actualValue ? formatCurrency(forecast.actualValue) : '-' }}</div>
+        </div>
+      </mat-card>
+
+      <mat-card class="stat-card stat-card-confidence">
+        <div class="stat-icon">
+          <mat-icon>verified</mat-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-label">Уверенность</div>
+          <div class="stat-value">{{ formatPercentage(forecast.confidence) }}</div>
+        </div>
+      </mat-card>
+    </div>
+
+    <!-- Main Information -->
+    <div class="info-grid">
+      <mat-card class="info-card">
+        <div class="card-header">
+          <mat-icon>info</mat-icon>
+          <h3>Основная информация</h3>
+        </div>
+        <div class="info-content">
+          <div class="info-item">
+            <span class="label">Тип прогноза</span>
+            <span class="value">{{ forecast.type }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Метод расчета</span>
+            <span class="value">{{ forecast.method }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Статус</span>
+            <span class="value status-badge" [class]="'status-' + forecast.status">{{ forecast.status }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Период прогноза</span>
+            <span class="value">
+              <mat-icon class="inline-icon">date_range</mat-icon>
+              {{ formatDateRange(forecast.startDate, forecast.endDate) }}
+            </span>
+          </div>
+        </div>
+      </mat-card>
+
+      <mat-card class="info-card">
+        <div class="card-header">
+          <mat-icon>assessment</mat-icon>
+          <h3>Метрики эффективности</h3>
+        </div>
+        <div class="info-content">
+          <div class="info-item">
+            <span class="label">Точность прогноза</span>
+            <span class="value">
+              {{ forecast.accuracy ? formatPercentage(forecast.accuracy) : '-' }}
+            </span>
+          </div>
+          <div class="info-item">
+            <span class="label">Уровень уверенности</span>
+            <div class="progress-container">
+              <div class="progress-bar">
+                <div class="progress-fill" [style.width.%]="forecast.confidence"></div>
+              </div>
+              <span class="progress-value">{{ formatPercentage(forecast.confidence) }}</span>
+            </div>
+          </div>
+          <div class="info-item full-width" *ngIf="forecast.description">
+            <span class="label">Описание</span>
+            <span class="value description">{{ forecast.description }}</span>
+          </div>
+        </div>
+      </mat-card>
+    </div>
+  </div>
+</app-page-layout>

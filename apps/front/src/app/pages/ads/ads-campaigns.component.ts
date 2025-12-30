@@ -2,9 +2,6 @@ import {
   Component,
   OnInit,
   input,
-  TemplateRef,
-  ViewChild,
-  AfterViewInit,
 } from '@angular/core';
 import { AdsService, Campaign } from '../../services/ads.service';
 import { CommonModule } from '@angular/common';
@@ -12,6 +9,7 @@ import { Router } from '@angular/router';
 import {
   CrmTableComponent,
   CrmColumn,
+  CrmColumnTemplateDirective,
 } from '../../shared/components/crm-table/crm-table.component';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -44,26 +42,20 @@ import { MatIconModule } from '@angular/material/icon';
           [columns]="columns"
           [data]="campaigns"
           [pageSize]="10"
-          [templates]="tableTemplates"
           (rowClick)="onRowClicked($event)"
-        ></crm-table>
+        >
+          <ng-template crmColumnTemplate="actionsTemplate" let-campaign>
+            <button mat-button (click)="viewMetrics(campaign)">Показатели</button>
+          </ng-template>
+        </crm-table>
       }
     </div>
-
-    <ng-template #actionsTemplate let-campaign>
-      <button mat-button (click)="viewMetrics(campaign)">Показатели</button>
-    </ng-template>
   `,
-  imports: [CommonModule, CrmTableComponent, MatButtonModule, MatIconModule],
+  imports: [CommonModule, CrmTableComponent, CrmColumnTemplateDirective, MatButtonModule, MatIconModule],
 })
-export class AdsCampaignsComponent implements OnInit, AfterViewInit {
+export class AdsCampaignsComponent implements OnInit {
   campaigns: Campaign[] = [];
   loading = false;
-
-  templates = input<{ [key: string]: TemplateRef<any> }>({});
-
-  @ViewChild('tableTitleTemplate') tableTitleTemplate!: TemplateRef<any>;
-  @ViewChild('actionsTemplate') actionsTemplate!: TemplateRef<any>;
 
   columns: CrmColumn[] = [
     { key: 'name', label: 'Name' },
@@ -82,17 +74,6 @@ export class AdsCampaignsComponent implements OnInit, AfterViewInit {
       },
       () => (this.loading = false)
     );
-  }
-
-  ngAfterViewInit() {
-    // Templates are now available after view init
-  }
-
-  get tableTemplates(): { [key: string]: TemplateRef<any> } {
-    return {
-      tableTitleTemplate: this.tableTitleTemplate,
-      actionsTemplate: this.actionsTemplate,
-    };
   }
 
   viewMetrics(c: Campaign) {

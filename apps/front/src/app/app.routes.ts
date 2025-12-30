@@ -120,6 +120,12 @@ export const appRoutes: Route[] = [
         canActivate: [authGuard],
         loadChildren: () => import('./analytics/analytics.routes').then(m => m.analyticsRoutes)
     },
+    // Forecasting routes
+    {
+        path: 'forecasting',
+        canActivate: [authGuard],
+        loadChildren: () => import('./forecasting/forecasting.routes').then(m => m.FORECASTING_ROUTES)
+    },
     // Notification Center routes
     ...NOTIFICATION_ROUTES
 ];

@@ -104,54 +104,51 @@
         [columns]="queueColumns"
         [data]="queues$ | async"
         [showPaginator]="false"
-        [templates]="tableTemplates"
       >
+        <ng-template crmColumnTemplate="queueTitleTemplate" let-queue>
+          <div class="queue-name">
+            <mat-icon class="queue-icon">support_agent</mat-icon>
+            {{ queue.name || '—' }}
+          </div>
+        </ng-template>
+
+        <ng-template crmColumnTemplate="queueWaitingTemplate" let-queue>
+          <div class="waiting-badge" [class.has-waiting]="queue.waiting > 0">
+            <mat-icon>schedule</mat-icon>
+            {{ queue.waiting }}
+            @if (queue.longestWaitingSeconds > 0) {
+            <span class="longest-wait">{{
+              formatDuration(queue.longestWaitingSeconds)
+            }}</span>
+            }
+          </div>
+        </ng-template>
+
+        <ng-template crmColumnTemplate="queueServiceLevelTemplate" let-queue>
+          <div class="service-level">
+            <div class="progress-bar">
+              <div
+                class="progress-fill"
+                [style.width.%]="queue.serviceLevel || 0"
+                [class.good]="(queue.serviceLevel || 0) >= 80"
+                [class.warning]="
+                  (queue.serviceLevel || 0) >= 60 && (queue.serviceLevel || 0) < 80
+                "
+                [class.poor]="(queue.serviceLevel || 0) < 60"
+              ></div>
+            </div>
+            <span class="service-level-text">{{ queue.serviceLevel || 0 }}%</span>
+          </div>
+        </ng-template>
+
+        <ng-template crmColumnTemplate="queueMembersTemplate" let-queue>
+          <div class="members-info">
+            <span class="available">{{ queue.availableMembers }}</span> /
+            <span class="total">{{ queue.totalMembers }}</span>
+          </div>
+        </ng-template>
       </crm-table>
     </div>
-
-    <!-- Queue Templates -->
-    <ng-template #queueTitleTemplate let-queue>
-      <div class="queue-name">
-        <mat-icon class="queue-icon">support_agent</mat-icon>
-        {{ queue.name || '—' }}
-      </div>
-    </ng-template>
-
-    <ng-template #queueWaitingTemplate let-queue>
-      <div class="waiting-badge" [class.has-waiting]="queue.waiting > 0">
-        <mat-icon>schedule</mat-icon>
-        {{ queue.waiting }}
-        @if (queue.longestWaitingSeconds > 0) {
-        <span class="longest-wait">{{
-          formatDuration(queue.longestWaitingSeconds)
-        }}</span>
-        }
-      </div>
-    </ng-template>
-
-    <ng-template #queueServiceLevelTemplate let-queue>
-      <div class="service-level">
-        <div class="progress-bar">
-          <div
-            class="progress-fill"
-            [style.width.%]="queue.serviceLevel || 0"
-            [class.good]="(queue.serviceLevel || 0) >= 80"
-            [class.warning]="
-              (queue.serviceLevel || 0) >= 60 && (queue.serviceLevel || 0) < 80
-            "
-            [class.poor]="(queue.serviceLevel || 0) < 60"
-          ></div>
-        </div>
-        <span class="service-level-text">{{ queue.serviceLevel || 0 }}%</span>
-      </div>
-    </ng-template>
-
-    <ng-template #queueMembersTemplate let-queue>
-      <div class="members-info">
-        <span class="available">{{ queue.availableMembers }}</span> /
-        <span class="total">{{ queue.totalMembers }}</span>
-      </div>
-    </ng-template>
   </div>
 
   <!-- Operators Table -->
@@ -164,68 +161,66 @@
         [columns]="columns"
         [data]="operators$ | async"
         [showPaginator]="false"
-        [templates]="tableTemplates"
-      ></crm-table>
-    </div>
+      >
+        <ng-template crmColumnTemplate="titleTemplate" let-operator>
+          <div class="operator-info">
+            <div class="operator-name">{{ operator.fullName || operator.name || '—' }}</div>
+            @if (operator.extension) {
+            <div class="operator-extension">SIP: {{ operator.extension }}</div>
+            }
+          </div>
+        </ng-template>
 
-    <!-- Operator Templates -->
-    <ng-template #titleTemplate let-operator>
-      <div class="operator-info">
-        <div class="operator-name">{{ operator.fullName || operator.name || '—' }}</div>
-        @if (operator.extension) {
-        <div class="operator-extension">SIP: {{ operator.extension }}</div>
-        }
-      </div>
-    </ng-template>
+        <ng-template crmColumnTemplate="statusTemplate" let-operator>
+          <div class="status-container">
+            <span class="status-badge" [ngClass]="getStatusClass(operator.status)">
+              {{ formatStatus(operator.status) }}
+              @if (operator.pausedReason) {
+              <span class="pause-reason">({{ operator.pausedReason }})</span>
+              }
+            </span>
+            @if (operator.statusDuration !== null && operator.statusDuration !== undefined) {
+            <span class="status-duration" [title]="getStatusDurationLabel(operator.status) + ': ' + formatDuration(operator.statusDuration)">
+              {{ formatDuration(operator.statusDuration) }}
+            </span>
+            }
+          </div>
+        </ng-template>
 
-    <ng-template #statusTemplate let-operator>
-      <div class="status-container">
-        <span class="status-badge" [ngClass]="getStatusClass(operator.status)">
-          {{ formatStatus(operator.status) }}
-          @if (operator.pausedReason) {
-          <span class="pause-reason">({{ operator.pausedReason }})</span>
+        <ng-template crmColumnTemplate="currentCallTemplate" let-operator>
+          @if (operator.currentCall) {
+          <div class="current-call">
+            <mat-icon class="call-icon">phone_in_talk</mat-icon>
+            {{ operator.currentCall }}
+            @if (operator.currentCallDuration) {
+            <span class="call-duration">{{
+              formatDuration(operator.currentCallDuration)
+            }}</span>
+            }
+          </div>
+          } @else {
+          <span class="no-call">—</span>
           }
-        </span>
-        @if (operator.statusDuration !== null && operator.statusDuration !== undefined) {
-        <span class="status-duration" [title]="getStatusDurationLabel(operator.status) + ': ' + formatDuration(operator.statusDuration)">
-          {{ formatDuration(operator.statusDuration) }}
-        </span>
-        }
-      </div>
-    </ng-template>
+        </ng-template>
 
-    <ng-template #currentCallTemplate let-operator>
-      @if (operator.currentCall) {
-      <div class="current-call">
-        <mat-icon class="call-icon">phone_in_talk</mat-icon>
-        {{ operator.currentCall }}
-        @if (operator.currentCallDuration) {
-        <span class="call-duration">{{
-          formatDuration(operator.currentCallDuration)
-        }}</span>
-        }
-      </div>
-      } @else {
-      <span class="no-call">—</span>
-      }
-    </ng-template>
+        <ng-template crmColumnTemplate="avgHandleTimeTemplate" let-operator>
+          {{
+            operator.avgHandleTime ? formatDuration(operator.avgHandleTime) : '—'
+          }}
+        </ng-template>
 
-    <ng-template #avgHandleTimeTemplate let-operator>
-      {{
-        operator.avgHandleTime ? formatDuration(operator.avgHandleTime) : '—'
-      }}
-    </ng-template>
+        <ng-template crmColumnTemplate="serviceTemplate" let-operator>
+          {{ operator.queue || '—' }}
+        </ng-template>
 
-    <ng-template #serviceTemplate let-operator>
-      {{ operator.queue || '—' }}
-    </ng-template>
-
-    <ng-template #actionsTemplate let-operator>
-      <button mat-button color="primary" class="details-btn">
-        <mat-icon>visibility</mat-icon>
-        Подробно
-      </button>
-    </ng-template>
+        <ng-template crmColumnTemplate="actionsTemplate" let-operator>
+          <button mat-button color="primary" class="details-btn">
+            <mat-icon>visibility</mat-icon>
+            Подробно
+          </button>
+        </ng-template>
+      </crm-table>
+    </div>
   </div>
 
   <!-- Active Calls Section -->

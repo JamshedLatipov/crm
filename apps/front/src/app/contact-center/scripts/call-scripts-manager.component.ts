@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, Input, TemplateRef, ViewChild, AfterViewInit } from '@angular/core';
+import { Component, inject, signal, computed, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -13,7 +13,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { DatePipe } from '@angular/common';
-import { CrmTableComponent, CrmColumn } from '../../../../src/app/shared/components/crm-table/crm-table.component';
+import { CrmTableComponent, CrmColumn, CrmColumnTemplateDirective } from '../../../../src/app/shared/components/crm-table/crm-table.component';
 import { CallScriptCategory } from './call-script-category-dialog/call-script-category-dialog.component';
 import { CallScriptDialogComponent } from './call-script-dialog/call-script-dialog.component';
 import { RouterLink, RouterModule, Router } from "@angular/router";
@@ -38,6 +38,7 @@ import { PageLayoutComponent } from '../../shared/page-layout/page-layout.compon
     MatProgressSpinnerModule,
     DatePipe,
     CrmTableComponent,
+    CrmColumnTemplateDirective,
     RouterModule,
     CallScriptTreeComponent,
     PageLayoutComponent
@@ -50,14 +51,6 @@ export class CallScriptsManagerComponent {
   private dialog = inject(MatDialog);
   private router = inject(Router);
   private apiBase = environment.apiBase;
-
-  @ViewChild('titleTemplate') titleTemplate!: TemplateRef<any>;
-  @ViewChild('categoryTemplate') categoryTemplate!: TemplateRef<any>;
-  @ViewChild('statusTemplate') statusTemplate!: TemplateRef<any>;
-  @ViewChild('updatedAtTemplate') updatedAtTemplate!: TemplateRef<any>;
-  @ViewChild('actionsTemplate') actionsTemplate!: TemplateRef<any>;
-
-  @Input() templates: { [key: string]: TemplateRef<any> } = {};
 
   scripts = signal<CallScriptTree[]>([]);
   loading = signal(false);
@@ -109,16 +102,6 @@ export class CallScriptsManagerComponent {
       subtitle: script.description || 'Без описания',
       level: this.getScriptLevel(script)
     }));
-  }
-
-  get tableTemplates(): { [key: string]: TemplateRef<any> } {
-    return {
-      titleTemplate: this.titleTemplate,
-      categoryTemplate: this.categoryTemplate,
-      statusTemplate: this.statusTemplate,
-      updatedAtTemplate: this.updatedAtTemplate,
-      actionsTemplate: this.actionsTemplate
-    };
   }
 
   ngOnInit() {
