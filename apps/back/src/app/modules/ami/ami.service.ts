@@ -46,7 +46,17 @@ export class AmiService implements OnModuleInit, OnModuleDestroy {
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const Ami = AmiClient; // imported at top
+      
+      // Remove old listeners before creating new client to prevent memory leaks
+      if (this.client) {
+        this.client.removeAllListeners();
+      }
+      
       this.client = new Ami();
+      
+      // Increase max listeners limit to prevent warning during reconnections
+      this.client.setMaxListeners(20);
+      
       this.client.on('event', (evt: any) => this.onEvent(evt));
       this.client.on('disconnect', () => this.onDisconnect());
       this.client.on('reconnection', () => this.logger.log('AMI reconnection'));
