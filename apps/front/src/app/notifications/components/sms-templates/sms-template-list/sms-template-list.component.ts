@@ -28,7 +28,7 @@ import { SmsTemplate } from '../../../models/notification.models';
     PageLayoutComponent
   ],
   templateUrl: './sms-template-list.component.html',
-  styleUrls: ['./sms-template-list.component.scss']
+  styleUrl: './sms-template-list.component.scss'
 })
 export class SmsTemplateListComponent implements OnInit, AfterViewInit {
   private readonly smsTemplateService = inject(SmsTemplateService);

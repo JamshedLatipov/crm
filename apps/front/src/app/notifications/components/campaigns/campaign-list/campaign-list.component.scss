@@ -1,0 +1,188 @@
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 80px 20px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  
+  mat-icon {
+    font-size: 80px;
+    width: 80px;
+    height: 80px;
+    color: #9ca3af;
+    margin-bottom: 16px;
+  }
+  
+  h3 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #374151;
+    margin: 0 0 8px 0;
+  }
+  
+  p {
+    font-size: 16px;
+    color: #6b7280;
+    margin: 0 0 24px 0;
+  }
+}
+
+.modern-table-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.modern-table {
+  width: 100%;
+  
+  th {
+    background: #f9fafb;
+    color: #374151;
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 16px 20px;
+    border-bottom: 2px solid #e5e7eb;
+  }
+  
+  td {
+    padding: 16px 20px;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  
+  .table-row {
+    transition: background-color 0.2s;
+    cursor: pointer;
+    
+    &:hover {
+      background-color: #f9fafb;
+    }
+  }
+}
+
+.campaign-name {
+  strong {
+    color: #111827;
+    font-size: 15px;
+  }
+}
+
+.channel-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+  
+  &.channel-sms {
+    background: #e0f2fe;
+    color: #0369a1;
+  }
+  
+  &.channel-email {
+    background: #fed7aa;
+    color: #c2410c;
+  }
+  
+  &.channel-webhook,
+  &.channel-multi {
+    background: #e9d5ff;
+    color: #7c3aed;
+  }
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  
+  &.status-draft {
+    background: #f3f4f6;
+    color: #4b5563;
+  }
+  
+  &.status-scheduled {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+  
+  &.status-running {
+    background: #fef3c7;
+    color: #b45309;
+  }
+  
+  &.status-paused {
+    background: #fecaca;
+    color: #dc2626;
+  }
+  
+  &.status-completed {
+    background: #d1fae5;
+    color: #065f46;
+  }
+  
+  &.status-cancelled {
+    background: #f3f4f6;
+    color: #6b7280;
+  }
+  
+  &.status-failed {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+}
+
+.progress-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 120px;
+  
+  > span {
+    font-size: 13px;
+    color: #6b7280;
+  }
+}
+
+.progress-bar {
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4285f4 0%, #667eea 100%);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.actions-column {
+  text-align: right;
+  width: 180px;
+}

@@ -28,7 +28,7 @@ import { Segment } from '../../../models/notification.models';
     PageLayoutComponent
   ],
   templateUrl: './segment-list.component.html',
-  styleUrls: ['./segment-list.component.scss']
+  styleUrl: './segment-list.component.scss'
 })
 export class SegmentListComponent implements OnInit, AfterViewInit {
   private readonly segmentService = inject(SegmentService);

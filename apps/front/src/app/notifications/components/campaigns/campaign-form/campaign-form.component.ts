@@ -42,7 +42,7 @@ import { CreateCampaignDto, CampaignType, NotificationChannel } from '../../../m
     PageLayoutComponent
   ],
   templateUrl: './campaign-form.component.html',
-  styleUrls: ['./campaign-form.component.scss']
+  styleUrl: './campaign-form.component.scss'
 })
 export class CampaignFormComponent implements OnInit {
   private readonly fb = inject(FormBuilder);

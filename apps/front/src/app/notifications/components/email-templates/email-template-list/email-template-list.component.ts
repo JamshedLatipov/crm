@@ -28,7 +28,7 @@ import { EmailTemplate } from '../../../models/notification.models';
     PageLayoutComponent
   ],
   templateUrl: './email-template-list.component.html',
-  styleUrls: ['./email-template-list.component.scss']
+  styleUrl: './email-template-list.component.scss'
 })
 export class EmailTemplateListComponent implements OnInit, AfterViewInit {
   private readonly emailTemplateService = inject(EmailTemplateService);
