@@ -119,7 +119,7 @@
                     <div class="preview-variables">
                       <span class="variables-label">Переменные:</span>
                       @for (variable of selectedTemplate()!.variables; track variable) {
-                        <span class="variable-chip">{{'{{'}}{{ variable }}{{'}}'}}</span>
+                        <span class="variable-chip">{{ variable }}</span>
                       }
                     </div>
                   }

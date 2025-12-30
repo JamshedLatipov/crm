@@ -9,7 +9,6 @@ import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MatRadioModule } from '@angular/material/radio';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -35,7 +34,6 @@ import { CreateCampaignDto, CampaignType, SmsTemplate } from '../../../models/no
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-    MatRadioModule,
     MatCheckboxModule,
     MatChipsModule,
     MatProgressSpinnerModule,
@@ -155,49 +153,43 @@ import { CreateCampaignDto, CampaignType, SmsTemplate } from '../../../models/no
                     </div>
 
                     <form [formGroup]="channelForm" class="step-form">
-                      <mat-radio-group formControlName="channel" class="channel-grid">
-                        <mat-card class="channel-card" [class.selected]="channelForm.get('channel')?.value === 'SMS'">
-                          <mat-radio-button value="SMS" class="channel-radio">
-                            <div class="channel-content">
-                              <mat-icon class="channel-icon">sms</mat-icon>
-                              <h3>SMS</h3>
-                              <p>Быстрая доставка текстовых сообщений</p>
-                              <div class="channel-features">
-                                <span class="feature-badge">98% Open Rate</span>
-                                <span class="feature-badge">3-5 сек доставка</span>
-                              </div>
+                      <div class="channel-grid">
+                        <mat-card class="channel-card" [class.selected]="channelForm.get('channel')?.value === 'SMS'" (click)="selectChannel('SMS')">
+                          <div class="channel-content">
+                            <mat-icon class="channel-icon">sms</mat-icon>
+                            <h3>SMS</h3>
+                            <p>Быстрая доставка текстовых сообщений</p>
+                            <div class="channel-features">
+                              <span class="feature-badge">98% Open Rate</span>
+                              <span class="feature-badge">3-5 сек доставка</span>
                             </div>
-                          </mat-radio-button>
+                          </div>
                         </mat-card>
 
-                        <mat-card class="channel-card" [class.selected]="channelForm.get('channel')?.value === 'EMAIL'">
-                          <mat-radio-button value="EMAIL" class="channel-radio">
-                            <div class="channel-content">
-                              <mat-icon class="channel-icon">email</mat-icon>
-                              <h3>Email</h3>
-                              <p>Детальные сообщения с форматированием</p>
-                              <div class="channel-features">
-                                <span class="feature-badge">HTML поддержка</span>
-                                <span class="feature-badge">Вложения</span>
-                              </div>
+                        <mat-card class="channel-card" [class.selected]="channelForm.get('channel')?.value === 'EMAIL'" (click)="selectChannel('EMAIL')">
+                          <div class="channel-content">
+                            <mat-icon class="channel-icon">email</mat-icon>
+                            <h3>Email</h3>
+                            <p>Детальные сообщения с форматированием</p>
+                            <div class="channel-features">
+                              <span class="feature-badge">HTML поддержка</span>
+                              <span class="feature-badge">Вложения</span>
                             </div>
-                          </mat-radio-button>
+                          </div>
                         </mat-card>
 
-                        <mat-card class="channel-card" [class.selected]="channelForm.get('channel')?.value === 'MULTI'">
-                          <mat-radio-button value="MULTI" class="channel-radio">
-                            <div class="channel-content">
-                              <mat-icon class="channel-icon">layers</mat-icon>
-                              <h3>Мультиканальная</h3>
-                              <p>Отправка через несколько каналов</p>
-                              <div class="channel-features">
-                                <span class="feature-badge">Максимальный охват</span>
-                                <span class="feature-badge">Fallback</span>
-                              </div>
+                        <mat-card class="channel-card" [class.selected]="channelForm.get('channel')?.value === 'MULTI'" (click)="selectChannel('MULTI')">
+                          <div class="channel-content">
+                            <mat-icon class="channel-icon">layers</mat-icon>
+                            <h3>Мультиканальная</h3>
+                            <p>Отправка через несколько каналов</p>
+                            <div class="channel-features">
+                              <span class="feature-badge">Максимальный охват</span>
+                              <span class="feature-badge">Fallback</span>
                             </div>
-                          </mat-radio-button>
+                          </div>
                         </mat-card>
-                      </mat-radio-group>
+                      </div>
                     </form>
 
                     <div class="step-actions">
@@ -243,7 +235,7 @@ import { CreateCampaignDto, CampaignType, SmsTemplate } from '../../../models/no
                       } @else {
                         <div class="templates-grid">
                           @for (template of availableTemplates(); track template.id) {
-                            <mat-card class="template-card" 
+                            <mat-card class="template-card p-2" 
                                       [class.selected]="contentForm.get('templateId')?.value === template.id"
                                       (click)="selectTemplate(template)">
                               <div class="template-header">
@@ -260,7 +252,7 @@ import { CreateCampaignDto, CampaignType, SmsTemplate } from '../../../models/no
                               @if (template.variables && template.variables.length > 0) {
                                 <div class="template-variables">
                                   @for (variable of template.variables; track variable) {
-                                    <span class="variable-chip">{{'{{'}}{{ variable }}{{'}}'}}</span>
+                                    <span class="variable-chip">{{ variable }}</span>
                                   }
                                 </div>
                               }
@@ -299,63 +291,55 @@ import { CreateCampaignDto, CampaignType, SmsTemplate } from '../../../models/no
                     </div>
 
                     <form [formGroup]="audienceForm" class="step-form">
-                      <mat-radio-group formControlName="segmentId" class="segments-grid">
-                        <mat-card class="segment-card" [class.selected]="audienceForm.get('segmentId')?.value === 'all'">
-                          <mat-radio-button value="all">
-                            <div class="segment-content">
-                              <mat-icon class="segment-icon">groups</mat-icon>
-                              <h4>Все контакты</h4>
-                              <p>Отправить всем контактам в базе</p>
-                              <div class="segment-count">
-                                <mat-icon>person</mat-icon>
-                                <span>2,456 контактов</span>
-                              </div>
+                      <div class="segments-grid">
+                        <mat-card class="segment-card" [class.selected]="audienceForm.get('segmentId')?.value === 'all'" (click)="selectSegment('all')">
+                          <div class="segment-content">
+                            <mat-icon class="segment-icon">groups</mat-icon>
+                            <h4>Все контакты</h4>
+                            <p>Отправить всем контактам в базе</p>
+                            <div class="segment-count">
+                              <mat-icon>person</mat-icon>
+                              <span>2,456 контактов</span>
                             </div>
-                          </mat-radio-button>
+                          </div>
                         </mat-card>
 
-                        <mat-card class="segment-card" [class.selected]="audienceForm.get('segmentId')?.value === 'segment-1'">
-                          <mat-radio-button value="segment-1">
-                            <div class="segment-content">
-                              <mat-icon class="segment-icon">star</mat-icon>
-                              <h4>VIP клиенты</h4>
-                              <p>Премиум клиенты с высокой активностью</p>
-                              <div class="segment-count">
-                                <mat-icon>person</mat-icon>
-                                <span>245 контактов</span>
-                              </div>
+                        <mat-card class="segment-card" [class.selected]="audienceForm.get('segmentId')?.value === 'segment-1'" (click)="selectSegment('segment-1')">
+                          <div class="segment-content">
+                            <mat-icon class="segment-icon">star</mat-icon>
+                            <h4>VIP клиенты</h4>
+                            <p>Премиум клиенты с высокой активностью</p>
+                            <div class="segment-count">
+                              <mat-icon>person</mat-icon>
+                              <span>245 контактов</span>
                             </div>
-                          </mat-radio-button>
+                          </div>
                         </mat-card>
 
-                        <mat-card class="segment-card" [class.selected]="audienceForm.get('segmentId')?.value === 'segment-2'">
-                          <mat-radio-button value="segment-2">
-                            <div class="segment-content">
-                              <mat-icon class="segment-icon">fiber_new</mat-icon>
-                              <h4>Новые подписчики</h4>
-                              <p>Зарегистрированы за последние 30 дней</p>
-                              <div class="segment-count">
-                                <mat-icon>person</mat-icon>
-                                <span>1,234 контакта</span>
-                              </div>
+                        <mat-card class="segment-card" [class.selected]="audienceForm.get('segmentId')?.value === 'segment-2'" (click)="selectSegment('segment-2')">
+                          <div class="segment-content">
+                            <mat-icon class="segment-icon">fiber_new</mat-icon>
+                            <h4>Новые подписчики</h4>
+                            <p>Зарегистрированы за последние 30 дней</p>
+                            <div class="segment-count">
+                              <mat-icon>person</mat-icon>
+                              <span>1,234 контакта</span>
                             </div>
-                          </mat-radio-button>
+                          </div>
                         </mat-card>
 
-                        <mat-card class="segment-card" [class.selected]="audienceForm.get('segmentId')?.value === 'segment-3'">
-                          <mat-radio-button value="segment-3">
-                            <div class="segment-content">
-                              <mat-icon class="segment-icon">trending_up</mat-icon>
-                              <h4>Активные за 30 дней</h4>
-                              <p>Клиенты с недавней активностью</p>
-                              <div class="segment-count">
-                                <mat-icon>person</mat-icon>
-                                <span>567 контактов</span>
-                              </div>
+                        <mat-card class="segment-card" [class.selected]="audienceForm.get('segmentId')?.value === 'segment-3'" (click)="selectSegment('segment-3')">
+                          <div class="segment-content">
+                            <mat-icon class="segment-icon">trending_up</mat-icon>
+                            <h4>Активные за 30 дней</h4>
+                            <p>Клиенты с недавней активностью</p>
+                            <div class="segment-count">
+                              <mat-icon>person</mat-icon>
+                              <span>567 контактов</span>
                             </div>
-                          </mat-radio-button>
+                          </div>
                         </mat-card>
-                      </mat-radio-group>
+                      </div>
                     </form>
 
                     <div class="step-actions">
@@ -383,27 +367,23 @@ import { CreateCampaignDto, CampaignType, SmsTemplate } from '../../../models/no
                     </div>
 
                     <form [formGroup]="scheduleForm" class="step-form">
-                      <mat-radio-group formControlName="scheduleType" class="schedule-type-group">
-                        <mat-card class="schedule-type-card" [class.selected]="scheduleForm.get('scheduleType')?.value === 'immediate'">
-                          <mat-radio-button value="immediate">
-                            <div class="schedule-type-content">
-                              <mat-icon>flash_on</mat-icon>
-                              <h4>Немедленная отправка</h4>
-                              <p>Начать отправку сразу после создания</p>
-                            </div>
-                          </mat-radio-button>
+                      <div class="schedule-type-group">
+                        <mat-card class="schedule-type-card" [class.selected]="scheduleForm.get('scheduleType')?.value === 'immediate'" (click)="selectScheduleType('immediate')">
+                          <div class="schedule-type-content">
+                            <mat-icon>flash_on</mat-icon>
+                            <h4>Немедленная отправка</h4>
+                            <p>Начать отправку сразу после создания</p>
+                          </div>
                         </mat-card>
 
-                        <mat-card class="schedule-type-card" [class.selected]="scheduleForm.get('scheduleType')?.value === 'scheduled'">
-                          <mat-radio-button value="scheduled">
-                            <div class="schedule-type-content">
-                              <mat-icon>event</mat-icon>
-                              <h4>Отложенная отправка</h4>
-                              <p>Запланировать на определенное время</p>
-                            </div>
-                          </mat-radio-button>
+                        <mat-card class="schedule-type-card" [class.selected]="scheduleForm.get('scheduleType')?.value === 'scheduled'" (click)="selectScheduleType('scheduled')">
+                          <div class="schedule-type-content">
+                            <mat-icon>event</mat-icon>
+                            <h4>Отложенная отправка</h4>
+                            <p>Запланировать на определенное время</p>
+                          </div>
                         </mat-card>
-                      </mat-radio-group>
+                      </div>
 
                       @if (scheduleForm.get('scheduleType')?.value === 'scheduled') {
                         <div class="schedule-details">
@@ -1156,27 +1136,6 @@ import { CreateCampaignDto, CampaignType, SmsTemplate } from '../../../models/no
     .full-width {
       width: 100%;
     }
-
-    ::ng-deep {
-      .mat-mdc-radio-button .mdc-radio {
-        padding: 0;
-      }
-
-      .mat-mdc-radio-button .mdc-radio .mdc-radio__background {
-        width: 20px;
-        height: 20px;
-      }
-
-      .mat-mdc-radio-button .mdc-radio .mdc-radio__outer-circle {
-        border-color: var(--primary-color);
-      }
-
-      .mat-mdc-radio-button.mat-mdc-radio-checked .mdc-radio .mdc-radio__outer-circle,
-      .mat-mdc-radio-button.mat-mdc-radio-checked .mdc-radio .mdc-radio__inner-circle {
-        border-color: var(--primary-color);
-        background-color: var(--primary-color);
-      }
-    }
   `]
 })
 export class CampaignWizardComponent {
@@ -1264,6 +1223,18 @@ export class CampaignWizardComponent {
 
   selectTemplate(template: SmsTemplate) {
     this.contentForm.patchValue({ templateId: template.id });
+  }
+
+  selectChannel(channel: string) {
+    this.channelForm.patchValue({ channel });
+  }
+
+  selectSegment(segmentId: string) {
+    this.audienceForm.patchValue({ segmentId });
+  }
+
+  selectScheduleType(scheduleType: string) {
+    this.scheduleForm.patchValue({ scheduleType });
   }
 
   createNewTemplate() {
