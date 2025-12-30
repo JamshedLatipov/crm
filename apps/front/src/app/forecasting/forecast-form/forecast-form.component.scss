@@ -98,3 +98,113 @@ mat-form-field {
     margin-top: 4px;
   }
 }
+
+// Method help panel
+.method-help-panel {
+  margin: 16px 0;
+  border: 1px solid var(--border-color, #dee2e6);
+  border-radius: 8px;
+  background: var(--info-light, rgba(33, 150, 243, 0.05));
+
+  mat-expansion-panel-header {
+    mat-panel-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--primary-color, #1976d2);
+      font-weight: 500;
+
+      mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+    }
+  }
+
+  .method-details {
+    padding: 16px;
+    
+    p {
+      margin: 12px 0;
+      line-height: 1.6;
+      color: var(--text-primary, #212529);
+
+      strong {
+        color: var(--primary-color, #1976d2);
+        font-weight: 600;
+      }
+
+      code {
+        padding: 4px 8px;
+        background: rgba(0, 0, 0, 0.05);
+        border-radius: 4px;
+        font-family: 'Courier New', monospace;
+        font-size: 13px;
+        color: #d63384;
+      }
+    }
+  }
+}
+
+// Period preview panel
+.period-preview-panel {
+  margin: 16px 0;
+  border: 1px solid var(--success-color, #10b981);
+  border-radius: 8px;
+  background: var(--success-light, rgba(16, 185, 129, 0.05));
+
+  mat-expansion-panel-header {
+    mat-panel-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--success-color, #10b981);
+      font-weight: 500;
+
+      mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+    }
+
+    mat-panel-description {
+      color: var(--text-secondary, #6c757d);
+    }
+  }
+
+  .period-list {
+    padding: 16px;
+
+    mat-chip-set {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+
+      mat-chip {
+        font-size: 12px;
+        background: var(--success-light, rgba(16, 185, 129, 0.1));
+        color: var(--success-color, #10b981);
+        border: 1px solid var(--success-color, #10b981);
+        padding: 6px 12px;
+        border-radius: 16px;
+      }
+    }
+
+    .more-periods {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+      color: var(--text-secondary, #6c757d);
+      font-style: italic;
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+    }
+  }
+}

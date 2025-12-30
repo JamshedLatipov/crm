@@ -13,7 +13,12 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatExpansionModule } from '@angular/material/expansion';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatListModule } from '@angular/material/list';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { ForecastingService } from '../services/forecasting.service';
+import { UserService, Manager } from '../../shared/services/user.service';
 import { 
   ForecastType, 
   ForecastMethod, 
@@ -40,7 +45,11 @@ import {
     MatNativeDateModule,
     MatIconModule,
     MatProgressSpinnerModule,
-    MatChipsModule
+    MatChipsModule,
+    MatExpansionModule,
+    MatDividerModule,
+    MatListModule,
+    MatTooltipModule
   ],
   templateUrl: './forecast-form.component.html',
   styleUrls: ['./forecast-form.component.scss']
@@ -49,6 +58,9 @@ export class ForecastFormComponent {
   forecastForm: FormGroup;
   loading = signal(false);
   error = signal<string | null>(null);
+  managers = signal<Manager[]>([]);
+  loadingManagers = signal(false);
+  periodPreview = signal<string[]>([]);
 
   forecastTypes = Object.values(ForecastType);
   forecastMethods = Object.values(ForecastMethod);
@@ -61,6 +73,7 @@ export class ForecastFormComponent {
   constructor(
     private fb: FormBuilder,
     private forecastingService: ForecastingService,
+    private userService: UserService,
     private router: Router
   ) {
     this.forecastForm = this.fb.group({
@@ -71,9 +84,93 @@ export class ForecastFormComponent {
       startDate: [new Date(), Validators.required],
       endDate: [new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), Validators.required],
       targetValue: [null, [Validators.required, Validators.min(0)]],
+      ownerId: [''],
+      team: [''],
       description: [''],
       tags: [[]]
     });
+
+    this.loadManagers();
+    this.setupFormListeners();
+  }
+
+  private setupFormListeners(): void {
+    // Обновление предпросмотра периодов при изменении дат или типа периода
+    this.forecastForm.valueChanges.subscribe(() => {
+      this.updatePeriodPreview();
+    });
+  }
+
+  private loadManagers(): void {
+    this.loadingManagers.set(true);
+    this.userService.getManagers().subscribe({
+      next: (managers) => {
+        this.managers.set(managers);
+        this.loadingManagers.set(false);
+      },
+      error: (err) => {
+        console.error('Error loading managers:', err);
+        this.loadingManagers.set(false);
+      }
+    });
+  }
+
+  private updatePeriodPreview(): void {
+    const startDate = this.forecastForm.get('startDate')?.value;
+    const endDate = this.forecastForm.get('endDate')?.value;
+    const periodType = this.forecastForm.get('periodType')?.value;
+
+    if (!startDate || !endDate || !periodType) {
+      this.periodPreview.set([]);
+      return;
+    }
+
+    const periods = this.calculatePeriods(new Date(startDate), new Date(endDate), periodType);
+    this.periodPreview.set(periods);
+  }
+
+  private calculatePeriods(start: Date, end: Date, periodType: ForecastPeriodType): string[] {
+    const periods: string[] = [];
+    const current = new Date(start);
+
+    while (current <= end) {
+      let label = '';
+      const next = new Date(current);
+
+      switch (periodType) {
+        case ForecastPeriodType.DAILY:
+          label = current.toLocaleDateString('ru-RU', { day: '2-digit', month: 'short', year: 'numeric' });
+          next.setDate(next.getDate() + 1);
+          break;
+        case ForecastPeriodType.WEEKLY:
+          const weekEnd = new Date(current);
+          weekEnd.setDate(weekEnd.getDate() + 6);
+          label = `Неделя ${current.toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })} - ${weekEnd.toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })}`;
+          next.setDate(next.getDate() + 7);
+          break;
+        case ForecastPeriodType.MONTHLY:
+          label = current.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+          next.setMonth(next.getMonth() + 1);
+          break;
+        case ForecastPeriodType.QUARTERLY:
+          const quarter = Math.floor(current.getMonth() / 3) + 1;
+          label = `Q${quarter} ${current.getFullYear()}`;
+          next.setMonth(next.getMonth() + 3);
+          break;
+        case ForecastPeriodType.YEARLY:
+          label = current.getFullYear().toString();
+          next.setFullYear(next.getFullYear() + 1);
+          break;
+      }
+
+      periods.push(label);
+      current.setTime(next.getTime());
+
+      // Защита от бесконечного цикла
+      if (periods.length > 100) break;
+    }
+
+    return periods;
   }
 
   onSubmit(): void {
@@ -86,7 +183,7 @@ export class ForecastFormComponent {
     this.error.set(null);
 
     const formValue = this.forecastForm.value;
-    const createDto = {
+    const createDto: any = {
       name: formValue.name,
       type: formValue.type,
       method: formValue.method,
@@ -97,6 +194,14 @@ export class ForecastFormComponent {
       description: formValue.description,
       tags: formValue.tags
     };
+
+    // Добавить опциональные поля
+    if (formValue.ownerId) {
+      createDto.ownerId = formValue.ownerId;
+    }
+    if (formValue.team) {
+      createDto.team = formValue.team;
+    }
 
     this.forecastingService.createForecast(createDto).subscribe({
       next: (forecast) => {
@@ -135,5 +240,51 @@ export class ForecastFormComponent {
       [ForecastMethod.HISTORICAL_AVERAGE]: 'Простое среднее исторических значений'
     };
     return descriptions[method];
+  }
+
+  getMethodDetailedInfo(method: ForecastMethod): { title: string; description: string; bestFor: string; formula: string } {
+    const info: Record<ForecastMethod, { title: string; description: string; bestFor: string; formula: string }> = {
+      [ForecastMethod.LINEAR_TREND]: {
+        title: 'Линейный тренд',
+        description: 'Использует линейную регрессию для построения прямой линии тренда на основе исторических данных.',
+        bestFor: 'Подходит для данных со стабильным линейным ростом или падением',
+        formula: 'y = ax + b, где a - угол наклона, b - точка пересечения'
+      },
+      [ForecastMethod.WEIGHTED_AVERAGE]: {
+        title: 'Взвешенное среднее',
+        description: 'Средневзвешенное значение, где последние периоды имеют больший вес.',
+        bestFor: 'Подходит когда недавние тренды более важны чем старые данные',
+        formula: 'Σ(w_i × x_i) / Σw_i, где w_i - вес периода'
+      },
+      [ForecastMethod.PIPELINE_CONVERSION]: {
+        title: 'Конверсия воронки',
+        description: 'Прогнозирует на основе исторической конверсии сделок в воронке продаж.',
+        bestFor: 'Идеален для прогноза продаж на основе текущей воронки',
+        formula: 'Прогноз = (Сделки в воронке) × (Средняя конверсия) × (Средний размер)'
+      },
+      [ForecastMethod.MOVING_AVERAGE]: {
+        title: 'Скользящее среднее',
+        description: 'Среднее значение по последним N периодам для сглаживания колебаний.',
+        bestFor: 'Хорош для сглаживания шума и выявления общего тренда',
+        formula: 'MA = (x_1 + x_2 + ... + x_n) / n'
+      },
+      [ForecastMethod.EXPONENTIAL_SMOOTHING]: {
+        title: 'Экспоненциальное сглаживание',
+        description: 'Применяет экспоненциальное сглаживание с параметром alpha для предсказания.',
+        bestFor: 'Отлично работает с сезонными данными и трендами',
+        formula: 'S_t = α × x_t + (1-α) × S_(t-1), где α - параметр сглаживания'
+      },
+      [ForecastMethod.HISTORICAL_AVERAGE]: {
+        title: 'Историческое среднее',
+        description: 'Простое среднее арифметическое всех исторических значений.',
+        bestFor: 'Базовый метод для начальных оценок при стабильных данных',
+        formula: 'Среднее = Σx_i / n'
+      }
+    };
+    return info[method];
+  }
+
+  getPeriodsCount(): number {
+    return this.periodPreview().length;
   }
 }

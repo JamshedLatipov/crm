@@ -41,6 +41,21 @@
           </mat-hint>
         </mat-form-field>
 
+        <!-- Расширенная информация о выбранном методе -->
+        <mat-expansion-panel *ngIf="forecastForm.get('method')?.value" class="method-help-panel">
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              <mat-icon>help_outline</mat-icon>
+              Подробнее о методе: {{ methodLabels[forecastForm.get('method')?.value] }}
+            </mat-panel-title>
+          </mat-expansion-panel-header>
+          <div class="method-details">
+            <p><strong>Описание:</strong> {{ getMethodDetailedInfo(forecastForm.get('method')?.value).description }}</p>
+            <p><strong>Подходит для:</strong> {{ getMethodDetailedInfo(forecastForm.get('method')?.value).bestFor }}</p>
+            <p><strong>Формула:</strong> <code>{{ getMethodDetailedInfo(forecastForm.get('method')?.value).formula }}</code></p>
+          </div>
+        </mat-expansion-panel>
+
         <!-- Период -->
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Тип периода</mat-label>
@@ -81,12 +96,55 @@
           </mat-error>
         </mat-form-field>
 
+        <!-- Владелец (опционально) -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Владелец прогноза (опционально)</mat-label>
+          <mat-select formControlName="ownerId">
+            <mat-option [value]="''">-- Не выбран --</mat-option>
+            <mat-option *ngFor="let manager of managers()" [value]="manager.id">
+              {{ manager.fullName }} ({{ manager.email }})
+            </mat-option>
+          </mat-select>
+          <mat-hint>Ответственный за выполнение прогноза</mat-hint>
+        </mat-form-field>
+
+        <!-- Команда (опционально) -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Команда (опционально)</mat-label>
+          <input matInput formControlName="team" placeholder="Например: Отдел продаж">
+          <mat-hint>Название команды или отдела</mat-hint>
+        </mat-form-field>
+
         <!-- Описание -->
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Описание (опционально)</mat-label>
           <textarea matInput formControlName="description" rows="3" 
                     placeholder="Дополнительная информация о прогнозе"></textarea>
         </mat-form-field>
+
+        <!-- Предпросмотр периодов -->
+        <mat-expansion-panel class="period-preview-panel" *ngIf="periodPreview().length > 0">
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              <mat-icon>calendar_month</mat-icon>
+              Предпросмотр периодов ({{ getPeriodsCount() }})
+            </mat-panel-title>
+            <mat-panel-description>
+              Будет создано {{ getPeriodsCount() }} {{ getPeriodsCount() === 1 ? 'период' : getPeriodsCount() < 5 ? 'периода' : 'периодов' }}
+            </mat-panel-description>
+          </mat-expansion-panel-header>
+          <div class="period-list">
+            <mat-chip-set>
+              <mat-chip *ngFor="let period of periodPreview().slice(0, 20)">
+                {{ period }}
+              </mat-chip>
+            </mat-chip-set>
+            <p *ngIf="periodPreview().length > 20" class="more-periods">
+              <mat-icon>more_horiz</mat-icon>
+              И еще {{ periodPreview().length - 20 }} периодов...
+            </p>
+          </div>
+        </mat-expansion-panel>
 
         <!-- Ошибка -->
         <div *ngIf="error()" class="error-message">

@@ -1,61 +1,66 @@
-<app-page-layout [title]="forecast?.name || 'Прогноз'" subtitle="Детальная информация о прогнозе">
+<app-page-layout [title]="forecast()?.name || 'Прогноз'" subtitle="Детальная информация о прогнозе">
   <div page-actions>
     <button mat-button routerLink="/forecasting">
       <mat-icon>arrow_back</mat-icon>
       Назад к списку
     </button>
-    <button mat-raised-button color="primary" (click)="calculate()" [disabled]="loading">
-      <mat-icon>refresh</mat-icon>
-      Пересчитать
+    <button mat-button color="accent" (click)="exportToCSV()" [disabled]="loading() || periods().length === 0">
+      <mat-icon>download</mat-icon>
+      Экспорт CSV
+    </button>
+    <button mat-raised-button color="primary" (click)="calculate()" [disabled]="loading() || calculating()">
+      <mat-spinner *ngIf="calculating()" diameter="20"></mat-spinner>
+      <mat-icon *ngIf="!calculating()">refresh</mat-icon>
+      {{ calculating() ? 'Расчет...' : 'Пересчитать' }}
     </button>
   </div>
 
-  <div *ngIf="loading" class="loading-container">
+  <div *ngIf="loading()" class="loading-container">
     <mat-spinner></mat-spinner>
   </div>
 
-  <div *ngIf="!loading && forecast" class="forecast-detail-container">
+  <div *ngIf="!loading() && forecast()" class="forecast-detail-container">
     <!-- Summary Cards -->
     <div class="summary-cards">
-      <mat-card class="stat-card stat-card-target">
+      <div class="stat-card stat-card-target">
         <div class="stat-icon">
           <mat-icon>flag</mat-icon>
         </div>
         <div class="stat-content">
           <div class="stat-label">Целевое значение</div>
-          <div class="stat-value">{{ formatCurrency(forecast.targetValue) }}</div>
+          <div class="stat-value">{{ formatCurrency(forecast()?.targetValue) }}</div>
         </div>
-      </mat-card>
+      </div>
 
-      <mat-card class="stat-card stat-card-predicted">
+      <div class="stat-card stat-card-predicted">
         <div class="stat-icon">
           <mat-icon>insights</mat-icon>
         </div>
         <div class="stat-content">
           <div class="stat-label">Прогноз</div>
-          <div class="stat-value">{{ forecast.predictedValue ? formatCurrency(forecast.predictedValue) : '-' }}</div>
+          <div class="stat-value">{{ forecast()?.predictedValue ? formatCurrency(forecast()?.predictedValue) : '-' }}</div>
         </div>
-      </mat-card>
+      </div>
 
-      <mat-card class="stat-card stat-card-actual">
+      <div class="stat-card stat-card-actual">
         <div class="stat-icon">
           <mat-icon>analytics</mat-icon>
         </div>
         <div class="stat-content">
           <div class="stat-label">Факт</div>
-          <div class="stat-value">{{ forecast.actualValue ? formatCurrency(forecast.actualValue) : '-' }}</div>
+          <div class="stat-value">{{ forecast()?.actualValue ? formatCurrency(forecast()?.actualValue) : '-' }}</div>
         </div>
-      </mat-card>
+      </div>
 
-      <mat-card class="stat-card stat-card-confidence">
+      <div class="stat-card stat-card-confidence">
         <div class="stat-icon">
           <mat-icon>verified</mat-icon>
         </div>
         <div class="stat-content">
           <div class="stat-label">Уверенность</div>
-          <div class="stat-value">{{ formatPercentage(forecast.confidence) }}</div>
+          <div class="stat-value">{{ formatPercentage(forecast()?.confidence) }}</div>
         </div>
-      </mat-card>
+      </div>
     </div>
 
     <!-- Main Information -->
@@ -68,22 +73,30 @@
         <div class="info-content">
           <div class="info-item">
             <span class="label">Тип прогноза</span>
-            <span class="value">{{ forecast.type }}</span>
+            <span class="value">{{ typeLabels[forecast()!.type] }}</span>
           </div>
           <div class="info-item">
             <span class="label">Метод расчета</span>
-            <span class="value">{{ forecast.method }}</span>
+            <span class="value">{{ methodLabels[forecast()!.method] }}</span>
           </div>
           <div class="info-item">
             <span class="label">Статус</span>
-            <span class="value status-badge" [class]="'status-' + forecast.status">{{ forecast.status }}</span>
+            <span class="value">
+              <span [class]="'status-chip status-' + forecast()?.status">
+                {{ statusLabels[forecast()!.status] }}
+              </span>
+            </span>
           </div>
           <div class="info-item">
             <span class="label">Период прогноза</span>
             <span class="value">
               <mat-icon class="inline-icon">date_range</mat-icon>
-              {{ formatDateRange(forecast.startDate, forecast.endDate) }}
+              {{ formatDateRange(forecast()?.startDate, forecast()?.endDate) }}
             </span>
+          </div>
+          <div class="info-item" *ngIf="forecast()?.description">
+            <span class="label">Описание</span>
+            <span class="value">{{ forecast()?.description }}</span>
           </div>
         </div>
       </mat-card>
@@ -97,24 +110,161 @@
           <div class="info-item">
             <span class="label">Точность прогноза</span>
             <span class="value">
-              {{ forecast.accuracy ? formatPercentage(forecast.accuracy) : '-' }}
+              {{ forecast()?.accuracy ? formatPercentage(forecast()?.accuracy) : '-' }}
             </span>
           </div>
           <div class="info-item">
-            <span class="label">Уровень уверенности</span>
-            <div class="progress-container">
-              <div class="progress-bar">
-                <div class="progress-fill" [style.width.%]="forecast.confidence"></div>
-              </div>
-              <span class="progress-value">{{ formatPercentage(forecast.confidence) }}</span>
-            </div>
+            <span class="label">Общее отклонение</span>
+            <span class="value" [class]="'variance-' + getVarianceColor(getTotalVariance())">
+              {{ formatCurrency(getTotalVariance()) }}
+            </span>
           </div>
-          <div class="info-item full-width" *ngIf="forecast.description">
-            <span class="label">Описание</span>
-            <span class="value description">{{ forecast.description }}</span>
+          <div class="info-item">
+            <span class="label">Периодов создано</span>
+            <span class="value">{{ periods().length }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Дата создания</span>
+            <span class="value">{{ forecast()?.createdAt | date:'dd.MM.yyyy HH:mm' }}</span>
           </div>
         </div>
       </mat-card>
     </div>
+
+    <!-- Charts Section -->
+    <mat-tab-group class="charts-tabs">
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon>show_chart</mat-icon>
+          Цель vs Прогноз vs Факт
+        </ng-template>
+        <div class="chart-card">
+          <div class="chart-container">
+            <canvas baseChart
+              [data]="lineChartData"
+              [options]="lineChartOptions"
+              [type]="lineChartType">
+            </canvas>
+          </div>
+        </div>
+      </mat-tab>
+
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon>bar_chart</mat-icon>
+          Отклонения
+        </ng-template>
+        <div class="chart-card">
+          <div class="chart-container">
+            <canvas baseChart
+              [data]="barChartData"
+              [options]="barChartOptions"
+              [type]="barChartType">
+            </canvas>
+          </div>
+        </div>
+      </mat-tab>
+
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon>pie_chart</mat-icon>
+          Распределение
+        </ng-template>
+        <div class="chart-card">
+          <div class="chart-container chart-container-pie">
+            <canvas baseChart
+              [data]="pieChartData"
+              [options]="pieChartOptions"
+              [type]="pieChartType">
+            </canvas>
+          </div>
+        </div>
+      </mat-tab>
+
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon>timeline</mat-icon>
+          Уверенность
+        </ng-template>
+        <div class="chart-card">
+          <div class="chart-container">
+            <canvas baseChart
+              [data]="confidenceChartData"
+              [options]="confidenceChartOptions"
+              [type]="confidenceChartType">
+            </canvas>
+          </div>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+
+    <!-- Periods Table -->
+    <mat-card class="periods-table-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>view_list</mat-icon>
+          Периоды прогноза ({{ periods().length }})
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <crm-table
+          *ngIf="periods().length > 0"
+          [columns]="periodsColumns"
+          [data]="periods()"
+          [pageSize]="10"
+          [pageSizeOptions]="[5, 10, 25]"
+        >
+          <ng-template crmColumnTemplate="periodLabelTemplate" let-row>
+            <div class="period-label">
+              <mat-icon class="table-icon">event</mat-icon>
+              <strong>{{ row.periodLabel }}</strong>
+            </div>
+          </ng-template>
+
+          <ng-template crmColumnTemplate="targetTemplate" let-row>
+            <span class="number-cell">{{ formatCurrency(row.targetValue) }}</span>
+          </ng-template>
+
+          <ng-template crmColumnTemplate="predictedTemplate" let-row>
+            <span class="number-cell predicted">
+              {{ row.predictedValue ? formatCurrency(row.predictedValue) : '-' }}
+            </span>
+          </ng-template>
+
+          <ng-template crmColumnTemplate="actualTemplate" let-row>
+            <span class="number-cell actual">
+              {{ row.actualValue ? formatCurrency(row.actualValue) : '-' }}
+            </span>
+          </ng-template>
+
+          <ng-template crmColumnTemplate="varianceTemplate" let-row>
+            <span [class]="'number-cell variance-' + getVarianceColor(row.variance)">
+              <mat-icon *ngIf="row.variance > 0" class="variance-icon">trending_up</mat-icon>
+              <mat-icon *ngIf="row.variance < 0" class="variance-icon">trending_down</mat-icon>
+              {{ row.variance ? formatCurrency(row.variance) : '-' }}
+            </span>
+          </ng-template>
+
+          <ng-template crmColumnTemplate="confidenceTemplate" let-row>
+            <span [class]="'confidence-chip confidence-' + getConfidenceColor(row.confidence)">
+              {{ formatPercentage(row.confidence) }}
+            </span>
+          </ng-template>
+
+          <ng-template crmColumnTemplate="actionsTemplate" let-row>
+            <button mat-icon-button color="primary" 
+                    (click)="editPeriodActual(row)"
+                    matTooltip="Редактировать факт">
+              <mat-icon>edit</mat-icon>
+            </button>
+          </ng-template>
+        </crm-table>
+
+        <div *ngIf="periods().length === 0" class="no-data">
+          <mat-icon>info</mat-icon>
+          <p>Нет данных о периодах</p>
+        </div>
+      </mat-card-content>
+    </mat-card>
   </div>
 </app-page-layout>
