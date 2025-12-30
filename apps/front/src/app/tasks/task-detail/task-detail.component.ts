@@ -21,6 +21,7 @@ import { TasksService, TaskDto, TaskHistory } from '../tasks.service';
 import { AuthService } from '../../auth/auth.service';
 import { UsersService, User } from '../../users/users.service';
 import { AssignmentService } from '../../services/assignment.service';
+import { SoftphoneCallHistoryService } from '../../softphone/components/softphone-call-history/softphone-call-history.service';
 import { HumanDatePipe } from '../../shared/pipes/human-date.pipe';
 import { TaskDueDateComponent } from '../components/task-due-date/task-due-date.component';
 import { AssignUserDialogComponent } from '../../deals/components/assign-user-dialog.component';
@@ -79,6 +80,7 @@ export class TaskDetailComponent implements OnInit {
   private usersService = inject(UsersService);
   private dialog = inject(MatDialog);
   private assignmentService = inject(AssignmentService);
+  private callHistoryService = inject(SoftphoneCallHistoryService);
 
   // Enum для использования в шаблоне
   readonly CommentEntityType = CommentEntityType;
@@ -87,6 +89,15 @@ export class TaskDetailComponent implements OnInit {
   isLoading = signal(true);
   managers = signal<User[]>([]);
   isLoadingManagers = signal(false);
+
+  // Call log information
+  callLogInfo = signal<any>(null);
+  loadingCallLog = signal(false);
+  
+  // Recording information
+  recordingExists = signal(false);
+  recordingUrl = signal<string | null>(null);
+  checkingRecording = signal(false);
 
   // History
   taskHistory = signal<TaskHistory[]>([]);
@@ -129,6 +140,11 @@ export class TaskDetailComponent implements OnInit {
       next: (task) => {
         this.task.set(task);
         this.isLoading.set(false);
+        
+        // Load call log info if task has callLogId
+        if (task.callLogId) {
+          this.loadCallLogInfo(task.callLogId);
+        }
       },
       error: (err) => {
         console.error('Error loading task:', err);
@@ -172,6 +188,69 @@ export class TaskDetailComponent implements OnInit {
         this.isLoadingHistory.set(false);
       },
     });
+  }
+
+  loadCallLogInfo(callLogId: string) {
+    this.loadingCallLog.set(true);
+    this.callHistoryService.getCallLogById(callLogId).then(
+      (log) => {
+        console.log('Loaded call log:', log);
+        this.callLogInfo.set(log);
+        this.loadingCallLog.set(false);
+        
+        // Check if recording exists for this call
+        if (log?.asteriskUniqueId) {
+          this.checkRecordingExists(log.asteriskUniqueId);
+        }
+      },
+      (err) => {
+        console.error('Failed to load call log info', err);
+        this.callLogInfo.set(null);
+        this.loadingCallLog.set(false);
+      }
+    );
+  }
+
+  checkRecordingExists(uniqueId: string) {
+    this.checkingRecording.set(true);
+    this.callHistoryService.checkRecordingExists(uniqueId).then(
+      (response) => {
+        this.recordingExists.set(response.exists);
+        if (response.exists) {
+          this.recordingUrl.set(this.callHistoryService.getRecordingUrl(uniqueId));
+        }
+        this.checkingRecording.set(false);
+      },
+      (err) => {
+        console.error('Failed to check recording', err);
+        this.recordingExists.set(false);
+        this.checkingRecording.set(false);
+      }
+    );
+  }
+
+  formatCallDuration(seconds: number | undefined): string {
+    if (!seconds) return '0 сек';
+    if (seconds < 60) return `${seconds} сек`;
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins} мин ${secs} сек`;
+  }
+
+  formatCallDate(dateStr: string | undefined): string {
+    if (!dateStr) return 'N/A';
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleString('ru-RU', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return dateStr;
+    }
   }
 
   editTask() {

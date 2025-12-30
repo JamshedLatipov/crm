@@ -41,6 +41,7 @@ import { SoftphoneCallHistoryComponent } from './components/softphone-call-histo
 import { CallHistoryItem } from './components/softphone-call-history/softphone-call-history.types';
 import { SoftphoneCallHistoryService } from './components/softphone-call-history/softphone-call-history.service';
 import { TaskModalService } from '../tasks/services/task-modal.service';
+import { TaskModalComponent } from '../tasks/components/task-modal/task-modal.component';
 import {
   QueueMembersService,
   QueueMemberRecord,
@@ -104,6 +105,7 @@ type JsSIPSession = any;
     SoftphoneDialTabComponent,
     SoftphoneInfoTabComponent,
     SoftphoneCallHistoryComponent,
+    TaskModalComponent,
   ],
 })
 export class SoftphoneComponent implements OnInit, OnDestroy {
@@ -1028,17 +1030,25 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     createTask?: boolean;
   }) {
     try {
+      this.logger.info('manualRegisterCall called', { payload });
       const noteToSave = payload?.note ?? this.callState.callNote();
       const branch = payload?.branchId ?? this.callState.selectedScriptBranch();
       // Save call log first and get the log ID
       let savedLogId: string | null = null;
       try {
+        this.logger.info('Saving call log...', {
+          asteriskUniqueId: this.currentCallId(),
+          note: noteToSave,
+          callType: this.callState.callType(),
+          scriptBranch: branch,
+        });
         const logResult = await this.callHistoryService.saveCallLog({
           asteriskUniqueId: this.currentCallId(),  // Asterisk UNIQUEID для прямого сопоставления
           note: noteToSave,
           callType: this.callState.callType(),
           scriptBranch: branch,
         });
+        this.logger.info('Call log save response', { logResult });
         savedLogId = logResult?.id || logResult?.logId || null;
         this.logger.info('Call log saved', { 
           logId: savedLogId, 
@@ -1050,7 +1060,12 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       }
 
       // If requested, open task modal with prefilled title/description and link to call log
+      this.logger.info('Checking if should open task modal', { 
+        createTask: payload?.createTask,
+        savedLogId 
+      });
       if (payload?.createTask) {
+        this.logger.info('Opening task modal...');
         // find script title by id
         const findTitle = (
           list: any[] | undefined,
@@ -1066,6 +1081,12 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
         };
         const scriptsList = this.scripts() || [];
         const title = findTitle(scriptsList, branch) || 'Task from script';
+        this.logger.info('Task modal config', {
+          title,
+          noteToSave,
+          savedLogId,
+          branch
+        });
         try {
           this.taskModal.openModal({ 
             mode: 'create', 
@@ -1073,12 +1094,13 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
             note: noteToSave,
             callLogId: savedLogId || undefined
           });
+          this.logger.info('Task modal opened successfully');
         } catch (e) {
-          this.logger.warn('Opening task modal failed', e);
+          this.logger.error('Opening task modal failed', e);
         }
       }
     } catch (e) {
-      this.logger.warn('manualRegisterCall failed', e);
+      this.logger.error('manualRegisterCall failed', e);
     }
   }
 

@@ -122,6 +122,29 @@ export class SoftphoneCallHistoryService {
   }
 
   /**
+   * Get single call log by ID
+   */
+  getCallLogById(id: string): Promise<any> {
+    return firstValueFrom(this.http.get<any>(`${this.apiUrl}/logs/${id}`));
+  }
+
+  /**
+   * Check if recording exists for call
+   */
+  checkRecordingExists(uniqueId: string): Promise<{ exists: boolean; size?: number }> {
+    return firstValueFrom(
+      this.http.get<{ exists: boolean; size?: number }>(`${environment.apiBase}/calls/recordings/exists/${uniqueId}`)
+    );
+  }
+
+  /**
+   * Get recording URL for call
+   */
+  getRecordingUrl(uniqueId: string): string {
+    return `${environment.apiBase}/calls/recordings/${uniqueId}`;
+  }
+
+  /**
    * Get Asterisk UNIQUEID for active channel by caller number
    */
   getChannelUniqueId(callerNumber: string): Promise<{ uniqueid: string | null }> {

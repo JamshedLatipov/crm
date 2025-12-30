@@ -70,6 +70,117 @@
             </mat-card-content>
           </mat-card>
 
+          <!-- Call Information Card -->
+          @if (task()?.callLogId) {
+          <mat-card class="info-card call-info-card">
+            <mat-card-header>
+              <div mat-card-avatar class="card-avatar call">
+                <mat-icon>phone</mat-icon>
+              </div>
+              <mat-card-title>Информация о звонке</mat-card-title>
+              <mat-card-subtitle>Связанный звонок с задачей</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              @if (loadingCallLog()) {
+              <div class="call-loading">
+                <mat-spinner diameter="24"></mat-spinner>
+                <span>Загрузка...</span>
+              </div>
+              } @else if (callLogInfo()) {
+              <div class="call-info-details">
+                <div class="call-info-item">
+                  <mat-icon class="item-icon">event</mat-icon>
+                  <div class="item-content">
+                    <span class="item-label">Дата и время</span>
+                    <span class="item-value">{{ formatCallDate(callLogInfo()?.createdAt) }}</span>
+                  </div>
+                </div>
+                
+                @if (callLogInfo()?.duration) {
+                <div class="call-info-item">
+                  <mat-icon class="item-icon">schedule</mat-icon>
+                  <div class="item-content">
+                    <span class="item-label">Длительность</span>
+                    <span class="item-value">{{ formatCallDuration(callLogInfo()?.duration) }}</span>
+                  </div>
+                </div>
+                }
+                
+                @if (callLogInfo()?.callType) {
+                <div class="call-info-item">
+                  <mat-icon class="item-icon">{{ callLogInfo()?.callType === 'outgoing' ? 'call_made' : 'call_received' }}</mat-icon>
+                  <div class="item-content">
+                    <span class="item-label">Тип звонка</span>
+                    <span class="item-value">{{ callLogInfo()?.callType === 'outgoing' ? 'Исходящий' : 'Входящий' }}</span>
+                  </div>
+                </div>
+                }
+                
+                @if (callLogInfo()?.disposition) {
+                <div class="call-info-item">
+                  <mat-icon class="item-icon">check_circle</mat-icon>
+                  <div class="item-content">
+                    <span class="item-label">Статус</span>
+                    <span class="item-value">{{ callLogInfo()?.disposition }}</span>
+                  </div>
+                </div>
+                }
+                
+                @if (callLogInfo()?.note) {
+                <div class="call-info-item full-width">
+                  <mat-icon class="item-icon">notes</mat-icon>
+                  <div class="item-content">
+                    <span class="item-label">Заметка</span>
+                    <span class="item-value note">{{ callLogInfo()?.note }}</span>
+                  </div>
+                </div>
+                }
+                
+                <!-- Recording Player -->
+                @if (checkingRecording()) {
+                <div class="call-info-item full-width">
+                  <mat-icon class="item-icon">hourglass_empty</mat-icon>
+                  <div class="item-content">
+                    <span class="item-label">Запись звонка</span>
+                    <span class="item-value">Проверка наличия записи...</span>
+                  </div>
+                </div>
+                } @else if (recordingExists() && recordingUrl()) {
+                <div class="call-info-item full-width recording-item">
+                  <mat-icon class="item-icon">mic</mat-icon>
+                  <div class="item-content">
+                    <span class="item-label">Запись звонка</span>
+                    <div class="audio-player">
+                      <audio controls [src]="recordingUrl()" preload="metadata">
+                        Ваш браузер не поддерживает воспроизведение аудио.
+                      </audio>
+                      <a [href]="recordingUrl()" download class="download-link" mat-button color="primary">
+                        <mat-icon>download</mat-icon>
+                        Скачать
+                      </a>
+                    </div>
+                  </div>
+                </div>
+                } @else if (!checkingRecording() && callLogInfo()?.asteriskUniqueId) {
+                <div class="call-info-item full-width">
+                  <mat-icon class="item-icon">mic_off</mat-icon>
+                  <div class="item-content">
+                    <span class="item-label">Запись звонка</span>
+                    <span class="item-value muted">Запись недоступна</span>
+                  </div>
+                </div>
+                }
+              </div>
+              } @else {
+              <div class="call-error">
+                <mat-icon>error_outline</mat-icon>
+                <span>Информация о звонке недоступна</span>
+              </div>
+              }
+            </mat-card-content>
+          </mat-card>
+          }
+
           <!-- История и активность -->
           <div class="history-section">
             <div class="section-header">

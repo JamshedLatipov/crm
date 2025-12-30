@@ -146,12 +146,15 @@ export class SoftphoneScriptsPanelComponent implements OnChanges {
   saveForSelected() {
     try {
       const bid = this.localSelected();
-      this.registerCdr.emit({ branchId: bid, note: this.branchNote(), createTask: this.createTaskToggle() });
+      const payload = { branchId: bid, note: this.branchNote(), createTask: this.createTaskToggle() };
+      console.log('saveForSelected emitting registerCdr:', payload);
+      this.registerCdr.emit(payload);
       // clear local UI after save
       this.localSelected.set(null);
       this.branchNote.set('');
       this.createTaskToggle.set(false);
     } catch (e) {
+      console.error('saveForSelected failed', e);
       // ignore
     }
   }

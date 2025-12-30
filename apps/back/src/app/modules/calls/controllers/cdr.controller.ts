@@ -88,4 +88,11 @@ export class CdrController {
     const off = Math.max(0, Number(offset) || 0);
     return this.cdrService.listCallLog(lim, off);
   }
+
+  @Get('logs/:id')
+  @ApiOperation({ summary: 'Get single call log by ID' })
+  @ApiOkResponse({ description: 'Call log record or null if not found' })
+  async getCallLog(@Param('id') id: string) {
+    return this.cdrService.getCallLogById(id);
+  }
 }

@@ -5,7 +5,7 @@ import { createReadStream, existsSync, statSync } from 'fs';
 import { join } from 'path';
 
 @ApiTags('Recordings')
-@Controller('api/calls/recordings')
+@Controller('calls/recordings')
 export class RecordingsController {
   private readonly recordingsPath = process.env.RECORDINGS_PATH || '/var/lib/asterisk/recordings';
 

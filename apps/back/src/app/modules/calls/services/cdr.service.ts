@@ -144,6 +144,29 @@ export class CdrService {
     }));
   }
 
+  async getCallLogById(id: string): Promise<CallLog | null> {
+    const qb = this.callLogRepo
+      .createQueryBuilder('cl')
+      .leftJoin(CallScript, 's', 'cl.scriptBranch = s.id::text')
+      .where('cl.id = :id', { id });
+
+    const rawAndEntities = await qb
+      .select(['cl', 's.title'])
+      .getRawAndEntities();
+    
+    if (rawAndEntities.entities.length === 0) {
+      return null;
+    }
+
+    const entity = rawAndEntities.entities[0] as CallLog;
+    const raw = rawAndEntities.raw[0] as any;
+
+    return {
+      ...entity,
+      scriptTitle: raw?.s_title ?? null,
+    } as any;
+  }
+
   /**
    * Get UNIQUEID of active channel by endpoint name via ARI
    * Returns null if channel not found

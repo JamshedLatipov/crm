@@ -16,6 +16,7 @@ import { TaskTypeSelectComponent } from '../task-type-select.component';
 import { TaskModalService } from '../../services/task-modal.service';
 import { TasksService } from '../../tasks.service';
 import { TaskTypeService, TaskType } from '../../../services/task-type.service';
+import { SoftphoneCallHistoryService } from '../../../softphone/components/softphone-call-history/softphone-call-history.service';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
@@ -46,6 +47,7 @@ export class TaskModalComponent implements OnInit {
   private modalService = inject(TaskModalService);
   private tasksService = inject(TasksService);
   private taskTypeService = inject(TaskTypeService);
+  private callHistoryService = inject(SoftphoneCallHistoryService);
 
   // Signals from service
   isOpen = this.modalService.modalOpen;
@@ -56,6 +58,10 @@ export class TaskModalComponent implements OnInit {
   isLoading = signal(false);
   taskTypes: TaskType[] = [];
   calculatedDueDate: Date | null = null;
+  
+  // Call log information
+  callLogInfo = signal<any>(null);
+  loadingCallLog = signal(false);
 
   statusOptions = [
     { value: 'pending', label: 'В ожидании' },
@@ -69,6 +75,12 @@ export class TaskModalComponent implements OnInit {
       const cfg = this.config();
       if (cfg && this.isOpen()) {
         this.initializeForm(cfg);
+        // Load call log info if callLogId is provided
+        if (cfg.callLogId) {
+          this.loadCallLogInfo(cfg.callLogId);
+        } else {
+          this.callLogInfo.set(null);
+        }
       }
     });
   }
@@ -134,6 +146,22 @@ export class TaskModalComponent implements OnInit {
     });
   }
 
+  private loadCallLogInfo(callLogId: string): void {
+    this.loadingCallLog.set(true);
+    this.callHistoryService.getCallLogById(callLogId).then(
+      (log) => {
+        console.log('Loaded call log:', log);
+        this.callLogInfo.set(log);
+        this.loadingCallLog.set(false);
+      },
+      (err) => {
+        console.error('Failed to load call log info', err);
+        this.callLogInfo.set(null);
+        this.loadingCallLog.set(false);
+      }
+    );
+  }
+
   private loadTask(taskId: number): void {
     this.isLoading.set(true);
     this.tasksService.get(taskId).subscribe({
@@ -187,6 +215,23 @@ export class TaskModalComponent implements OnInit {
 
   formatDate(date: Date): string {
     return format(date, 'dd MMMM yyyy, HH:mm', { locale: ru });
+  }
+
+  formatCallDuration(seconds: number | undefined): string {
+    if (!seconds) return '0 сек';
+    if (seconds < 60) return `${seconds} сек`;
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins} мин ${secs} сек`;
+  }
+
+  formatCallDate(dateStr: string | undefined): string {
+    if (!dateStr) return 'N/A';
+    try {
+      return format(new Date(dateStr), 'dd.MM.yyyy HH:mm', { locale: ru });
+    } catch {
+      return dateStr;
+    }
   }
 
   close(): void {

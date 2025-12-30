@@ -16,6 +16,48 @@
 
     <!-- Form -->
     <form *ngIf="!isLoading()" [formGroup]="form" (ngSubmit)="save()" class="modal-body">
+      
+      <!-- Call Information Panel -->
+      <div *ngIf="config().callLogId" class="call-info-panel">
+        <div class="call-info-header">
+          <mat-icon>phone</mat-icon>
+          <span class="call-info-title">Информация о звонке</span>
+        </div>
+        
+        <div *ngIf="loadingCallLog()" class="call-info-loading">
+          <mat-spinner diameter="20"></mat-spinner>
+          <span>Загрузка...</span>
+        </div>
+        
+        <div *ngIf="!loadingCallLog() && callLogInfo()" class="call-info-details">
+          <div class="call-info-row">
+            <span class="label">Дата и время:</span>
+            <span class="value">{{ formatCallDate(callLogInfo()?.createdAt) }}</span>
+          </div>
+          <div class="call-info-row" *ngIf="callLogInfo()?.duration">
+            <span class="label">Длительность:</span>
+            <span class="value">{{ formatCallDuration(callLogInfo()?.duration) }}</span>
+          </div>
+          <div class="call-info-row" *ngIf="callLogInfo()?.callType">
+            <span class="label">Тип звонка:</span>
+            <span class="value">{{ callLogInfo()?.callType === 'outgoing' ? 'Исходящий' : 'Входящий' }}</span>
+          </div>
+          <div class="call-info-row" *ngIf="callLogInfo()?.disposition">
+            <span class="label">Статус:</span>
+            <span class="value">{{ callLogInfo()?.disposition }}</span>
+          </div>
+          <div class="call-info-row" *ngIf="callLogInfo()?.note">
+            <span class="label">Заметка:</span>
+            <span class="value">{{ callLogInfo()?.note }}</span>
+          </div>
+        </div>
+        
+        <div *ngIf="!loadingCallLog() && !callLogInfo()" class="call-info-error">
+          <mat-icon>error_outline</mat-icon>
+          <span>Информация о звонке недоступна</span>
+        </div>
+      </div>
+
       <!-- Title -->
       <mat-form-field appearance="outline" class="full-width">
         <mat-label>Название задачи</mat-label>
