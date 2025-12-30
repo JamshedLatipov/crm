@@ -111,6 +111,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   microphoneError = signal(false);
   private currentSession: JsSIPSession | null = null;
   private callLogSaved = false; // Флаг для предотвращения повторного сохранения
+  private fetchingCallID = false; // Флаг для предотвращения одновременных запросов
 
   // Ringback tone (WebAudio) while outgoing call is ringing
   // ringback state moved to RingtoneService
@@ -810,8 +811,9 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     this.ringtone.stopRingback();
     this.callState.resetCallState();
     
-    // Сбрасываем флаг сохранения лога для следующего звонка
+    // Сбрасываем флаги сохранения лога для следующего звонка
     this.callLogSaved = false;
+    this.fetchingCallID = false;
     
     // If missed, increment counter
     if (wasMissed) {
@@ -848,8 +850,9 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     this.callState.resetCallState();
     this.currentSession = null;
     
-    // Сбрасываем флаг сохранения лога для следующего звонка
+    // Сбрасываем флаги сохранения лога для следующего звонка
     this.callLogSaved = false;
+    this.fetchingCallID = false;
     
     this.status.set(
       this.isRegistered()
@@ -1090,6 +1093,14 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // Защита от одновременных запросов
+    if (this.fetchingCallID) {
+      this.logger.info('Already fetching call ID, skipping duplicate request');
+      return;
+    }
+
+    this.fetchingCallID = true;
+
     try {
       console.log(this.currentSession)
       if (!this.currentSession) {
@@ -1121,6 +1132,8 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       this.callLogSaved = true;
     } catch (err) {
       this.logger.error('Failed to fetch/save call log:', err);
+    } finally {
+      this.fetchingCallID = false;
     }
   }
 

@@ -93,30 +93,6 @@ export class SoftphoneScriptsPanelComponent implements OnChanges {
         this.expandedNodes.set(toExpand);
       }
     });
-    // Auto-open task modal when toggle enabled for selected branch
-    effect(() => {
-      const shouldOpen = this.createTaskToggle();
-      const sel = this.localSelected();
-      if (shouldOpen && sel) {
-        // find title for selected branch
-        const findTitle = (list: Script[] | undefined, id: string | null): string | null => {
-          if (!list || !id) return null;
-          for (const s of list) {
-            if (s.id === id) return s.title;
-            const found = findTitle(s.children, id);
-            if (found) return found;
-          }
-          return null;
-        };
-        const title = findTitle(this.localScripts(), sel) || 'Task from script';
-        // Open modal prefilled
-        try {
-          this.taskModal.openModal({ mode: 'create', title, });
-        } catch (e) {
-          // ignore
-        }
-      }
-    });
     // Keep localSelected in sync with parent-provided selectedBranch
     effect(() => {
       try {
@@ -152,7 +128,7 @@ export class SoftphoneScriptsPanelComponent implements OnChanges {
 
   selectLeaf(script: Script) {
     try {
-      // toggle selection if same clicked
+      // toggle selection if same clicked  
       const cur = this.localSelected();
       const newId = cur === script.id ? null : script.id;
       this.localSelected.set(newId);
