@@ -602,4 +602,181 @@ export class OnlineMonitoringComponent implements OnInit, OnDestroy {
       width: '10%',
     },
   ];
+
+  // ========== Supervisor Actions ==========
+
+  // Hardcoded supervisor extension for demo - in production, get from auth/user service
+  private getSupervisorExtension(): string {
+    // TODO: Get from authenticated user's profile
+    return localStorage.getItem('supervisorExtension') || '1000';
+  }
+
+  /**
+   * Whisper to an operator - supervisor speaks to operator only (caller can't hear)
+   */
+  whisperCall(operator: OperatorStatus) {
+    if (operator.status !== 'on_call') {
+      alert('Оператор не находится на звонке');
+      return;
+    }
+
+    const supervisorExtension = this.getSupervisorExtension();
+    const operatorExtension = operator.extension || operator.id;
+    
+    console.log('[OnlineMonitoring] Whisper call to:', operator.name);
+    
+    this.svc.whisperCall(operatorExtension, supervisorExtension).subscribe(result => {
+      if (result.success) {
+        console.log('[OnlineMonitoring] Whisper started successfully');
+      } else {
+        alert(result.message);
+      }
+    });
+  }
+
+  /**
+   * Barge into a call - supervisor joins as third party (both parties hear)
+   */
+  bargeCall(operator: OperatorStatus) {
+    if (operator.status !== 'on_call') {
+      alert('Оператор не находится на звонке');
+      return;
+    }
+
+    const supervisorExtension = this.getSupervisorExtension();
+    const operatorExtension = operator.extension || operator.id;
+    
+    console.log('[OnlineMonitoring] Barge into call:', operator.name);
+    
+    this.svc.bargeCall(operatorExtension, supervisorExtension).subscribe(result => {
+      if (result.success) {
+        console.log('[OnlineMonitoring] Barge started successfully');
+      } else {
+        alert(result.message);
+      }
+    });
+  }
+
+  /**
+   * Pause/Resume queue - toggle operator availability in queue
+   */
+  pauseQueue(queue: QueueStatus) {
+    console.log('[OnlineMonitoring] Pause queue:', queue.name);
+    // This pauses all operators in this specific queue
+    // For now, show a dialog to select which operator to pause
+    alert(`Для приостановки операторов в очереди "${queue.name}" используйте кнопку паузы у конкретного оператора`);
+  }
+
+  resumeQueue(queue: QueueStatus) {
+    console.log('[OnlineMonitoring] Resume queue:', queue.name);
+    alert(`Для возобновления операторов в очереди "${queue.name}" используйте кнопку снятия паузы у конкретного оператора`);
+  }
+
+  /**
+   * Pause an operator in their queue
+   */
+  pauseOperator(operator: OperatorStatus) {
+    const operatorInterface = operator.extension || operator.id;
+    const reason = prompt('Причина паузы (необязательно):') || undefined;
+    
+    console.log('[OnlineMonitoring] Pausing operator:', operator.name);
+    
+    this.svc.pauseQueueMember(operatorInterface, operator.queue || undefined, reason).subscribe(result => {
+      if (result.success) {
+        console.log('[OnlineMonitoring] Operator paused successfully');
+        this.refreshData();
+      } else {
+        alert(result.message);
+      }
+    });
+  }
+
+  /**
+   * Unpause an operator
+   */
+  unpauseOperator(operator: OperatorStatus) {
+    const operatorInterface = operator.extension || operator.id;
+    
+    console.log('[OnlineMonitoring] Unpausing operator:', operator.name);
+    
+    this.svc.unpauseQueueMember(operatorInterface, operator.queue || undefined).subscribe(result => {
+      if (result.success) {
+        console.log('[OnlineMonitoring] Operator unpaused successfully');
+        this.refreshData();
+      } else {
+        alert(result.message);
+      }
+    });
+  }
+
+  /**
+   * Transfer an active call
+   */
+  transferCall(call: ActiveCall) {
+    console.log('[OnlineMonitoring] Transfer call:', call.uniqueid);
+    
+    const targetExtension = prompt('Введите номер для перевода:');
+    if (!targetExtension) {
+      return;
+    }
+    
+    this.svc.transferCall(call.channel, targetExtension).subscribe(result => {
+      if (result.success) {
+        console.log('[OnlineMonitoring] Transfer initiated successfully');
+      } else {
+        alert(result.message);
+      }
+    });
+  }
+
+  /**
+   * Hangup an active call
+   */
+  hangupCall(call: ActiveCall) {
+    console.log('[OnlineMonitoring] Hangup call:', call.uniqueid);
+    
+    const confirmed = window.confirm(`Завершить звонок от ${call.callerIdNum}?`);
+    if (!confirmed) {
+      return;
+    }
+    
+    this.svc.hangupCall(call.channel).subscribe(result => {
+      if (result.success) {
+        console.log('[OnlineMonitoring] Call hung up successfully');
+      } else {
+        alert(result.message);
+      }
+    });
+  }
+
+  /**
+   * Start recording an active call
+   */
+  recordCall(call: ActiveCall) {
+    console.log('[OnlineMonitoring] Record call:', call.uniqueid);
+    
+    this.svc.startRecording(call.channel).subscribe(result => {
+      if (result.success) {
+        console.log('[OnlineMonitoring] Recording started:', result.filename);
+        alert(`Запись начата: ${result.filename}`);
+      } else {
+        alert(result.message);
+      }
+    });
+  }
+
+  /**
+   * Stop recording an active call
+   */
+  stopRecording(call: ActiveCall) {
+    console.log('[OnlineMonitoring] Stop recording:', call.uniqueid);
+    
+    this.svc.stopRecording(call.channel).subscribe(result => {
+      if (result.success) {
+        console.log('[OnlineMonitoring] Recording stopped');
+      } else {
+        alert(result.message);
+      }
+    });
+  }
 }

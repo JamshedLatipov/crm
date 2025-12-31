@@ -231,10 +231,28 @@
         </ng-template>
 
         <ng-template crmColumnTemplate="actionsTemplate" let-operator>
-          <button mat-button color="primary" class="details-btn" (click)="viewOperatorDetails(operator)">
-            <mat-icon>visibility</mat-icon>
-            Подробно
-          </button>
+          <div class="action-buttons">
+            @if (operator.status === 'on_call') {
+              <button mat-icon-button color="primary" (click)="whisperCall(operator)" matTooltip="Подслушать (шёпот)">
+                <mat-icon>hearing</mat-icon>
+              </button>
+              <button mat-icon-button color="accent" (click)="bargeCall(operator)" matTooltip="Вмешаться в звонок">
+                <mat-icon>record_voice_over</mat-icon>
+              </button>
+            }
+            @if (operator.status === 'offline' && operator.pausedReason) {
+              <button mat-icon-button color="primary" (click)="unpauseOperator(operator)" matTooltip="Снять с паузы">
+                <mat-icon>play_arrow</mat-icon>
+              </button>
+            } @else if (operator.status !== 'offline') {
+              <button mat-icon-button color="warn" (click)="pauseOperator(operator)" matTooltip="Поставить на паузу">
+                <mat-icon>pause</mat-icon>
+              </button>
+            }
+            <button mat-icon-button (click)="viewOperatorDetails(operator)" matTooltip="Подробнее">
+              <mat-icon>visibility</mat-icon>
+            </button>
+          </div>
         </ng-template>
       </crm-table>
     </div>
@@ -274,6 +292,17 @@
             <span class="queue">{{ call.queue }}</span>
             }
           </div>
+        </div>
+        <div class="call-actions">
+          <button mat-icon-button color="primary" (click)="transferCall(call)" matTooltip="Перевести звонок">
+            <mat-icon>call_split</mat-icon>
+          </button>
+          <button mat-icon-button color="accent" (click)="recordCall(call)" matTooltip="Начать запись">
+            <mat-icon>fiber_manual_record</mat-icon>
+          </button>
+          <button mat-icon-button color="warn" (click)="hangupCall(call)" matTooltip="Завершить звонок">
+            <mat-icon>call_end</mat-icon>
+          </button>
         </div>
       </div>
       }

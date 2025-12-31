@@ -117,6 +117,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   private currentSession: JsSIPSession | null = null;
   private callLogSaved = false; // Флаг для предотвращения повторного сохранения
   private fetchingCallID = false; // Флаг для предотвращения одновременных запросов
+  private preCallStatus: AgentStatusEnum | null = null; // Статус до начала звонка
 
   // Ringback tone (WebAudio) while outgoing call is ringing
   // ringback state moved to RingtoneService
@@ -247,24 +248,6 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       .subscribe((agentStatus) => {
         if (agentStatus) {
           this.currentAgentStatus.set(agentStatus.status);
-        }
-      });
-
-    // Subscribe to WebSocket agent status changes for cross-tab synchronization
-    this.monitoringSvc.onAgentStatusChange()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe((event) => {
-        if (!event || !this.sipUser || !event.payload) return;
-        
-        // Update if it's our extension
-        if (event.payload.extension === this.sipUser) {
-          this.logger.info(`Agent status synced from WebSocket: ${event.payload.status}`);
-          this.currentAgentStatus.set(event.payload.status);
-          
-          // Update local pause state
-          const shouldBePaused = event.payload.status !== AgentStatusEnum.ONLINE;
-          this.memberPaused.set(shouldBePaused);
-          this.memberReason.set(event.payload.reason || '');
         }
       });
 
@@ -776,8 +759,11 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     this.ringtone.stopRingback();
 
     // Auto-switch to ON_CALL when call is active
-    if (this.currentAgentStatus() === AgentStatusEnum.ONLINE) {
+    if (this.currentAgentStatus() !== AgentStatusEnum.ON_CALL) {
+      // Save pre-call status to restore after call ends
+      this.preCallStatus = this.currentAgentStatus();
       this.currentAgentStatus.set(AgentStatusEnum.ON_CALL);
+      this.logger.info(`Status changed to ON_CALL (was: ${this.preCallStatus})`);
       // Note: We don't persist ON_CALL to backend as it's too transient
       // Backend will track this via CDR and active channels
     }
@@ -832,6 +818,9 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     this.ringtone.stopRingback();
     this.callState.resetCallState();
     
+    // Restore pre-call status
+    this.restorePreCallStatus();
+    
     // Сбрасываем флаги сохранения лога для следующего звонка
     this.callLogSaved = false;
     this.fetchingCallID = false;
@@ -860,15 +849,6 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
         ? 'Registered!'
         : `Call ended: ${e.data?.cause || 'Normal clearing'}`
     );
-
-    // Auto-switch to WRAP_UP after call ends (if agent was ONLINE or ON_CALL)
-    const currentStatus = this.currentAgentStatus();
-    if (
-      currentStatus === AgentStatusEnum.ONLINE ||
-      currentStatus === AgentStatusEnum.ON_CALL
-    ) {
-      this.setAgentWrapUp(this.currentCallId() || undefined);
-    }
   }
 
   private handleCallFailed(e: JsSIPSessionEvent) {
@@ -879,6 +859,9 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     // Ensure incoming UI/state is cleared when call fails
     this.callState.resetCallState();
     this.currentSession = null;
+    
+    // Restore pre-call status
+    this.restorePreCallStatus();
     
     // Сбрасываем флаги сохранения лога для следующего звонка
     this.callLogSaved = false;
@@ -899,6 +882,21 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     if (e.response) {
       this.logger.error('SIP response:', e.response);
     }
+  }
+
+  /**
+   * Restore agent status to pre-call state after call ends
+   */
+  private restorePreCallStatus() {
+    if (this.preCallStatus && this.currentAgentStatus() === AgentStatusEnum.ON_CALL) {
+      this.logger.info(`Restoring status to: ${this.preCallStatus}`);
+      this.currentAgentStatus.set(this.preCallStatus);
+    } else if (this.currentAgentStatus() === AgentStatusEnum.ON_CALL) {
+      // Fallback to ONLINE if no pre-call status saved
+      this.logger.info('Restoring status to ONLINE (fallback)');
+      this.currentAgentStatus.set(AgentStatusEnum.ONLINE);
+    }
+    this.preCallStatus = null;
   }
 
   private isRegistered(): boolean {
@@ -1038,53 +1036,6 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       }
     } catch (e) {
       this.logger.error('Failed to set agent online', e);
-    }
-  }
-
-  /**
-   * Set agent offline (called on disconnect/logout)
-   */
-  private async setAgentOffline(reason?: string) {
-    if (!this.sipUser) return;
-
-    try {
-      await lastValueFrom(
-        this.agentStatusSvc.setAgentOffline(this.sipUser, reason)
-      );
-      this.currentAgentStatus.set(AgentStatusEnum.OFFLINE);
-      this.logger.info('Agent set to OFFLINE');
-
-      // Pause in Asterisk when going offline
-      try {
-        await lastValueFrom(
-          this.queueMembersSvc.pause({
-            paused: true,
-            reason_paused: reason || 'offline',
-          })
-        );
-        this.logger.info('Asterisk queue member paused');
-      } catch (pauseError) {
-        this.logger.warn('Failed to pause in Asterisk', pauseError);
-      }
-    } catch (e) {
-      this.logger.error('Failed to set agent offline', e);
-    }
-  }
-
-  /**
-   * Set agent to wrap-up after call
-   */
-  private async setAgentWrapUp(callId?: string) {
-    if (!this.sipUser) return;
-
-    try {
-      await lastValueFrom(
-        this.agentStatusSvc.setAgentWrapUp(this.sipUser, callId)
-      );
-      this.currentAgentStatus.set(AgentStatusEnum.WRAP_UP);
-      this.logger.info('Agent set to WRAP_UP');
-    } catch (e) {
-      this.logger.error('Failed to set agent wrap-up', e);
     }
   }
 

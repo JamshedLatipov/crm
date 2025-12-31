@@ -15,6 +15,30 @@ class SetAgentStatusDto {
   currentCallId?: string;
 }
 
+/**
+ * DTO for supervisor call actions
+ */
+class SupervisorCallActionDto {
+  operatorExtension: string;
+  supervisorExtension: string;
+}
+
+class TransferCallDto {
+  channel: string;
+  targetExtension: string;
+}
+
+class RecordingDto {
+  channel: string;
+  filename?: string;
+}
+
+class QueueMemberPauseDto {
+  operatorInterface: string;
+  queueName?: string;
+  reason?: string;
+}
+
 @Controller('contact-center')
 export class ContactCenterController {
   constructor(private readonly svc: ContactCenterService) {}
@@ -151,5 +175,80 @@ export class ContactCenterController {
     @Query('endDate') endDate?: string
   ) {
     return this.svc.getOperatorDetails(operatorId, range, startDate, endDate);
+  }
+
+  // ========== Supervisor Actions ==========
+
+  /**
+   * Whisper to an operator - supervisor speaks to operator only
+   */
+  @Post('supervisor/whisper')
+  async whisperCall(@Body() dto: SupervisorCallActionDto) {
+    return this.svc.whisperCall(dto.operatorExtension, dto.supervisorExtension);
+  }
+
+  /**
+   * Barge into a call - supervisor joins as third party
+   */
+  @Post('supervisor/barge')
+  async bargeCall(@Body() dto: SupervisorCallActionDto) {
+    return this.svc.bargeCall(dto.operatorExtension, dto.supervisorExtension);
+  }
+
+  /**
+   * Hangup a call by channel
+   */
+  @Post('supervisor/hangup/:channel')
+  async hangupCall(@Param('channel') channel: string) {
+    return this.svc.hangupCall(decodeURIComponent(channel));
+  }
+
+  /**
+   * Transfer a call to another extension
+   */
+  @Post('supervisor/transfer')
+  async transferCall(@Body() dto: TransferCallDto) {
+    return this.svc.transferCall(dto.channel, dto.targetExtension);
+  }
+
+  /**
+   * Start recording a call
+   */
+  @Post('supervisor/recording/start')
+  async startRecording(@Body() dto: RecordingDto) {
+    return this.svc.startRecording(dto.channel, dto.filename);
+  }
+
+  /**
+   * Stop recording a call
+   */
+  @Post('supervisor/recording/stop')
+  async stopRecording(@Body() dto: RecordingDto) {
+    return this.svc.stopRecording(dto.channel);
+  }
+
+  /**
+   * Pause an operator in queue(s)
+   */
+  @Post('supervisor/queue-member/pause')
+  async pauseQueueMember(@Body() dto: QueueMemberPauseDto) {
+    return this.svc.pauseQueueMember(dto.operatorInterface, dto.queueName, dto.reason);
+  }
+
+  /**
+   * Unpause an operator in queue(s)
+   */
+  @Post('supervisor/queue-member/unpause')
+  async unpauseQueueMember(@Body() dto: QueueMemberPauseDto) {
+    return this.svc.unpauseQueueMember(dto.operatorInterface, dto.queueName);
+  }
+
+  /**
+   * Get channel by uniqueid (for supervisor actions)
+   */
+  @Get('supervisor/channel/:uniqueid')
+  async getChannelByUniqueid(@Param('uniqueid') uniqueid: string) {
+    const channel = await this.svc.getChannelByUniqueid(uniqueid);
+    return { channel };
   }
 }

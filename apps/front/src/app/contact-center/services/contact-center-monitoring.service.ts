@@ -226,4 +226,136 @@ export class ContactCenterMonitoringService {
       })
     );
   }
+
+  // ========== Supervisor Actions ==========
+
+  /**
+   * Whisper to an operator - supervisor speaks to operator only
+   */
+  whisperCall(operatorExtension: string, supervisorExtension: string): Observable<{ success: boolean; message: string }> {
+    return this.http.post<{ success: boolean; message: string }>(`${this.base}/supervisor/whisper`, {
+      operatorExtension,
+      supervisorExtension
+    }).pipe(
+      catchError((err) => {
+        console.error('Whisper call failed', err);
+        return of({ success: false, message: err?.error?.message || 'Ошибка подключения' });
+      })
+    );
+  }
+
+  /**
+   * Barge into a call - supervisor joins as third party
+   */
+  bargeCall(operatorExtension: string, supervisorExtension: string): Observable<{ success: boolean; message: string }> {
+    return this.http.post<{ success: boolean; message: string }>(`${this.base}/supervisor/barge`, {
+      operatorExtension,
+      supervisorExtension
+    }).pipe(
+      catchError((err) => {
+        console.error('Barge call failed', err);
+        return of({ success: false, message: err?.error?.message || 'Ошибка подключения' });
+      })
+    );
+  }
+
+  /**
+   * Hangup a call by channel
+   */
+  hangupCall(channel: string): Observable<{ success: boolean; message: string }> {
+    const encodedChannel = encodeURIComponent(channel);
+    return this.http.post<{ success: boolean; message: string }>(`${this.base}/supervisor/hangup/${encodedChannel}`, {}).pipe(
+      catchError((err) => {
+        console.error('Hangup call failed', err);
+        return of({ success: false, message: err?.error?.message || 'Ошибка завершения' });
+      })
+    );
+  }
+
+  /**
+   * Transfer a call to another extension
+   */
+  transferCall(channel: string, targetExtension: string): Observable<{ success: boolean; message: string }> {
+    return this.http.post<{ success: boolean; message: string }>(`${this.base}/supervisor/transfer`, {
+      channel,
+      targetExtension
+    }).pipe(
+      catchError((err) => {
+        console.error('Transfer call failed', err);
+        return of({ success: false, message: err?.error?.message || 'Ошибка перевода' });
+      })
+    );
+  }
+
+  /**
+   * Start recording a call
+   */
+  startRecording(channel: string, filename?: string): Observable<{ success: boolean; message: string; filename?: string }> {
+    return this.http.post<{ success: boolean; message: string; filename?: string }>(`${this.base}/supervisor/recording/start`, {
+      channel,
+      filename
+    }).pipe(
+      catchError((err) => {
+        console.error('Start recording failed', err);
+        return of({ success: false, message: err?.error?.message || 'Ошибка записи' });
+      })
+    );
+  }
+
+  /**
+   * Stop recording a call
+   */
+  stopRecording(channel: string): Observable<{ success: boolean; message: string }> {
+    return this.http.post<{ success: boolean; message: string }>(`${this.base}/supervisor/recording/stop`, {
+      channel
+    }).pipe(
+      catchError((err) => {
+        console.error('Stop recording failed', err);
+        return of({ success: false, message: err?.error?.message || 'Ошибка остановки записи' });
+      })
+    );
+  }
+
+  /**
+   * Pause an operator in queue(s)
+   */
+  pauseQueueMember(operatorInterface: string, queueName?: string, reason?: string): Observable<{ success: boolean; message: string }> {
+    return this.http.post<{ success: boolean; message: string }>(`${this.base}/supervisor/queue-member/pause`, {
+      operatorInterface,
+      queueName,
+      reason
+    }).pipe(
+      catchError((err) => {
+        console.error('Pause queue member failed', err);
+        return of({ success: false, message: err?.error?.message || 'Ошибка паузы' });
+      })
+    );
+  }
+
+  /**
+   * Unpause an operator in queue(s)
+   */
+  unpauseQueueMember(operatorInterface: string, queueName?: string): Observable<{ success: boolean; message: string }> {
+    return this.http.post<{ success: boolean; message: string }>(`${this.base}/supervisor/queue-member/unpause`, {
+      operatorInterface,
+      queueName
+    }).pipe(
+      catchError((err) => {
+        console.error('Unpause queue member failed', err);
+        return of({ success: false, message: err?.error?.message || 'Ошибка снятия с паузы' });
+      })
+    );
+  }
+
+  /**
+   * Get channel by uniqueid (for supervisor actions)
+   */
+  getChannelByUniqueid(uniqueid: string): Observable<{ channel: string | null }> {
+    return this.http.get<{ channel: string | null }>(`${this.base}/supervisor/channel/${uniqueid}`).pipe(
+      catchError((err) => {
+        console.error('Get channel by uniqueid failed', err);
+        return of({ channel: null });
+      })
+    );
+  }
 }

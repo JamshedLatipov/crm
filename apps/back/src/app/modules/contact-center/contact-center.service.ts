@@ -53,7 +53,6 @@ export type ActiveCall = {
 @Injectable()
 export class ContactCenterService {
   private readonly logger = new Logger(ContactCenterService.name);
-  private readonly CDR_LOOKBACK_MINUTES = 50; // Time window for CDR data analysis
   
   private amiCache: {
     channels?: any[];
@@ -249,20 +248,21 @@ export class ContactCenterService {
     }
   }
 
-  // Batch load all CDR data for the configured time window to avoid N+1 queries
+  // Batch load all CDR data for today to count callsToday correctly
   private async loadCdrDataBatch() {
-    const lookbackTime = new Date();
-    lookbackTime.setMinutes(lookbackTime.getMinutes() - this.CDR_LOOKBACK_MINUTES);
+    // Get start of today for callsToday
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
     
-    // Load all CDR records for the configured time window in one query
+    // Load all CDR records for today in one query
     const allCdrRecords = await this.cdrRepo.find({
       where: {
-        calldate: Between(lookbackTime, new Date()),
+        calldate: Between(startOfToday, new Date()),
       },
       order: { calldate: 'DESC' },
     });
     
-    return { allCdrRecords, lookbackTime };
+    return { allCdrRecords, startOfToday };
   }
 
   // Return operators based on queue_members table enriched with real-time AMI data
@@ -278,7 +278,7 @@ export class ContactCenterService {
     ]);
     
     const channels = this.amiCache.channels || [];
-    const { allCdrRecords, lookbackTime } = cdrData;
+    const { allCdrRecords } = cdrData;
     
     // Создаем маппинг sipEndpointId -> User и username -> User
     const userMap = new Map<string, User>();
@@ -478,7 +478,7 @@ export class ContactCenterService {
     ]);
     
     const queueStatusMap = this.amiCache.queueStatus || new Map();
-    const { allCdrRecords, lookbackTime } = cdrData;
+    const { allCdrRecords } = cdrData;
     
     // Get active channels for validation
     const activeChannels = new Set<string>();
@@ -1221,6 +1221,208 @@ export class ContactCenterService {
       firstCallResolution: answeredCalls > 0 ? Math.round((answeredCalls / totalCalls) * 100) : 0,
       satisfaction: 0, // Not implemented yet
     };
+  }
+
+  // ========== Supervisor Actions ==========
+
+  /**
+   * Whisper to an operator - supervisor can speak to operator, but caller can't hear
+   * Uses ChanSpy with 'w' mode
+   */
+  async whisperCall(operatorExtension: string, supervisorExtension: string): Promise<{ success: boolean; message: string }> {
+    this.logger.log(`[whisperCall] Supervisor ${supervisorExtension} whispering to ${operatorExtension}`);
+    
+    try {
+      // Use AMI Originate to create a ChanSpy channel
+      // ChanSpy with 'w' option allows whisper mode (speak to spied channel only)
+      await this.amiService.action('Originate', {
+        Channel: `PJSIP/${supervisorExtension}`,
+        Application: 'ChanSpy',
+        Data: `PJSIP/${operatorExtension},wq`, // w=whisper, q=quiet (no beep)
+        CallerID: `Whisper <${supervisorExtension}>`,
+        Async: 'true',
+      });
+      
+      return { success: true, message: `Подслушивание с режимом "шепот" начато для ${operatorExtension}` };
+    } catch (err) {
+      this.logger.error(`[whisperCall] Failed:`, err);
+      return { success: false, message: `Ошибка: ${(err as Error).message}` };
+    }
+  }
+
+  /**
+   * Barge into a call - supervisor joins the call as a third party
+   * Uses ChanSpy with 'B' mode (barge)
+   */
+  async bargeCall(operatorExtension: string, supervisorExtension: string): Promise<{ success: boolean; message: string }> {
+    this.logger.log(`[bargeCall] Supervisor ${supervisorExtension} barging into ${operatorExtension}`);
+    
+    try {
+      // ChanSpy with 'B' option allows barge mode (speak to both parties)
+      await this.amiService.action('Originate', {
+        Channel: `PJSIP/${supervisorExtension}`,
+        Application: 'ChanSpy',
+        Data: `PJSIP/${operatorExtension},Bq`, // B=barge (speak to both), q=quiet
+        CallerID: `Barge <${supervisorExtension}>`,
+        Async: 'true',
+      });
+      
+      return { success: true, message: `Вмешательство в звонок начато для ${operatorExtension}` };
+    } catch (err) {
+      this.logger.error(`[bargeCall] Failed:`, err);
+      return { success: false, message: `Ошибка: ${(err as Error).message}` };
+    }
+  }
+
+  /**
+   * Hangup a call by channel or uniqueid
+   */
+  async hangupCall(channelOrUniqueid: string): Promise<{ success: boolean; message: string }> {
+    this.logger.log(`[hangupCall] Hanging up: ${channelOrUniqueid}`);
+    
+    try {
+      // First try to hangup by channel name
+      await this.amiService.action('Hangup', {
+        Channel: channelOrUniqueid,
+      });
+      
+      return { success: true, message: 'Звонок завершен' };
+    } catch (err) {
+      this.logger.error(`[hangupCall] Failed:`, err);
+      return { success: false, message: `Ошибка завершения: ${(err as Error).message}` };
+    }
+  }
+
+  /**
+   * Transfer a call to another extension
+   */
+  async transferCall(channelOrUniqueid: string, targetExtension: string): Promise<{ success: boolean; message: string }> {
+    this.logger.log(`[transferCall] Transferring ${channelOrUniqueid} to ${targetExtension}`);
+    
+    try {
+      const ariContext = process.env.ASTERISK_FROM_ARI_CONTEXT || 'from-internal';
+      
+      // Use AMI Redirect action
+      await this.amiService.action('Redirect', {
+        Channel: channelOrUniqueid,
+        Exten: targetExtension,
+        Context: ariContext,
+        Priority: '1',
+      });
+      
+      return { success: true, message: `Звонок переведен на ${targetExtension}` };
+    } catch (err) {
+      this.logger.error(`[transferCall] Failed:`, err);
+      return { success: false, message: `Ошибка перевода: ${(err as Error).message}` };
+    }
+  }
+
+  /**
+   * Start recording a call using MixMonitor
+   */
+  async startRecording(channel: string, filename?: string): Promise<{ success: boolean; message: string; filename?: string }> {
+    const recordingFilename = filename || `supervisor_${Date.now()}`;
+    this.logger.log(`[startRecording] Recording channel ${channel} to ${recordingFilename}`);
+    
+    try {
+      await this.amiService.action('MixMonitor', {
+        Channel: channel,
+        File: `/var/spool/asterisk/recording/${recordingFilename}.wav`,
+        Options: 'b', // b = bridged audio only
+      });
+      
+      return { 
+        success: true, 
+        message: 'Запись начата',
+        filename: `${recordingFilename}.wav`
+      };
+    } catch (err) {
+      this.logger.error(`[startRecording] Failed:`, err);
+      return { success: false, message: `Ошибка записи: ${(err as Error).message}` };
+    }
+  }
+
+  /**
+   * Stop recording a call
+   */
+  async stopRecording(channel: string): Promise<{ success: boolean; message: string }> {
+    this.logger.log(`[stopRecording] Stopping recording for channel ${channel}`);
+    
+    try {
+      await this.amiService.action('StopMixMonitor', {
+        Channel: channel,
+      });
+      
+      return { success: true, message: 'Запись остановлена' };
+    } catch (err) {
+      this.logger.error(`[stopRecording] Failed:`, err);
+      return { success: false, message: `Ошибка: ${(err as Error).message}` };
+    }
+  }
+
+  /**
+   * Pause an operator in a queue (or all queues)
+   */
+  async pauseQueueMember(operatorInterface: string, queueName?: string, reason?: string): Promise<{ success: boolean; message: string }> {
+    this.logger.log(`[pauseQueueMember] Pausing ${operatorInterface} in queue ${queueName || 'all'}`);
+    
+    try {
+      const params: Record<string, string> = {
+        Interface: operatorInterface.includes('/') ? operatorInterface : `PJSIP/${operatorInterface}`,
+        Paused: 'true',
+      };
+      
+      if (queueName) {
+        params.Queue = queueName;
+      }
+      
+      if (reason) {
+        params.Reason = reason;
+      }
+      
+      await this.amiService.action('QueuePause', params);
+      
+      return { success: true, message: `Оператор ${operatorInterface} поставлен на паузу` };
+    } catch (err) {
+      this.logger.error(`[pauseQueueMember] Failed:`, err);
+      return { success: false, message: `Ошибка: ${(err as Error).message}` };
+    }
+  }
+
+  /**
+   * Unpause an operator in a queue (or all queues)
+   */
+  async unpauseQueueMember(operatorInterface: string, queueName?: string): Promise<{ success: boolean; message: string }> {
+    this.logger.log(`[unpauseQueueMember] Unpausing ${operatorInterface} in queue ${queueName || 'all'}`);
+    
+    try {
+      const params: Record<string, string> = {
+        Interface: operatorInterface.includes('/') ? operatorInterface : `PJSIP/${operatorInterface}`,
+        Paused: 'false',
+      };
+      
+      if (queueName) {
+        params.Queue = queueName;
+      }
+      
+      await this.amiService.action('QueuePause', params);
+      
+      return { success: true, message: `Оператор ${operatorInterface} снят с паузы` };
+    } catch (err) {
+      this.logger.error(`[unpauseQueueMember] Failed:`, err);
+      return { success: false, message: `Ошибка: ${(err as Error).message}` };
+    }
+  }
+
+  /**
+   * Get channel name for an active call by uniqueid
+   */
+  async getChannelByUniqueid(uniqueid: string): Promise<string | null> {
+    await this.refreshAmiCache(true);
+    const channels = this.amiCache.channels || [];
+    
+    const channel = channels.find((ch: any) => ch.Uniqueid === uniqueid || ch.LinkedId === uniqueid);
+    return channel?.Channel || null;
   }
 }
 

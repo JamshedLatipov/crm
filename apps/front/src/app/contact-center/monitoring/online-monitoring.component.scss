@@ -762,3 +762,52 @@ mat-icon {
     color: #10b981 !important;
   }
 }
+
+/* Supervisor action buttons */
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  
+  button {
+    &[color="primary"] mat-icon {
+      color: #2563eb;
+    }
+    
+    &[color="accent"] mat-icon {
+      color: #7c3aed;
+    }
+    
+    &[color="warn"] mat-icon {
+      color: #dc2626;
+    }
+  }
+}
+
+/* Call card actions */
+.call-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  
+  .call-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 16px;
+    
+    button {
+      &[color="primary"] mat-icon {
+        color: #2563eb;
+      }
+      
+      &[color="accent"] mat-icon {
+        color: #ef4444; // Red for recording
+      }
+      
+      &[color="warn"] mat-icon {
+        color: #dc2626;
+      }
+    }
+  }
+}
