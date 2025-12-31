@@ -24,8 +24,11 @@ import { SmsModule } from './sms/sms.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { ForecastingModule } from './forecasting/forecasting.module';
 import { RecordingsModule } from './recordings/recordings.module';
+import { QueuesModule } from './queues/queues.module';
+import { QueueConsumersModule } from './queues/queue-consumers.module';
 
 export const MODULES = [
+    QueuesModule, // Must be early for global availability
     LeadModule,
     UserModule,
     TaskModule,
@@ -52,4 +55,5 @@ export const MODULES = [
     AnalyticsModule,
     ForecastingModule,
     RecordingsModule,
+    QueueConsumersModule, // Must be LAST - uses ModuleRef to get services from other modules
 ];

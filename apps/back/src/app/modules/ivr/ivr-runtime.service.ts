@@ -9,6 +9,7 @@ import { IvrLogEvent } from './entities/ivr-log.entity';
 import { IvrMedia } from '../ivr-media/entities/ivr-media.entity';
 import { RedisClientType } from 'redis';
 import { IvrCacheService } from './ivr-cache.service';
+import { QueueProducerService } from '../queues/queue-producer.service';
 
 interface AriPlaybackEvent {
   playback?: { id?: string; target_uri?: string };
@@ -69,6 +70,7 @@ export class IvrRuntimeService implements OnModuleInit, OnModuleDestroy {
     private readonly logSvc: IvrLogService,
     @Inject('REDIS_CLIENT') private readonly redis: RedisClientType,
     @Optional() private readonly ivrCache?: IvrCacheService,
+    @Optional() private readonly queueProducer?: QueueProducerService,
   ) {}
 
   async onModuleInit() {
@@ -815,6 +817,22 @@ export class IvrRuntimeService implements OnModuleInit, OnModuleDestroy {
 
   private async callWebhook(node: IvrNode) {
     if (!node.webhookUrl) return;
+    
+    // Use queue for reliable webhook delivery if available
+    if (this.queueProducer) {
+      await this.queueProducer.queueWebhook({
+        url: node.webhookUrl,
+        method: ((node.webhookMethod || 'POST').toUpperCase() as 'GET' | 'POST' | 'PUT' | 'PATCH'),
+        payload: { nodeId: node.id, name: node.name, action: node.action },
+        sourceType: 'ivr',
+        sourceId: node.id,
+        maxRetries: 3,
+        timeout: 10000,
+      });
+      return;
+    }
+
+    // Fallback to direct call if queue not available
     try {
       const method = (node.webhookMethod || 'POST').toLowerCase();
       const res = await axios.request({

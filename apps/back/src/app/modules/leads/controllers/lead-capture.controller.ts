@@ -1,8 +1,9 @@
-import { Controller, Post, Body, Get, Query, Req } from '@nestjs/common';
-import { ApiTags, ApiBody, ApiProperty } from '@nestjs/swagger';
+import { Controller, Post, Body, Get, Query, Req, Optional } from '@nestjs/common';
+import { ApiTags, ApiBody, ApiProperty, ApiQuery } from '@nestjs/swagger';
 import { Request } from 'express';
 import { LeadCaptureService, WebhookData, GoogleAnalyticsData } from '../services/lead-capture.service';
 import { Lead } from '../lead.entity';
+import { QueueProducerService } from '../../queues/queue-producer.service';
 
 export class WebsiteFormDto {
   @ApiProperty({ example: 'Иван Иванов', description: 'Full name from the form' })
@@ -172,9 +173,13 @@ interface MailChimpData {
 @ApiTags('lead-capture')
 @Controller('lead-capture')
 export class LeadCaptureController {
-  constructor(private readonly captureService: LeadCaptureService) {}
+  constructor(
+    private readonly captureService: LeadCaptureService,
+    @Optional() private readonly queueProducer?: QueueProducerService,
+  ) {}
 
   @Post('website')
+  @ApiQuery({ name: 'async', required: false, description: 'Process asynchronously (faster response)' })
   @ApiBody({
     type: WebsiteFormDto,
     schema: {
@@ -196,11 +201,24 @@ export class LeadCaptureController {
   })
   async captureFromWebsite(
     @Body() data: WebsiteFormDto,
-    @Req() req: Request
-  ): Promise<Lead> {
+    @Req() req: Request,
+    @Query('async') asyncMode?: string,
+  ): Promise<Lead | { queued: true; message: string }> {
     const ipAddress = req.ip || req.connection.remoteAddress;
     const userAgent = req.get('User-Agent');
 
+    // Async mode: queue for background processing, return immediately
+    if (asyncMode === 'true' && this.queueProducer) {
+      await this.queueProducer.queueLeadCapture({
+        source: 'website',
+        data: data as Record<string, any>,
+        ipAddress,
+        userAgent,
+      });
+      return { queued: true, message: 'Lead capture queued for processing' };
+    }
+
+    // Sync mode: process immediately
     return this.captureService.captureFromWebsite(data as WebhookData, ipAddress, userAgent);
   }
 

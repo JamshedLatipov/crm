@@ -5,7 +5,6 @@ import { RedisModule } from './redis.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
-import { ClientsModule, Transport } from '@nestjs/microservices';
 import { MODULES } from './modules';
 import { CALLS_MIGRATIONS } from './modules/calls/migrations';
 import { USER_MIGRATIONS } from './modules/user/migrations';
@@ -67,17 +66,6 @@ import { CONTACT_CENTER_MIGRATIONS } from './modules/contact-center/migrations';
       ],
       migrationsRun: false,
     }),
-    ClientsModule.register([
-      {
-        name: 'RABBITMQ_SERVICE',
-        transport: Transport.RMQ,
-        options: {
-          urls: [process.env.RMQ_URL || 'amqp://localhost:5672'],
-          queue: process.env.RMQ_QUEUE || 'crm_queue',
-          queueOptions: { durable: true },
-        },
-      },
-    ]),
     RedisModule,
     ...MODULES,
   ],
