@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -9,6 +9,7 @@ import { SmsTemplateService } from './sms-template.service';
 import { SmsSegmentService } from './sms-segment.service';
 import { SmsProviderService } from './sms-provider.service';
 import { User } from '../../user/user.entity';
+import { QueueProducerService } from '../../queues/queue-producer.service';
 
 @Injectable()
 export class SmsCampaignService {
@@ -21,7 +22,8 @@ export class SmsCampaignService {
     private messageRepository: Repository<SmsMessage>,
     private templateService: SmsTemplateService,
     private segmentService: SmsSegmentService,
-    private providerService: SmsProviderService
+    private providerService: SmsProviderService,
+    @Optional() private queueProducer?: QueueProducerService,
   ) {}
 
   /**
@@ -212,8 +214,12 @@ export class SmsCampaignService {
 
     await this.campaignRepository.save(campaign);
 
-    // Запускаем процесс отправки
-    this.processCampaignMessages(campaignId);
+    // Запускаем процесс отправки через очередь (если доступна) или напрямую
+    if (this.queueProducer) {
+      await this.queueCampaignMessages(campaignId);
+    } else {
+      this.processCampaignMessages(campaignId);
+    }
 
     return campaign;
   }
@@ -248,10 +254,50 @@ export class SmsCampaignService {
 
     await this.campaignRepository.save(campaign);
 
-    // Возобновляем отправку
-    this.processCampaignMessages(campaignId);
+    // Возобновляем отправку через очередь или напрямую
+    if (this.queueProducer) {
+      await this.queueCampaignMessages(campaignId);
+    } else {
+      this.processCampaignMessages(campaignId);
+    }
 
     return campaign;
+  }
+
+  /**
+   * Queue campaign messages for parallel processing via RabbitMQ
+   */
+  private async queueCampaignMessages(campaignId: string): Promise<void> {
+    if (!this.queueProducer) {
+      this.logger.warn('Queue producer not available, falling back to sync processing');
+      return this.processCampaignMessages(campaignId);
+    }
+
+    // Get all pending messages
+    const pendingMessages = await this.messageRepository.find({
+      where: {
+        campaign: { id: campaignId },
+        status: MessageStatus.PENDING,
+      },
+      select: ['id'],
+    });
+
+    if (pendingMessages.length === 0) {
+      this.logger.log(`No pending messages for campaign ${campaignId}`);
+      await this.checkCampaignCompletion(campaignId);
+      return;
+    }
+
+    // Queue in batches for fan-out
+    const batchSize = 100;
+    for (let i = 0; i < pendingMessages.length; i += batchSize) {
+      const batch = pendingMessages.slice(i, i + batchSize);
+      const messageIds = batch.map(m => m.id);
+      
+      await this.queueProducer.queueSmsBatch(campaignId, messageIds);
+    }
+
+    this.logger.log(`Queued ${pendingMessages.length} messages for campaign ${campaignId}`);
   }
 
   /**
