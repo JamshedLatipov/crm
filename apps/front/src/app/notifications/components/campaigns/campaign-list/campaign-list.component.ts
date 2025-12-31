@@ -1,7 +1,6 @@
 import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
@@ -11,6 +10,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.component';
+import { CrmTableComponent, CrmColumn } from '../../../../shared/components/crm-table/crm-table.component';
 import { CampaignService } from '../../../services/campaign.service';
 import { Campaign } from '../../../models/notification.models';
 
@@ -20,7 +20,6 @@ import { Campaign } from '../../../models/notification.models';
   imports: [
     CommonModule,
     RouterModule,
-    MatTableModule,
     MatButtonModule,
     MatIconModule,
     MatChipsModule,
@@ -29,7 +28,8 @@ import { Campaign } from '../../../models/notification.models';
     MatMenuModule,
     MatSnackBarModule,
     MatDialogModule,
-    PageLayoutComponent
+    PageLayoutComponent,
+    CrmTableComponent
   ],
   templateUrl: './campaign-list.component.html',
   styleUrl: './campaign-list.component.scss'
@@ -42,7 +42,15 @@ export class CampaignListComponent implements OnInit {
   loading = this.campaignService.isLoading;
   campaigns = this.campaignService.campaigns;
   error = this.campaignService.error;
-  displayedColumns = ['name', 'channel', 'status', 'progress', 'scheduledAt', 'actions'];
+  
+  columns: CrmColumn[] = [
+    { key: 'name', label: 'Название', template: 'nameTemplate' },
+    { key: 'channel', label: 'Канал', template: 'channelTemplate' },
+    { key: 'status', label: 'Статус', template: 'statusTemplate' },
+    { key: 'progress', label: 'Прогресс', template: 'progressTemplate' },
+    { key: 'scheduledAt', label: 'Запланировано', template: 'scheduledAtTemplate' },
+    { key: 'actions', label: 'Действия', template: 'actionsTemplate' }
+  ];
 
   ngOnInit() {
     this.loadCampaigns();

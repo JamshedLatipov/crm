@@ -1,0 +1,113 @@
+<app-page-layout
+  [title]="templateId() ? 'Редактировать SMS шаблон' : 'Новый SMS шаблон'"
+  [subtitle]="templateId() ? 'Изменение настроек шаблона' : 'Создание нового SMS шаблона'"
+>
+  <div page-actions>
+    <button mat-stroked-button (click)="cancel()" [disabled]="loading()">
+      <mat-icon>close</mat-icon>
+      Отмена
+    </button>
+    <button mat-raised-button color="primary" (click)="save()" [disabled]="form.invalid || loading()">
+      @if (loading()) {
+        <mat-spinner diameter="20"></mat-spinner>
+      } @else {
+        <mat-icon>save</mat-icon>
+      }
+      Сохранить
+    </button>
+  </div>
+
+  @if (loading() && !form.value.name) {
+    <div class="loading-container">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
+  } @else {
+    <div class="form-container">
+      <div class="form-layout">
+        <mat-card class="form-card">
+          <form [formGroup]="form">
+            <div class="form-section">
+              <h3 class="section-title">
+                <mat-icon>info</mat-icon>
+                Основная информация
+              </h3>
+              
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Название шаблона</mat-label>
+                <input matInput formControlName="name" placeholder="Введите название">
+                <mat-icon matPrefix>label</mat-icon>
+                @if (form.get('name')?.hasError('required')) {
+                  <mat-error>Название обязательно</mat-error>
+                }
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Содержимое SMS</mat-label>
+                <textarea 
+                  matInput 
+                  formControlName="content" 
+                  rows="6" 
+                  placeholder="Введите текст. Используйте {{'{{'}}variable{{'}}'}} для переменных"
+                  (input)="updateCharCount()">
+                </textarea>
+                <mat-icon matPrefix>message</mat-icon>
+                <mat-hint align="start">Используйте {{'{{'}}переменная{{'}}'}} для динамического контента</mat-hint>
+                <mat-hint align="end">
+                  <span [class.warning]="charCount() > 160">{{ charCount() }} / 160</span>
+                </mat-hint>
+                @if (form.get('content')?.hasError('required')) {
+                  <mat-error>Содержимое обязательно</mat-error>
+                }
+              </mat-form-field>
+
+              <mat-slide-toggle formControlName="isActive" class="toggle-field">
+                <span class="toggle-label">
+                  <mat-icon>{{ form.get('isActive')?.value ? 'check_circle' : 'cancel' }}</mat-icon>
+                  {{ form.get('isActive')?.value ? 'Шаблон активен' : 'Шаблон неактивен' }}
+                </span>
+              </mat-slide-toggle>
+            </div>
+          </form>
+        </mat-card>
+
+        <mat-card class="sidebar-card">
+          <div class="sidebar-section">
+            <h3 class="sidebar-title">
+              <mat-icon>code</mat-icon>
+              Переменные
+            </h3>
+            
+            @if (detectedVariables().length > 0) {
+              <div class="variables-list">
+                @for (variable of detectedVariables(); track variable) {
+                  <div class="variable-item">
+                    <mat-icon>bookmark</mat-icon>
+                    <span>{{'{{'}}{{ variable }}{{'}}'}}</span>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="empty-variables">
+                <mat-icon>info</mat-icon>
+                <p>Переменные не обнаружены</p>
+                <small>Добавьте {{'{{'}}имя{{'}}'}} в текст</small>
+              </div>
+            }
+          </div>
+
+          <div class="sidebar-section">
+            <h3 class="sidebar-title">
+              <mat-icon>tips_and_updates</mat-icon>
+              Подсказки
+            </h3>
+            <ul class="tips-list">
+              <li>Используйте переменные для персонализации</li>
+              <li>160 символов = 1 SMS сообщение</li>
+              <li>Кириллица учитывается как 70 символов</li>
+            </ul>
+          </div>
+        </mat-card>
+      </div>
+    </div>
+  }
+</app-page-layout>
