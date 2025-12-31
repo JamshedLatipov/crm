@@ -234,7 +234,9 @@ export class CallLogsComponent implements OnInit {
         ta.select();
         document.execCommand('copy');
         document.body.removeChild(ta);
-      } catch (e) {}
+      } catch (e) {
+        // Fallback copy failed, clipboard API not available
+      }
     }
   }
 }

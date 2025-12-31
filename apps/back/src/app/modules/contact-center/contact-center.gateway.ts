@@ -1,4 +1,4 @@
-import { OnModuleInit, Logger } from '@nestjs/common';
+import { OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -16,9 +16,10 @@ import { ContactCenterService } from './contact-center.service';
   },
 })
 export class ContactCenterGateway
-  implements OnModuleInit, OnGatewayConnection, OnGatewayDisconnect
+  implements OnModuleInit, OnModuleDestroy, OnGatewayConnection, OnGatewayDisconnect
 {
   private readonly logger = new Logger(ContactCenterGateway.name);
+  private broadcastInterval: NodeJS.Timeout | null = null;
 
   @WebSocketServer()
   server: Server;
@@ -39,7 +40,7 @@ export class ContactCenterGateway
     );
 
     // Broadcast demo data every 3 seconds
-    setInterval(async () => {
+    this.broadcastInterval = setInterval(async () => {
       try {
         const startTime = Date.now();
         const data = await this.svc.tick();
@@ -107,6 +108,14 @@ export class ContactCenterGateway
         this.logger.error('ContactCenter broadcast error', err as Error);
       }
     }, 3000);
+  }
+
+  onModuleDestroy() {
+    if (this.broadcastInterval) {
+      clearInterval(this.broadcastInterval);
+      this.broadcastInterval = null;
+      this.logger.log('ContactCenter broadcast interval cleared');
+    }
   }
 
   // Validate data before broadcasting

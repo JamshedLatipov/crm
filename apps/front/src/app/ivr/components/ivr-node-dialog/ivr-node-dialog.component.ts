@@ -133,7 +133,9 @@ export class IvrNodeDialogComponent {
     if (this.formSub) {
       try {
         this.formSub.unsubscribe();
-      } catch (e) {}
+      } catch (e) {
+        // Subscription already closed, ignore
+      }
     }
     this.validate();
     this.formSub = this.form.valueChanges.subscribe(() => this.validate());
@@ -286,7 +288,9 @@ export class IvrNodeDialogComponent {
     // mark all controls as touched so validation messages appear
     try {
       this.form.markAllAsTouched();
-    } catch (e) {}
+    } catch (e) {
+      // Form controls may not be initialized yet, ignore
+    }
     // coerce queueName to string if present
     if (val.queueName != null) val.queueName = String(val.queueName);
     // if a media is selected, ensure payload is set to media id

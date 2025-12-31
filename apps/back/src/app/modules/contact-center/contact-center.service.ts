@@ -68,7 +68,7 @@ export class ContactCenterService {
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(AgentStatus) private readonly agentStatusRepo: Repository<AgentStatus>,
     private readonly amiService: AmiService,
-    @Inject(forwardRef(() => require('./contact-center.gateway').ContactCenterGateway))
+    @Inject('CONTACT_CENTER_GATEWAY')
     private gateway?: any,
   ) {}
 
@@ -887,6 +887,24 @@ export class ContactCenterService {
     }
 
     return agentStatus;
+  }
+
+  /**
+   * Public method to broadcast agent status change via WebSocket
+   * Can be called from other services (e.g., EndpointSyncService)
+   */
+  broadcastAgentStatusChange(data: {
+    extension: string;
+    status: string;
+    previousStatus?: string;
+    reason?: string;
+    fullName?: string;
+    userId?: number;
+    statusChangedAt?: string;
+  }): void {
+    if (this.gateway?.broadcastAgentStatusChange) {
+      this.gateway.broadcastAgentStatusChange(data);
+    }
   }
 
   /**

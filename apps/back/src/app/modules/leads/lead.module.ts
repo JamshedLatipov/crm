@@ -25,6 +25,9 @@ import { NotificationModule } from '../notifications/notification.module';
 import { SharedModule } from '../shared/shared.module';
 import { CompaniesModule } from '../companies/companies.module';
 import { PromoCompaniesModule } from '../promo-companies/promo-companies.module';
+import { Contact } from '../contacts/contact.entity';
+import { ContactActivity } from '../contacts/contact-activity.entity';
+import { ContactsModule } from '../contacts/contacts.module';
 
 @Module({
   imports: [
@@ -36,14 +39,11 @@ import { PromoCompaniesModule } from '../promo-companies/promo-companies.module'
       LeadScoringRule,
       LeadDistributionRule,
       Deal,
-      // ensure Contact repository is available to LeadService
-      (require('../contacts/contact.entity').Contact),
-      // also expose ContactActivity repository so LeadService can write contact activity when leads are linked
-      (require('../contacts/contact-activity.entity').ContactActivity)
+      Contact,
+      ContactActivity,
     ]),
-  CompaniesModule,
-  // also import ContactsModule to reuse ContactsService if needed
-  require('../contacts/contacts.module').ContactsModule,
+    CompaniesModule,
+    ContactsModule,
   forwardRef(() => PipelineModule),
     UserModule,
     DealsModule,

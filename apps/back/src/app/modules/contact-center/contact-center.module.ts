@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ContactCenterController } from './contact-center.controller';
 import { ContactCenterGateway } from './contact-center.gateway';
@@ -17,7 +17,20 @@ import { AmiModule } from '../ami/ami.module';
     AmiModule,
   ],
   controllers: [ContactCenterController],
-  providers: [ContactCenterGateway, ContactCenterService, EndpointSyncService],
+  providers: [
+    ContactCenterGateway,
+    ContactCenterService,
+    EndpointSyncService,
+    // Provide tokens for circular dependency resolution
+    {
+      provide: 'CONTACT_CENTER_GATEWAY',
+      useExisting: forwardRef(() => ContactCenterGateway),
+    },
+    {
+      provide: 'CONTACT_CENTER_SERVICE',
+      useExisting: forwardRef(() => ContactCenterService),
+    },
+  ],
   exports: [ContactCenterService],
 })
 export class ContactCenterModule {}

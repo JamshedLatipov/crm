@@ -1,10 +1,11 @@
-import { Controller, Get, Param, Res, StreamableFile, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Param, Res, StreamableFile, NotFoundException, Logger } from '@nestjs/common';
 import { Response } from 'express';
 import { createReadStream, existsSync } from 'fs';
 import { join, resolve } from 'path';
 
 @Controller('recordings')
 export class RecordingsController {
+  private readonly logger = new Logger(RecordingsController.name);
   // Path where Asterisk stores recordings
   private readonly recordingsPath: string;
 
@@ -20,10 +21,10 @@ export class RecordingsController {
       this.recordingsPath = resolve(process.cwd(), 'data', 'asterisk', 'recordings');
     }
     
-    console.log(`[RecordingsController] Using recordings path: ${this.recordingsPath}`);
+    this.logger.log(`Using recordings path: ${this.recordingsPath}`);
     
     if (!existsSync(this.recordingsPath)) {
-      console.warn(`[RecordingsController] WARNING: Recordings path does not exist: ${this.recordingsPath}`);
+      this.logger.warn(`WARNING: Recordings path does not exist: ${this.recordingsPath}`);
     }
   }
 

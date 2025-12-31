@@ -15,7 +15,7 @@ export class EndpointSyncService implements OnModuleInit {
     @InjectRepository(QueueMember) private readonly membersRepo: Repository<QueueMember>,
     @InjectRepository(AgentStatus) private readonly agentStatusRepo: Repository<AgentStatus>,
     private readonly amiService: AmiService,
-    @Inject(forwardRef(() => require('./contact-center.service').ContactCenterService))
+    @Inject('CONTACT_CENTER_SERVICE')
     private contactCenterService?: any,
   ) {}
 
@@ -367,16 +367,13 @@ export class EndpointSyncService implements OnModuleInit {
           agentStatus.statusChangedAt = new Date();
           await this.agentStatusRepo.save(agentStatus);
           
-          // Broadcast via WebSocket if gateway is available
-          if (this.contactCenterService?.gateway?.broadcastAgentStatusChange) {
-            this.contactCenterService.gateway.broadcastAgentStatusChange({
-              extension,
-              status: AgentStatusEnum.OFFLINE,
-              previousStatus: agentStatus.previousStatus,
-              reason,
-              statusChangedAt: agentStatus.statusChangedAt.toISOString(),
-            });
-          }
+          // Broadcast via WebSocket if service is available
+          this.contactCenterService?.broadcastAgentStatusChange({
+            extension,
+            status: AgentStatusEnum.OFFLINE,
+            previousStatus: agentStatus.previousStatus,
+            reason,
+          });
         }
       }
     } catch (err) {
@@ -412,16 +409,13 @@ export class EndpointSyncService implements OnModuleInit {
           agentStatus.statusChangedAt = new Date();
           await this.agentStatusRepo.save(agentStatus);
           
-          // Broadcast via WebSocket if gateway is available
-          if (this.contactCenterService?.gateway?.broadcastAgentStatusChange) {
-            this.contactCenterService.gateway.broadcastAgentStatusChange({
-              extension,
-              status: AgentStatusEnum.ONLINE,
-              previousStatus: agentStatus.previousStatus,
-              reason: agentStatus.reason,
-              statusChangedAt: agentStatus.statusChangedAt.toISOString(),
-            });
-          }
+          // Broadcast via WebSocket if service is available
+          this.contactCenterService?.broadcastAgentStatusChange({
+            extension,
+            status: AgentStatusEnum.ONLINE,
+            previousStatus: agentStatus.previousStatus,
+            reason: agentStatus.reason,
+          });
         } else if (agentStatus.status === AgentStatusEnum.OFFLINE && !agentStatus.reason?.startsWith('Auto:')) {
           // Agent was manually set offline, don't auto-restore
           this.logger.debug(`Agent ${extension} is manually offline, not auto-restoring to ONLINE`);

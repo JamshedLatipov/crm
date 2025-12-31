@@ -65,7 +65,7 @@ export class AriReconciliationService implements OnModuleInit, OnModuleDestroy {
       // find pending call logs that reference this clientCallId or channelUniqueId
       const candidates = await this.callLogRepo.find({ where: [
         { clientCallId: clientCallId ?? undefined, status: 'awaiting_cdr' },
-        { sipCallId: channelUniqueId ?? undefined, status: 'awaiting_cdr' },
+        { asteriskUniqueId: channelUniqueId ?? undefined, status: 'awaiting_cdr' },
       ] });
 
       for (const cl of candidates) {
