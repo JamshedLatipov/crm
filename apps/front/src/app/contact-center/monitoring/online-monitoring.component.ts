@@ -8,7 +8,7 @@ import {
   computed,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Observable, share, Subject, takeUntil } from 'rxjs';
+import { Observable, share, Subject, takeUntil, filter } from 'rxjs';
 import {
   ContactCenterMonitoringService,
   OperatorStatus,
@@ -26,6 +26,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { PageLayoutComponent } from '@crm/front/app/shared/page-layout/page-layout.component';
 import { MatButtonModule } from '@angular/material/button';
 import { MatBadgeModule } from '@angular/material/badge';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 // Register all Chart.js components
 Chart.register(...registerables, ChartDataLabels);
@@ -42,6 +43,7 @@ Chart.register(...registerables, ChartDataLabels);
     PageLayoutComponent,
     MatButtonModule,
     MatBadgeModule,
+    MatTooltipModule,
   ],
   templateUrl: './online-monitoring.component.html',
   styleUrls: ['./online-monitoring.component.scss'],
@@ -56,6 +58,17 @@ export class OnlineMonitoringComponent implements OnInit, OnDestroy {
   queues = signal<QueueStatus[]>([]);
   activeCalls = signal<ActiveCall[]>([]);
   stats = signal<ContactCenterStats>({ totalUniqueWaiting: 0 });
+  lastUpdate = signal<Date | null>(null);
+  
+  // Alert thresholds
+  private readonly CRITICAL_WAIT_THRESHOLD = 60; // 60 секунд
+  private readonly WARNING_WAIT_THRESHOLD = 30; // 30 секунд
+  private readonly CRITICAL_QUEUE_SIZE = 5; // 5+ ожидающих
+  
+  // Audio alert
+  private alertAudio?: HTMLAudioElement;
+  private lastAlertTime = 0;
+  private readonly ALERT_COOLDOWN = 30000; // 30 секунд между алертами
 
   // Computed values
   totalOperators = computed(() => {
@@ -100,6 +113,27 @@ export class OnlineMonitoringComponent implements OnInit, OnDestroy {
     const avg = Math.round(total / queues.length);
     console.log(`[Computed] avgServiceLevel: ${avg}%`);
     return avg;
+  });
+  
+  // Sorted queues by priority (most waiting first, then longest wait)
+  sortedQueues = computed(() => {
+    const queues = [...this.queues()];
+    return queues.sort((a, b) => {
+      // First: by waiting count descending
+      if (b.waiting !== a.waiting) {
+        return b.waiting - a.waiting;
+      }
+      // Then: by longest wait descending
+      return b.longestWaitingSeconds - a.longestWaitingSeconds;
+    });
+  });
+  
+  // Critical queues count
+  criticalQueues = computed(() => {
+    return this.queues().filter(q => 
+      q.waiting >= this.CRITICAL_QUEUE_SIZE || 
+      q.longestWaitingSeconds >= this.CRITICAL_WAIT_THRESHOLD
+    ).length;
   });
 
   // Direct WebSocket streams with fallback to polling
@@ -172,6 +206,9 @@ export class OnlineMonitoringComponent implements OnInit, OnDestroy {
   ngOnInit() {
     console.log('[OnlineMonitoring] Component initialized');
     
+    // Initialize audio alert (optional sound effect)
+    // this.alertAudio = new Audio('/assets/sounds/alert.mp3');
+    
     this.operators$.pipe(takeUntil(this.destroy$)).subscribe((operators) => {
       console.log('[OnlineMonitoring] ===== OPERATORS UPDATE =====');
       console.log('[OnlineMonitoring] Operators received:', operators.length);
@@ -226,8 +263,9 @@ export class OnlineMonitoringComponent implements OnInit, OnDestroy {
 
     this.queues$.pipe(takeUntil(this.destroy$)).subscribe((queues) => {
       console.log('[OnlineMonitoring] ===== QUEUES UPDATE =====');
-      const now = new Date().toISOString();
-      console.log(`[${now}] Queues received:`, queues.length);
+      const now = new Date();
+      console.log(`[${now.toISOString()}] Queues received:`, queues.length);
+      this.lastUpdate.set(now);
       
       // Валидация данных очередей
       if (!Array.isArray(queues)) {
@@ -263,6 +301,10 @@ export class OnlineMonitoringComponent implements OnInit, OnDestroy {
       console.log('[OnlineMonitoring] Raw queues data:', JSON.stringify(queues, null, 2));
       
       this.queues.set(queues);
+      
+      // Check for critical conditions and trigger alert
+      this.checkCriticalConditions(queues);
+      
       this.cdr.detectChanges();
     });
 
@@ -371,6 +413,98 @@ export class OnlineMonitoringComponent implements OnInit, OnDestroy {
       default:
         return 'В статусе';
     }
+  }
+  
+  /**
+   * Get queue status class based on waiting count and longest wait time
+   */
+  getQueueStatusClass(queue: QueueStatus): string {
+    if (queue.waiting >= this.CRITICAL_QUEUE_SIZE || 
+        queue.longestWaitingSeconds >= this.CRITICAL_WAIT_THRESHOLD) {
+      return 'queue-critical';
+    }
+    if (queue.waiting > 0 && queue.longestWaitingSeconds >= this.WARNING_WAIT_THRESHOLD) {
+      return 'queue-warning';
+    }
+    return 'queue-normal';
+  }
+  
+  /**
+   * Check for critical queue conditions and trigger alerts
+   */
+  private checkCriticalConditions(queues: QueueStatus[]) {
+    const now = Date.now();
+    const criticalQueues = queues.filter(q => 
+      q.waiting >= this.CRITICAL_QUEUE_SIZE || 
+      q.longestWaitingSeconds >= this.CRITICAL_WAIT_THRESHOLD
+    );
+    
+    if (criticalQueues.length > 0 && (now - this.lastAlertTime) > this.ALERT_COOLDOWN) {
+      console.warn('[OnlineMonitoring] CRITICAL: Queues need attention:', criticalQueues.map(q => q.name));
+      this.playAlert();
+      this.lastAlertTime = now;
+    }
+  }
+  
+  /**
+   * Play alert sound
+   */
+  private playAlert() {
+    if (this.alertAudio) {
+      this.alertAudio.play().catch(err => {
+        console.warn('[OnlineMonitoring] Failed to play alert sound:', err);
+      });
+    }
+    // Browser notification (if permission granted)
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('Контакт-центр: Внимание!', {
+        body: `${this.criticalQueues()} очередей требуют внимания`,
+        icon: '/assets/icons/alert.png',
+        tag: 'queue-alert',
+      });
+    }
+  }
+  
+  /**
+   * Manual refresh button handler
+   */
+  refreshData() {
+    console.log('[OnlineMonitoring] Manual refresh triggered');
+    // Force re-fetch from backend via REST
+    this.svc.fetchQueuesSnapshot().subscribe(queues => {
+      console.log('[OnlineMonitoring] Manual refresh complete:', queues.length);
+    });
+    this.svc.fetchOperatorsSnapshot().subscribe(operators => {
+      console.log('[OnlineMonitoring] Operators refreshed:', operators.length);
+    });
+    this.lastUpdate.set(new Date());
+  }
+  
+  /**
+   * Request notification permission
+   */
+  requestNotificationPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().then(permission => {
+        console.log('[OnlineMonitoring] Notification permission:', permission);
+      });
+    }
+  }
+  
+  /**
+   * Format last update time
+   */
+  formatLastUpdate(): string {
+    const lastUpdate = this.lastUpdate();
+    if (!lastUpdate) return 'Нет данных';
+    
+    const now = new Date();
+    const diff = Math.floor((now.getTime() - lastUpdate.getTime()) / 1000);
+    
+    if (diff < 5) return 'только что';
+    if (diff < 60) return `${diff} сек назад`;
+    if (diff < 3600) return `${Math.floor(diff / 60)} мин назад`;
+    return lastUpdate.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
   }
 
   columns: CrmColumn[] = [

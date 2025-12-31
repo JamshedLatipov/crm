@@ -14,6 +14,7 @@ import {
 } from 'rxjs';
 import { io, Socket } from 'socket.io-client';
 import { environment } from '../../../environments/environment';
+import { AgentStatusChangeEvent } from '../types/agent-status.types';
 
 export interface OperatorStatus {
   id: string;
@@ -73,6 +74,7 @@ export class ContactCenterMonitoringService {
   private queuesSubject = new BehaviorSubject<QueueStatus[]>([]);
   private activeCallsSubject = new BehaviorSubject<ActiveCall[]>([]);
   private statsSubject = new BehaviorSubject<ContactCenterStats>({ totalUniqueWaiting: 0 });
+  private agentStatusChangeSubject = new BehaviorSubject<AgentStatusChangeEvent | null>(null);
 
   constructor() {
     // Initialize socket on service creation
@@ -122,6 +124,12 @@ export class ContactCenterMonitoringService {
 
       this.socket.on('stats', (data: any) => {
         this.statsSubject.next(data.payload);
+      });
+
+      this.socket.on('agent:status_changed', (data: AgentStatusChangeEvent) => {
+        console.log('[ContactCenter] Agent status changed:', data);
+        // Backend sends message with type, payload, timestamp structure
+        this.agentStatusChangeSubject.next(data);
       });
 
       this.socket.on('connect_error', (error) => {
@@ -180,5 +188,13 @@ export class ContactCenterMonitoringService {
   // Get stats (totalUniqueWaiting, etc.)
   getStats(): Observable<ContactCenterStats> {
     return this.statsSubject.asObservable();
+  }
+
+  /**
+   * Subscribe to agent status changes (WebSocket)
+   * Returns observable that emits when any agent's status changes
+   */
+  onAgentStatusChange(): Observable<AgentStatusChangeEvent | null> {
+    return this.agentStatusChangeSubject.asObservable();
   }
 }

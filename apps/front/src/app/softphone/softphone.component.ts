@@ -48,6 +48,7 @@ import {
 } from '../contact-center/services/queue-members.service';
 import { AgentStatusService } from '../contact-center/services/agent-status.service';
 import { AgentStatusEnum } from '../contact-center/types/agent-status.types';
+import { ContactCenterMonitoringService } from '../contact-center/services/contact-center-monitoring.service';
 import { SoftphonePanelService } from './services/softphone-panel.service';
 import { SoftphoneCallStateService } from './services/softphone-call-state.service';
 import { SoftphoneSessionService } from './services/softphone-session.service';
@@ -160,6 +161,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   private readonly taskModal = inject(TaskModalService);
   private readonly queueMembersSvc = inject(QueueMembersService);
   private readonly agentStatusSvc = inject(AgentStatusService);
+  private readonly monitoringSvc = inject(ContactCenterMonitoringService);
   readonly panelSvc = inject(SoftphonePanelService);
   readonly callState = inject(SoftphoneCallStateService);
   private readonly sessionSvc = inject(SoftphoneSessionService);
@@ -245,6 +247,24 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
       .subscribe((agentStatus) => {
         if (agentStatus) {
           this.currentAgentStatus.set(agentStatus.status);
+        }
+      });
+
+    // Subscribe to WebSocket agent status changes for cross-tab synchronization
+    this.monitoringSvc.onAgentStatusChange()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((event) => {
+        if (!event || !this.sipUser || !event.payload) return;
+        
+        // Update if it's our extension
+        if (event.payload.extension === this.sipUser) {
+          this.logger.info(`Agent status synced from WebSocket: ${event.payload.status}`);
+          this.currentAgentStatus.set(event.payload.status);
+          
+          // Update local pause state
+          const shouldBePaused = event.payload.status !== AgentStatusEnum.ONLINE;
+          this.memberPaused.set(shouldBePaused);
+          this.memberReason.set(event.payload.reason || '');
         }
       });
 

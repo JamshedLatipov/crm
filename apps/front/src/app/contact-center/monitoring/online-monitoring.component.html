@@ -2,6 +2,18 @@
   title="Онлайн мониторинг"
   subtitle="Состояние операторов и очередей в реальном времени"
 >
+  <div class="header-actions">
+    <button mat-icon-button (click)="refreshData()" matTooltip="Обновить данные" class="refresh-btn">
+      <mat-icon>refresh</mat-icon>
+    </button>
+    <span class="last-update">Обновлено: {{ formatLastUpdate() }}</span>
+    @if (criticalQueues() > 0) {
+      <span class="critical-badge" matBadge="{{ criticalQueues() }}" matBadgeColor="warn">
+        <mat-icon class="pulse">warning</mat-icon>
+        Критичных очередей
+      </span>
+    }
+  </div>
   <div class="kpi-row">
     <div class="kpi-card">
       <div class="kpi-title">Операторы онлайн</div>
@@ -102,13 +114,18 @@
     <div class="queues-table">
       <crm-table
         [columns]="queueColumns"
-        [data]="queues$ | async"
+        [data]="sortedQueues()"
         [showPaginator]="false"
       >
         <ng-template crmColumnTemplate="queueTitleTemplate" let-queue>
-          <div class="queue-name">
+          <div class="queue-name" [ngClass]="getQueueStatusClass(queue)">
             <mat-icon class="queue-icon">support_agent</mat-icon>
             {{ queue.name || '—' }}
+            @if (getQueueStatusClass(queue) === 'queue-critical') {
+              <mat-icon class="status-icon critical pulse">error</mat-icon>
+            } @else if (getQueueStatusClass(queue) === 'queue-warning') {
+              <mat-icon class="status-icon warning">warning</mat-icon>
+            }
           </div>
         </ng-template>
 
