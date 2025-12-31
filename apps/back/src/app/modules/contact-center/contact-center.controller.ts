@@ -142,4 +142,14 @@ export class ContactCenterController {
   async getDebugMembers() {
     return this.svc.getDebugMembers();
   }
+
+  @Get('operators/:operatorId/details')
+  async getOperatorDetails(
+    @Param('operatorId') operatorId: string,
+    @Query('range') range?: 'today' | 'week' | 'month' | 'custom',
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string
+  ) {
+    return this.svc.getOperatorDetails(operatorId, range, startDate, endDate);
+  }
 }

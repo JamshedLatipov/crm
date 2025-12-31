@@ -1,0 +1,320 @@
+<app-page-layout [title]="operator()?.fullName || operator()?.name || 'Оператор'" subtitle="Детальная информация и статистика">
+  <!-- Header Actions -->
+  <div class="header-actions">
+    <button mat-stroked-button (click)="goBack()">
+      <mat-icon>arrow_back</mat-icon>
+      Назад
+    </button>
+    
+    <div class="range-filters">
+      <button 
+        mat-stroked-button 
+        [class.active]="selectedRange() === 'today'"
+        (click)="changeRange('today')"
+      >
+        Сегодня
+      </button>
+      <button 
+        mat-stroked-button 
+        [class.active]="selectedRange() === 'week'"
+        (click)="changeRange('week')"
+      >
+        Неделя
+      </button>
+      <button 
+        mat-stroked-button 
+        [class.active]="selectedRange() === 'month'"
+        (click)="changeRange('month')"
+      >
+        Месяц
+      </button>
+      <button 
+        mat-stroked-button 
+        [class.active]="selectedRange() === 'custom'"
+        (click)="changeRange('custom')"
+      >
+        Произвольный
+      </button>
+    </div>
+    
+    @if (selectedRange() === 'custom') {
+      <div class="custom-date-range">
+        <mat-form-field appearance="outline" class="date-field">
+          <mat-label>Начальная дата</mat-label>
+          <input matInput [matDatepicker]="startPicker" [formControl]="startDate" [max]="maxDate">
+          <mat-datepicker-toggle matIconSuffix [for]="startPicker"></mat-datepicker-toggle>
+          <mat-datepicker #startPicker></mat-datepicker>
+        </mat-form-field>
+        
+        <mat-form-field appearance="outline" class="date-field">
+          <mat-label>Конечная дата</mat-label>
+          <input matInput [matDatepicker]="endPicker" [formControl]="endDate" [max]="maxDate">
+          <mat-datepicker-toggle matIconSuffix [for]="endPicker"></mat-datepicker-toggle>
+          <mat-datepicker #endPicker></mat-datepicker>
+        </mat-form-field>
+        
+        <button mat-raised-button color="primary" (click)="applyCustomDateRange()">
+          <mat-icon>search</mat-icon>
+          Применить
+        </button>
+      </div>
+    }
+    
+    <button mat-stroked-button (click)="exportData()">
+      <mat-icon>download</mat-icon>
+      Экспорт
+    </button>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <mat-icon>hourglass_empty</mat-icon>
+      <p>Загрузка данных...</p>
+    </div>
+  } @else if (!operator()) {
+    <div class="empty-state">
+      <mat-icon>person_off</mat-icon>
+      <p>Оператор не найден</p>
+    </div>
+  } @else {
+    <!-- Current Status Card -->
+    <div class="status-card">
+      <div class="operator-avatar" [ngClass]="getStatusClass(operator()!.status)">
+        {{ operator()!.name.charAt(0).toUpperCase() }}
+      </div>
+      <div class="operator-info">
+        <h2>{{ operator()!.fullName || operator()!.name }}</h2>
+        <div class="operator-meta">
+          @if (operator()!.extension) {
+            <span class="extension">
+              <mat-icon>phone</mat-icon>
+              SIP: {{ operator()!.extension }}
+            </span>
+          }
+          <mat-chip [ngClass]="getStatusClass(operator()!.status)">
+            {{ formatStatus(operator()!.status) }}
+          </mat-chip>
+          @if (operator()!.statusDuration) {
+            <span class="duration">
+              <mat-icon>schedule</mat-icon>
+              {{ formatDuration(operator()!.statusDuration) }}
+            </span>
+          }
+        </div>
+        @if (operator()!.currentCall) {
+          <div class="current-call-info">
+            <mat-icon class="call-icon">phone_in_talk</mat-icon>
+            <span>На звонке с {{ operator()!.currentCall }}</span>
+            @if (operator()!.currentCallDuration) {
+              <span class="call-duration">{{ formatDuration(operator()!.currentCallDuration) }}</span>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon calls">
+          <mat-icon>call</mat-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats().totalCalls }}</div>
+          <div class="stat-label">Всего звонков</div>
+          <div class="stat-breakdown">
+            <span class="answered">{{ stats().answeredCalls }} обработано</span>
+            <span class="missed">{{ stats().missedCalls }} пропущено</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon duration">
+          <mat-icon>schedule</mat-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ formatDuration(stats().avgDuration) }}</div>
+          <div class="stat-label">Ср. длительность</div>
+          <div class="stat-breakdown">
+            <span>Общее время: {{ formatDuration(stats().totalTalkTime) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon quality">
+          <mat-icon>verified</mat-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ answeredRate() }}%</div>
+          <div class="stat-label">Эффективность</div>
+          <div class="stat-breakdown">
+            <mat-progress-bar mode="determinate" [value]="answeredRate()" class="success"></mat-progress-bar>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon satisfaction">
+          <mat-icon>star</mat-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats().satisfaction }}/5</div>
+          <div class="stat-label">Оценка клиентов</div>
+          <div class="stat-breakdown">
+            <span>FCR: {{ stats().firstCallResolution }}%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <mat-tab-group class="content-tabs">
+      <!-- Call History Tab -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon>call</mat-icon>
+          История звонков ({{ callHistory().length }})
+        </ng-template>
+        
+        <div class="tab-content">
+          <crm-table
+            [columns]="callHistoryColumns"
+            [data]="callHistory()"
+            [showPaginator]="true"
+          >
+            <ng-template crmColumnTemplate="timestampTemplate" let-call>
+              {{ formatTimestamp(call.timestamp) }}
+            </ng-template>
+
+            <ng-template crmColumnTemplate="callerTemplate" let-call>
+              <div class="caller-info">
+                <div class="number">{{ call.callerIdNum }}</div>
+                @if (call.callerIdName) {
+                  <div class="name">{{ call.callerIdName }}</div>
+                }
+              </div>
+            </ng-template>
+
+            <ng-template crmColumnTemplate="durationTemplate" let-call let-key="key">
+              <span [class.zero]="!call[key]">
+                {{ formatDuration(call[key]) }}
+              </span>
+            </ng-template>
+
+            <ng-template crmColumnTemplate="dispositionTemplate" let-call>
+              <mat-chip [ngClass]="getDispositionClass(call.disposition)">
+                {{ formatDisposition(call.disposition) }}
+              </mat-chip>
+            </ng-template>
+
+            <ng-template crmColumnTemplate="actionsTemplate" let-call>
+              <div class="action-buttons">
+                @if (call.disposition === 'answered') {
+                  <button mat-icon-button matTooltip="Прослушать запись" (click)="listenCall(call)">
+                    <mat-icon>play_circle</mat-icon>
+                  </button>
+                }
+                <button mat-icon-button matTooltip="Подробнее" (click)="viewCallDetails(call)">
+                  <mat-icon>info</mat-icon>
+                </button>
+              </div>
+            </ng-template>
+          </crm-table>
+        </div>
+      </mat-tab>
+
+      <!-- Status History Tab -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon>history</mat-icon>
+          История статусов ({{ statusHistory().length }})
+        </ng-template>
+        
+        <div class="tab-content">
+          <crm-table
+            [columns]="statusHistoryColumns"
+            [data]="statusHistory()"
+            [showPaginator]="false"
+          >
+            <ng-template crmColumnTemplate="timestampTemplate" let-item>
+              {{ formatTimestamp(item.timestamp) }}
+            </ng-template>
+
+            <ng-template crmColumnTemplate="statusTemplate" let-item>
+              <mat-chip [ngClass]="getStatusClass(item.status)">
+                {{ formatStatus(item.status) }}
+              </mat-chip>
+            </ng-template>
+
+            <ng-template crmColumnTemplate="durationTemplate" let-item>
+              {{ formatDuration(item.duration) }}
+            </ng-template>
+          </crm-table>
+        </div>
+      </mat-tab>
+
+      <!-- Analytics Tab -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon>analytics</mat-icon>
+          Аналитика
+        </ng-template>
+        
+        <div class="tab-content">
+          <div class="charts-grid">
+            <div class="chart-card">
+              <h3>Динамика звонков</h3>
+              <div class="chart-container">
+                <canvas baseChart
+                  [data]="callsChartData"
+                  [options]="callsChartOptions"
+                  type="bar"
+                ></canvas>
+              </div>
+            </div>
+
+            <div class="chart-card">
+              <h3>Распределение времени по статусам</h3>
+              <div class="chart-container">
+                <canvas baseChart
+                  [data]="statusChartData"
+                  [options]="statusChartOptions"
+                  type="doughnut"
+                ></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Performance Metrics -->
+          <div class="performance-metrics">
+            <h3>Показатели эффективности</h3>
+            <div class="metrics-list">
+              <div class="metric-row">
+                <span class="metric-label">Среднее время обработки (AHT)</span>
+                <span class="metric-value">{{ formatDuration(stats().avgHandleTime) }}</span>
+                <mat-progress-bar mode="determinate" [value]="70" class="warning"></mat-progress-bar>
+              </div>
+              <div class="metric-row">
+                <span class="metric-label">Среднее время ожидания</span>
+                <span class="metric-value">{{ formatDuration(stats().avgWaitTime) }}</span>
+                <mat-progress-bar mode="determinate" [value]="85" class="success"></mat-progress-bar>
+              </div>
+              <div class="metric-row">
+                <span class="metric-label">First Call Resolution (FCR)</span>
+                <span class="metric-value">{{ stats().firstCallResolution }}%</span>
+                <mat-progress-bar mode="determinate" [value]="stats().firstCallResolution" class="success"></mat-progress-bar>
+              </div>
+              <div class="metric-row">
+                <span class="metric-label">Коэффициент ответов</span>
+                <span class="metric-value">{{ answeredRate() }}%</span>
+                <mat-progress-bar mode="determinate" [value]="answeredRate()" class="success"></mat-progress-bar>
+              </div>
+            </div>
+          </div>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  }
+</app-page-layout>

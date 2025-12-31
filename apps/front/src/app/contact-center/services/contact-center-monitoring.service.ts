@@ -197,4 +197,33 @@ export class ContactCenterMonitoringService {
   onAgentStatusChange(): Observable<AgentStatusChangeEvent | null> {
     return this.agentStatusChangeSubject.asObservable();
   }
+
+  /**
+   * Get operator details (call history, status history, stats)
+   */
+  getOperatorDetails(
+    operatorId: string, 
+    range: 'today' | 'week' | 'month' | 'custom' = 'week',
+    startDate?: Date,
+    endDate?: Date
+  ): Observable<any> {
+    const encodedId = encodeURIComponent(operatorId);
+    let params: any = { range };
+    
+    if (range === 'custom' && startDate && endDate) {
+      params = {
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString()
+      };
+    }
+    
+    return this.http.get<any>(`${this.base}/operators/${encodedId}/details`, {
+      params
+    }).pipe(
+      catchError((err) => {
+        console.error('Failed to fetch operator details', err);
+        throw err;
+      })
+    );
+  }
 }

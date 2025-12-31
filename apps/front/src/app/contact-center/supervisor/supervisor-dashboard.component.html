@@ -1,0 +1,392 @@
+<app-page-layout
+  title="Панель супервизора"
+  subtitle="Управление операторами и очередями в реальном времени"
+>
+  <!-- Header Actions -->
+  <div class="header-actions">
+    <button mat-icon-button (click)="refreshData()" matTooltip="Обновить данные" class="refresh-btn">
+      <mat-icon>refresh</mat-icon>
+    </button>
+    <span class="last-update">Обновлено: {{ formatLastUpdate() }}</span>
+    @if (criticalQueues() > 0) {
+      <span class="critical-badge">
+        <mat-icon class="pulse">warning</mat-icon>
+        {{ criticalQueues() }} критичных очередей
+      </span>
+    }
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-icon operators">
+        <mat-icon>people</mat-icon>
+      </div>
+      <div class="kpi-content">
+        <div class="kpi-value">{{ onlineOperators() }}/{{ totalOperators() }}</div>
+        <div class="kpi-label">Операторы онлайн</div>
+        <div class="kpi-breakdown">
+          <span class="badge idle">{{ idleOperators() }} свободно</span>
+          <span class="badge busy">{{ busyOperators() }} на звонке</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon queues">
+        <mat-icon>queue</mat-icon>
+      </div>
+      <div class="kpi-content">
+        <div class="kpi-value">{{ totalWaiting() }}</div>
+        <div class="kpi-label">В ожидании</div>
+        <div class="kpi-breakdown">
+          <span class="badge">{{ totalQueues() }} очередей</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon calls">
+        <mat-icon>call</mat-icon>
+      </div>
+      <div class="kpi-content">
+        <div class="kpi-value">{{ totalActiveCalls() }}</div>
+        <div class="kpi-label">Активные звонки</div>
+        <div class="kpi-breakdown">
+          <span class="badge">{{ busyOperators() }} операторов занято</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon metrics">
+        <mat-icon>analytics</mat-icon>
+      </div>
+      <div class="kpi-content">
+        <div class="kpi-value">{{ dailyMetrics().slaCompliance }}%</div>
+        <div class="kpi-label">SLA соответствие</div>
+        <div class="kpi-breakdown">
+          <span class="badge">{{ dailyMetrics().totalCalls }} звонков сегодня</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Daily Metrics Summary -->
+  <div class="metrics-summary">
+    <div class="metric-item">
+      <mat-icon>call_received</mat-icon>
+      <div class="metric-content">
+        <div class="metric-value">{{ dailyMetrics().answeredCalls }}</div>
+        <div class="metric-label">Обработано</div>
+      </div>
+    </div>
+    <div class="metric-item">
+      <mat-icon>call_missed</mat-icon>
+      <div class="metric-content">
+        <div class="metric-value">{{ dailyMetrics().missedCalls }}</div>
+        <div class="metric-label">Пропущено</div>
+      </div>
+    </div>
+    <div class="metric-item">
+      <mat-icon>schedule</mat-icon>
+      <div class="metric-content">
+        <div class="metric-value">{{ formatDuration(dailyMetrics().avgDuration) }}</div>
+        <div class="metric-label">Ср. длительность</div>
+      </div>
+    </div>
+    <div class="metric-item">
+      <mat-icon>hourglass_empty</mat-icon>
+      <div class="metric-content">
+        <div class="metric-value">{{ formatDuration(dailyMetrics().avgWaitTime) }}</div>
+        <div class="metric-label">Ср. ожидание</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabbed Content -->
+  <mat-tab-group class="content-tabs" animationDuration="300ms">
+    <!-- Operators Tab -->
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <mat-icon>people</mat-icon>
+        Операторы ({{ totalOperators() }})
+      </ng-template>
+      
+      <div class="tab-content">
+        <!-- Status Filters -->
+        <div class="filters">
+          <button 
+            mat-stroked-button 
+            [class.active]="selectedStatusFilter() === 'all'"
+            (click)="setStatusFilter('all')"
+          >
+            Все ({{ totalOperators() }})
+          </button>
+          <button 
+            mat-stroked-button 
+            [class.active]="selectedStatusFilter() === 'idle'"
+            (click)="setStatusFilter('idle')"
+            class="filter-idle"
+          >
+            <mat-icon>check_circle</mat-icon>
+            Доступны ({{ idleOperators() }})
+          </button>
+          <button 
+            mat-stroked-button 
+            [class.active]="selectedStatusFilter() === 'on_call'"
+            (click)="setStatusFilter('on_call')"
+            class="filter-busy"
+          >
+            <mat-icon>phone_in_talk</mat-icon>
+            На звонке ({{ busyOperators() }})
+          </button>
+          <button 
+            mat-stroked-button 
+            [class.active]="selectedStatusFilter() === 'wrap_up'"
+            (click)="setStatusFilter('wrap_up')"
+            class="filter-wrapup"
+          >
+            <mat-icon>edit_note</mat-icon>
+            Завершение ({{ wrapUpOperators() }})
+          </button>
+        </div>
+
+        <!-- Operators Table -->
+        <crm-table
+          [columns]="operatorColumns"
+          [data]="filteredOperators()"
+          [showPaginator]="false"
+        >
+          <ng-template crmColumnTemplate="operatorNameTemplate" let-operator>
+            <div class="operator-name">
+              <div class="operator-avatar" [ngClass]="getStatusClass(operator.status)">
+                {{ operator.name.charAt(0).toUpperCase() }}
+              </div>
+              <div class="operator-info">
+                <div class="name">{{ operator.fullName || operator.name }}</div>
+                @if (operator.extension) {
+                  <div class="extension">SIP: {{ operator.extension }}</div>
+                }
+              </div>
+            </div>
+          </ng-template>
+
+          <ng-template crmColumnTemplate="operatorStatusTemplate" let-operator>
+            <mat-chip [ngClass]="getStatusClass(operator.status)">
+              {{ formatStatus(operator.status) }}
+            </mat-chip>
+            @if (operator.pausedReason) {
+              <div class="pause-reason">{{ operator.pausedReason }}</div>
+            }
+          </ng-template>
+
+          <ng-template crmColumnTemplate="statusDurationTemplate" let-operator>
+            <div class="duration">
+              {{ formatDuration(operator.statusDuration) }}
+            </div>
+          </ng-template>
+
+          <ng-template crmColumnTemplate="currentCallTemplate" let-operator>
+            @if (operator.currentCall) {
+              <div class="current-call">
+                <mat-icon class="call-icon">phone_in_talk</mat-icon>
+                <div class="call-info">
+                  <div class="caller">{{ operator.currentCall }}</div>
+                  <div class="call-duration">{{ formatDuration(operator.currentCallDuration) }}</div>
+                </div>
+              </div>
+            } @else {
+              <span class="no-call">—</span>
+            }
+          </ng-template>
+
+          <ng-template crmColumnTemplate="avgHandleTimeTemplate" let-operator>
+            {{ formatDuration(operator.avgHandleTime) }}
+          </ng-template>
+
+          <ng-template crmColumnTemplate="actionsTemplate" let-operator>
+            <div class="action-buttons">
+              @if (operator.status === 'on_call') {
+                <button 
+                  mat-icon-button 
+                  matTooltip="Подслушать" 
+                  (click)="whisperCall(operator)"
+                  class="action-btn"
+                >
+                  <mat-icon>hearing</mat-icon>
+                </button>
+                <button 
+                  mat-icon-button 
+                  matTooltip="Вмешаться" 
+                  (click)="bargeCall(operator)"
+                  class="action-btn"
+                >
+                  <mat-icon>call_merge</mat-icon>
+                </button>
+              }
+              <button 
+                mat-icon-button 
+                matTooltip="Подробнее" 
+                (click)="viewOperatorDetails(operator)"
+                class="action-btn"
+              >
+                <mat-icon>info</mat-icon>
+              </button>
+            </div>
+          </ng-template>
+        </crm-table>
+      </div>
+    </mat-tab>
+
+    <!-- Queues Tab -->
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <mat-icon>queue</mat-icon>
+        Очереди ({{ totalQueues() }})
+      </ng-template>
+      
+      <div class="tab-content">
+        <crm-table
+          [columns]="queueColumns"
+          [data]="queues()"
+          [showPaginator]="false"
+        >
+          <ng-template crmColumnTemplate="queueNameTemplate" let-queue>
+            <div class="queue-name" [ngClass]="getQueueStatusClass(queue)">
+              <mat-icon>support_agent</mat-icon>
+              <span>{{ queue.name }}</span>
+              @if (getQueueStatusClass(queue) === 'queue-critical') {
+                <mat-icon class="status-icon pulse">error</mat-icon>
+              } @else if (getQueueStatusClass(queue) === 'queue-warning') {
+                <mat-icon class="status-icon">warning</mat-icon>
+              }
+            </div>
+          </ng-template>
+
+          <ng-template crmColumnTemplate="waitingTemplate" let-queue>
+            <div class="waiting-badge" [class.has-waiting]="queue.waiting > 0">
+              <mat-icon>schedule</mat-icon>
+              <span class="count">{{ queue.waiting }}</span>
+            </div>
+          </ng-template>
+
+          <ng-template crmColumnTemplate="membersTemplate" let-queue>
+            <div class="members-info">
+              <span class="available">{{ queue.availableMembers }}</span> / 
+              <span class="total">{{ queue.totalMembers }}</span>
+            </div>
+          </ng-template>
+
+          <ng-template crmColumnTemplate="longestWaitTemplate" let-queue>
+            <div class="wait-time" [class.critical]="queue.longestWaitingSeconds >= 60">
+              {{ formatDuration(queue.longestWaitingSeconds) }}
+            </div>
+          </ng-template>
+
+          <ng-template crmColumnTemplate="serviceLevelTemplate" let-queue>
+            <div class="service-level">
+              <mat-progress-bar 
+                mode="determinate" 
+                [value]="queue.serviceLevel || 0"
+                [ngClass]="{
+                  'good': queue.serviceLevel >= 80,
+                  'warning': queue.serviceLevel >= 60 && queue.serviceLevel < 80,
+                  'poor': queue.serviceLevel < 60
+                }"
+              ></mat-progress-bar>
+              <span class="percentage">{{ queue.serviceLevel || 0 }}%</span>
+            </div>
+          </ng-template>
+
+          <ng-template crmColumnTemplate="queueActionsTemplate" let-queue>
+            <div class="action-buttons">
+              <button 
+                mat-icon-button 
+                matTooltip="Управление очередью" 
+                (click)="pauseQueue(queue)"
+                class="action-btn"
+              >
+                <mat-icon>settings</mat-icon>
+              </button>
+            </div>
+          </ng-template>
+        </crm-table>
+      </div>
+    </mat-tab>
+
+    <!-- Active Calls Tab -->
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <mat-icon>call</mat-icon>
+        Активные звонки ({{ totalActiveCalls() }})
+      </ng-template>
+      
+      <div class="tab-content">
+        @if (activeCalls().length === 0) {
+          <div class="empty-state">
+            <mat-icon>call_end</mat-icon>
+            <p>Нет активных звонков</p>
+          </div>
+        } @else {
+          <crm-table
+            [columns]="activeCallColumns"
+            [data]="activeCalls()"
+            [showPaginator]="false"
+          >
+            <ng-template crmColumnTemplate="callerTemplate" let-call>
+              <div class="caller-info">
+                <mat-icon>phone</mat-icon>
+                <div>
+                  <div class="number">{{ call.callerIdNum }}</div>
+                  @if (call.callerIdName) {
+                    <div class="name">{{ call.callerIdName }}</div>
+                  }
+                </div>
+              </div>
+            </ng-template>
+
+            <ng-template crmColumnTemplate="durationTemplate" let-call>
+              <div class="call-duration">
+                {{ formatDuration(call.duration) }}
+              </div>
+            </ng-template>
+
+            <ng-template crmColumnTemplate="stateTemplate" let-call>
+              <mat-chip class="state-chip">{{ call.state }}</mat-chip>
+            </ng-template>
+
+            <ng-template crmColumnTemplate="callActionsTemplate" let-call>
+              <div class="action-buttons">
+                <button 
+                  mat-stroked-button 
+                  (click)="transferCall(call)"
+                  class="action-btn-small"
+                >
+                  <mat-icon>call_split</mat-icon>
+                  Перевести
+                </button>
+                <button 
+                  mat-stroked-button 
+                  (click)="recordCall(call)"
+                  class="action-btn-small"
+                >
+                  <mat-icon>fiber_manual_record</mat-icon>
+                  Записать
+                </button>
+                <button 
+                  mat-icon-button 
+                  matTooltip="Завершить звонок" 
+                  (click)="hangupCall(call)"
+                  class="action-btn danger"
+                >
+                  <mat-icon>call_end</mat-icon>
+                </button>
+              </div>
+            </ng-template>
+          </crm-table>
+        }
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</app-page-layout>

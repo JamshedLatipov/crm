@@ -231,7 +231,7 @@
         </ng-template>
 
         <ng-template crmColumnTemplate="actionsTemplate" let-operator>
-          <button mat-button color="primary" class="details-btn">
+          <button mat-button color="primary" class="details-btn" (click)="viewOperatorDetails(operator)">
             <mat-icon>visibility</mat-icon>
             Подробно
           </button>

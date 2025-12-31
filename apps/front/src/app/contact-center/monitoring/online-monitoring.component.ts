@@ -8,6 +8,7 @@ import {
   computed,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { Observable, share, Subject, takeUntil, filter } from 'rxjs';
 import {
   ContactCenterMonitoringService,
@@ -50,6 +51,7 @@ Chart.register(...registerables, ChartDataLabels);
 })
 export class OnlineMonitoringComponent implements OnInit, OnDestroy {
   private svc = inject(ContactCenterMonitoringService);
+  private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
   private destroy$ = new Subject<void>();
 
@@ -427,6 +429,14 @@ export class OnlineMonitoringComponent implements OnInit, OnDestroy {
       return 'queue-warning';
     }
     return 'queue-normal';
+  }
+  
+  /**
+   * Navigate to operator details page
+   */
+  viewOperatorDetails(operator: OperatorStatus): void {
+    const encodedId = encodeURIComponent(operator.id);
+    this.router.navigate(['/contact-center/operator', encodedId]);
   }
   
   /**

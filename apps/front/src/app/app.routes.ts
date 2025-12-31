@@ -4,6 +4,8 @@ import { authGuard } from './auth/auth.guard';
 import { AuthTestComponent } from './auth/auth-test.component';
 import { IvrAdminComponent } from './ivr/containers/ivr-list/ivr.component';
 import { OnlineMonitoringComponent } from './contact-center/monitoring/online-monitoring.component';
+import { SupervisorDashboardComponent } from './contact-center/supervisor/supervisor-dashboard.component';
+import { OperatorDetailsComponent } from './contact-center/operator-details/operator-details.component';
 import { CallScriptsManagerComponent } from './contact-center/scripts/call-scripts-manager.component';
 import { CallScriptCategoriesListPageComponent } from './contact-center/scripts/call-script-categories-list-page/call-script-categories-list-page.component';
 import { CallScriptPreviewPageComponent } from './contact-center/scripts/call-script-preview/call-script-preview.component';
@@ -58,6 +60,8 @@ export const appRoutes: Route[] = [
             { path: 'calls', component: ContactCenterCallsComponent },
             { path: 'logs', loadComponent: () => import('./contact-center/call-logs/call-logs.component').then(m => m.CallLogsComponent) },
             { path: 'monitoring', component: OnlineMonitoringComponent },
+            { path: 'supervisor', component: SupervisorDashboardComponent },
+            { path: 'operator/:id', component: OperatorDetailsComponent },
             { path: 'queues', component: QueuesPageComponent },
             { path: 'pjsip', loadComponent: () => import('./contact-center/pjsip/ps-endpoints.component').then(m => m.PsEndpointsComponent) },
             { path: 'ivr', component: IvrAdminComponent },

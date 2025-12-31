@@ -126,8 +126,11 @@ services:
       AMI_PORT: 5038
       AMI_USER: admin
       AMI_PASSWORD: amp111
+      RECORDINGS_PATH: /var/lib/asterisk/recordings
     ports:
       - "3000:3000"
+    volumes:
+      - ./data/asterisk/recordings:/var/lib/asterisk/recordings:ro
     command: ["node", "dist/main.js"]
     mem_limit: "512m"
     mem_reservation: "256m"

@@ -1,6 +1,6 @@
 import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, Like, LessThanOrEqual, Not, IsNull } from 'typeorm';
+import { Repository, Between, Like, LessThanOrEqual, Not, IsNull, Or } from 'typeorm';
 import { QueueMember } from '../calls/entities/queue-member.entity';
 import { Queue } from '../calls/entities/queue.entity';
 import { Cdr } from '../calls/entities/cdr.entity';
@@ -1010,4 +1010,174 @@ export class ContactCenterService {
       currentCallId: callId,
     });
   }
+
+  /**
+   * Get operator details with call history, status history, and stats
+   */
+  async getOperatorDetails(
+    operatorId: string, 
+    range?: 'today' | 'week' | 'month' | 'custom',
+    startDateStr?: string,
+    endDateStr?: string
+  ) {
+    const operator = await this.getOperatorById(operatorId);
+    if (!operator) {
+      throw new Error(`Operator ${operatorId} not found`);
+    }
+
+    let startDate: Date;
+    let endDate: Date;
+
+    if (range === 'custom' || (startDateStr && endDateStr)) {
+      // Use custom dates if provided
+      startDate = startDateStr ? new Date(startDateStr) : new Date();
+      endDate = endDateStr ? new Date(endDateStr) : new Date();
+    } else {
+      // Use predefined range
+      const dateRange = this.getDateRange(range || 'week');
+      startDate = dateRange.startDate;
+      endDate = dateRange.endDate;
+    }
+
+    // Get call history from CDR
+    const callHistory = await this.getOperatorCallHistory(operatorId, startDate, endDate);
+
+    // Get status history from agent_statuses
+    const statusHistory = await this.getOperatorStatusHistory(operatorId, startDate, endDate);
+
+    // Calculate stats
+    const stats = this.calculateOperatorStats(callHistory);
+
+    return {
+      operator: {
+        id: operator.id,
+        name: operator.name,
+        fullName: operator.fullName,
+        extension: operator.extension,
+        status: operator.status,
+        currentCall: operator.currentCall ? {
+          callerIdNum: operator.currentCall,
+          duration: operator.currentCallDuration || 0,
+        } : undefined,
+      },
+      stats,
+      callHistory,
+      statusHistory,
+    };
+  }
+
+  private async getOperatorById(operatorId: string): Promise<OperatorStatus | null> {
+    const operators = await this.getOperatorsSnapshot();
+    return operators.find(op => op.id === operatorId) || null;
+  }
+
+  private getDateRange(range: 'today' | 'week' | 'month') {
+    const endDate = new Date();
+    const startDate = new Date();
+
+    switch (range) {
+      case 'today':
+        startDate.setHours(0, 0, 0, 0);
+        break;
+      case 'week':
+        startDate.setDate(startDate.getDate() - 7);
+        break;
+      case 'month':
+        startDate.setDate(startDate.getDate() - 30);
+        break;
+    }
+
+    return { startDate, endDate };
+  }
+
+  private async getOperatorCallHistory(operatorId: string, startDate: Date, endDate: Date) {
+    // Extract extension from operatorId (PJSIP/operator2 -> operator2)
+    const extension = operatorId.includes('/') 
+      ? operatorId.split('/')[1] 
+      : operatorId;
+
+    this.logger.log(`[getOperatorCallHistory] operatorId: ${operatorId}, extension: ${extension}, date range: ${startDate.toISOString()} - ${endDate.toISOString()}`);
+
+    // Search by dstchannel (where operator answered) OR dst (direct calls)
+    const cdrs = await this.cdrRepo.find({
+      where: [
+        {
+          calldate: Between(startDate, endDate),
+          dstchannel: Like(`%${extension}%`),
+        },
+        {
+          calldate: Between(startDate, endDate),
+          dst: Like(`%${extension}%`),
+        },
+      ],
+      order: { calldate: 'DESC' },
+      take: 100, // Last 100 calls
+    });
+
+    this.logger.log(`[getOperatorCallHistory] Found ${cdrs.length} CDR records for ${extension}`);
+
+    return cdrs.map(cdr => ({
+      id: cdr.uniqueid,
+      timestamp: cdr.calldate,
+      callerIdNum: cdr.src || 'Unknown',
+      callerIdName: cdr.clid || undefined,
+      duration: cdr.billsec || 0, // Use billsec (actual talk time) instead of duration
+      waitTime: (cdr.duration || 0) - (cdr.billsec || 0),
+      queue: cdr.dcontext || 'Direct',
+      disposition: this.mapDisposition(cdr.disposition),
+      recordingUrl: `/recordings/${cdr.uniqueid}`, // Link to recording endpoint
+    }));
+  }
+
+  private mapDisposition(disposition: string | null): 'answered' | 'missed' | 'abandoned' {
+    if (!disposition) return 'abandoned';
+    
+    const d = disposition.toLowerCase();
+    if (d.includes('answer')) return 'answered';
+    if (d.includes('busy') || d.includes('no answer')) return 'missed';
+    return 'abandoned';
+  }
+
+  private async getOperatorStatusHistory(operatorId: string, startDate: Date, endDate: Date) {
+    const statuses = await this.agentStatusRepo.find({
+      where: {
+        extension: operatorId,
+        statusChangedAt: Between(startDate, endDate),
+      },
+      order: { statusChangedAt: 'DESC' },
+      take: 50, // Last 50 status changes
+    });
+
+    return statuses.map(status => ({
+      timestamp: status.statusChangedAt,
+      status: status.status,
+      duration: 0, // Will be calculated on frontend
+      reason: status.reason || undefined,
+    }));
+  }
+
+  private calculateOperatorStats(callHistory: any[]) {
+    const totalCalls = callHistory.length;
+    const answeredCalls = callHistory.filter(c => c.disposition === 'answered').length;
+    const missedCalls = callHistory.filter(c => c.disposition === 'missed').length;
+
+    const totalDuration = callHistory.reduce((sum, c) => sum + (c.duration || 0), 0);
+    const totalWaitTime = callHistory.reduce((sum, c) => sum + (c.waitTime || 0), 0);
+    const totalTalkTime = callHistory
+      .filter(c => c.disposition === 'answered')
+      .reduce((sum, c) => sum + (c.duration || 0), 0);
+
+    return {
+      totalCalls,
+      answeredCalls,
+      missedCalls,
+      avgDuration: totalCalls > 0 ? Math.round(totalDuration / totalCalls) : 0,
+      avgWaitTime: totalCalls > 0 ? Math.round(totalWaitTime / totalCalls) : 0,
+      totalTalkTime,
+      avgHandleTime: answeredCalls > 0 ? Math.round(totalTalkTime / answeredCalls) : 0,
+      firstCallResolution: answeredCalls > 0 ? Math.round((answeredCalls / totalCalls) * 100) : 0,
+      satisfaction: 0, // Not implemented yet
+    };
+  }
 }
+
