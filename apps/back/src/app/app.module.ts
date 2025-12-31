@@ -21,6 +21,7 @@ import { PROMO_COMPANIES_MIGRATIONS } from './modules/promo-companies/migrations
 import { CALL_SCRIPTS_MIGRATIONS } from './modules/call-scripts/migrations';
 import { USER_ACTIVITY_MIGRATIONS } from './modules/user-activity/migrations';
 import { INTEGRATIONS_MIGRATIONS } from './modules/integrations/migrations';
+import { CONTACT_CENTER_MIGRATIONS } from './modules/contact-center/migrations';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { INTEGRATIONS_MIGRATIONS } from './modules/integrations/migrations';
         ...CALL_SCRIPTS_MIGRATIONS,
         ...USER_ACTIVITY_MIGRATIONS,
         ...INTEGRATIONS_MIGRATIONS,
+        ...CONTACT_CENTER_MIGRATIONS,
       ],
       migrationsRun: false,
     }),

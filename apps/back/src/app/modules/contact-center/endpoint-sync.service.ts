@@ -347,34 +347,16 @@ export class EndpointSyncService implements OnModuleInit {
     try {
       const agentStatus = await this.agentStatusRepo.findOne({ where: { extension } });
       
-      if (!agentStatus) {
-        this.logger.warn(`AgentStatus not found for extension ${extension}, creating new record`);
-        const newStatus = this.agentStatusRepo.create({
-          extension,
-          status: AgentStatusEnum.OFFLINE,
-          previousStatus: AgentStatusEnum.OFFLINE,
+      // Only update if not already OFFLINE or if no record exists
+      if (!agentStatus || agentStatus.status !== AgentStatusEnum.OFFLINE) {
+        this.logger.log(`🔴 Setting agent ${extension} status to OFFLINE: ${reason}`);
+        
+        // Use setAgentStatus to ensure history is saved
+        await this.contactCenterService?.setAgentStatus(extension, AgentStatusEnum.OFFLINE, {
           reason,
-          statusChangedAt: new Date(),
+          userId: agentStatus?.userId,
+          fullName: agentStatus?.fullName,
         });
-        await this.agentStatusRepo.save(newStatus);
-      } else {
-        // Only update if not already OFFLINE
-        if (agentStatus.status !== AgentStatusEnum.OFFLINE) {
-          this.logger.log(`🔴 Setting agent ${extension} status to OFFLINE: ${reason}`);
-          agentStatus.previousStatus = agentStatus.status;
-          agentStatus.status = AgentStatusEnum.OFFLINE;
-          agentStatus.reason = reason;
-          agentStatus.statusChangedAt = new Date();
-          await this.agentStatusRepo.save(agentStatus);
-          
-          // Broadcast via WebSocket if service is available
-          this.contactCenterService?.broadcastAgentStatusChange({
-            extension,
-            status: AgentStatusEnum.OFFLINE,
-            previousStatus: agentStatus.previousStatus,
-            reason,
-          });
-        }
       }
     } catch (err) {
       this.logger.error(`Failed to update AgentStatus to OFFLINE for ${extension}:`, err);
@@ -390,31 +372,20 @@ export class EndpointSyncService implements OnModuleInit {
       
       if (!agentStatus) {
         // Create new status if doesn't exist
-        const newStatus = this.agentStatusRepo.create({
-          extension,
-          status: AgentStatusEnum.ONLINE,
-          previousStatus: AgentStatusEnum.OFFLINE,
+        this.logger.log(`🟢 Creating AgentStatus for ${extension} with status ONLINE`);
+        await this.contactCenterService?.setAgentStatus(extension, AgentStatusEnum.ONLINE, {
           reason: 'Auto: SIP registered',
-          statusChangedAt: new Date(),
         });
-        await this.agentStatusRepo.save(newStatus);
-        this.logger.log(`🟢 Created AgentStatus for ${extension} with status ONLINE`);
       } else {
         // Only restore to ONLINE if it was auto-set to OFFLINE
         if (agentStatus.status === AgentStatusEnum.OFFLINE && agentStatus.reason?.startsWith('Auto:')) {
           this.logger.log(`🟢 Restoring agent ${extension} status to ONLINE (was auto-offline)`);
-          agentStatus.previousStatus = agentStatus.status;
-          agentStatus.status = AgentStatusEnum.ONLINE;
-          agentStatus.reason = 'Auto: SIP registered';
-          agentStatus.statusChangedAt = new Date();
-          await this.agentStatusRepo.save(agentStatus);
           
-          // Broadcast via WebSocket if service is available
-          this.contactCenterService?.broadcastAgentStatusChange({
-            extension,
-            status: AgentStatusEnum.ONLINE,
-            previousStatus: agentStatus.previousStatus,
-            reason: agentStatus.reason,
+          // Use setAgentStatus to ensure history is saved
+          await this.contactCenterService?.setAgentStatus(extension, AgentStatusEnum.ONLINE, {
+            reason: 'Auto: SIP registered',
+            userId: agentStatus.userId,
+            fullName: agentStatus.fullName,
           });
         } else if (agentStatus.status === AgentStatusEnum.OFFLINE && !agentStatus.reason?.startsWith('Auto:')) {
           // Agent was manually set offline, don't auto-restore

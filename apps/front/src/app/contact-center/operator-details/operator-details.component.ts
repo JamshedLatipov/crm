@@ -233,25 +233,31 @@ export class OperatorDetailsComponent implements OnInit, OnDestroy {
     {
       key: 'timestamp',
       label: 'Время',
-      width: '20%',
+      width: '15%',
       template: 'timestampTemplate',
     },
     {
+      key: 'previousStatus',
+      label: 'Из статуса',
+      width: '20%',
+      template: 'statusTemplate',
+    },
+    {
       key: 'status',
-      label: 'Статус',
-      width: '25%',
+      label: 'В статус',
+      width: '20%',
       template: 'statusTemplate',
     },
     {
       key: 'duration',
       label: 'Длительность',
-      width: '20%',
+      width: '15%',
       template: 'durationTemplate',
     },
     {
       key: 'reason',
       label: 'Причина',
-      width: '35%',
+      width: '30%',
     },
   ];
 

@@ -26,7 +26,7 @@ import { MatMenuModule } from '@angular/material/menu';
   ],
   template: `
     <app-page-layout title="PJSIP Endpoints">
-      <div class="actions">
+      <div page-actions class="actions">
         <button mat-flat-button color="primary" (click)="add()">Создать endpoint</button>
       </div>
       <crm-table [data]="endpoints$ | async" [columns]="columns">

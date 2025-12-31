@@ -197,9 +197,9 @@
               </div>
             </ng-template>
 
-            <ng-template crmColumnTemplate="durationTemplate" let-call let-key="key">
-              <span [class.zero]="!call[key]">
-                {{ formatDuration(call[key]) }}
+            <ng-template crmColumnTemplate="durationTemplate" let-call let-column="column">
+              <span [class.zero]="!call[column.key]">
+                {{ formatDuration(call[column.key]) }}
               </span>
             </ng-template>
 
@@ -242,9 +242,9 @@
               {{ formatTimestamp(item.timestamp) }}
             </ng-template>
 
-            <ng-template crmColumnTemplate="statusTemplate" let-item>
-              <mat-chip [ngClass]="getStatusClass(item.status)">
-                {{ formatStatus(item.status) }}
+            <ng-template crmColumnTemplate="statusTemplate" let-item let-column="column">
+              <mat-chip [ngClass]="getStatusClass(item[column.key])">
+                {{ formatStatus(item[column.key]) }}
               </mat-chip>
             </ng-template>
 

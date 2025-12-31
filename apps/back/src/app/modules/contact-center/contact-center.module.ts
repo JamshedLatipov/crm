@@ -9,11 +9,12 @@ import { QueueMember } from '../calls/entities/queue-member.entity';
 import { Cdr } from '../calls/entities/cdr.entity';
 import { User } from '../user/user.entity';
 import { AgentStatus } from './entities/agent-status.entity';
+import { AgentStatusHistory } from './entities/agent-status-history.entity';
 import { AmiModule } from '../ami/ami.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Queue, QueueMember, Cdr, User, AgentStatus]),
+    TypeOrmModule.forFeature([Queue, QueueMember, Cdr, User, AgentStatus, AgentStatusHistory]),
     AmiModule,
   ],
   controllers: [ContactCenterController],

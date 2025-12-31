@@ -6,6 +6,7 @@ import { Queue } from '../calls/entities/queue.entity';
 import { Cdr } from '../calls/entities/cdr.entity';
 import { User } from '../user/user.entity';
 import { AgentStatus } from './entities/agent-status.entity';
+import { AgentStatusHistory } from './entities/agent-status-history.entity';
 import { AgentStatusEnum } from './enums/agent-status.enum';
 import { AmiService } from '../ami/ami.service';
 
@@ -67,6 +68,7 @@ export class ContactCenterService {
     @InjectRepository(Cdr) private readonly cdrRepo: Repository<Cdr>,
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(AgentStatus) private readonly agentStatusRepo: Repository<AgentStatus>,
+    @InjectRepository(AgentStatusHistory) private readonly agentStatusHistoryRepo: Repository<AgentStatusHistory>,
     private readonly amiService: AmiService,
     @Inject('CONTACT_CENTER_GATEWAY')
     private gateway?: any,
@@ -874,6 +876,19 @@ export class ContactCenterService {
       `Agent ${extension} status changed to ${status}${options?.reason ? ` (${options.reason})` : ''}`
     );
 
+    // Save to history table
+    const historyRecord = this.agentStatusHistoryRepo.create({
+      extension,
+      userId: agentStatus.userId,
+      fullName: agentStatus.fullName,
+      status,
+      previousStatus: agentStatus.previousStatus,
+      reason: options?.reason ?? null,
+      queueName: options?.queueName ?? null,
+      statusChangedAt: now,
+    });
+    await this.agentStatusHistoryRepo.save(historyRecord);
+
     // Broadcast status change via WebSocket
     if (this.gateway && this.gateway.broadcastAgentStatusChange) {
       this.gateway.broadcastAgentStatusChange({
@@ -1157,17 +1172,27 @@ export class ContactCenterService {
   }
 
   private async getOperatorStatusHistory(operatorId: string, startDate: Date, endDate: Date) {
-    const statuses = await this.agentStatusRepo.find({
+    // Extract extension from operatorId (PJSIP/operator2 -> operator2)
+    const extension = operatorId.includes('/') 
+      ? operatorId.split('/')[1] 
+      : operatorId;
+
+    this.logger.log(`[getOperatorStatusHistory] operatorId: ${operatorId}, extension: ${extension}, date range: ${startDate.toISOString()} - ${endDate.toISOString()}`);
+
+    const statuses = await this.agentStatusHistoryRepo.find({
       where: {
-        extension: operatorId,
+        extension: extension,
         statusChangedAt: Between(startDate, endDate),
       },
       order: { statusChangedAt: 'DESC' },
       take: 50, // Last 50 status changes
     });
 
+    this.logger.log(`[getOperatorStatusHistory] Found ${statuses.length} status records for ${extension}`);
+
     return statuses.map(status => ({
       timestamp: status.statusChangedAt,
+      previousStatus: status.previousStatus || undefined,
       status: status.status,
       duration: 0, // Will be calculated on frontend
       reason: status.reason || undefined,
