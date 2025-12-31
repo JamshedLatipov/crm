@@ -7,12 +7,13 @@ import { IvrService } from './ivr.service';
 import { IvrController } from './ivr.controller';
 import { IvrRuntimeService } from './ivr-runtime.service';
 import { IvrLogService } from './ivr-log.service';
+import { IvrCacheService } from './ivr-cache.service';
 import { AriModule } from '../ari/ari.module';
 
 @Module({
   imports: [TypeOrmModule.forFeature([IvrNode, IvrLog, IvrMedia]), AriModule],
-  providers: [IvrService, IvrRuntimeService, IvrLogService],
+  providers: [IvrService, IvrRuntimeService, IvrLogService, IvrCacheService],
   controllers: [IvrController],
-  exports: [IvrService]
+  exports: [IvrService, IvrCacheService]
 })
 export class IvrModule {}

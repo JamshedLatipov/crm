@@ -1,17 +1,21 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { IvrMedia } from './entities/ivr-media.entity';
 import * as fs from 'fs';
 import * as path from 'path';
 import { spawn } from 'child_process';
+import { IvrCacheService } from '../ivr/ivr-cache.service';
 
 @Injectable()
 export class IvrMediaService {
   private readonly logger = new Logger(IvrMediaService.name);
   private mediaDir = process.env.IVR_MEDIA_DIR || path.resolve(process.cwd(), 'data', 'asterisk', 'sounds', 'custom');
 
-  constructor(@InjectRepository(IvrMedia) private repo: Repository<IvrMedia>) {
+  constructor(
+    @InjectRepository(IvrMedia) private repo: Repository<IvrMedia>,
+    @Optional() private readonly cacheService?: IvrCacheService,
+  ) {
     try { fs.mkdirSync(this.mediaDir, { recursive: true }); } catch (e) { this.logger.debug('mkdir mediaDir: '+(e as Error).message); }
   }
 
@@ -98,12 +102,17 @@ export class IvrMediaService {
     if(!r) return;
     try { await fs.promises.unlink(path.join(this.mediaDir, r.filename)); } catch (e) { this.logger.debug('unlink: '+(e as Error).message); }
     await this.repo.delete(id);
+    // Invalidate cache
+    this.cacheService?.invalidateMedia(id).catch(e => this.logger.warn('Cache invalidation failed: ' + e.message));
   }
 
   async rename(id: string, name: string) {
     const r = await this.repo.findOne({ where: { id } });
     if (!r) return null;
     r.name = name;
-    return this.repo.save(r);
+    const saved = await this.repo.save(r);
+    // Invalidate cache
+    this.cacheService?.invalidateMedia(id).catch(e => this.logger.warn('Cache invalidation failed: ' + e.message));
+    return saved;
   }
 }

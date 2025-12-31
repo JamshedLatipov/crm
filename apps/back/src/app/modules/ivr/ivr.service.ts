@@ -1,8 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { IvrNode, IvrActionType } from './entities/ivr-node.entity';
 import { AriService } from '../ari/ari.service';
+import { IvrCacheService } from './ivr-cache.service';
 
 export interface CreateIvrNodeDto {
   name: string;
@@ -27,9 +28,10 @@ export class IvrService {
   constructor(
     @InjectRepository(IvrNode) private readonly repo: Repository<IvrNode>,
     private readonly ari: AriService,
+    @Optional() private readonly cacheService?: IvrCacheService,
   ) {}
 
-  create(dto: CreateIvrNodeDto) {
+  create(dto: CreateIvrNodeDto): Promise<IvrNode> {
     // Ensure any incoming 'id' is ignored so the database can generate it
     const { id: _incomingId, ...rest } = dto as any;
     const node = this.repo.create({
@@ -37,20 +39,45 @@ export class IvrService {
       order: dto.order ?? 0,
       timeoutMs: dto.timeoutMs ?? 5000,
       allowEarlyDtmf: dto.allowEarlyDtmf ?? true,
+    } as Partial<IvrNode>) as IvrNode;
+    return this.repo.save(node).then(async (saved) => {
+      // Invalidate cache for parent's children list
+      if (saved.parentId && this.cacheService) {
+        await this.cacheService.invalidateNode(saved.parentId);
+      }
+      return saved;
     });
-    return this.repo.save(node);
   }
 
   async update(id: string, dto: UpdateIvrNodeDto) {
     const node = await this.repo.findOne({ where: { id } });
     if (!node) throw new NotFoundException('Node not found');
     Object.assign(node, dto);
-  if (dto.allowEarlyDtmf !== undefined) node.allowEarlyDtmf = dto.allowEarlyDtmf;
-    return this.repo.save(node);
+    if (dto.allowEarlyDtmf !== undefined) node.allowEarlyDtmf = dto.allowEarlyDtmf;
+    const saved = await this.repo.save(node);
+    
+    // Invalidate cache
+    if (this.cacheService) {
+      await this.cacheService.invalidateNode(id);
+    }
+    
+    return saved;
   }
 
   async remove(id: string) {
+    // Get node before deletion to know parent
+    const node = await this.repo.findOne({ where: { id } });
+    
     await this.repo.delete(id);
+    
+    // Invalidate cache
+    if (this.cacheService && node) {
+      await this.cacheService.invalidateNode(id);
+      if (node.parentId) {
+        await this.cacheService.invalidateNode(node.parentId);
+      }
+    }
+    
     return { deleted: true };
   }
 

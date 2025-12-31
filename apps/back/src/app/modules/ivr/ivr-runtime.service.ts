@@ -1,12 +1,14 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, Inject, OnModuleDestroy, Optional } from '@nestjs/common';
 import { AriService } from '../ari/ari.service';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { IvrNode } from './entities/ivr-node.entity';
 import axios from 'axios';
 import { IvrLogService } from './ivr-log.service';
 import { IvrLogEvent } from './entities/ivr-log.entity';
 import { IvrMedia } from '../ivr-media/entities/ivr-media.entity';
+import { RedisClientType } from 'redis';
+import { IvrCacheService } from './ivr-cache.service';
 
 interface AriPlaybackEvent {
   playback?: { id?: string; target_uri?: string };
@@ -16,23 +18,47 @@ interface AriDtmfEvent {
   digit?: string;
 }
 
+// Serializable state stored in Redis
+interface SerializableCallState {
+  channelId: string;
+  currentNodeId: string;
+  waitingForDigit: boolean;
+  history: string[];
+  activePlaybacks: string[]; // Array instead of Set for JSON
+  pendingTimeoutMs?: number;
+  ended?: boolean;
+  allocRetryCount?: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+// Full state with timers (local only)
 interface ActiveCallState {
   channelId: string;
   currentNodeId: string;
   waitingForDigit: boolean;
   digitTimer?: NodeJS.Timeout;
-  history: string[]; // stack of previous nodeIds for back
-  activePlaybacks: Set<string>; // playback ids for this channel
-  pendingTimeoutMs?: number; // deferred timeout until playbacks finish
-  ended?: boolean; // channel has ended (StasisEnd / ChannelDestroyed)
-  allocRetryCount?: number; // number of recent allocation retries
-  allocRetryTimer?: NodeJS.Timeout; // timer for allocation retry
+  history: string[];
+  activePlaybacks: Set<string>;
+  pendingTimeoutMs?: number;
+  ended?: boolean;
+  allocRetryCount?: number;
+  allocRetryTimer?: NodeJS.Timeout;
 }
 
+const REDIS_PREFIX = 'ivr:calls:';
+const CALL_STATE_TTL = 60 * 60; // 1 hour max call duration
+
 @Injectable()
-export class IvrRuntimeService implements OnModuleInit {
+export class IvrRuntimeService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(IvrRuntimeService.name);
+  
+  // Local cache for timers (cannot be serialized to Redis)
+  private readonly localTimers = new Map<string, { digitTimer?: NodeJS.Timeout; allocRetryTimer?: NodeJS.Timeout }>();
+  
+  // In-memory cache synced with Redis
   private readonly calls = new Map<string, ActiveCallState>();
+  
   private rootNodeCache?: IvrNode | null;
 
   constructor(
@@ -40,10 +66,15 @@ export class IvrRuntimeService implements OnModuleInit {
     @InjectRepository(IvrNode) private readonly repo: Repository<IvrNode>,
     @InjectRepository(IvrMedia)
     private readonly mediaRepo: Repository<IvrMedia>,
-    private readonly logSvc: IvrLogService
+    private readonly logSvc: IvrLogService,
+    @Inject('REDIS_CLIENT') private readonly redis: RedisClientType,
+    @Optional() private readonly ivrCache?: IvrCacheService,
   ) {}
 
   async onModuleInit() {
+    // Restore active calls from Redis on startup
+    await this.restoreCallsFromRedis();
+    
     this.ari.on('StasisStart', (evt: unknown, channel: unknown) =>
       this.onStasisStart(evt, channel)
     );
@@ -58,25 +89,183 @@ export class IvrRuntimeService implements OnModuleInit {
     this.ari.on('ChannelDestroyed', (evt: unknown) => this.onChannelEnded(evt));
   }
 
+  async onModuleDestroy() {
+    // Clear all local timers
+    for (const [channelId, timers] of this.localTimers) {
+      if (timers.digitTimer) clearTimeout(timers.digitTimer);
+      if (timers.allocRetryTimer) clearTimeout(timers.allocRetryTimer);
+    }
+    this.localTimers.clear();
+  }
+
+  // Redis state management
+  private async saveCallToRedis(channelId: string, state: ActiveCallState): Promise<void> {
+    try {
+      const serializable: SerializableCallState = {
+        channelId: state.channelId,
+        currentNodeId: state.currentNodeId,
+        waitingForDigit: state.waitingForDigit,
+        history: state.history,
+        activePlaybacks: Array.from(state.activePlaybacks),
+        pendingTimeoutMs: state.pendingTimeoutMs,
+        ended: state.ended,
+        allocRetryCount: state.allocRetryCount,
+        createdAt: (state as any).createdAt || Date.now(),
+        updatedAt: Date.now(),
+      };
+      await this.redis.setEx(
+        `${REDIS_PREFIX}${channelId}`,
+        CALL_STATE_TTL,
+        JSON.stringify(serializable)
+      );
+    } catch (err) {
+      this.logger.warn(`Failed to save call state to Redis: ${err}`);
+    }
+  }
+
+  private async deleteCallFromRedis(channelId: string): Promise<void> {
+    try {
+      await this.redis.del(`${REDIS_PREFIX}${channelId}`);
+    } catch (err) {
+      this.logger.warn(`Failed to delete call state from Redis: ${err}`);
+    }
+  }
+
+  private async restoreCallsFromRedis(): Promise<void> {
+    try {
+      const keys = await this.redis.keys(`${REDIS_PREFIX}*`);
+      this.logger.log(`Restoring ${keys.length} active IVR calls from Redis`);
+      
+      for (const key of keys) {
+        try {
+          const data = await this.redis.get(key);
+          if (!data) continue;
+          
+          const serialized: SerializableCallState = JSON.parse(data);
+          
+          // Check if call is stale (older than TTL)
+          if (Date.now() - serialized.updatedAt > CALL_STATE_TTL * 1000) {
+            await this.redis.del(key);
+            continue;
+          }
+          
+          // Restore to memory
+          const state: ActiveCallState = {
+            channelId: serialized.channelId,
+            currentNodeId: serialized.currentNodeId,
+            waitingForDigit: serialized.waitingForDigit,
+            history: serialized.history,
+            activePlaybacks: new Set(serialized.activePlaybacks),
+            pendingTimeoutMs: serialized.pendingTimeoutMs,
+            ended: serialized.ended,
+            allocRetryCount: serialized.allocRetryCount,
+          };
+          
+          this.calls.set(serialized.channelId, state);
+          this.localTimers.set(serialized.channelId, {});
+          
+          this.logger.log(`Restored IVR call: ${serialized.channelId}`);
+        } catch (err) {
+          this.logger.warn(`Failed to restore call from key ${key}: ${err}`);
+        }
+      }
+    } catch (err) {
+      this.logger.error(`Failed to restore calls from Redis: ${err}`);
+    }
+  }
+
+  // Get call state with Redis fallback
+  private async getCallState(channelId: string): Promise<ActiveCallState | undefined> {
+    // First check local cache
+    let state = this.calls.get(channelId);
+    if (state) return state;
+    
+    // Try to restore from Redis (in case another instance created it)
+    try {
+      const data = await this.redis.get(`${REDIS_PREFIX}${channelId}`);
+      if (data) {
+        const serialized: SerializableCallState = JSON.parse(data);
+        state = {
+          channelId: serialized.channelId,
+          currentNodeId: serialized.currentNodeId,
+          waitingForDigit: serialized.waitingForDigit,
+          history: serialized.history,
+          activePlaybacks: new Set(serialized.activePlaybacks),
+          pendingTimeoutMs: serialized.pendingTimeoutMs,
+          ended: serialized.ended,
+          allocRetryCount: serialized.allocRetryCount,
+        };
+        this.calls.set(channelId, state);
+        this.localTimers.set(channelId, {});
+        return state;
+      }
+    } catch (err) {
+      this.logger.warn(`Failed to get call state from Redis: ${err}`);
+    }
+    
+    return undefined;
+  }
+
   /**
    * Resolve root node. If `entryKey` is provided, try to find a root node named `root:<entryKey>`
    * (allows mapping different dialplan entry points to different IVR roots). Falls back to
    * the default `root` node.
    */
   private async getRootNode(entryKey?: string): Promise<IvrNode | null> {
-    if (!entryKey) {
-      // Fallback to default 'root' node
-      const root = await this.repo.findOne({
-        where: { name: 'root', parentId: IsNull() },
-      });
-      return root;
+    const name = entryKey?.trim() || 'root';
+    
+    // Try cache first
+    if (this.ivrCache) {
+      return this.ivrCache.getRootNode(name);
     }
     
-    const root = await this.repo.findOne({
-      where: { name: entryKey.trim(), parentId: IsNull() },
+    // Fallback to direct DB query
+    return this.repo.findOne({
+      where: { name, parentId: null },
     });
+  }
 
-    return root;
+  /**
+   * Get node by ID (with cache)
+   */
+  private async getNodeById(id: string): Promise<IvrNode | null> {
+    if (!id) return null;
+    
+    // Try cache first
+    if (this.ivrCache) {
+      return this.ivrCache.getNodeById(id);
+    }
+    
+    // Fallback to direct DB query
+    return this.repo.findOne({ where: { id } });
+  }
+
+  /**
+   * Get child node by digit (with cache)
+   */
+  private async getChildByDigit(parentId: string, digit: string): Promise<IvrNode | null> {
+    // Try cache first
+    if (this.ivrCache) {
+      return this.ivrCache.getChildByDigit(parentId, digit);
+    }
+    
+    // Fallback to direct DB query
+    return this.repo.findOne({ where: { parentId, digit } });
+  }
+
+  /**
+   * Get media by ID (with cache)
+   */
+  private async getMediaById(id: string): Promise<IvrMedia | null> {
+    if (!id) return null;
+    
+    // Try cache first
+    if (this.ivrCache) {
+      return this.ivrCache.getMediaById(id);
+    }
+    
+    // Fallback to direct DB query
+    return this.mediaRepo.findOne({ where: { id } });
   }
 
   private async onStasisStart(evt: unknown, channel: unknown) {
@@ -104,13 +293,17 @@ export class IvrRuntimeService implements OnModuleInit {
       this.logger.warn(`No root IVR node defined${entryKey ? ` for entryKey='${entryKey}'` : ''}`);
       return;
     }
-    this.calls.set(channelId, {
+    const newState: ActiveCallState = {
       channelId,
       currentNodeId: root.id,
       waitingForDigit: false,
       history: [],
       activePlaybacks: new Set(),
-    });
+    };
+    this.calls.set(channelId, newState);
+    this.localTimers.set(channelId, {});
+    await this.saveCallToRedis(channelId, newState);
+    
     await this.safeLog({
       channelId,
       caller,
@@ -136,12 +329,14 @@ export class IvrRuntimeService implements OnModuleInit {
     if (existing?.ended) return;
     const st = this.calls.get(channelId);
     if (st) {
-      if (st.digitTimer) {
-        clearTimeout(st.digitTimer);
-        st.digitTimer = undefined;
+      const timers = this.localTimers.get(channelId);
+      if (timers?.digitTimer) {
+        clearTimeout(timers.digitTimer);
+        timers.digitTimer = undefined;
       }
       st.waitingForDigit = false;
       st.pendingTimeoutMs = undefined;
+      await this.saveCallToRedis(channelId, st);
     }
     await this.safeLog({
       channelId,
@@ -156,9 +351,7 @@ export class IvrRuntimeService implements OnModuleInit {
           let mediaRef = node.payload;
           // if payload looks like a UUID (media id), resolve filename
           if (/^[0-9a-fA-F-]{36,}$/.test(String(node.payload))) {
-            const m = await this.mediaRepo.findOne({
-              where: { id: node.payload },
-            });
+            const m = await this.getMediaById(node.payload);
             if (m) mediaRef = m.filename.replace(/\.[^.]+$/, '');
           }
           // play from custom sounds folder so project-provided audio is used
@@ -172,9 +365,7 @@ export class IvrRuntimeService implements OnModuleInit {
         if (node.payload) {
           let mediaRef = node.payload;
           if (/^[0-9a-fA-F-]{36,}$/.test(String(node.payload))) {
-            const m = await this.mediaRepo.findOne({
-              where: { id: node.payload },
-            });
+            const m = await this.getMediaById(node.payload);
             if (m) mediaRef = m.filename.replace(/\.[^.]+$/, '');
           }
           // play menu prompt from custom sounds
@@ -208,7 +399,7 @@ export class IvrRuntimeService implements OnModuleInit {
       }
       case 'goto': {
         if (!node.payload) break;
-        const target = await this.repo.findOne({ where: { id: node.payload } });
+        const target = await this.getNodeById(node.payload);
         if (target) await this.executeNode(target, channelId, channel);
         break;
       }
@@ -231,15 +422,16 @@ export class IvrRuntimeService implements OnModuleInit {
           }
         } catch (err) {
           this.logger.error(`[QUEUE_TRANSITION] Failed to check/answer channel ${channelId}: ${err}`);
-          this.calls.delete(channelId);
+          await this.cleanupCall(channelId);
           break;
         }
 
         // Disable DTMF handling completely before queue transition
         st.waitingForDigit = false;
-        if (st.digitTimer) {
-          clearTimeout(st.digitTimer);
-          st.digitTimer = undefined;
+        const timers = this.localTimers.get(channelId);
+        if (timers?.digitTimer) {
+          clearTimeout(timers.digitTimer);
+          timers.digitTimer = undefined;
         }
         this.logger.log(`[QUEUE_TRANSITION] Disabled DTMF for channel ${channelId}`);
 
@@ -266,13 +458,13 @@ export class IvrRuntimeService implements OnModuleInit {
           const channelInfo = await client.channels.get({ channelId });
           if (!channelInfo || channelInfo.state === 'Down') {
             this.logger.warn(`[QUEUE_TRANSITION] Channel ${channelId} is down, aborting transition`);
-            this.calls.delete(channelId);
+            await this.cleanupCall(channelId);
             break;
           }
           this.logger.log(`[QUEUE_TRANSITION] Channel ${channelId} state=${channelInfo.state}, proceeding to queue`);
         } catch (err) {
           this.logger.error(`[QUEUE_TRANSITION] Failed to get channel info for ${channelId}: ${err}`);
-          this.calls.delete(channelId);
+          await this.cleanupCall(channelId);
           break;
         }
 
@@ -366,7 +558,7 @@ export class IvrRuntimeService implements OnModuleInit {
         await this.safeChannelOp(channelId, () =>
           client.channels.hangup({ channelId })
         );
-        this.calls.delete(channelId);
+        await this.cleanupCall(channelId);
         await this.safeLog({
           channelId,
           nodeId: node.id,
@@ -378,23 +570,41 @@ export class IvrRuntimeService implements OnModuleInit {
     }
   }
 
-  private setWaiting(channelId: string, waiting: boolean, timeoutMs?: number) {
+  private async setWaiting(channelId: string, waiting: boolean, timeoutMs?: number) {
     const st = this.calls.get(channelId);
     if (!st) return;
     st.waitingForDigit = waiting;
-    if (st.digitTimer) clearTimeout(st.digitTimer);
-    st.digitTimer = undefined;
+    
+    const timers = this.localTimers.get(channelId) || {};
+    if (timers.digitTimer) clearTimeout(timers.digitTimer);
+    timers.digitTimer = undefined;
+    
     if (waiting && timeoutMs && timeoutMs > 0) {
       // Defer starting timer if playback audio currently active
       if (st.activePlaybacks.size > 0) {
         st.pendingTimeoutMs = timeoutMs;
       } else {
-        st.digitTimer = this.startDigitTimeout(channelId, st, timeoutMs);
+        timers.digitTimer = this.startDigitTimeout(channelId, st, timeoutMs);
       }
     }
     if (!waiting) {
       st.pendingTimeoutMs = undefined;
     }
+    
+    this.localTimers.set(channelId, timers);
+    await this.saveCallToRedis(channelId, st);
+  }
+
+  // Helper to cleanup call state from both local and Redis
+  private async cleanupCall(channelId: string): Promise<void> {
+    const timers = this.localTimers.get(channelId);
+    if (timers) {
+      if (timers.digitTimer) clearTimeout(timers.digitTimer);
+      if (timers.allocRetryTimer) clearTimeout(timers.allocRetryTimer);
+    }
+    this.localTimers.delete(channelId);
+    this.calls.delete(channelId);
+    await this.deleteCallFromRedis(channelId);
   }
 
   private startDigitTimeout(
@@ -426,9 +636,7 @@ export class IvrRuntimeService implements OnModuleInit {
             // Non-menu: do NOT hangup; attempt to return to nearest ancestor menu
             const parentId = (node as IvrNode).parentId;
             if (parentId) {
-              const parent = await this.repo.findOne({
-                where: { id: parentId },
-              });
+              const parent = await this.getNodeById(parentId);
               if (parent && parent.action === 'menu') {
                 st.currentNodeId = parent.id;
                 st.waitingForDigit = false;
@@ -450,7 +658,10 @@ export class IvrRuntimeService implements OnModuleInit {
     const channelId = pb.playback?.target_uri?.split(':').pop();
     if (!playbackId || !channelId) return;
     const st = this.calls.get(channelId);
-    if (st) st.activePlaybacks.add(playbackId);
+    if (st) {
+      st.activePlaybacks.add(playbackId);
+      await this.saveCallToRedis(channelId, st);
+    }
   }
 
   private async onPlaybackFinished(evt: unknown) {
@@ -461,31 +672,37 @@ export class IvrRuntimeService implements OnModuleInit {
     const st = this.calls.get(channelId);
     if (!st) return;
     if (playbackId) st.activePlaybacks.delete(playbackId);
+    
+    const timers = this.localTimers.get(channelId) || {};
+    
     // If all playbacks finished and we were waiting with deferred timeout, start it now
     if (
       st.activePlaybacks.size === 0 &&
       st.waitingForDigit &&
-      !st.digitTimer &&
+      !timers.digitTimer &&
       st.pendingTimeoutMs
     ) {
-      st.digitTimer = this.startDigitTimeout(
+      timers.digitTimer = this.startDigitTimeout(
         channelId,
         st,
         st.pendingTimeoutMs
       );
+      this.localTimers.set(channelId, timers);
     }
-    const node = await this.repo.findOne({ where: { id: st.currentNodeId } });
+    const node = await this.getNodeById(st.currentNodeId);
     if (!node) return;
     if (node.action === 'menu') {
       // Start waiting (and timer) only now if not already flagged
-      if (!st.waitingForDigit) this.setWaiting(channelId, true, node.timeoutMs);
+      if (!st.waitingForDigit) await this.setWaiting(channelId, true, node.timeoutMs);
       // If early DTMF enabled we may have st.waitingForDigit=true already but timer was still deferred; ensure timer starts now
       if (st.waitingForDigit && st.pendingTimeoutMs) {
-        st.digitTimer = this.startDigitTimeout(
+        const t = this.localTimers.get(channelId) || {};
+        t.digitTimer = this.startDigitTimeout(
           channelId,
           st,
           st.pendingTimeoutMs
         );
+        this.localTimers.set(channelId, t);
         st.pendingTimeoutMs = undefined;
       }
     } else if (node.action === 'playback') {
@@ -496,16 +713,15 @@ export class IvrRuntimeService implements OnModuleInit {
         nodeName: node.name,
         event: 'PLAYBACK_FINISHED',
       });
-      const current = await this.repo.findOne({ where: { id: node.id } });
+      const current = await this.getNodeById(node.id);
       if (current?.parentId) {
-        const parent = await this.repo.findOne({
-          where: { id: current.parentId },
-        });
+        const parent = await this.getNodeById(current.parentId);
         if (parent && parent.action === 'menu') {
           const st2 = this.calls.get(channelId);
           if (st2) {
             st2.currentNodeId = parent.id;
             st2.waitingForDigit = false;
+            await this.saveCallToRedis(channelId, st2);
           }
           await this.executeNode(parent, channelId);
         }
@@ -520,7 +736,7 @@ export class IvrRuntimeService implements OnModuleInit {
     if (!channelId || !digit) return;
     const st = this.calls.get(channelId);
     if (!st) return;
-    const node = await this.repo.findOne({ where: { id: st.currentNodeId } });
+    const node = await this.getNodeById(st.currentNodeId);
     if (!node) return;
     // Accept digits if waiting OR menu prompt still playing (early DTMF)
     if (
@@ -554,9 +770,7 @@ export class IvrRuntimeService implements OnModuleInit {
       event: 'DTMF',
       digit,
     });
-    const child = await this.repo.findOne({
-      where: { parentId: node.id, digit },
-    });
+    const child = await this.getChildByDigit(node.id, digit);
     const backDigit = node.backDigit || '0';
     const repeatDigit = node.repeatDigit || '*';
     const rootDigit = node.rootDigit || '#';
@@ -582,7 +796,7 @@ export class IvrRuntimeService implements OnModuleInit {
       if (parentId) {
         st.currentNodeId = parentId;
         this.setWaiting(channelId, false);
-        const parentNode = await this.repo.findOne({ where: { id: parentId } });
+        const parentNode = await this.getNodeById(parentId);
         if (parentNode) await this.executeNode(parentNode, channelId);
         return;
       }
@@ -650,13 +864,16 @@ export class IvrRuntimeService implements OnModuleInit {
     if (!st) return; // already cleaned or not an IVR tracked call
     
     // Clear all timers
-    if (st.digitTimer) {
-      clearTimeout(st.digitTimer);
-      st.digitTimer = undefined;
-    }
-    if (st.allocRetryTimer) {
-      clearTimeout(st.allocRetryTimer);
-      st.allocRetryTimer = undefined;
+    const timers = this.localTimers.get(channelId);
+    if (timers) {
+      if (timers.digitTimer) {
+        clearTimeout(timers.digitTimer);
+        timers.digitTimer = undefined;
+      }
+      if (timers.allocRetryTimer) {
+        clearTimeout(timers.allocRetryTimer);
+        timers.allocRetryTimer = undefined;
+      }
     }
     
     st.activePlaybacks.clear();
@@ -669,7 +886,7 @@ export class IvrRuntimeService implements OnModuleInit {
         nodeName: null,
       });
     }
-    this.calls.delete(channelId);
+    await this.cleanupCall(channelId);
   }
 
   private isChannelMissingError(err: unknown) {
@@ -703,13 +920,16 @@ export class IvrRuntimeService implements OnModuleInit {
               `ARI allocation failed for channel ${channelId}, scheduling retry ${next}/${maxRetries}`
             );
             // clear existing timer if any
-            if (st?.allocRetryTimer) clearTimeout(st.allocRetryTimer);
+            const timers = this.localTimers.get(channelId) || {};
+            if (timers.allocRetryTimer) clearTimeout(timers.allocRetryTimer);
             const t = setTimeout(() => {
-              if (st) st.allocRetryTimer = undefined;
+              const tm = this.localTimers.get(channelId);
+              if (tm) tm.allocRetryTimer = undefined;
               // retry op
               this.safeChannelOp(channelId, op).catch(() => undefined);
             }, 2000);
-            if (st) st.allocRetryTimer = t;
+            timers.allocRetryTimer = t;
+            this.localTimers.set(channelId, timers);
             return;
           }
           this.logger.error(
@@ -739,8 +959,8 @@ export class IvrRuntimeService implements OnModuleInit {
       if (this.isChannelMissingError(err)) {
         const st = this.calls.get(channelId);
         if (st) {
-          if (st.digitTimer) clearTimeout(st.digitTimer);
-          this.calls.delete(channelId);
+          const timers = this.localTimers.get(channelId);
+          if (timers?.digitTimer) clearTimeout(timers.digitTimer);
           if (!st.ended) {
             await this.safeLog({
               channelId,
@@ -749,6 +969,7 @@ export class IvrRuntimeService implements OnModuleInit {
               nodeName: null,
             });
           }
+          await this.cleanupCall(channelId);
         }
         return;
       }
@@ -786,9 +1007,35 @@ export class IvrRuntimeService implements OnModuleInit {
     return `Local/${raw}@${aricontext}`;
   }
 
-  // Return a lightweight snapshot of active calls for external consumers
+  // Return a lightweight snapshot of active calls for external consumers (local cache)
   public getActiveCallsSnapshot(): { count: number; channelIds: string[] } {
     const channelIds = Array.from(this.calls.keys());
     return { count: channelIds.length, channelIds };
+  }
+
+  // Return active calls from Redis (all instances)
+  public async getActiveCallsFromRedis(): Promise<{ count: number; channelIds: string[] }> {
+    try {
+      const keys = await this.redis.keys(`${REDIS_PREFIX}*`);
+      const channelIds = keys.map(key => key.replace(REDIS_PREFIX, ''));
+      return { count: channelIds.length, channelIds };
+    } catch (err) {
+      this.logger.warn(`Failed to get active calls from Redis: ${err}`);
+      // Fallback to local
+      return this.getActiveCallsSnapshot();
+    }
+  }
+
+  // Get detailed call state from Redis
+  public async getCallStateFromRedis(channelId: string): Promise<SerializableCallState | null> {
+    try {
+      const data = await this.redis.get(`${REDIS_PREFIX}${channelId}`);
+      if (data) {
+        return JSON.parse(data) as SerializableCallState;
+      }
+    } catch (err) {
+      this.logger.warn(`Failed to get call state from Redis: ${err}`);
+    }
+    return null;
   }
 }
