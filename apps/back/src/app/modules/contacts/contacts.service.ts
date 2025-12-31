@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, Optional, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Contact, ContactType, ContactSource } from './contact.entity';
@@ -10,6 +10,7 @@ import { CreateActivityDto } from './dto/create-activity.dto';
 import { CompaniesService } from '../companies/services/companies.service';
 import { NotificationService } from '../shared/services/notification.service';
 import { NotificationType, NotificationPriority } from '../shared/entities/notification.entity';
+import { NameResolverService } from '../contact-center/services/name-resolver.service';
 
 @Injectable()
 export class ContactsService {
@@ -18,8 +19,10 @@ export class ContactsService {
     private readonly contactRepository: Repository<Contact>,
     @InjectRepository(ContactActivity)
     private readonly activityRepository: Repository<ContactActivity>,
-    private readonly companiesService?: CompaniesService,
-    private readonly notificationService?: NotificationService,
+    @Optional() private readonly companiesService?: CompaniesService,
+    @Optional() private readonly notificationService?: NotificationService,
+    @Optional() @Inject(forwardRef(() => NameResolverService))
+    private readonly nameResolverService?: NameResolverService,
   ) {}
 
   // Local helper to avoid spreading 'any' directly in code and satisfy lint rules
@@ -145,6 +148,9 @@ export class ContactsService {
     }
 
     const saved = await this.contactRepository.save(contact);
+
+    // Invalidate name resolver cache for phone numbers
+    await this.invalidateContactPhoneCache(beforeSnapshot, saved);
 
     // Write an activity record describing the update
     let changed: string[] = [];
@@ -425,5 +431,36 @@ export class ContactsService {
     });
 
     return this.activityRepository.save(activity);
+  }
+
+  /**
+   * Invalidate name resolver cache when contact phone numbers change
+   */
+  private async invalidateContactPhoneCache(
+    before: Partial<Contact>,
+    after: Contact,
+  ): Promise<void> {
+    if (!this.nameResolverService) return;
+
+    const phoneFields = ['phone', 'mobilePhone', 'workPhone'] as const;
+    const phonesToInvalidate = new Set<string>();
+
+    for (const field of phoneFields) {
+      const oldPhone = before[field];
+      const newPhone = after[field];
+
+      // Invalidate old phone if it changed
+      if (oldPhone && oldPhone !== newPhone) {
+        phonesToInvalidate.add(oldPhone);
+      }
+      // Invalidate new phone (to refresh cache with updated contact info)
+      if (newPhone && oldPhone !== newPhone) {
+        phonesToInvalidate.add(newPhone);
+      }
+    }
+
+    for (const phone of phonesToInvalidate) {
+      await this.nameResolverService.invalidatePhone(phone);
+    }
   }
 }

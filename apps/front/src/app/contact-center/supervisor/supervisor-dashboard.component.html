@@ -192,7 +192,11 @@
               <div class="current-call">
                 <mat-icon class="call-icon">phone_in_talk</mat-icon>
                 <div class="call-info">
-                  <div class="caller">{{ operator.currentCall }}</div>
+                  @if (operator.currentCallDisplayName) {
+                    <div class="caller caller-name" [matTooltip]="operator.currentCall">{{ operator.currentCallDisplayName }}</div>
+                  } @else {
+                    <div class="caller">{{ operator.currentCall }}</div>
+                  }
                   <div class="call-duration">{{ formatDuration(operator.currentCallDuration) }}</div>
                 </div>
               </div>
@@ -338,9 +342,14 @@
               <div class="caller-info">
                 <mat-icon>phone</mat-icon>
                 <div>
-                  <div class="number">{{ call.callerIdNum }}</div>
-                  @if (call.callerIdName) {
-                    <div class="name">{{ call.callerIdName }}</div>
+                  @if (call.callerDisplayName) {
+                    <div class="name caller-name">{{ call.callerDisplayName }}</div>
+                    <div class="number" [matTooltip]="call.callerIdNum">{{ call.callerIdNum }}</div>
+                  } @else {
+                    <div class="number">{{ call.callerIdNum }}</div>
+                    @if (call.callerIdName) {
+                      <div class="name">{{ call.callerIdName }}</div>
+                    }
                   }
                 </div>
               </div>

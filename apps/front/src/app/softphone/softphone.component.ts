@@ -368,6 +368,12 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
                 null;
               const fromStr = typeof from === 'string' ? from : from?.toString?.() ?? null;
               this.callState.setIncomingCall(fromStr);
+              
+              // Resolve caller name from contacts
+              if (fromStr) {
+                this.resolveCallerName(fromStr);
+              }
+              
               this.status.set(
                 `Incoming call${
                   this.callState.incomingFrom() ? ' from ' + this.callState.incomingFrom() : ''
@@ -1456,6 +1462,21 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   onViewContact(contactId: string) {
     this.logger.debug('View contact:', contactId);
     // TODO: Navigate to contact page
+  }
+
+  // Resolve phone number to contact name
+  private resolveCallerName(phone: string) {
+    this.monitoringSvc.resolvePhoneNumber(phone).subscribe({
+      next: (resolved) => {
+        if (resolved.type === 'contact' && resolved.displayName !== phone) {
+          this.callState.setIncomingDisplayName(resolved.displayName);
+          this.logger.info('Resolved caller name:', resolved.displayName);
+        }
+      },
+      error: (err) => {
+        this.logger.warn('Failed to resolve caller name:', err);
+      }
+    });
   }
 
 }

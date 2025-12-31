@@ -12,6 +12,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { FormsModule } from '@angular/forms';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { CallsService, CdrItem } from '../services/calls.service';
 import { ContactCenterMonitoringService, OperatorStatus } from '../services/contact-center-monitoring.service';
 import { PageLayoutComponent } from '../../shared/page-layout/page-layout.component';
@@ -123,40 +125,49 @@ export class ContactCenterCallsComponent implements OnInit {
   }
 
   ngOnInit() {
-    // Load operators snapshot first to map operator ids to names
-    this.opSvc.fetchOperatorsSnapshot().subscribe({
-      next: (ops: OperatorStatus[]) => {
+    // Load operators, users and IVR media in parallel, then load calls
+    forkJoin({
+      operators: this.opSvc.fetchOperatorsSnapshot().pipe(catchError(() => of([] as OperatorStatus[]))),
+      users: this.usersSvc.getAllUsers().pipe(catchError(() => of([]))),
+      media: this.ivr.mediaList().pipe(catchError(() => of([]))),
+    }).subscribe({
+      next: ({ operators, users, media }) => {
+        // Build operator map from operators snapshot
         const map: Record<string, string> = {};
-        ops.forEach(o => { if (o && o.id) map[o.id] = o.name; });
-        this.operatorMap.set(map);
-      },
-      error: () => {
-        // ignore
-      }
-    });
-
-    // Also fetch users via UsersService to map sip_endpoint_id -> fullName (show operator names for src/dst)
-    this.usersSvc.getAllUsers().subscribe({
-      next: (users) => {
-        const map = { ...this.operatorMap() };
-        (users || []).forEach(u => {
-          const sip = u?.sipEndpointId || u?.sip_endpoint_id || u?.sipEndpoint || u?.sipEndpointId;
-          const name = u?.firstName || u?.fullName || (u?.firstName && u?.lastName ? `${u.firstName} ${u.lastName}` : u?.username) || u?.username;
-          if (sip) map[sip] = name;
+        (operators || []).forEach((o: OperatorStatus) => { 
+          if (o && o.id) {
+            // Prefer fullName over name
+            map[o.id] = o.fullName || o.name;
+            // Also map by extension if available
+            if (o.extension) {
+              map[o.extension] = o.fullName || o.name;
+            }
+          }
         });
+        
+        // Add users mapping: sipEndpointId -> fullName
+        (users || []).forEach((u: any) => {
+          const sip = u?.sipEndpointId || u?.sip_endpoint_id || u?.sipEndpoint;
+          const fullName = u?.fullName || (u?.firstName && u?.lastName ? `${u.firstName} ${u.lastName}` : null) || u?.firstName || u?.username;
+          if (sip && fullName) {
+            map[sip] = fullName;
+          }
+          // Also map by username
+          if (u?.username && fullName) {
+            map[u.username] = fullName;
+          }
+        });
+        
         this.operatorMap.set(map);
+        this.mediaList.set(media || []);
+        
+        // Now load calls with complete operator map
         this.load();
       },
       error: () => {
-        // fallback: load calls anyway
+        // Fallback: load calls anyway
         this.load();
       }
-    });
-
-    // load IVR media files (prompts and stored audio) so we can try to match recordings
-    this.ivr.mediaList().subscribe({
-      next: (m) => this.mediaList.set(m || []),
-      error: () => this.mediaList.set([]),
     });
   }
 

@@ -16,6 +16,14 @@ import { io, Socket } from 'socket.io-client';
 import { environment } from '../../../environments/environment';
 import { AgentStatusChangeEvent } from '../types/agent-status.types';
 
+export interface ResolvedName {
+  displayName: string;
+  type: 'operator' | 'contact' | 'unknown';
+  contactId?: string;
+  userId?: number;
+  originalValue: string;
+}
+
 export interface OperatorStatus {
   id: string;
   name: string;
@@ -23,6 +31,7 @@ export interface OperatorStatus {
   extension?: string;
   status: 'idle' | 'on_call' | 'wrap_up' | 'offline';
   currentCall?: string | null;
+  currentCallDisplayName?: string | null; // Resolved contact name for current call
   currentCallDuration?: number | null;
   statusDuration?: number | null; // Время в текущем статусе (в секундах)
   avgHandleTime?: number;
@@ -50,9 +59,11 @@ export interface ActiveCall {
   channel: string;
   callerIdNum: string;
   callerIdName: string;
+  callerDisplayName?: string; // Resolved contact name
   duration: number;
   state: string;
   operator?: string;
+  operatorDisplayName?: string; // Resolved operator name
   queue?: string;
 }
 
@@ -356,6 +367,46 @@ export class ContactCenterMonitoringService {
         console.error('Get channel by uniqueid failed', err);
         return of({ channel: null });
       })
+    );
+  }
+
+  // ========== Name Resolution ==========
+
+  /**
+   * Resolve phone number to contact name
+   */
+  resolvePhoneNumber(phone: string): Observable<ResolvedName> {
+    const encoded = encodeURIComponent(phone);
+    return this.http.get<ResolvedName>(`${this.base}/resolve/phone/${encoded}`).pipe(
+      catchError(() => of({ displayName: phone, type: 'unknown' as const, originalValue: phone }))
+    );
+  }
+
+  /**
+   * Resolve operator SIP endpoint to user name
+   */
+  resolveOperator(sipEndpoint: string): Observable<ResolvedName> {
+    const encoded = encodeURIComponent(sipEndpoint);
+    return this.http.get<ResolvedName>(`${this.base}/resolve/operator/${encoded}`).pipe(
+      catchError(() => of({ displayName: sipEndpoint, type: 'operator' as const, originalValue: sipEndpoint }))
+    );
+  }
+
+  /**
+   * Batch resolve phone numbers
+   */
+  resolvePhoneNumbers(phones: string[]): Observable<Record<string, ResolvedName>> {
+    return this.http.post<Record<string, ResolvedName>>(`${this.base}/resolve/phones`, { phones }).pipe(
+      catchError(() => of({}))
+    );
+  }
+
+  /**
+   * Batch resolve operators
+   */
+  resolveOperators(endpoints: string[]): Observable<Record<string, ResolvedName>> {
+    return this.http.post<Record<string, ResolvedName>>(`${this.base}/resolve/operators`, { endpoints }).pipe(
+      catchError(() => of({}))
     );
   }
 }

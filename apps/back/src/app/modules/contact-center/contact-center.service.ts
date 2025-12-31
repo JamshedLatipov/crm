@@ -9,6 +9,7 @@ import { AgentStatus } from './entities/agent-status.entity';
 import { AgentStatusHistory } from './entities/agent-status-history.entity';
 import { AgentStatusEnum } from './enums/agent-status.enum';
 import { AmiService } from '../ami/ami.service';
+import { NameResolverService } from './services/name-resolver.service';
 
 export type OperatorStatus = {
   id: string;
@@ -17,6 +18,7 @@ export type OperatorStatus = {
   extension?: string;
   status: 'idle' | 'on_call' | 'wrap_up' | 'offline';
   currentCall?: string | null;
+  currentCallDisplayName?: string | null; // Resolved contact name for current call
   currentCallDuration?: number | null;
   statusDuration?: number | null; // Время в текущем статусе (в секундах)
   avgHandleTime?: number | null;
@@ -44,9 +46,11 @@ export type ActiveCall = {
   channel: string;
   callerIdNum: string;
   callerIdName: string;
+  callerDisplayName?: string; // Resolved contact name
   duration: number;
   state: string;
   operator?: string;
+  operatorDisplayName?: string; // Resolved operator name
   queue?: string;
 };
 
@@ -69,6 +73,7 @@ export class ContactCenterService {
     @InjectRepository(AgentStatus) private readonly agentStatusRepo: Repository<AgentStatus>,
     @InjectRepository(AgentStatusHistory) private readonly agentStatusHistoryRepo: Repository<AgentStatusHistory>,
     private readonly amiService: AmiService,
+    private readonly nameResolver: NameResolverService,
     @Inject('CONTACT_CENTER_GATEWAY')
     private gateway?: any,
   ) {}
@@ -446,13 +451,14 @@ export class ContactCenterService {
         fullName = user.fullName;
       }
 
-      const operatorData = {
+      const operatorData: OperatorStatus = {
         id: m.member_name || String(m.id),
         name: m.memberid || m.member_name || 'Unknown',
         fullName,
         extension,
         status,
         currentCall,
+        currentCallDisplayName: null, // Will be resolved below
         currentCallDuration,
         statusDuration,
         avgHandleTime,
@@ -462,6 +468,27 @@ export class ContactCenterService {
       };
       
       operators.push(operatorData);
+    }
+
+    // Resolve contact names for currentCall phone numbers
+    const phoneNumbers = operators
+      .filter(op => op.currentCall && op.currentCall !== 'Unknown')
+      .map(op => op.currentCall!);
+    
+    if (phoneNumbers.length > 0) {
+      try {
+        const resolvedPhones = await this.nameResolver.resolvePhoneNumbers(phoneNumbers);
+        for (const op of operators) {
+          if (op.currentCall && resolvedPhones.has(op.currentCall)) {
+            const resolved = resolvedPhones.get(op.currentCall);
+            if (resolved && resolved.type === 'contact') {
+              op.currentCallDisplayName = resolved.displayName;
+            }
+          }
+        }
+      } catch (err) {
+        this.logger.warn('Failed to resolve contact names for operators:', err);
+      }
     }
 
     return operators;
@@ -642,6 +669,10 @@ export class ContactCenterService {
     const activeCalls: ActiveCall[] = [];
     const processedChannels = new Set<string>();
 
+    // Collect all phone numbers and operators for batch resolution
+    const phoneNumbers: string[] = [];
+    const operators: string[] = [];
+
     for (const ch of channels) {
       // Skip invalid or down channels
       if (!ch.Channel || ch.ChannelStateDesc === 'Down') continue;
@@ -680,16 +711,52 @@ export class ContactCenterService {
         }
       }
 
+      const callerIdNum = ch.CallerIDNum || 'Unknown';
+      const operator = ch.ConnectedLineNum || undefined;
+
+      if (callerIdNum && callerIdNum !== 'Unknown') {
+        phoneNumbers.push(callerIdNum);
+      }
+      if (operator) {
+        operators.push(operator);
+      }
+
       activeCalls.push({
         uniqueid: ch.Uniqueid || ch.Channel,
         channel: ch.Channel,
-        callerIdNum: ch.CallerIDNum || 'Unknown',
+        callerIdNum,
         callerIdName: ch.CallerIDName || '',
         duration,
         state: ch.ChannelStateDesc || 'Unknown',
-        operator: ch.ConnectedLineNum || undefined,
+        operator,
         queue: ch.Application === 'Queue' ? ch.ApplicationData : undefined,
       });
+    }
+
+    // Batch resolve names
+    try {
+      const [resolvedPhones, resolvedOperators] = await Promise.all([
+        this.nameResolver.resolvePhoneNumbers(phoneNumbers),
+        this.nameResolver.resolveOperators(operators),
+      ]);
+
+      // Enrich calls with resolved names
+      for (const call of activeCalls) {
+        if (call.callerIdNum && resolvedPhones.has(call.callerIdNum)) {
+          const resolved = resolvedPhones.get(call.callerIdNum);
+          if (resolved && resolved.type === 'contact') {
+            call.callerDisplayName = resolved.displayName;
+          }
+        }
+        if (call.operator && resolvedOperators.has(call.operator)) {
+          const resolved = resolvedOperators.get(call.operator);
+          if (resolved) {
+            call.operatorDisplayName = resolved.displayName;
+          }
+        }
+      }
+    } catch (err) {
+      this.logger.warn('Failed to resolve names for active calls:', err);
     }
 
     return activeCalls;

@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Put, Query, Body, Param } from '@nestjs/common';
 import { ContactCenterService } from './contact-center.service';
+import { NameResolverService, ResolvedName } from './services/name-resolver.service';
 import { AgentStatusEnum } from './enums/agent-status.enum';
 
 /**
@@ -41,7 +42,10 @@ class QueueMemberPauseDto {
 
 @Controller('contact-center')
 export class ContactCenterController {
-  constructor(private readonly svc: ContactCenterService) {}
+  constructor(
+    private readonly svc: ContactCenterService,
+    private readonly nameResolver: NameResolverService,
+  ) {}
 
   @Get('operators')
   getOperators() {
@@ -250,5 +254,41 @@ export class ContactCenterController {
   async getChannelByUniqueid(@Param('uniqueid') uniqueid: string) {
     const channel = await this.svc.getChannelByUniqueid(uniqueid);
     return { channel };
+  }
+
+  // ========== Name Resolution Endpoints ==========
+
+  /**
+   * Resolve phone number to contact name
+   */
+  @Get('resolve/phone/:phone')
+  async resolvePhone(@Param('phone') phone: string): Promise<ResolvedName> {
+    return this.nameResolver.resolvePhoneNumber(decodeURIComponent(phone));
+  }
+
+  /**
+   * Resolve operator SIP endpoint to user name
+   */
+  @Get('resolve/operator/:endpoint')
+  async resolveOperator(@Param('endpoint') endpoint: string): Promise<ResolvedName> {
+    return this.nameResolver.resolveOperator(decodeURIComponent(endpoint));
+  }
+
+  /**
+   * Batch resolve phone numbers
+   */
+  @Post('resolve/phones')
+  async resolvePhones(@Body() body: { phones: string[] }): Promise<Record<string, ResolvedName>> {
+    const results = await this.nameResolver.resolvePhoneNumbers(body.phones);
+    return Object.fromEntries(results);
+  }
+
+  /**
+   * Batch resolve operators
+   */
+  @Post('resolve/operators')
+  async resolveOperators(@Body() body: { endpoints: string[] }): Promise<Record<string, ResolvedName>> {
+    const results = await this.nameResolver.resolveOperators(body.endpoints);
+    return Object.fromEntries(results);
   }
 }

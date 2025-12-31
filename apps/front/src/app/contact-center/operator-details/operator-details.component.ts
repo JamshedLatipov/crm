@@ -13,6 +13,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatNativeDateModule } from '@angular/material/core';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog, MatDialogModule, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { BaseChartDirective } from 'ng2-charts';
 import { Chart, ChartData, ChartOptions, registerables } from 'chart.js';
@@ -74,6 +75,7 @@ interface OperatorStats {
     MatFormFieldModule,
     MatInputModule,
     MatNativeDateModule,
+    MatTooltipModule,
     MatDialogModule,
     BaseChartDirective,
     CrmTableComponent,

@@ -104,7 +104,12 @@
         @if (operator()!.currentCall) {
           <div class="current-call-info">
             <mat-icon class="call-icon">phone_in_talk</mat-icon>
-            <span>На звонке с {{ operator()!.currentCall }}</span>
+            @if (operator()!.currentCallDisplayName) {
+              <span>На звонке с {{ operator()!.currentCallDisplayName }}</span>
+              <span class="muted" [matTooltip]="operator()!.currentCall">({{ operator()!.currentCall }})</span>
+            } @else {
+              <span>На звонке с {{ operator()!.currentCall }}</span>
+            }
             @if (operator()!.currentCallDuration) {
               <span class="call-duration">{{ formatDuration(operator()!.currentCallDuration) }}</span>
             }

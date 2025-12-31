@@ -69,7 +69,14 @@
           <div class="call-bar-left">
             <span class="pulse-indicator"></span>
             <div class="call-info-compact">
-              <div class="caller-number">{{ callState.incomingFrom() || callee || 'Неизвестный' }}</div>
+              <div class="caller-number">
+                @if (callState.incomingDisplayName()) {
+                  <span class="caller-name">{{ callState.incomingDisplayName() }}</span>
+                  <span class="caller-phone-small" [title]="callState.incomingFrom()">({{ callState.incomingFrom() || callee }})</span>
+                } @else {
+                  {{ callState.incomingFrom() || callee || 'Неизвестный' }}
+                }
+              </div>
               <div class="call-badges" *ngIf="callState.muted() || callState.onHold()">
                 <span class="badge badge-mute" *ngIf="callState.muted()" title="Микрофон выключен">
                   <span class="material-icons">mic_off</span>

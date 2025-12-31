@@ -4,17 +4,19 @@ import { ContactCenterController } from './contact-center.controller';
 import { ContactCenterGateway } from './contact-center.gateway';
 import { ContactCenterService } from './contact-center.service';
 import { EndpointSyncService } from './endpoint-sync.service';
+import { NameResolverService } from './services/name-resolver.service';
 import { Queue } from '../calls/entities/queue.entity';
 import { QueueMember } from '../calls/entities/queue-member.entity';
 import { Cdr } from '../calls/entities/cdr.entity';
 import { User } from '../user/user.entity';
 import { AgentStatus } from './entities/agent-status.entity';
 import { AgentStatusHistory } from './entities/agent-status-history.entity';
+import { Contact } from '../contacts/contact.entity';
 import { AmiModule } from '../ami/ami.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Queue, QueueMember, Cdr, User, AgentStatus, AgentStatusHistory]),
+    TypeOrmModule.forFeature([Queue, QueueMember, Cdr, User, AgentStatus, AgentStatusHistory, Contact]),
     AmiModule,
   ],
   controllers: [ContactCenterController],
@@ -22,6 +24,7 @@ import { AmiModule } from '../ami/ami.module';
     ContactCenterGateway,
     ContactCenterService,
     EndpointSyncService,
+    NameResolverService,
     // Provide tokens for circular dependency resolution
     {
       provide: 'CONTACT_CENTER_GATEWAY',
@@ -32,6 +35,6 @@ import { AmiModule } from '../ami/ami.module';
       useExisting: forwardRef(() => ContactCenterService),
     },
   ],
-  exports: [ContactCenterService],
+  exports: [ContactCenterService, NameResolverService],
 })
 export class ContactCenterModule {}

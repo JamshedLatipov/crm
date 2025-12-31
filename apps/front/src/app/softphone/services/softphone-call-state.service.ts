@@ -15,6 +15,7 @@ export class SoftphoneCallStateService {
   // Incoming call state
   incoming = signal(false);
   incomingFrom = signal<string | null>(null);
+  incomingDisplayName = signal<string | null>(null); // Resolved contact name
   
   // Call metadata
   callNote = signal<string>('');
@@ -55,6 +56,7 @@ export class SoftphoneCallStateService {
     this.callActive.set(false);
     this.incoming.set(false);
     this.incomingFrom.set(null);
+    this.incomingDisplayName.set(null);
     this.muted.set(false);
     this.onHold.set(false);
     this.holdInProgress.set(false);
@@ -65,11 +67,17 @@ export class SoftphoneCallStateService {
   setIncomingCall(from: string | null) {
     this.incoming.set(true);
     this.incomingFrom.set(from);
+    this.incomingDisplayName.set(null); // Will be set separately after resolution
+  }
+
+  setIncomingDisplayName(name: string | null) {
+    this.incomingDisplayName.set(name);
   }
 
   clearIncomingCall() {
     this.incoming.set(false);
     this.incomingFrom.set(null);
+    this.incomingDisplayName.set(null);
   }
 
   setCallActive(active: boolean) {
