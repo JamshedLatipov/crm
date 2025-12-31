@@ -1,10 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, Like, LessThanOrEqual, Not, IsNull } from 'typeorm';
 import { QueueMember } from '../calls/entities/queue-member.entity';
 import { Queue } from '../calls/entities/queue.entity';
 import { Cdr } from '../calls/entities/cdr.entity';
 import { User } from '../user/user.entity';
+import { AgentStatus } from './entities/agent-status.entity';
+import { AgentStatusEnum } from './enums/agent-status.enum';
 import { AmiService } from '../ami/ami.service';
 
 export type OperatorStatus = {
@@ -64,7 +66,10 @@ export class ContactCenterService {
     @InjectRepository(Queue) private readonly queueRepo: Repository<Queue>,
     @InjectRepository(Cdr) private readonly cdrRepo: Repository<Cdr>,
     @InjectRepository(User) private readonly userRepo: Repository<User>,
+    @InjectRepository(AgentStatus) private readonly agentStatusRepo: Repository<AgentStatus>,
     private readonly amiService: AmiService,
+    @Inject(forwardRef(() => require('./contact-center.gateway').ContactCenterGateway))
+    private gateway?: any,
   ) {}
 
   // Refresh AMI data cache
@@ -796,4 +801,213 @@ export class ContactCenterService {
     };
   }
 
+  // ========== Agent Status Management ==========
+
+  /**
+   * Set agent status
+   * Creates or updates agent status record
+   */
+  async setAgentStatus(
+    extension: string,
+    status: AgentStatusEnum,
+    options?: {
+      userId?: number;
+      fullName?: string;
+      reason?: string;
+      queueName?: string;
+      currentCallId?: string;
+    }
+  ): Promise<AgentStatus> {
+    let agentStatus = await this.agentStatusRepo.findOne({
+      where: { extension },
+    });
+
+    const now = new Date();
+
+    if (!agentStatus) {
+      // Create new agent status record
+      agentStatus = this.agentStatusRepo.create({
+        extension,
+        userId: options?.userId ?? null,
+        fullName: options?.fullName ?? null,
+        status,
+        previousStatus: null,
+        reason: options?.reason ?? null,
+        statusChangedAt: now,
+        statusDurationSeconds: 0,
+        queueName: options?.queueName ?? null,
+        currentCallId: options?.currentCallId ?? null,
+        paused: status !== AgentStatusEnum.ONLINE,
+        lastActivityAt: now,
+      });
+    } else {
+      // Update time in current status before changing
+      const durationInCurrentStatus = Math.floor(
+        (now.getTime() - agentStatus.statusChangedAt.getTime()) / 1000
+      );
+
+      // Update time tracking for today
+      const timeInStatuses = agentStatus.timeInStatusesToday || {};
+      const currentStatusKey = agentStatus.status;
+      timeInStatuses[currentStatusKey] =
+        (timeInStatuses[currentStatusKey] || 0) + durationInCurrentStatus;
+
+      // Update status
+      agentStatus.previousStatus = agentStatus.status;
+      agentStatus.status = status;
+      agentStatus.reason = options?.reason ?? null;
+      agentStatus.statusChangedAt = now;
+      agentStatus.statusDurationSeconds = 0;
+      agentStatus.timeInStatusesToday = timeInStatuses;
+      agentStatus.lastActivityAt = now;
+      agentStatus.paused = status !== AgentStatusEnum.ONLINE;
+
+      if (options?.userId !== undefined) agentStatus.userId = options.userId;
+      if (options?.fullName !== undefined) agentStatus.fullName = options.fullName;
+      if (options?.queueName !== undefined) agentStatus.queueName = options.queueName;
+      if (options?.currentCallId !== undefined)
+        agentStatus.currentCallId = options.currentCallId;
+    }
+
+    await this.agentStatusRepo.save(agentStatus);
+    this.logger.log(
+      `Agent ${extension} status changed to ${status}${options?.reason ? ` (${options.reason})` : ''}`
+    );
+
+    // Broadcast status change via WebSocket
+    if (this.gateway && this.gateway.broadcastAgentStatusChange) {
+      this.gateway.broadcastAgentStatusChange({
+        extension: agentStatus.extension,
+        status: agentStatus.status,
+        previousStatus: agentStatus.previousStatus || undefined,
+        reason: agentStatus.reason || undefined,
+        fullName: agentStatus.fullName || undefined,
+        userId: agentStatus.userId || undefined,
+      });
+    }
+
+    return agentStatus;
+  }
+
+  /**
+   * Get agent status by extension
+   */
+  async getAgentStatus(extension: string): Promise<AgentStatus | null> {
+    return this.agentStatusRepo.findOne({ where: { extension } });
+  }
+
+  /**
+   * Get all agent statuses
+   * Useful for monitoring dashboards
+   */
+  async getAllAgentStatuses(filters?: {
+    status?: AgentStatusEnum;
+    queueName?: string;
+    availableOnly?: boolean;
+  }): Promise<AgentStatus[]> {
+    const queryBuilder = this.agentStatusRepo.createQueryBuilder('agent');
+
+    if (filters?.status) {
+      queryBuilder.andWhere('agent.status = :status', { status: filters.status });
+    }
+
+    if (filters?.queueName) {
+      queryBuilder.andWhere('agent.queueName = :queueName', {
+        queueName: filters.queueName,
+      });
+    }
+
+    if (filters?.availableOnly) {
+      queryBuilder.andWhere('agent.status = :onlineStatus', {
+        onlineStatus: AgentStatusEnum.ONLINE,
+      });
+      queryBuilder.andWhere('agent.paused = :notPaused', { notPaused: false });
+    }
+
+    queryBuilder.orderBy('agent.fullName', 'ASC');
+
+    return queryBuilder.getMany();
+  }
+
+  /**
+   * Update agent call stats (called after call ends)
+   */
+  async updateAgentCallStats(
+    extension: string,
+    callDurationSeconds: number
+  ): Promise<void> {
+    const agentStatus = await this.agentStatusRepo.findOne({
+      where: { extension },
+    });
+
+    if (!agentStatus) {
+      this.logger.warn(`Agent ${extension} not found for stats update`);
+      return;
+    }
+
+    // Increment calls today
+    agentStatus.callsToday += 1;
+
+    // Update average handle time
+    const currentAvg = agentStatus.avgHandleTimeToday || 0;
+    const totalCalls = agentStatus.callsToday;
+    agentStatus.avgHandleTimeToday = Math.floor(
+      (currentAvg * (totalCalls - 1) + callDurationSeconds) / totalCalls
+    );
+
+    await this.agentStatusRepo.save(agentStatus);
+  }
+
+  /**
+   * Reset daily stats for all agents (should be called by cron at midnight)
+   */
+  async resetDailyAgentStats(): Promise<void> {
+    await this.agentStatusRepo.update(
+      {},
+      {
+        callsToday: 0,
+        avgHandleTimeToday: null,
+        timeInStatusesToday: {},
+      }
+    );
+    this.logger.log('Daily agent stats reset');
+  }
+
+  /**
+   * Get agents stuck in temporary statuses (for alerts)
+   */
+  async getStuckAgents(maxMinutes: number = 60): Promise<AgentStatus[]> {
+    const allAgents = await this.agentStatusRepo.find();
+    return allAgents.filter((agent) => agent.isStuckInStatus(maxMinutes));
+  }
+
+  /**
+   * Mark agent as online
+   */
+  async setAgentOnline(extension: string, options?: { fullName?: string; queueName?: string }): Promise<AgentStatus> {
+    return this.setAgentStatus(extension, AgentStatusEnum.ONLINE, options);
+  }
+
+  /**
+   * Mark agent as offline
+   */
+  async setAgentOffline(extension: string, reason?: string): Promise<AgentStatus> {
+    return this.setAgentStatus(extension, AgentStatusEnum.OFFLINE, { reason });
+  }
+
+  /**
+   * Set agent on break
+   */
+  async setAgentOnBreak(extension: string, reason?: string): Promise<AgentStatus> {
+    return this.setAgentStatus(extension, AgentStatusEnum.BREAK, { reason });
+  }
+
+  /**
+   * Set agent in wrap-up (after call)
+   */
+  async setAgentWrapUp(extension: string, callId?: string): Promise<AgentStatus> {
+    return this.setAgentStatus(extension, AgentStatusEnum.WRAP_UP, {
+      currentCallId: callId,
+    });
+  }
 }

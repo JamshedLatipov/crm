@@ -46,6 +46,8 @@ import {
   QueueMembersService,
   QueueMemberRecord,
 } from '../contact-center/services/queue-members.service';
+import { AgentStatusService } from '../contact-center/services/agent-status.service';
+import { AgentStatusEnum } from '../contact-center/types/agent-status.types';
 import { SoftphonePanelService } from './services/softphone-panel.service';
 import { SoftphoneCallStateService } from './services/softphone-call-state.service';
 import { SoftphoneSessionService } from './services/softphone-session.service';
@@ -157,6 +159,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   private readonly callHistoryService = inject(SoftphoneCallHistoryService);
   private readonly taskModal = inject(TaskModalService);
   private readonly queueMembersSvc = inject(QueueMembersService);
+  private readonly agentStatusSvc = inject(AgentStatusService);
   readonly panelSvc = inject(SoftphonePanelService);
   readonly callState = inject(SoftphoneCallStateService);
   private readonly sessionSvc = inject(SoftphoneSessionService);
@@ -220,6 +223,9 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   currentMember: QueueMemberRecord | null = null;
   memberPaused = signal(false);
   memberReason = signal('');
+  
+  // Agent status (new system)
+  currentAgentStatus = signal<AgentStatusEnum>(AgentStatusEnum.OFFLINE);
 
   ngOnInit() {
     try {
@@ -233,6 +239,15 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
 
     this.applyDockOffsetSoon();
 
+    // Subscribe to agent status from service
+    this.agentStatusSvc.getCurrentAgentStatus()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((agentStatus) => {
+        if (agentStatus) {
+          this.currentAgentStatus.set(agentStatus.status);
+        }
+      });
+
     // Subscribe to softphone events coming from the service
     this.softphone.events$
       .pipe(takeUntil(this.destroy$))
@@ -240,6 +255,8 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
         switch (ev.type) {
           case 'registered':
             this.status.set('Вход выполнен!');
+            // Set agent status to ONLINE when registered
+            this.setAgentOnline();
             // Try to locate operator queue member record and sync pause state
             try {
               const status = await lastValueFrom(
@@ -471,13 +488,8 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
 
     this.toggleScripts();
 
-    // Mark operator offline when tab / window is closed or becomes hidden
-    try {
-      window.addEventListener('beforeunload', this.onBeforeUnloadHandler);
-      document.addEventListener('visibilitychange', this.onVisibilityChangeHandler);
-    } catch (e) {
-      this.logger.warn('Failed to attach unload handlers', e);
-    }
+    // Note: Tab closure and SIP disconnection are now handled reliably by EndpointSyncService
+    // via AMI/ARI endpoint tracking. No need for unreliable beforeunload handlers.
   }
 
   // Select visible tab and manage scripts panel state
@@ -555,12 +567,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     this.panelSvc.clearDockOffset();
     this.panelSvc.cleanup();
     this.callState.cleanup();
-    try {
-      window.removeEventListener('beforeunload', this.onBeforeUnloadHandler);
-      document.removeEventListener('visibilitychange', this.onVisibilityChangeHandler);
-    } catch (e) {
-      /* ignore */
-    }
+    // Note: SIP disconnection on tab closure handled by EndpointSyncService via AMI tracking
   }
 
   onPanelMouseMove(ev: MouseEvent) {
@@ -726,21 +733,6 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     }
   }
 
-  private onBeforeUnloadHandler = (ev?: Event) => {
-    try {
-      this.queueMembersSvc.notifyOffline('beforeunload');
-    } catch {}
-  };
-
-  private onVisibilityChangeHandler = () => {
-    try {
-      if (document.visibilityState === 'hidden') {
-        // When tab is hidden for extended periods, mark offline so queues don't route calls
-        this.queueMembersSvc.notifyOffline('visibility_hidden');
-      }
-    } catch {}
-  };
-
   // Унифицированные хендлеры событий звонка
   private handleCallProgress(e: JsSIPSessionEvent) {
     this.logger.info('Call is in progress', e);
@@ -762,6 +754,13 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
     this.callState.setCallActive(true);
     this.activeTab = 'info'; // Switch to info tab when call connects
     this.ringtone.stopRingback();
+
+    // Auto-switch to ON_CALL when call is active
+    if (this.currentAgentStatus() === AgentStatusEnum.ONLINE) {
+      this.currentAgentStatus.set(AgentStatusEnum.ON_CALL);
+      // Note: We don't persist ON_CALL to backend as it's too transient
+      // Backend will track this via CDR and active channels
+    }
 
     // Получаем UNIQUEID через AMI и сохраняем лог с правильным ID
     this.fetchCurrentCallID();
@@ -841,6 +840,15 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
         ? 'Registered!'
         : `Call ended: ${e.data?.cause || 'Normal clearing'}`
     );
+
+    // Auto-switch to WRAP_UP after call ends (if agent was ONLINE or ON_CALL)
+    const currentStatus = this.currentAgentStatus();
+    if (
+      currentStatus === AgentStatusEnum.ONLINE ||
+      currentStatus === AgentStatusEnum.ON_CALL
+    ) {
+      this.setAgentWrapUp(this.currentCallId() || undefined);
+    }
   }
 
   private handleCallFailed(e: JsSIPSessionEvent) {
@@ -906,12 +914,157 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
         this.memberReason.set(ev.reason || '');
       }
     } catch (e) {
-      this.logger.error('Failed to update queue member pause state', e);
-      // Revert optimistic update on failure
-      if (this.currentMember) {
-        this.memberPaused.set(Boolean(this.currentMember.paused));
-        this.memberReason.set(this.currentMember.reason_paused || '');
+      this.logger.error('pause change error', e);
+    }
+  }
+
+  /**
+   * Handle agent status change from status bar
+   */
+  async onAgentStatusChange(ev: { status: AgentStatusEnum; reason?: string }) {
+    if (!this.sipUser) {
+      this.logger.warn('Cannot change status: no SIP user');
+      return;
+    }
+
+    try {
+      // Update agent status in our system
+      const agentStatus = await lastValueFrom(
+        this.agentStatusSvc.setStatus(this.sipUser, ev.status, {
+          reason: ev.reason,
+          fullName: localStorage.getItem('operator.fullName') || undefined,
+        })
+      );
+
+      this.currentAgentStatus.set(agentStatus.status);
+      this.logger.info(`Agent status changed to: ${agentStatus.status}`);
+
+      // Sync with Asterisk queue member pause state (real-time)
+      const shouldBePaused = ev.status !== AgentStatusEnum.ONLINE;
+      try {
+        await lastValueFrom(
+          this.queueMembersSvc.pause({
+            paused: shouldBePaused,
+            reason_paused: ev.reason || agentStatus.status,
+          })
+        );
+        this.logger.info(`Asterisk queue member pause synced: ${shouldBePaused}`);
+      } catch (pauseError) {
+        this.logger.warn('Failed to sync pause state with Asterisk', pauseError);
       }
+
+      // Update local pause state for UI
+      this.memberPaused.set(shouldBePaused);
+      this.memberReason.set(ev.reason || '');
+    } catch (e) {
+      this.logger.error('status change error', e);
+    }
+  }
+
+  /**
+   * Set agent online (called on registration)
+   * Only sets to ONLINE if current status is OFFLINE or doesn't exist
+   */
+  private async setAgentOnline() {
+    if (!this.sipUser) return;
+
+    try {
+      // Check current status first
+      let currentStatus: AgentStatusEnum | null = null;
+      try {
+        const existingStatus = await lastValueFrom(
+          this.agentStatusSvc.getAgentStatus(this.sipUser)
+        );
+        currentStatus = existingStatus?.status || null;
+        this.logger.info(`Current agent status: ${currentStatus}`);
+      } catch (e) {
+        this.logger.info('No existing agent status found');
+      }
+
+      // Only set to ONLINE if status is OFFLINE or doesn't exist
+      if (!currentStatus || currentStatus === AgentStatusEnum.OFFLINE) {
+        const agentStatus = await lastValueFrom(
+          this.agentStatusSvc.setAgentOnline(this.sipUser, {
+            fullName: localStorage.getItem('operator.fullName') || undefined,
+          })
+        );
+        this.currentAgentStatus.set(AgentStatusEnum.ONLINE);
+        this.logger.info('Agent set to ONLINE');
+
+        // Unpause in Asterisk when going online
+        try {
+          await lastValueFrom(
+            this.queueMembersSvc.pause({ paused: false })
+          );
+          this.logger.info('Asterisk queue member unpaused');
+        } catch (pauseError) {
+          this.logger.warn('Failed to unpause in Asterisk', pauseError);
+        }
+      } else {
+        // Restore existing status
+        this.currentAgentStatus.set(currentStatus);
+        this.logger.info(`Restored existing agent status: ${currentStatus}`);
+        
+        // Sync Asterisk pause state based on current status
+        const shouldBePaused = currentStatus !== AgentStatusEnum.ONLINE;
+        try {
+          await lastValueFrom(
+            this.queueMembersSvc.pause({ paused: shouldBePaused })
+          );
+          this.logger.info(`Asterisk pause state synced: ${shouldBePaused}`);
+        } catch (pauseError) {
+          this.logger.warn('Failed to sync pause state with Asterisk', pauseError);
+        }
+      }
+    } catch (e) {
+      this.logger.error('Failed to set agent online', e);
+    }
+  }
+
+  /**
+   * Set agent offline (called on disconnect/logout)
+   */
+  private async setAgentOffline(reason?: string) {
+    if (!this.sipUser) return;
+
+    try {
+      await lastValueFrom(
+        this.agentStatusSvc.setAgentOffline(this.sipUser, reason)
+      );
+      this.currentAgentStatus.set(AgentStatusEnum.OFFLINE);
+      this.logger.info('Agent set to OFFLINE');
+
+      // Pause in Asterisk when going offline
+      try {
+        await lastValueFrom(
+          this.queueMembersSvc.pause({
+            paused: true,
+            reason_paused: reason || 'offline',
+          })
+        );
+        this.logger.info('Asterisk queue member paused');
+      } catch (pauseError) {
+        this.logger.warn('Failed to pause in Asterisk', pauseError);
+      }
+    } catch (e) {
+      this.logger.error('Failed to set agent offline', e);
+    }
+  }
+
+  /**
+   * Set agent to wrap-up after call
+   */
+  private async setAgentWrapUp(callId?: string) {
+    if (!this.sipUser) return;
+
+    try {
+      await lastValueFrom(
+        this.agentStatusSvc.setAgentWrapUp(this.sipUser, callId)
+      );
+      this.currentAgentStatus.set(AgentStatusEnum.WRAP_UP);
+      this.logger.info('Agent set to WRAP_UP');
+    } catch (e) {
+      this.logger.error('Failed to set agent wrap-up', e);
     }
   }
 

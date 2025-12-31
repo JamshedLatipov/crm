@@ -169,4 +169,59 @@ export class ContactCenterGateway
       errors,
     };
   }
+
+  /**
+   * Broadcast agent status change to all connected clients
+   * Called when an agent's status changes
+   */
+  broadcastAgentStatusChange(data: {
+    extension: string;
+    status: string;
+    previousStatus?: string;
+    reason?: string;
+    fullName?: string;
+    userId?: number;
+  }) {
+    if (!this.server) {
+      this.logger.warn('WebSocket server not initialized yet; cannot broadcast agent status');
+      return;
+    }
+
+    const message = {
+      type: 'agent:status_changed',
+      payload: data,
+      timestamp: new Date().toISOString(),
+    };
+
+    this.server.emit('agent:status_changed', message);
+    this.logger.log(
+      `Broadcasted agent status change: ${data.extension} -> ${data.status}`
+    );
+  }
+
+  /**
+   * Broadcast queue event (call entered, answered, abandoned, etc.)
+   */
+  broadcastQueueEvent(event: {
+    type: 'queue:call_entered' | 'queue:call_answered' | 'queue:call_abandoned' | 'queue:member_added' | 'queue:member_removed';
+    queueName: string;
+    data: any;
+  }) {
+    if (!this.server) {
+      this.logger.warn('WebSocket server not initialized yet; cannot broadcast queue event');
+      return;
+    }
+
+    const message = {
+      type: event.type,
+      payload: {
+        queueName: event.queueName,
+        ...event.data,
+      },
+      timestamp: new Date().toISOString(),
+    };
+
+    this.server.emit(event.type, message);
+    this.logger.debug(`Broadcasted queue event: ${event.type} for ${event.queueName}`);
+  }
 }

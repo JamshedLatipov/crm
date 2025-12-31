@@ -39,7 +39,9 @@
             [callActive]="callState.callActive()"
             [paused]="memberPaused()"
             [reason]="memberReason()"
+            [agentStatus]="currentAgentStatus()"
             (pauseChange)="onMemberPauseChange($event)"
+            (statusChange)="onAgentStatusChange($event)"
           ></app-softphone-status-bar>
         </div>
         <div class="header-actions">

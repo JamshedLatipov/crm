@@ -1,8 +1,10 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { QueueMember } from '../calls/entities/queue-member.entity';
+import { AgentStatus } from './entities/agent-status.entity';
+import { AgentStatusEnum } from './enums/agent-status.enum';
 import { AmiService } from '../ami/ami.service';
 
 @Injectable()
@@ -11,7 +13,10 @@ export class EndpointSyncService implements OnModuleInit {
 
   constructor(
     @InjectRepository(QueueMember) private readonly membersRepo: Repository<QueueMember>,
+    @InjectRepository(AgentStatus) private readonly agentStatusRepo: Repository<AgentStatus>,
     private readonly amiService: AmiService,
+    @Inject(forwardRef(() => require('./contact-center.service').ContactCenterService))
+    private contactCenterService?: any,
   ) {}
 
   async onModuleInit() {
@@ -53,13 +58,20 @@ export class EndpointSyncService implements OnModuleInit {
           member.paused = true;
           member.reason_paused = 'Auto: SIP not registered';
           await this.membersRepo.save(member);
+          
+          // Also update AgentStatus to OFFLINE
+          await this.updateAgentStatusToOffline(extension, 'Auto: SIP not registered');
           updated++;
+          
         } else if (isRegistered && member.paused && member.reason_paused?.startsWith('Auto:')) {
           // Endpoint is online and member was auto-paused -> unpause them
           this.logger.log(`📳 Setting ${member.memberid} (${extension}) to available - endpoint registered`);
           member.paused = false;
           member.reason_paused = null;
           await this.membersRepo.save(member);
+          
+          // Also update AgentStatus to ONLINE if it was auto-set to OFFLINE
+          await this.updateAgentStatusToOnline(extension);
           updated++;
         }
       }
@@ -326,5 +338,97 @@ export class EndpointSyncService implements OnModuleInit {
           resolve(registered);
         });
     });
+  }
+
+  /**
+   * Update AgentStatus to OFFLINE when SIP endpoint disconnects
+   */
+  private async updateAgentStatusToOffline(extension: string, reason: string): Promise<void> {
+    try {
+      const agentStatus = await this.agentStatusRepo.findOne({ where: { extension } });
+      
+      if (!agentStatus) {
+        this.logger.warn(`AgentStatus not found for extension ${extension}, creating new record`);
+        const newStatus = this.agentStatusRepo.create({
+          extension,
+          status: AgentStatusEnum.OFFLINE,
+          previousStatus: AgentStatusEnum.OFFLINE,
+          reason,
+          statusChangedAt: new Date(),
+        });
+        await this.agentStatusRepo.save(newStatus);
+      } else {
+        // Only update if not already OFFLINE
+        if (agentStatus.status !== AgentStatusEnum.OFFLINE) {
+          this.logger.log(`🔴 Setting agent ${extension} status to OFFLINE: ${reason}`);
+          agentStatus.previousStatus = agentStatus.status;
+          agentStatus.status = AgentStatusEnum.OFFLINE;
+          agentStatus.reason = reason;
+          agentStatus.statusChangedAt = new Date();
+          await this.agentStatusRepo.save(agentStatus);
+          
+          // Broadcast via WebSocket if gateway is available
+          if (this.contactCenterService?.gateway?.broadcastAgentStatusChange) {
+            this.contactCenterService.gateway.broadcastAgentStatusChange({
+              extension,
+              status: AgentStatusEnum.OFFLINE,
+              previousStatus: agentStatus.previousStatus,
+              reason,
+              statusChangedAt: agentStatus.statusChangedAt.toISOString(),
+            });
+          }
+        }
+      }
+    } catch (err) {
+      this.logger.error(`Failed to update AgentStatus to OFFLINE for ${extension}:`, err);
+    }
+  }
+
+  /**
+   * Update AgentStatus to ONLINE when SIP endpoint reconnects
+   */
+  private async updateAgentStatusToOnline(extension: string): Promise<void> {
+    try {
+      const agentStatus = await this.agentStatusRepo.findOne({ where: { extension } });
+      
+      if (!agentStatus) {
+        // Create new status if doesn't exist
+        const newStatus = this.agentStatusRepo.create({
+          extension,
+          status: AgentStatusEnum.ONLINE,
+          previousStatus: AgentStatusEnum.OFFLINE,
+          reason: 'Auto: SIP registered',
+          statusChangedAt: new Date(),
+        });
+        await this.agentStatusRepo.save(newStatus);
+        this.logger.log(`🟢 Created AgentStatus for ${extension} with status ONLINE`);
+      } else {
+        // Only restore to ONLINE if it was auto-set to OFFLINE
+        if (agentStatus.status === AgentStatusEnum.OFFLINE && agentStatus.reason?.startsWith('Auto:')) {
+          this.logger.log(`🟢 Restoring agent ${extension} status to ONLINE (was auto-offline)`);
+          agentStatus.previousStatus = agentStatus.status;
+          agentStatus.status = AgentStatusEnum.ONLINE;
+          agentStatus.reason = 'Auto: SIP registered';
+          agentStatus.statusChangedAt = new Date();
+          await this.agentStatusRepo.save(agentStatus);
+          
+          // Broadcast via WebSocket if gateway is available
+          if (this.contactCenterService?.gateway?.broadcastAgentStatusChange) {
+            this.contactCenterService.gateway.broadcastAgentStatusChange({
+              extension,
+              status: AgentStatusEnum.ONLINE,
+              previousStatus: agentStatus.previousStatus,
+              reason: agentStatus.reason,
+              statusChangedAt: agentStatus.statusChangedAt.toISOString(),
+            });
+          }
+        } else if (agentStatus.status === AgentStatusEnum.OFFLINE && !agentStatus.reason?.startsWith('Auto:')) {
+          // Agent was manually set offline, don't auto-restore
+          this.logger.debug(`Agent ${extension} is manually offline, not auto-restoring to ONLINE`);
+        }
+      }
+    } catch (err) {
+      this.logger.error(`Failed to update AgentStatus to ONLINE for ${extension}:`, err);
+    }
   }
 }

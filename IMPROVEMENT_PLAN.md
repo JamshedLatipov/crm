@@ -353,7 +353,21 @@ BASE_URL=http://localhost:3000 k6 run --tag test_type=stress load-tests/k6/full-
 
 ## 4️⃣ CONTACT CENTER UI - Улучшения
 
-### ✅ Что уже есть (85%):
+### ✅ Что уже сделано (80%):
+- ✅ **Расширенные статусы оператора (31.12.2025):**
+  - Backend: AgentStatus entity с 9 статусами
+  - Backend: AgentStatusEnum с лейблами, иконками, цветами
+  - Backend: ContactCenterService методы управления статусами
+  - Backend: API endpoints (GET/POST /contact-center/agent-statuses)
+  - Backend: WebSocket события agent:status_changed
+  - Backend: EndpointSyncService интеграция (автоматическое отслеживание SIP отключений)
+  - Frontend: AgentStatusService + типы
+  - Frontend: SoftphoneStatusBarComponent полностью переработан
+  - Frontend: Интеграция в SoftphoneComponent
+  - Frontend: Автоматическое переключение (ONLINE → ON_CALL → WRAP_UP)
+  - Frontend: Удалены ненадежные beforeunload handlers
+  - Документация: AGENT_STATUS_SYNC.md (двухуровневая архитектура)
+  - Backward compatibility с существующей системой pause
 - ✅ Softphone компонент с JsSIP
 - ✅ WebSocket интеграция для real-time
 - ✅ Очереди, PJSIP управление, Call logs
@@ -361,7 +375,61 @@ BASE_URL=http://localhost:3000 k6 run --tag test_type=stress load-tests/k6/full-
 
 ### ❌ Что нужно улучшить:
 
-#### 4.1 Расширенные статусы оператора
+#### 4.1 WebSocket подписки для синхронизации статусов (опционально)
+**Приоритет:** 🟢 НИЗКИЙ  
+**Оценка:** 0.5 дня
+
+**Задачи:**
+- [ ] Подписаться на `agent:status_changed` в ContactCenterMonitoringService
+- [ ] Синхронизация статуса между вкладками/сессиями
+- [ ] Обновление UI при изменении статуса другим пользователем
+
+**Файлы:**
+- `apps/front/src/app/contact-center/services/contact-center-monitoring.service.ts`
+- `apps/front/src/app/softphone/softphone.component.ts`
+
+#### 4.2 Расширенные статусы оператора ✅
+**Приоритет:** 🟡 СРЕДНИЙ  
+**Оценка:** 1 день  
+**Статус:** ✅ ЗАВЕРШЕНО (31.12.2025)
+
+**Выполнено:**
+- [x] Backend: AgentStatus entity + enum
+- [x] Backend: ContactCenterService методы (setAgentStatus, getAgentStatus, etc.)
+- [x] Backend: API endpoints для управления статусами
+- [x] Backend: WebSocket broadcast agent:status_changed
+- [x] Backend: EndpointSyncService интеграция для автоматического отслеживания SIP отключений
+- [x] Frontend: AgentStatusService + типы
+- [x] Frontend: SoftphoneStatusBarComponent с dropdown 9 статусов
+- [x] Frontend: Интеграция в SoftphoneComponent
+- [x] Frontend: Автоматические переходы (ONLINE → ON_CALL → WRAP_UP)
+- [x] Frontend: Удалены ненадежные beforeunload handlers
+- [x] Frontend: Asterisk synchronization через QueueMembersService.pause()
+- [x] Документация: AGENT_STATUS_SYNC.md с архитектурой и процессами синхронизации
+
+**Ключевые улучшения:**
+- 🔄 Двухуровневая архитектура: CRM статусы (9 уровней) + Asterisk pause (2 уровня)
+- 📡 EndpointSyncService с 4 параллельными методами детекции через AMI/ARI
+- ⏱️ Cron job каждые 5 минут для автоматического отслеживания SIP регистраций
+- 🎯 Graceful degradation: CRM update критичен, Asterisk sync желателен
+- 🔄 Автоматическое восстановление ONLINE при переподключении (если был Auto-отключен)
+- 🚫 Удалены ненадежные browser-based handlers (beforeunload, visibilitychange)
+- [x] Frontend: Авто-переключение (registration → ONLINE, call confirmed → ON_CALL, call ended → WRAP_UP)
+- [x] UI: Material иконки, цветовая кодировка, pulse анимация
+- [x] Backward compatibility с memberPaused
+
+**Файлы:**
+- Backend: `apps/back/src/app/modules/contact-center/entities/agent-status.entity.ts`
+- Backend: `apps/back/src/app/modules/contact-center/enums/agent-status.enum.ts`
+- Backend: `apps/back/src/app/modules/contact-center/contact-center.service.ts`
+- Backend: `apps/back/src/app/modules/contact-center/contact-center.controller.ts`
+- Backend: `apps/back/src/app/modules/contact-center/contact-center.gateway.ts`
+- Frontend: `apps/front/src/app/contact-center/types/agent-status.types.ts`
+- Frontend: `apps/front/src/app/contact-center/services/agent-status.service.ts`
+- Frontend: `apps/front/src/app/softphone/components/softphone-status-bar/`
+- Frontend: `apps/front/src/app/softphone/softphone.component.ts`
+
+#### 4.3 Real-time управление очередями
 **Приоритет:** 🟡 СРЕДНИЙ  
 **Оценка:** 1 день
 
@@ -389,7 +457,7 @@ BASE_URL=http://localhost:3000 k6 run --tag test_type=stress load-tests/k6/full-
 - `apps/back/src/app/modules/contact-center/contact-center.service.ts`
 - Добавить enum в `apps/back/src/app/modules/contact-center/entities/agent-status.entity.ts` (создать, если нет)
 
-#### 4.2 Real-time управление очередями
+#### 4.3 Real-time управление очередями
 **Приоритет:** 🟡 СРЕДНИЙ  
 **Оценка:** 1 день
 
@@ -417,7 +485,7 @@ BASE_URL=http://localhost:3000 k6 run --tag test_type=stress load-tests/k6/full-
 - `apps/front/src/app/contact-center/monitoring/queue-monitor.component.ts` (создать)
 - `apps/back/src/app/modules/contact-center/contact-center.gateway.ts` (добавить события)
 
-#### 4.3 Улучшенная интеграция IVR с Softphone
+#### 4.4 Улучшенная интеграция IVR с Softphone
 **Приоритет:** 🟢 НИЗКИЙ  
 **Оценка:** 1 день
 
@@ -437,7 +505,7 @@ BASE_URL=http://localhost:3000 k6 run --tag test_type=stress load-tests/k6/full-
 - `apps/front/src/app/contact-center/ivr/ivr-analytics.component.ts` (создать)
 - Backend: уже есть IvrModule, добавить endpoints для статистики
 
-#### 4.4 Dashboard для супервизоров
+#### 4.5 Dashboard для супервизоров
 **Приоритет:** 🟡 СРЕДНИЙ  
 **Оценка:** 1 день
 

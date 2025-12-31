@@ -1,41 +1,86 @@
 <div class="flex items-center gap-2">
-  
   <button
     mat-button
-    [matMenuTriggerFor]="pauseMenu"
-    aria-label="Статус"
-    class="p-0"
+    [matMenuTriggerFor]="statusMenu"
+    aria-label="Статус агента"
+    class="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/10 transition-all"
   >
+    <!-- Status dot with color and optional pulse -->
     <span
-      [class]="
-        paused()
-          ? 'inline-block w-2.5 h-2.5 rounded-full bg-yellow-500 mr-2'
-          : (!status().includes('failed') || !status().includes('Ошибка')) && !paused()
-          ? 'inline-block w-2.5 h-2.5 rounded-full bg-green-500 mr-2'
-          : status().includes('failed') || status().includes('Ошибка')
-          ? 'inline-block w-2.5 h-2.5 rounded-full bg-red-500 mr-2'
-          : 'inline-block w-2.5 h-2.5 rounded-full bg-yellow-500 mr-2'
-      "
+      class="status-dot"
+      [class.pulse]="shouldPulse()"
+      [style.background-color]="currentStatusInfo().color"
     ></span>
+
+    <!-- Status icon -->
+    <mat-icon
+      class="status-menu-icon"
+      [style.color]="currentStatusInfo().color"
+    >
+      {{ currentStatusInfo().icon }}
+    </mat-icon>
+
+    <!-- Status label -->
     <span 
-      class="text-sm font-medium status-text"
+      class="status-text"
       [class.call-active]="callActive()"
-    >{{ status() }}{{ paused() && reason() ? ' — ' + reason() : '' }}</span>
-    <span class="material-icons" style="font-size: 18px; margin-left: 6px; color: white;"
-      >arrow_drop_down</span>
+    >
+      {{ currentStatusInfo().label }}
+      @if (reason()) {
+        <span class="text-xs opacity-75"> — {{ reason() }}</span>
+      }
+    </span>
+
+    <!-- Dropdown arrow -->
+    <mat-icon style="font-size: 18px; width: 18px; height: 18px;">
+      arrow_drop_down
+    </mat-icon>
   </button>
 
+  <!-- Status menu -->
   <mat-menu
-    #pauseMenu="matMenu"
+    #statusMenu="matMenu"
     [overlapTrigger]="false"
-    panelClass="softphone-pause-menu"
+    class="status-menu"
   >
-    <div class="text-gray-500 mr-2 ml-2">Выбрать причину паузы</div>
+    <div class="px-4 py-2 text-xs text-gray-600 font-medium uppercase tracking-wide">
+      Выберите статус
+    </div>
     <mat-divider></mat-divider>
-    <button mat-menu-item *ngFor="let r of reasons" (click)="selectReason(r)">
-      <span>{{ r }}</span>
-    </button>
-    <mat-divider></mat-divider>
-    <button mat-menu-item (click)="clearPause()">Доступен</button>
+
+    <!-- All status options -->
+    @for (statusOption of allStatuses; track statusOption.value) {
+      <button 
+        mat-menu-item 
+        (click)="selectStatus(statusOption.value)"
+        [disabled]="statusOption.value === agentStatus()"
+      >
+        <div class="status-menu-item">
+          <!-- Status dot -->
+          <span
+            class="status-dot"
+            [style.background-color]="statusOption.color"
+          ></span>
+
+          <!-- Status icon -->
+          <mat-icon
+            class="status-menu-icon"
+            [style.color]="statusOption.color"
+          >
+            {{ statusOption.icon }}
+          </mat-icon>
+
+          <!-- Status label -->
+          <span class="flex-1">{{ statusOption.label }}</span>
+
+          <!-- Checkmark for current status -->
+          @if (statusOption.value === agentStatus()) {
+            <mat-icon class="status-menu-icon text-green-500">
+              check
+            </mat-icon>
+          }
+        </div>
+      </button>
+    }
   </mat-menu>
 </div>

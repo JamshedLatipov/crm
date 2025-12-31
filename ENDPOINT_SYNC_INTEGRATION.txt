@@ -1,0 +1,140 @@
+# EndpointSyncService Integration with AgentStatus System
+
+Дата: 31.12.2025
+
+## Цель
+Интегрировать существующий EndpointSyncService (AMI-based endpoint tracking) с новой системой AgentStatus
+для надежного отслеживания отключений/подключений SIP endpoints без использования ненадежных browser handlers.
+
+## Выполненные изменения
+
+### Backend: endpoint-sync.service.ts
+
+1. **Добавлены imports:**
+   - AgentStatus entity
+   - AgentStatusEnum
+   - ContactCenterService через forwardRef (для WebSocket broadcast)
+
+2. **Расширен конструктор:**
+```typescript
+@InjectRepository(AgentStatus) private readonly agentStatusRepo: Repository<AgentStatus>,
+@Inject(forwardRef(() => require('./contact-center.service').ContactCenterService))
+private contactCenterService?: any,
+```
+
+3. **Обновлена логика syncEndpointStatus():**
+   - При отключении endpoint (SIP not registered):
+     * QueueMember.paused = true, reason = 'Auto: SIP not registered'
+     * Вызов updateAgentStatusToOffline() для обновления AgentStatus
+   - При подключении endpoint (SIP registered):
+     * QueueMember.paused = false, reason = null
+     * Вызов updateAgentStatusToOnline() для восстановления AgentStatus
+
+4. **Добавлены приватные методы:**
+
+**updateAgentStatusToOffline(extension, reason):**
+- Находит или создает AgentStatus для extension
+- Устанавливает status = OFFLINE, reason = 'Auto: SIP not registered'
+- Сохраняет previousStatus для возможного восстановления
+- Broadcast через WebSocket (agent:status_changed)
+
+**updateAgentStatusToOnline(extension):**
+- Находит AgentStatus для extension
+- Проверяет: был ли status OFFLINE с Auto: причиной
+- Если да: восстанавливает status = ONLINE, reason = 'Auto: SIP registered'
+- Если manual offline: НЕ восстанавливает автоматически
+- Broadcast через WebSocket (agent:status_changed)
+
+### Frontend: softphone.component.ts
+
+1. **Удалены ненадежные browser handlers:**
+   - Удален onBeforeUnloadHandler (window.addEventListener('beforeunload'))
+   - Удален onVisibilityChangeHandler (document.addEventListener('visibilitychange'))
+   - Удалены соответствующие addEventListener/removeEventListener
+
+2. **Добавлены комментарии:**
+```typescript
+// Note: Tab closure and SIP disconnection are now handled reliably by EndpointSyncService
+// via AMI/ARI endpoint tracking. No need for unreliable beforeunload handlers.
+```
+
+### Документация: AGENT_STATUS_SYNC.md
+
+Добавлен раздел "4. Автоматическое отслеживание отключений (EndpointSyncService)" с описанием:
+- Cron job каждые 5 минут
+- 4 параллельных метода детекции SIP endpoints
+- Логика auto-pause/auto-unpause с проверкой причины (Auto: prefix)
+- Блок-схемы для сценариев disconnection/reconnection
+
+## Преимущества
+
+✅ **Надежность:**
+- AMI-based tracking работает независимо от состояния браузера
+- 4 параллельных метода детекции для максимальной надежности
+- Работает даже при браузерном crash, закрытии без beforeunload, network disconnection
+
+✅ **Consistency:**
+- Единая точка синхронизации QueueMember + AgentStatus
+- WebSocket broadcast для real-time UI updates
+- Graceful degradation: errors логируются, но не блокируют работу
+
+✅ **Smart Auto-restore:**
+- Автоматически восстанавливает ONLINE только если был Auto-отключен
+- Сохраняет manual OFFLINE без автоматического восстановления
+- Tracking previousStatus для аудита
+
+✅ **Production-ready:**
+- Удалены ненадежные browser handlers
+- Cron-based approach более предсказуем
+- Logs для мониторинга: 📴 (disconnect), 📳 (reconnect)
+
+## Детекция методы
+
+1. **Agents** action - queue agents information (самый надежный для queue members)
+2. **PJSIPShowRegistrationInboundContactStatuses** - PJSIP registration status
+3. **DeviceStateList** - device state events (NOT_INUSE, INUSE, UNAVAILABLE, etc.)
+4. **QueueStatus** - queue member status with device status = 5 (fallback)
+
+Все методы запускаются параллельно, результаты объединяются для максимальной точности.
+
+## Мониторинг
+
+Логи для отслеживания работы:
+```
+📴 Setting operator2 (1002) to paused - endpoint not registered
+🔴 Setting agent 1002 status to OFFLINE: Auto: SIP not registered
+
+📳 Setting operator2 (1002) to available - endpoint registered
+🟢 Restoring agent 1002 status to ONLINE (was auto-offline)
+```
+
+WebSocket события:
+```json
+{
+  "event": "agent:status_changed",
+  "data": {
+    "extension": "1002",
+    "status": "OFFLINE",
+    "previousStatus": "ONLINE",
+    "reason": "Auto: SIP not registered",
+    "statusChangedAt": "2025-12-31T10:15:00.000Z"
+  }
+}
+```
+
+## Следующие шаги
+
+Опционально (низкий приоритет):
+- [ ] Frontend WebSocket subscription для real-time sync между вкладками
+- [ ] Dashboard component для мониторинга всех агентов
+- [ ] Metrics tracking (time in each status, disconnect frequency, etc.)
+- [ ] Admin UI для управления статусами других операторов
+
+## Тестирование
+
+Сценарии для проверки:
+1. Закрыть браузер → через 5 мин агент должен стать OFFLINE
+2. Открыть браузер → через 5 мин агент должен стать ONLINE
+3. Manual OFFLINE → закрыть/открыть браузер → остается OFFLINE
+4. Network disconnect → через 5 мин → OFFLINE
+5. Network reconnect → через 5 мин → ONLINE (если был auto-offline)

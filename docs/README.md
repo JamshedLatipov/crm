@@ -66,6 +66,7 @@ This directory centralizes project documentation. Use the links below to find gu
 ## Asterisk / Telephony
 
 - [Combined Asterisk configuration and guides](asterisk-config/COMBINED.md)
+- [Agent Status Synchronization](AGENT_STATUS_SYNC.md) - How CRM statuses sync with Asterisk queues
 
 > All individual Asterisk `.md` files have been consolidated into the single linked document.
 
