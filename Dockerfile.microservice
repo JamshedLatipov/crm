@@ -1,0 +1,56 @@
+# Multi-stage Dockerfile for NestJS microservices
+# Usage: docker build --build-arg SERVICE_NAME=identity-service -f Dockerfile.microservice .
+
+ARG SERVICE_NAME=identity-service
+
+# ==================== Build Stage ====================
+FROM node:20-alpine AS builder
+
+ARG SERVICE_NAME
+
+WORKDIR /app
+
+# Install dependencies
+COPY package*.json ./
+RUN npm ci --legacy-peer-deps
+
+# Copy source code
+COPY . .
+
+# Build the specific service
+RUN npx nx build ${SERVICE_NAME} --configuration=production
+
+# ==================== Production Stage ====================
+FROM node:20-alpine AS production
+
+ARG SERVICE_NAME
+
+WORKDIR /app
+
+# Install curl for healthcheck
+RUN apk add --no-cache curl
+
+# Copy built application
+COPY --from=builder /app/dist/apps/${SERVICE_NAME} ./dist/apps/${SERVICE_NAME}
+COPY --from=builder /app/dist/libs ./dist/libs
+
+# Copy only production dependencies
+COPY --from=builder /app/node_modules ./node_modules
+
+# Set environment
+ENV NODE_ENV=production
+
+# Non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nestjs -u 1001 -G nodejs && \
+    chown -R nestjs:nodejs /app
+
+USER nestjs
+
+# Create entrypoint script that uses the SERVICE_NAME env var
+# SERVICE_NAME is passed from build arg to env
+ENV SERVICE_NAME=${SERVICE_NAME}
+
+EXPOSE 3000
+
+CMD node dist/apps/${SERVICE_NAME}/main.js

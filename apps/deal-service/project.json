@@ -1,0 +1,43 @@
+{
+  "name": "deal-service",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/deal-service/src",
+  "projectType": "application",
+  "tags": ["scope:backend", "type:microservice"],
+  "implicitDependencies": ["@crm/contracts"],
+  "targets": {
+    "build": {
+      "executor": "@nx/webpack:webpack",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "target": "node",
+        "compiler": "tsc",
+        "outputPath": "dist/apps/deal-service",
+        "main": "apps/deal-service/src/main.ts",
+        "tsConfig": "apps/deal-service/tsconfig.app.json",
+        "webpackConfig": "apps/deal-service/webpack.config.js",
+        "generatePackageJson": true
+      },
+      "configurations": {
+        "development": { "optimization": false, "sourceMap": true },
+        "production": { "optimization": true, "sourceMap": false }
+      }
+    },
+    "serve": {
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "options": { "buildTarget": "deal-service:build" },
+      "configurations": {
+        "development": { "buildTarget": "deal-service:build:development" },
+        "production": { "buildTarget": "deal-service:build:production" }
+      }
+    },
+    "lint": { "executor": "@nx/eslint:lint" },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": { "jestConfig": "apps/deal-service/jest.config.ts" }
+    }
+  }
+}

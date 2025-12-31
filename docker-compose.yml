@@ -135,5 +135,101 @@ services:
     mem_limit: "512m"
     mem_reservation: "256m"
 
+  # ==================== Microservices ====================
+
+  identity-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.microservice
+      args:
+        SERVICE_NAME: identity-service
+    depends_on:
+      - postgres
+      - rabbitmq
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_DATABASE: crm
+      DB_SYNC: "false"
+      DB_LOGGING: "false"
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      JWT_SECRET: ${JWT_SECRET:-crm_jwt_secret_key_change_in_production}
+      JWT_EXPIRES_IN: 24h
+      IDENTITY_HTTP_PORT: 3010
+    ports:
+      - "3010:3010"
+    command: ["node", "dist/apps/identity-service/main.js"]
+    mem_limit: "256m"
+    mem_reservation: "128m"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3010/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.microservice
+      args:
+        SERVICE_NAME: api-gateway
+    depends_on:
+      - rabbitmq
+      - identity-service
+      - back
+    environment:
+      GATEWAY_PORT: 3001
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      JWT_SECRET: ${JWT_SECRET:-crm_jwt_secret_key_change_in_production}
+      CORS_ORIGIN: http://localhost:4200,http://localhost:3000
+      MONOLITH_HOST: back
+      MONOLITH_PORT: 3000
+    ports:
+      - "3001:3001"
+    command: ["node", "dist/apps/api-gateway/main.js"]
+    mem_limit: "256m"
+    mem_reservation: "128m"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  audit-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.microservice
+      args:
+        SERVICE_NAME: audit-service
+    depends_on:
+      - postgres
+      - rabbitmq
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_DATABASE: crm
+      DB_SYNC: "false"
+      DB_LOGGING: "false"
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      AUDIT_HTTP_PORT: 3019
+      RETENTION_DAYS_DEFAULT: 90
+    ports:
+      - "3019:3019"
+    command: ["node", "dist/apps/audit-service/main.js"]
+    mem_limit: "256m"
+    mem_reservation: "128m"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3019/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
 volumes:
   pgdata:

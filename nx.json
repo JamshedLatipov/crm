@@ -25,7 +25,15 @@
       "options": {
         "targetName": "test"
       },
-      "exclude": ["apps/back-e2e/**/*"]
+      "exclude": [
+        "apps/back-e2e/**/*",
+        "apps/task-service-e2e/**/*",
+        "apps/notification-service-e2e/**/*",
+        "apps/telephony-service-e2e/**/*",
+        "apps/analytics-service-e2e/**/*",
+        "apps/campaign-service-e2e/**/*",
+        "apps/audit-service-e2e/**/*"
+      ]
     },
     {
       "plugin": "@nx/vite/plugin",
@@ -64,6 +72,11 @@
       "dependsOn": ["^build"],
       "inputs": ["default", "^default"],
       "outputs": ["{workspaceRoot}/dist/{projectName}"]
+    },
+    "@nx/js:node": {
+      "options": {
+        "inspect": false
+      }
     },
     "@nx/eslint:lint": {
       "cache": true,

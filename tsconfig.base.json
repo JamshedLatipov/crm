@@ -28,6 +28,7 @@
     "baseUrl": ".",
     "paths": {
       "@crm/back/*": ["apps/back/src/*"],
+      "@crm/contracts": ["libs/contracts/src/index.ts"],
       "@crm/front/*": ["apps/front/src/*"],
       "@crm/shared": ["libs/shared/src/index.ts"]
     }

@@ -1,0 +1,45 @@
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+
+export enum StageType {
+  LEAD_QUALIFICATION = 'lead_qualification',
+  DEAL_PROGRESSION = 'deal_progression',
+  WON_STAGE = 'won_stage',
+  LOST_STAGE = 'lost_stage',
+}
+
+@Entity('pipeline_stages')
+export class PipelineStage {
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
+
+  @Column({ unique: true })
+  name!: string;
+
+  @Column({
+    type: 'enum',
+    enum: StageType,
+    default: StageType.DEAL_PROGRESSION,
+  })
+  type!: StageType;
+
+  @Column({ default: 0 })
+  position!: number;
+
+  @Column({ default: 50 })
+  probability!: number;
+
+  @Column({ default: true })
+  isActive!: boolean;
+
+  @CreateDateColumn()
+  createdAt!: Date;
+
+  @UpdateDateColumn()
+  updatedAt!: Date;
+}

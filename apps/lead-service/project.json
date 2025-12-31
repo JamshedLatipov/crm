@@ -1,0 +1,59 @@
+{
+  "name": "lead-service",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/lead-service/src",
+  "projectType": "application",
+  "tags": ["scope:backend", "type:microservice"],
+  "implicitDependencies": ["@crm/contracts"],
+  "targets": {
+    "build": {
+      "executor": "@nx/webpack:webpack",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "target": "node",
+        "compiler": "tsc",
+        "outputPath": "dist/apps/lead-service",
+        "main": "apps/lead-service/src/main.ts",
+        "tsConfig": "apps/lead-service/tsconfig.app.json",
+        "webpackConfig": "apps/lead-service/webpack.config.js",
+        "generatePackageJson": true
+      },
+      "configurations": {
+        "development": {
+          "optimization": false,
+          "sourceMap": true
+        },
+        "production": {
+          "optimization": true,
+          "sourceMap": false
+        }
+      }
+    },
+    "serve": {
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "lead-service:build"
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "lead-service:build:development"
+        },
+        "production": {
+          "buildTarget": "lead-service:build:production"
+        }
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "apps/lead-service/jest.config.ts"
+      }
+    }
+  }
+}

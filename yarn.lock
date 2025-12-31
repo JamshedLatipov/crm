@@ -3947,15 +3947,15 @@
     tslib "^2.3.0"
     typescript "~5.9.2"
 
-"@nx/jest@21.3.11", "@nx/jest@^21.3.11":
-  version "21.3.11"
-  resolved "https://registry.npmjs.org/@nx/jest/-/jest-21.3.11.tgz"
-  integrity sha512-PkdNWeoUY81zr+jtUapBdvvh26lWYIhDNyUwTjIBFajX8EAlhJpvShKHs7QObmrwOMLMXwLHKINiSCw9rueOBQ==
+"@nx/jest@21.6.10":
+  version "21.6.10"
+  resolved "https://registry.npmjs.org/@nx/jest/-/jest-21.6.10.tgz"
+  integrity sha512-JAYMD/RwKP/mgr7R0uC6R7/DGsluajiQsHipbp6JhbwmqxOK+tTdWBHrYzKWXyRZaCSqqmrN55ocVfuynZDP4Q==
   dependencies:
     "@jest/reporters" "^30.0.2"
     "@jest/test-result" "^30.0.2"
-    "@nx/devkit" "21.3.11"
-    "@nx/js" "21.3.11"
+    "@nx/devkit" "21.6.10"
+    "@nx/js" "21.6.10"
     "@phenomnomnominal/tsquery" "~5.0.1"
     identity-obj-proxy "3.0.0"
     jest-config "^30.0.2"
@@ -3968,15 +3968,15 @@
     tslib "^2.3.0"
     yargs-parser "21.1.1"
 
-"@nx/jest@21.6.10":
-  version "21.6.10"
-  resolved "https://registry.npmjs.org/@nx/jest/-/jest-21.6.10.tgz"
-  integrity sha512-JAYMD/RwKP/mgr7R0uC6R7/DGsluajiQsHipbp6JhbwmqxOK+tTdWBHrYzKWXyRZaCSqqmrN55ocVfuynZDP4Q==
+"@nx/jest@^21.3.11":
+  version "21.3.11"
+  resolved "https://registry.npmjs.org/@nx/jest/-/jest-21.3.11.tgz"
+  integrity sha512-PkdNWeoUY81zr+jtUapBdvvh26lWYIhDNyUwTjIBFajX8EAlhJpvShKHs7QObmrwOMLMXwLHKINiSCw9rueOBQ==
   dependencies:
     "@jest/reporters" "^30.0.2"
     "@jest/test-result" "^30.0.2"
-    "@nx/devkit" "21.6.10"
-    "@nx/js" "21.6.10"
+    "@nx/devkit" "21.3.11"
+    "@nx/js" "21.3.11"
     "@phenomnomnominal/tsquery" "~5.0.1"
     identity-obj-proxy "3.0.0"
     jest-config "^30.0.2"
@@ -4077,9 +4077,9 @@
     tslib "^2.3.0"
     webpack "^5.101.3"
 
-"@nx/nest@^21.3.11":
+"@nx/nest@21.6.10":
   version "21.6.10"
-  resolved "https://registry.npmjs.org/@nx/nest/-/nest-21.6.10.tgz"
+  resolved "https://registry.yarnpkg.com/@nx/nest/-/nest-21.6.10.tgz#7524e4c3948414b5013a4bee6193d56742a491dd"
   integrity sha512-iBCvex3ymc7BRaVJ9zaAANkX5W44VIKAl7dhnXQAX9xyS2GPzEwBlxHP3dqbwrEKoJSAl4HPNfXpIUVRu0Tz3g==
   dependencies:
     "@nestjs/schematics" "^11.0.0"
@@ -4087,19 +4087,6 @@
     "@nx/eslint" "21.6.10"
     "@nx/js" "21.6.10"
     "@nx/node" "21.6.10"
-    tslib "^2.3.0"
-
-"@nx/node@21.3.11":
-  version "21.3.11"
-  resolved "https://registry.npmjs.org/@nx/node/-/node-21.3.11.tgz"
-  integrity sha512-4B2onNmhrCaLlhwhDycMOisAuXmajAbl9gM8G6dS4Tc6z8QHXswlJG6rVP4VvR0ZZKtLeKGED2X5hpv9T1ikxw==
-  dependencies:
-    "@nx/devkit" "21.3.11"
-    "@nx/eslint" "21.3.11"
-    "@nx/jest" "21.3.11"
-    "@nx/js" "21.3.11"
-    kill-port "^1.6.1"
-    tcp-port-used "^1.0.2"
     tslib "^2.3.0"
 
 "@nx/node@21.6.10":
@@ -4305,48 +4292,6 @@
     picocolors "^1.1.0"
     tslib "^2.3.0"
 
-"@nx/webpack@21.3.11":
-  version "21.3.11"
-  resolved "https://registry.npmjs.org/@nx/webpack/-/webpack-21.3.11.tgz"
-  integrity sha512-GAqA9yHLro4zDf2z27uWseUSLiZZh2IZ3Eh5Kb9l/LA4ujT3whkpNoIo/K2LxzmmOG8k2SkJ7wBntCPk2O1e8g==
-  dependencies:
-    "@babel/core" "^7.23.2"
-    "@nx/devkit" "21.3.11"
-    "@nx/js" "21.3.11"
-    "@phenomnomnominal/tsquery" "~5.0.1"
-    ajv "^8.12.0"
-    autoprefixer "^10.4.9"
-    babel-loader "^9.1.2"
-    browserslist "^4.21.4"
-    copy-webpack-plugin "^10.2.4"
-    css-loader "^6.4.0"
-    css-minimizer-webpack-plugin "^5.0.0"
-    fork-ts-checker-webpack-plugin "7.2.13"
-    less "^4.1.3"
-    less-loader "^11.1.0"
-    license-webpack-plugin "^4.0.2"
-    loader-utils "^2.0.3"
-    mini-css-extract-plugin "~2.4.7"
-    parse5 "4.0.0"
-    picocolors "^1.1.0"
-    postcss "^8.4.38"
-    postcss-import "~14.1.0"
-    postcss-loader "^6.1.1"
-    rxjs "^7.8.0"
-    sass "^1.85.0"
-    sass-embedded "^1.83.4"
-    sass-loader "^16.0.4"
-    source-map-loader "^5.0.0"
-    style-loader "^3.3.0"
-    terser-webpack-plugin "^5.3.3"
-    ts-loader "^9.3.1"
-    tsconfig-paths-webpack-plugin "4.0.0"
-    tslib "^2.3.0"
-    webpack "~5.99.0"
-    webpack-dev-server "^5.2.1"
-    webpack-node-externals "^3.0.0"
-    webpack-subresource-integrity "^5.1.0"
-
 "@nx/webpack@21.6.10":
   version "21.6.10"
   resolved "https://registry.npmjs.org/@nx/webpack/-/webpack-21.6.10.tgz"
@@ -4422,6 +4367,11 @@
   version "0.1.1"
   resolved "https://registry.npmjs.org/@one-ini/wasm/-/wasm-0.1.1.tgz"
   integrity sha512-XuySG1E38YScSJoMlqovLru4KTUNSjgVTIjyh7qMX6aNN5HY5Ct5LhRJdxO79JtTzKfzV/bnWpz+zquYrISsvw==
+
+"@opentelemetry/api@^1.4.0":
+  version "1.9.0"
+  resolved "https://registry.yarnpkg.com/@opentelemetry/api/-/api-1.9.0.tgz#d03eba68273dc0f7509e2a3d5cba21eae10379fe"
+  integrity sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg==
 
 "@parcel/watcher-android-arm64@2.5.1":
   version "2.5.1"
@@ -5818,10 +5768,17 @@
   dependencies:
     "@types/node" "*"
 
-"@types/node@*", "@types/node@~18.16.9":
+"@types/node@*":
   version "18.16.20"
   resolved "https://registry.npmjs.org/@types/node/-/node-18.16.20.tgz"
   integrity sha512-nL54VfDjThdP2UXJXZao5wp76CDiDw4zSRO8d4Tk7UgDqNKGKVEQB0/t3ti63NS+YNNkIQDvwEAF04BO+WYu7Q==
+
+"@types/node@20.19.9":
+  version "20.19.9"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.19.9.tgz#ca9a58193fec361cc6e859d88b52261853f1f0d3"
+  integrity sha512-cuVNgarYWZqxRJDQHEB58GEONhOK79QVR/qYx4S7kcUObQvUwvFnYxJuuHUKm2aieN9X3yZB4LZsuYNU1Qphsw==
+  dependencies:
+    undici-types "~6.21.0"
 
 "@types/node@>=10.0.0":
   version "25.0.3"
@@ -6769,7 +6726,7 @@ acorn-walk@^8.1.1:
   dependencies:
     acorn "^8.11.0"
 
-acorn@^8.11.0, acorn@^8.14.0, acorn@^8.15.0, acorn@^8.4.1, acorn@^8.5.0, acorn@^8.9.0:
+acorn@^8.11.0, acorn@^8.15.0, acorn@^8.4.1, acorn@^8.5.0, acorn@^8.9.0:
   version "8.15.0"
   resolved "https://registry.npmjs.org/acorn/-/acorn-8.15.0.tgz"
   integrity sha512-NZyJarBfL7nWwIq+FDL6Zp/yHEhePMNnnJ0y3qfieCrmNvYct8uvtiV41UvlSe6apAfk0fY1FbWx+NwfmpvtTg==
@@ -7348,6 +7305,11 @@ binary-extensions@^2.0.0:
   version "2.3.0"
   resolved "https://registry.npmjs.org/binary-extensions/-/binary-extensions-2.3.0.tgz"
   integrity sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw==
+
+bintrees@1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/bintrees/-/bintrees-1.0.2.tgz#49f896d6e858a4a499df85c38fb399b9aff840f8"
+  integrity sha512-VOMgTMwjAaUG580SXn3LacVgjurrbMme7ZZNYGSSV7mmtY6QQRh0Eg3pwIcntQ77DErK1L0NxkbetjcoXzVwKw==
 
 bl@^4.0.3, bl@^4.1.0:
   version "4.1.0"
@@ -8670,7 +8632,7 @@ engine.io@~6.6.0:
     engine.io-parser "~5.2.1"
     ws "~8.17.1"
 
-enhanced-resolve@^5.0.0, enhanced-resolve@^5.17.1, enhanced-resolve@^5.17.3, enhanced-resolve@^5.7.0:
+enhanced-resolve@^5.0.0, enhanced-resolve@^5.17.3, enhanced-resolve@^5.7.0:
   version "5.18.4"
   resolved "https://registry.npmjs.org/enhanced-resolve/-/enhanced-resolve-5.18.4.tgz"
   integrity sha512-LgQMM4WXU3QI+SYgEc2liRgznaD5ojbmY3sb8LxyguVkIg5FxdpTkvk72te2R38/TGKxH634oLxXRGY6d7AP+Q==
@@ -11402,7 +11364,7 @@ load-esm@1.0.3:
   resolved "https://registry.npmjs.org/load-esm/-/load-esm-1.0.3.tgz"
   integrity sha512-v5xlu8eHD1+6r8EHTg6hfmO97LN8ugKtiXcy5e6oN72iD2r6u0RPfLl6fxM+7Wnh2ZRq15o0russMst44WauPA==
 
-loader-runner@^4.2.0, loader-runner@^4.3.1:
+loader-runner@^4.3.1:
   version "4.3.1"
   resolved "https://registry.npmjs.org/loader-runner/-/loader-runner-4.3.1.tgz"
   integrity sha512-IWqP2SCPhyVFTBtRcgMHdzlf9ul25NwaFx4wCEH/KjAXuuHY4yNjvPXsBokp8jCB936PyWRaPKUNh8NvylLp2Q==
@@ -13293,6 +13255,14 @@ progress@^2.0.3:
   resolved "https://registry.npmjs.org/progress/-/progress-2.0.3.tgz"
   integrity sha512-7PiHtLll5LdnKIMw100I+8xJXR5gW2QwWYkT6iJva0bXitZKa/XMrSbdmg3r2Xnaidz9Qumd0VPaMrZlF9V9sA==
 
+prom-client@^15.1.3:
+  version "15.1.3"
+  resolved "https://registry.yarnpkg.com/prom-client/-/prom-client-15.1.3.tgz#69fa8de93a88bc9783173db5f758dc1c69fa8fc2"
+  integrity sha512-6ZiOBfCywsD4k1BN9IX0uZhF+tJkV8q8llP64G5Hajs4JOeVLPCwpPVcpXy3BwYiUGgyJzsJJQeOIv7+hDSq8g==
+  dependencies:
+    "@opentelemetry/api" "^1.4.0"
+    tdigest "^0.1.1"
+
 promise-breaker@^6.0.0:
   version "6.0.0"
   resolved "https://registry.npmjs.org/promise-breaker/-/promise-breaker-6.0.0.tgz"
@@ -13963,7 +13933,7 @@ schema-utils@^3.1.1:
     ajv "^6.12.5"
     ajv-keywords "^3.5.2"
 
-schema-utils@^4.0.0, schema-utils@^4.0.1, schema-utils@^4.2.0, schema-utils@^4.3.0, schema-utils@^4.3.2, schema-utils@^4.3.3:
+schema-utils@^4.0.0, schema-utils@^4.0.1, schema-utils@^4.2.0, schema-utils@^4.3.0, schema-utils@^4.3.3:
   version "4.3.3"
   resolved "https://registry.npmjs.org/schema-utils/-/schema-utils-4.3.3.tgz"
   integrity sha512-eflK8wEtyOE6+hsaRVPxvUKYCpRgzLqDTb8krvAsRIwOGlHoSgYLgBXoubGgLd2fT41/OUYdb48v4k4WWHQurA==
@@ -14833,7 +14803,7 @@ tailwindcss@^3.0.2:
     resolve "^1.22.8"
     sucrase "^3.35.0"
 
-tapable@^2.1.1, tapable@^2.2.0, tapable@^2.2.1, tapable@^2.3.0:
+tapable@^2.2.0, tapable@^2.2.1, tapable@^2.3.0:
   version "2.3.0"
   resolved "https://registry.npmjs.org/tapable/-/tapable-2.3.0.tgz"
   integrity sha512-g9ljZiwki/LfxmQADO3dEY1CbpmXT5Hm2fJ+QaGKwSXUylMybePR7/67YW7jOrrvjEgL1Fmz5kzyAjWVWLlucg==
@@ -14879,6 +14849,13 @@ tcp-port-used@^1.0.2:
   dependencies:
     debug "4.3.1"
     is2 "^2.0.6"
+
+tdigest@^0.1.1:
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/tdigest/-/tdigest-0.1.2.tgz#96c64bac4ff10746b910b0e23b515794e12faced"
+  integrity sha512-+G0LLgjjo9BZX2MfdvPfH+MKLCrxlXSYec5DaPYP1fe6Iyhf0/fSmJ0bFiZ1F8BT6cGXl2LpltQptzjXKWEkKA==
+  dependencies:
+    bintrees "1.0.2"
 
 terser-webpack-plugin@^5.3.11, terser-webpack-plugin@^5.3.3:
   version "5.3.16"
@@ -15155,15 +15132,6 @@ ts-node@10.9.1:
     v8-compile-cache-lib "^3.0.1"
     yn "3.1.1"
 
-tsconfig-paths-webpack-plugin@4.0.0:
-  version "4.0.0"
-  resolved "https://registry.npmjs.org/tsconfig-paths-webpack-plugin/-/tsconfig-paths-webpack-plugin-4.0.0.tgz"
-  integrity sha512-fw/7265mIWukrSHd0i+wSwx64kYUSAKPfxRDksjKIYTxSAp9W9/xcZVBF4Kl0eqQd5eBpAQ/oQrc5RyM/0c1GQ==
-  dependencies:
-    chalk "^4.1.0"
-    enhanced-resolve "^5.7.0"
-    tsconfig-paths "^4.0.0"
-
 tsconfig-paths-webpack-plugin@4.2.0:
   version "4.2.0"
   resolved "https://registry.npmjs.org/tsconfig-paths-webpack-plugin/-/tsconfig-paths-webpack-plugin-4.2.0.tgz"
@@ -15174,7 +15142,7 @@ tsconfig-paths-webpack-plugin@4.2.0:
     tapable "^2.2.1"
     tsconfig-paths "^4.1.2"
 
-tsconfig-paths@^4.0.0, tsconfig-paths@^4.1.2:
+tsconfig-paths@^4.1.2:
   version "4.2.0"
   resolved "https://registry.npmjs.org/tsconfig-paths/-/tsconfig-paths-4.2.0.tgz"
   integrity sha512-NoZ4roiN7LnbKn9QqE1amc9DJfzvZXxF4xDavcOWt1BPkdx+m+0gJuPM+S0vCe7zTJMYUP0R8pO2XMr+Y8oLIg==
@@ -15351,6 +15319,11 @@ undefsafe@^2.0.5:
   version "2.0.5"
   resolved "https://registry.npmjs.org/undefsafe/-/undefsafe-2.0.5.tgz"
   integrity sha512-WxONCrssBM8TSPRqN5EmsjVrsv4A8X12J4ArBiiayv3DyyG3ZlIg6yysuuSYdZsVz3TKcTg2fd//Ujd4CHV1iA==
+
+undici-types@~6.21.0:
+  version "6.21.0"
+  resolved "https://registry.yarnpkg.com/undici-types/-/undici-types-6.21.0.tgz#691d00af3909be93a7faa13be61b3a5b50ef12cb"
+  integrity sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==
 
 undici-types@~7.16.0:
   version "7.16.0"
@@ -15723,7 +15696,7 @@ walker@^1.0.8:
   dependencies:
     makeerror "1.0.12"
 
-watchpack@2.4.4, watchpack@^2.4.1, watchpack@^2.4.4:
+watchpack@2.4.4, watchpack@^2.4.4:
   version "2.4.4"
   resolved "https://registry.npmjs.org/watchpack/-/watchpack-2.4.4.tgz"
   integrity sha512-c5EGNOiyxxV5qmTtAB7rbiXxi1ooX1pQKMLX/MIabJjRA0SJBQOjKF+KSVfHkr9U1cADPon0mRiVe/riyaiDUA==
@@ -15839,7 +15812,7 @@ webpack-node-externals@^3.0.0:
   resolved "https://registry.npmjs.org/webpack-node-externals/-/webpack-node-externals-3.0.0.tgz"
   integrity sha512-LnL6Z3GGDPht/AigwRh2dvL9PQPFQ8skEpVrWZXLWBYmqcaojHNN0onvHzie6rq7EWKrrBfPYqNEzTJgiwEQDQ==
 
-webpack-sources@^3.0.0, webpack-sources@^3.2.3, webpack-sources@^3.3.3:
+webpack-sources@^3.0.0, webpack-sources@^3.3.3:
   version "3.3.3"
   resolved "https://registry.npmjs.org/webpack-sources/-/webpack-sources-3.3.3.tgz"
   integrity sha512-yd1RBzSGanHkitROoPFd6qsrxt+oFhg/129YzheDGqeustzX0vTZJZsSsQjVQC4yzBQ56K55XU8gaNCtIzOnTg==
@@ -15881,36 +15854,6 @@ webpack@^5.101.3:
     terser-webpack-plugin "^5.3.11"
     watchpack "^2.4.4"
     webpack-sources "^3.3.3"
-
-webpack@~5.99.0:
-  version "5.99.9"
-  resolved "https://registry.npmjs.org/webpack/-/webpack-5.99.9.tgz"
-  integrity sha512-brOPwM3JnmOa+7kd3NsmOUOwbDAj8FT9xDsG3IW0MgbN9yZV7Oi/s/+MNQ/EcSMqw7qfoRyXPoeEWT8zLVdVGg==
-  dependencies:
-    "@types/eslint-scope" "^3.7.7"
-    "@types/estree" "^1.0.6"
-    "@types/json-schema" "^7.0.15"
-    "@webassemblyjs/ast" "^1.14.1"
-    "@webassemblyjs/wasm-edit" "^1.14.1"
-    "@webassemblyjs/wasm-parser" "^1.14.1"
-    acorn "^8.14.0"
-    browserslist "^4.24.0"
-    chrome-trace-event "^1.0.2"
-    enhanced-resolve "^5.17.1"
-    es-module-lexer "^1.2.1"
-    eslint-scope "5.1.1"
-    events "^3.2.0"
-    glob-to-regexp "^0.4.1"
-    graceful-fs "^4.2.11"
-    json-parse-even-better-errors "^2.3.1"
-    loader-runner "^4.2.0"
-    mime-types "^2.1.27"
-    neo-async "^2.6.2"
-    schema-utils "^4.3.2"
-    tapable "^2.1.1"
-    terser-webpack-plugin "^5.3.11"
-    watchpack "^2.4.1"
-    webpack-sources "^3.2.3"
 
 websocket-driver@>=0.5.1, websocket-driver@^0.7.4:
   version "0.7.4"

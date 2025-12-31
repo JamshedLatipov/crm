@@ -1,0 +1,59 @@
+{
+  "name": "contact-service",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/contact-service/src",
+  "projectType": "application",
+  "tags": ["scope:backend", "type:microservice"],
+  "implicitDependencies": ["@crm/contracts"],
+  "targets": {
+    "build": {
+      "executor": "@nx/webpack:webpack",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "target": "node",
+        "compiler": "tsc",
+        "outputPath": "dist/apps/contact-service",
+        "main": "apps/contact-service/src/main.ts",
+        "tsConfig": "apps/contact-service/tsconfig.app.json",
+        "webpackConfig": "apps/contact-service/webpack.config.js",
+        "generatePackageJson": true
+      },
+      "configurations": {
+        "development": {
+          "optimization": false,
+          "sourceMap": true
+        },
+        "production": {
+          "optimization": true,
+          "sourceMap": false
+        }
+      }
+    },
+    "serve": {
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "contact-service:build"
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "contact-service:build:development"
+        },
+        "production": {
+          "buildTarget": "contact-service:build:production"
+        }
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "apps/contact-service/jest.config.ts"
+      }
+    }
+  }
+}

@@ -1,0 +1,92 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+rule_files: []
+
+scrape_configs:
+  # API Gateway
+  - job_name: 'api-gateway'
+    static_configs:
+      - targets: ['api-gateway:3001']
+    metrics_path: '/api/metrics'
+
+  # Identity Service
+  - job_name: 'identity-service'
+    static_configs:
+      - targets: ['identity-service:3010']
+    metrics_path: '/metrics'
+
+  # Contact Service
+  - job_name: 'contact-service'
+    static_configs:
+      - targets: ['contact-service:3011']
+    metrics_path: '/metrics'
+
+  # Lead Service
+  - job_name: 'lead-service'
+    static_configs:
+      - targets: ['lead-service:3012']
+    metrics_path: '/metrics'
+
+  # Deal Service
+  - job_name: 'deal-service'
+    static_configs:
+      - targets: ['deal-service:3013']
+    metrics_path: '/metrics'
+
+  # Task Service
+  - job_name: 'task-service'
+    static_configs:
+      - targets: ['task-service:3014']
+    metrics_path: '/metrics'
+
+  # Notification Service
+  - job_name: 'notification-service'
+    static_configs:
+      - targets: ['notification-service:3015']
+    metrics_path: '/metrics'
+
+  # Telephony Service
+  - job_name: 'telephony-service'
+    static_configs:
+      - targets: ['telephony-service:3016']
+    metrics_path: '/metrics'
+
+  # Analytics Service
+  - job_name: 'analytics-service'
+    static_configs:
+      - targets: ['analytics-service:3017']
+    metrics_path: '/metrics'
+
+  # Campaign Service
+  - job_name: 'campaign-service'
+    static_configs:
+      - targets: ['campaign-service:3018']
+    metrics_path: '/metrics'
+
+  # PostgreSQL
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+
+  # RabbitMQ
+  - job_name: 'rabbitmq'
+    static_configs:
+      - targets: ['rabbitmq:15692']
+    metrics_path: '/metrics'
+
+  # Redis
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+
+  # Node Exporter (Host metrics)
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']

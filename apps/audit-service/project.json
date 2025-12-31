@@ -1,0 +1,59 @@
+{
+  "name": "audit-service",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/audit-service/src",
+  "projectType": "application",
+  "tags": ["scope:backend", "type:microservice"],
+  "implicitDependencies": ["@crm/contracts"],
+  "targets": {
+    "build": {
+      "executor": "@nx/webpack:webpack",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "target": "node",
+        "compiler": "tsc",
+        "outputPath": "dist/apps/audit-service",
+        "main": "apps/audit-service/src/main.ts",
+        "tsConfig": "apps/audit-service/tsconfig.app.json",
+        "webpackConfig": "apps/audit-service/webpack.config.js",
+        "generatePackageJson": true
+      },
+      "configurations": {
+        "development": {
+          "optimization": false,
+          "sourceMap": true
+        },
+        "production": {
+          "optimization": true,
+          "sourceMap": false
+        }
+      }
+    },
+    "serve": {
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "audit-service:build"
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "audit-service:build:development"
+        },
+        "production": {
+          "buildTarget": "audit-service:build:production"
+        }
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "apps/audit-service/jest.config.ts"
+      }
+    }
+  }
+}

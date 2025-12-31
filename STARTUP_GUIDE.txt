@@ -1,0 +1,256 @@
+================================================================================
+                    CRM MONO - ИНСТРУКЦИЯ ПО ЗАПУСКУ
+================================================================================
+
+СОДЕРЖАНИЕ:
+1. Предварительные требования
+2. Быстрый старт (Development)
+3. Запуск микросервисов
+4. Порты сервисов
+5. Проверка работоспособности
+6. Полезные команды
+
+================================================================================
+1. ПРЕДВАРИТЕЛЬНЫЕ ТРЕБОВАНИЯ
+================================================================================
+
+Установите:
+- Node.js 18+ (рекомендуется 20.x)
+- Docker и Docker Compose
+- Yarn или npm
+
+================================================================================
+2. БЫСТРЫЙ СТАРТ (DEVELOPMENT)
+================================================================================
+
+Шаг 1: Установка зависимостей
+-----------------------------
+yarn install
+# или
+npm install
+
+Шаг 2: Запуск инфраструктуры (PostgreSQL, Redis, RabbitMQ, Asterisk, TURN)
+--------------------------------------------------------------------------
+npm run start:services
+# или
+docker-compose up -d postgres redis rabbitmq turn asterisk
+
+Шаг 3: Запуск монолитного бэкенда
+---------------------------------
+npm run start:back
+# или
+npx nx serve back
+
+Шаг 4: Запуск фронтенда
+-----------------------
+npm run start:front
+# или
+npx nx serve front
+
+После запуска:
+- Frontend: http://localhost:4200
+- Backend API: http://localhost:3000
+
+================================================================================
+3. ЗАПУСК МИКРОСЕРВИСОВ
+================================================================================
+
+ВАРИАНТ A: Все через Docker Compose
+-----------------------------------
+docker-compose up -d
+
+ВАРИАНТ B: Локальный запуск отдельных сервисов
+----------------------------------------------
+
+# Сначала запустите инфраструктуру
+docker-compose up -d postgres redis rabbitmq
+
+# Затем запускайте сервисы в отдельных терминалах:
+
+# Identity Service (аутентификация)
+npx nx serve identity-service
+
+# API Gateway
+npx nx serve api-gateway
+
+# Lead Service
+npx nx serve lead-service
+
+# Deal Service
+npx nx serve deal-service
+
+# Contact Service
+npx nx serve contact-service
+
+# Task Service
+npx nx serve task-service
+
+# Notification Service
+npx nx serve notification-service
+
+# Telephony Service
+npx nx serve telephony-service
+
+# Analytics Service
+npx nx serve analytics-service
+
+# Campaign Service
+npx nx serve campaign-service
+
+# Audit Service
+npx nx serve audit-service
+
+================================================================================
+4. ПОРТЫ СЕРВИСОВ
+================================================================================
+
+Инфраструктура:
+---------------
+PostgreSQL          : 5432
+Redis               : 6379
+RabbitMQ            : 5672 (AMQP), 15672 (Management UI)
+Asterisk SIP        : 5060/udp, 5061/tcp
+Asterisk WebSocket  : 8089
+Asterisk AMI        : 5038
+TURN/STUN           : 3478
+
+Приложения:
+-----------
+Frontend (Angular)  : 4200
+Backend (Monolith)  : 3000
+API Gateway         : 3001
+Identity Service    : 3010
+Lead Service        : 3011
+Deal Service        : 3012
+Contact Service     : 3013
+Task Service        : 3014
+Notification Service: 3015
+Telephony Service   : 3016
+Analytics Service   : 3017
+Campaign Service    : 3018
+Audit Service       : 3019
+
+Мониторинг:
+-----------
+Prometheus          : 9090
+Grafana             : 3030
+
+================================================================================
+5. ПРОВЕРКА РАБОТОСПОСОБНОСТИ
+================================================================================
+
+Health Check сервисов:
+----------------------
+# API Gateway
+curl http://localhost:3001/api/health/live
+
+# Identity Service
+curl http://localhost:3010/health
+
+# Lead Service
+curl http://localhost:3011/health
+
+# И так далее для остальных сервисов...
+
+Проверка RabbitMQ:
+------------------
+Откройте http://localhost:15672
+Login: guest
+Password: guest
+
+Проверка подключения к PostgreSQL:
+----------------------------------
+docker exec -it crm_mono-postgres-1 psql -U postgres -d crm -c "SELECT 1"
+
+================================================================================
+6. ПОЛЕЗНЫЕ КОМАНДЫ
+================================================================================
+
+Сборка:
+-------
+npm run build:back          # Сборка бэкенда
+npm run build:front         # Сборка фронтенда
+npx nx build <service-name> # Сборка конкретного сервиса
+
+Тестирование:
+-------------
+npm run test:back           # Тесты бэкенда (Jest)
+npm run test:front          # Тесты фронтенда (Vitest)
+npx nx test <service-name>  # Тесты конкретного сервиса
+
+Линтинг:
+--------
+npx nx lint back
+npx nx lint front
+npx nx lint <service-name>
+
+Docker:
+-------
+docker-compose up -d              # Запуск всех контейнеров
+docker-compose down               # Остановка всех контейнеров
+docker-compose logs -f <service>  # Логи конкретного сервиса
+docker-compose ps                 # Статус контейнеров
+
+Nx:
+---
+npx nx graph                      # Визуализация зависимостей
+npx nx affected:build             # Сборка затронутых проектов
+npx nx affected:test              # Тесты затронутых проектов
+
+================================================================================
+7. ПЕРЕМЕННЫЕ ОКРУЖЕНИЯ
+================================================================================
+
+Основные переменные (можно задать в .env):
+------------------------------------------
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=postgres
+DB_PASSWORD=postgres
+DB_DATABASE=crm
+
+RABBITMQ_URL=amqp://guest:guest@localhost:5672
+
+REDIS_URL=redis://localhost:6379
+
+JWT_SECRET=crm_jwt_secret_key_change_in_production
+JWT_EXPIRES_IN=24h
+
+================================================================================
+8. АРХИТЕКТУРА ВЗАИМОДЕЙСТВИЯ
+================================================================================
+
+                    ┌─────────────────┐
+                    │    Frontend     │
+                    │  (Angular:4200) │
+                    └────────┬────────┘
+                             │
+                    ┌────────▼────────┐
+                    │   API Gateway   │
+                    │     (:3001)     │
+                    └────────┬────────┘
+                             │
+            ┌────────────────┼────────────────┐
+            │                │                │
+   ┌────────▼───────┐ ┌──────▼──────┐ ┌───────▼──────┐
+   │Identity Service│ │Lead Service │ │ Deal Service │
+   │    (:3010)     │ │   (:3011)   │ │   (:3012)    │
+   └────────────────┘ └─────────────┘ └──────────────┘
+            │                │                │
+            └────────────────┼────────────────┘
+                             │
+                    ┌────────▼────────┐
+                    │    RabbitMQ     │
+                    │     (:5672)     │
+                    └────────┬────────┘
+                             │
+            ┌────────────────┼────────────────┐
+            │                │                │
+   ┌────────▼───────┐ ┌──────▼──────┐ ┌───────▼──────┐
+   │  PostgreSQL    │ │    Redis    │ │ Audit Service│
+   │    (:5432)     │ │   (:6379)   │ │   (:3019)    │
+   └────────────────┘ └─────────────┘ └──────────────┘
+
+================================================================================
+                          УСПЕШНОЙ РАБОТЫ!
+================================================================================

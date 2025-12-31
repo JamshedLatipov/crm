@@ -1,0 +1,59 @@
+{
+  "name": "task-service",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/task-service/src",
+  "projectType": "application",
+  "tags": ["scope:backend", "type:microservice"],
+  "implicitDependencies": ["@crm/contracts"],
+  "targets": {
+    "build": {
+      "executor": "@nx/webpack:webpack",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "target": "node",
+        "compiler": "tsc",
+        "outputPath": "dist/apps/task-service",
+        "main": "apps/task-service/src/main.ts",
+        "tsConfig": "apps/task-service/tsconfig.app.json",
+        "webpackConfig": "apps/task-service/webpack.config.js",
+        "generatePackageJson": true
+      },
+      "configurations": {
+        "development": {
+          "optimization": false,
+          "sourceMap": true
+        },
+        "production": {
+          "optimization": true,
+          "sourceMap": false
+        }
+      }
+    },
+    "serve": {
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "task-service:build"
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "task-service:build:development"
+        },
+        "production": {
+          "buildTarget": "task-service:build:production"
+        }
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "apps/task-service/jest.config.ts"
+      }
+    }
+  }
+}
