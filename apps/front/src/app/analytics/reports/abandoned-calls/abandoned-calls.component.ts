@@ -1,13 +1,13 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
-import { MatTableModule } from '@angular/material/table';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration } from 'chart.js';
 import { ReportFiltersComponent } from '../../shared/components/report-filters/report-filters.component';
 import { AnalyticsApiService } from '../../services/analytics-api.service';
 import { CallFilters, AbandonedCalls } from '../../models/analytics.models';
+import { CrmTableComponent, CrmColumn, CrmColumnTemplateDirective } from '../../../shared/components/crm-table/crm-table.component';
 
 @Component({
   selector: 'app-abandoned-calls',
@@ -15,10 +15,11 @@ import { CallFilters, AbandonedCalls } from '../../models/analytics.models';
   imports: [
     CommonModule,
     MatCardModule,
-    MatTableModule,
     MatProgressSpinnerModule,
     BaseChartDirective,
     ReportFiltersComponent,
+    CrmTableComponent,
+    CrmColumnTemplateDirective,
   ],
   templateUrl: './abandoned-calls.component.html',
   styleUrls: ['./abandoned-calls.component.scss'],
@@ -30,15 +31,19 @@ export class AbandonedCallsComponent implements OnInit {
   loading = signal(false);
   error = signal<string | null>(null);
 
-  displayedColumnsQueue: string[] = [
-    'queue',
-    'abandonedCount',
-    'totalCalls',
-    'abandonRate',
-    'avgAbandonTime',
+  columnsQueue: CrmColumn[] = [
+    { key: 'queue', label: 'Очередь' },
+    { key: 'abandonedCount', label: 'Брошено', cell: (row: any) => row.abandonedCount.toString() },
+    { key: 'totalCalls', label: 'Всего звонков', cell: (row: any) => row.totalCalls.toString() },
+    { key: 'abandonRate', label: '% отказа', template: 'abandonRateTemplate' },
+    { key: 'avgAbandonTime', label: 'Ср. время до отказа', template: 'avgAbandonTimeTemplate' },
   ];
 
-  displayedColumnsReasons: string[] = ['reason', 'count', 'percentage'];
+  columnsReasons: CrmColumn[] = [
+    { key: 'reason', label: 'Причина' },
+    { key: 'count', label: 'Количество', cell: (row: any) => row.count.toString() },
+    { key: 'percentage', label: 'Процент', template: 'percentageTemplate' },
+  ];
 
   // Computed signals
   hasData = computed(() => {

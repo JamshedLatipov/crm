@@ -1,7 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
-import { MatTableModule } from '@angular/material/table';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { BaseChartDirective } from 'ng2-charts';
@@ -9,6 +8,7 @@ import { ChartConfiguration } from 'chart.js';
 import { AnalyticsApiService } from '../../services/analytics-api.service';
 import { ReportFiltersComponent } from '../../shared/components/report-filters/report-filters.component';
 import { CallFilters, SlaMetrics } from '../../models/analytics.models';
+import { CrmTableComponent, CrmColumn, CrmColumnTemplateDirective } from '../../../shared/components/crm-table/crm-table.component';
 
 @Component({
   selector: 'app-sla-metrics',
@@ -16,11 +16,12 @@ import { CallFilters, SlaMetrics } from '../../models/analytics.models';
   imports: [
     CommonModule,
     MatCardModule,
-    MatTableModule,
     MatProgressSpinnerModule,
     MatIconModule,
     BaseChartDirective,
     ReportFiltersComponent,
+    CrmTableComponent,
+    CrmColumnTemplateDirective,
   ],
   templateUrl: './sla-metrics.component.html',
   styleUrls: ['./sla-metrics.component.scss'],
@@ -32,7 +33,14 @@ export class SlaMetricsComponent implements OnInit {
   data = signal<SlaMetrics | null>(null);
   error = signal<string | null>(null);
 
-  displayedColumns = ['queue', 'totalCalls', 'compliantCalls', 'violatedCalls', 'complianceRate', 'avgWaitTime'];
+  columns: CrmColumn[] = [
+    { key: 'queue', label: 'Очередь' },
+    { key: 'totalCalls', label: 'Всего звонков', cell: (row: any) => row.totalCalls.toString() },
+    { key: 'compliantCalls', label: 'Соответствует SLA', template: 'compliantTemplate' },
+    { key: 'violatedCalls', label: 'Нарушений', template: 'violatedTemplate' },
+    { key: 'complianceRate', label: 'Соответствие', template: 'complianceRateTemplate' },
+    { key: 'avgWaitTime', label: 'Ср. ожидание', template: 'avgWaitTimeTemplate' },
+  ];
 
   lineChartOptions: ChartConfiguration<'line'>['options'] = {
     responsive: true,

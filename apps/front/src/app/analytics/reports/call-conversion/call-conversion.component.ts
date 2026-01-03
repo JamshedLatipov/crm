@@ -1,13 +1,13 @@
 import { Component, effect, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
-import { MatTableModule } from '@angular/material/table';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration } from 'chart.js';
 import { AnalyticsApiService } from '../../services/analytics-api.service';
 import { ReportFiltersComponent } from '../../shared/components/report-filters/report-filters.component';
 import { CallFilters, CallConversion } from '../../models/analytics.models';
+import { CrmTableComponent, CrmColumn, CrmColumnTemplateDirective } from '../../../shared/components/crm-table/crm-table.component';
 
 @Component({
   selector: 'app-call-conversion',
@@ -15,10 +15,11 @@ import { CallFilters, CallConversion } from '../../models/analytics.models';
   imports: [
     CommonModule,
     MatCardModule,
-    MatTableModule,
     MatProgressSpinnerModule,
     BaseChartDirective,
     ReportFiltersComponent,
+    CrmTableComponent,
+    CrmColumnTemplateDirective,
   ],
   templateUrl: './call-conversion.component.html',
   styleUrl: './call-conversion.component.scss',
@@ -30,9 +31,31 @@ export class CallConversionComponent implements OnInit {
   loading = signal<boolean>(false);
   error = signal<string | null>(null);
 
-  agentColumns = ['agent', 'totalCalls', 'callsWithLeads', 'callsWithDeals', 'leadConversionRate', 'dealConversionRate', 'totalRevenue', 'avgRevenue'];
-  trendColumns = ['date', 'totalCalls', 'callsWithLeads', 'callsWithDeals', 'leadConversionRate', 'dealConversionRate'];
-  dealStageColumns = ['status', 'count', 'totalValue'];
+  agentColumns: CrmColumn[] = [
+    { key: 'agent', label: 'Оператор' },
+    { key: 'totalCalls', label: 'Всего звонков', cell: (row: any) => row.totalCalls.toString() },
+    { key: 'callsWithLeads', label: 'С лидами', cell: (row: any) => row.callsWithLeads.toString() },
+    { key: 'callsWithDeals', label: 'Со сделками', cell: (row: any) => row.callsWithDeals.toString() },
+    { key: 'leadConversionRate', label: 'Конверсия в лиды', template: 'leadConversionTemplate' },
+    { key: 'dealConversionRate', label: 'Конверсия в сделки', template: 'dealConversionTemplate' },
+    { key: 'totalRevenue', label: 'Выручка', template: 'revenueTemplate' },
+    { key: 'avgRevenue', label: 'Ср. выручка', template: 'avgRevenueTemplate' },
+  ];
+
+  trendColumns: CrmColumn[] = [
+    { key: 'date', label: 'Дата' },
+    { key: 'totalCalls', label: 'Звонков', cell: (row: any) => row.totalCalls.toString() },
+    { key: 'callsWithLeads', label: 'С лидами', cell: (row: any) => row.callsWithLeads.toString() },
+    { key: 'callsWithDeals', label: 'Со сделками', cell: (row: any) => row.callsWithDeals.toString() },
+    { key: 'leadConversionRate', label: '% лидов', template: 'leadConversionTemplate' },
+    { key: 'dealConversionRate', label: '% сделок', template: 'dealConversionTemplate' },
+  ];
+
+  dealStageColumns: CrmColumn[] = [
+    { key: 'status', label: 'Статус' },
+    { key: 'count', label: 'Количество', cell: (row: any) => row.count.toString() },
+    { key: 'totalValue', label: 'Сумма', template: 'totalValueTemplate' },
+  ];
 
   agentChartData: ChartConfiguration<'bar'>['data'] | null = null;
   trendChartData: ChartConfiguration<'line'>['data'] | null = null;

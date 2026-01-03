@@ -66,63 +66,36 @@
         <mat-card-title>Статистика по очередям</mat-card-title>
       </mat-card-header>
       <mat-card-content>
-        <table mat-table [dataSource]="data()?.queueStats || []" class="stats-table">
-          <ng-container matColumnDef="queue">
-            <th mat-header-cell *matHeaderCellDef>Очередь</th>
-            <td mat-cell *matCellDef="let row">{{ row.queue }}</td>
-          </ng-container>
+        <crm-table
+          [columns]="columnsQueue"
+          [data]="data()?.queueStats || []"
+          [pageSize]="10"
+          [showPaginator]="true"
+        >
+          <ng-template crmColumnTemplate="answerRateTemplate" let-row>
+            <span [ngClass]="getAnswerRateClass(row.answerRate)">
+              {{ row.answerRate.toFixed(1) }}%
+            </span>
+          </ng-template>
 
-          <ng-container matColumnDef="totalCalls">
-            <th mat-header-cell *matHeaderCellDef>Всего</th>
-            <td mat-cell *matCellDef="let row">{{ row.totalCalls }}</td>
-          </ng-container>
+          <ng-template crmColumnTemplate="avgWaitTimeTemplate" let-row>
+            {{ formatTime(row.avgWaitTime) }}
+          </ng-template>
 
-          <ng-container matColumnDef="answeredCalls">
-            <th mat-header-cell *matHeaderCellDef>Отвечено</th>
-            <td mat-cell *matCellDef="let row">{{ row.answeredCalls }}</td>
-          </ng-container>
+          <ng-template crmColumnTemplate="maxWaitTimeTemplate" let-row>
+            {{ formatTime(row.maxWaitTime) }}
+          </ng-template>
 
-          <ng-container matColumnDef="abandonedCalls">
-            <th mat-header-cell *matHeaderCellDef>Брошено</th>
-            <td mat-cell *matCellDef="let row">{{ row.abandonedCalls }}</td>
-          </ng-container>
+          <ng-template crmColumnTemplate="avgTalkTimeTemplate" let-row>
+            {{ formatTime(row.avgTalkTime) }}
+          </ng-template>
 
-          <ng-container matColumnDef="answerRate">
-            <th mat-header-cell *matHeaderCellDef>% ответов</th>
-            <td mat-cell *matCellDef="let row">
-              <span [ngClass]="getAnswerRateClass(row.answerRate)">
-                {{ row.answerRate.toFixed(1) }}%
-              </span>
-            </td>
-          </ng-container>
-
-          <ng-container matColumnDef="avgWaitTime">
-            <th mat-header-cell *matHeaderCellDef>Ср. ожидание</th>
-            <td mat-cell *matCellDef="let row">{{ formatTime(row.avgWaitTime) }}</td>
-          </ng-container>
-
-          <ng-container matColumnDef="maxWaitTime">
-            <th mat-header-cell *matHeaderCellDef>Макс. ожидание</th>
-            <td mat-cell *matCellDef="let row">{{ formatTime(row.maxWaitTime) }}</td>
-          </ng-container>
-
-          <ng-container matColumnDef="avgTalkTime">
-            <th mat-header-cell *matHeaderCellDef>Ср. разговор</th>
-            <td mat-cell *matCellDef="let row">{{ formatTime(row.avgTalkTime) }}</td>
-          </ng-container>
-
-          <ng-container matColumnDef="serviceLevelCompliance">
-            <th mat-header-cell *matHeaderCellDef>SLA %</th>
-            <td mat-cell *matCellDef="let row">
-              <span [ngClass]="getSlaClass(row.serviceLevelCompliance)">
-                {{ row.serviceLevelCompliance.toFixed(1) }}%
-              </span>
-            </td>
-          </ng-container>
-
-          <tr mat-header-row *matHeaderRowDef="displayedColumnsQueue"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumnsQueue"></tr>
-        </table>
+          <ng-template crmColumnTemplate="slaTemplate" let-row>
+            <span [ngClass]="getSlaClass(row.serviceLevelCompliance)">
+              {{ row.serviceLevelCompliance.toFixed(1) }}%
+            </span>
+          </ng-template>
+        </crm-table>
       </mat-card-content>
     </mat-card>
 
@@ -132,30 +105,16 @@
         <mat-card-title>Топ операторов по очередям</mat-card-title>
       </mat-card-header>
       <mat-card-content>
-        <table mat-table [dataSource]="data()?.topAgents || []" class="agents-table">
-          <ng-container matColumnDef="queue">
-            <th mat-header-cell *matHeaderCellDef>Очередь</th>
-            <td mat-cell *matCellDef="let row">{{ row.queue }}</td>
-          </ng-container>
-
-          <ng-container matColumnDef="agent">
-            <th mat-header-cell *matHeaderCellDef>Оператор</th>
-            <td mat-cell *matCellDef="let row">{{ row.agent }}</td>
-          </ng-container>
-
-          <ng-container matColumnDef="callsHandled">
-            <th mat-header-cell *matHeaderCellDef>Обработано звонков</th>
-            <td mat-cell *matCellDef="let row">{{ row.callsHandled }}</td>
-          </ng-container>
-
-          <ng-container matColumnDef="avgHandleTime">
-            <th mat-header-cell *matHeaderCellDef>Среднее время обработки</th>
-            <td mat-cell *matCellDef="let row">{{ formatTime(row.avgHandleTime) }}</td>
-          </ng-container>
-
-          <tr mat-header-row *matHeaderRowDef="displayedColumnsAgents"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumnsAgents"></tr>
-        </table>
+        <crm-table
+          [columns]="columnsAgents"
+          [data]="data()?.topAgents || []"
+          [pageSize]="10"
+          [showPaginator]="true"
+        >
+          <ng-template crmColumnTemplate="avgHandleTimeTemplate" let-row>
+            {{ formatTime(row.avgHandleTime) }}
+          </ng-template>
+        </crm-table>
       </mat-card-content>
     </mat-card>
   </div>

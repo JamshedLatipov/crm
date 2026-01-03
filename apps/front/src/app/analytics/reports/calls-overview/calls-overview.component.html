@@ -1,123 +1,115 @@
 <div class="calls-overview-container">
-  <mat-card>
-    <mat-card-header>
-      <mat-card-title>
-        <h2>Общая статистика звонков</h2>
-      </mat-card-title>
-    </mat-card-header>
+  <app-report-filters
+    (filtersChange)="onFiltersChange($event)"
+  ></app-report-filters>
 
-    <mat-card-content>
-      <app-report-filters (filtersChange)="onFiltersChange($event)"></app-report-filters>
-
-      <div *ngIf="!loading() && !error() && data()" class="content">
-        <!-- KPI Cards -->
-        <div class="kpi-grid">
-          <div class="kpi-card total">
-            <mat-icon>phone</mat-icon>
-            <div class="kpi-value">{{ data()!.totalCalls }}</div>
-            <div class="kpi-label">Всего звонков</div>
-          </div>
-
-          <div class="kpi-card success">
-            <mat-icon>check_circle</mat-icon>
-            <div class="kpi-value">{{ data()!.answeredCalls }}</div>
-            <div class="kpi-label">Отвечено ({{ getAnswerRate() }}%)</div>
-          </div>
-
-          <div class="kpi-card warning">
-            <mat-icon>phone_missed</mat-icon>
-            <div class="kpi-value">{{ data()!.missedCalls }}</div>
-            <div class="kpi-label">Пропущено</div>
-          </div>
-
-          <div class="kpi-card danger">
-            <mat-icon>phone_disabled</mat-icon>
-            <div class="kpi-value">{{ data()!.abandonedCalls }}</div>
-            <div class="kpi-label">Брошено</div>
-          </div>
-
-          <div class="kpi-card info">
-            <mat-icon>schedule</mat-icon>
-            <div class="kpi-value">{{ formatTime(data()!.avgDuration) }}</div>
-            <div class="kpi-label">Ср. длительность</div>
-          </div>
-
-          <div class="kpi-card info">
-            <mat-icon>timer</mat-icon>
-            <div class="kpi-value">{{ formatTime(data()!.avgWaitTime) }}</div>
-            <div class="kpi-label">Ср. ожидание</div>
-          </div>
-        </div>
-
-        <!-- Charts Grid -->
-        <div class="charts-grid">
-          <mat-card class="chart-card">
-            <mat-card-header>
-              <mat-card-title>Распределение по направлениям</mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
-              <canvas
-                baseChart
-                [type]="'pie'"
-                [data]="getDirectionChartData()!"
-                [options]="pieChartOptions"
-              ></canvas>
-            </mat-card-content>
-          </mat-card>
-
-          <mat-card class="chart-card">
-            <mat-card-header>
-              <mat-card-title>Распределение по статусам</mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
-              <canvas
-                baseChart
-                [type]="'pie'"
-                [data]="getStatusChartData()!"
-                [options]="pieChartOptions"
-              ></canvas>
-            </mat-card-content>
-          </mat-card>
-
-          <mat-card class="chart-card full-width">
-            <mat-card-header>
-              <mat-card-title>Звонки по дням</mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
-              <canvas
-                baseChart
-                [type]="'line'"
-                [data]="getCallsByDayChartData()!"
-                [options]="lineChartOptions"
-              ></canvas>
-            </mat-card-content>
-          </mat-card>
-
-          <mat-card class="chart-card full-width">
-            <mat-card-header>
-              <mat-card-title>Распределение по часам</mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
-              <canvas
-                baseChart
-                [type]="'bar'"
-                [data]="getCallsByHourChartData()!"
-                [options]="barChartOptions"
-              ></canvas>
-            </mat-card-content>
-          </mat-card>
-        </div>
+  <div *ngIf="!loading() && !error() && data()" class="content">
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card total">
+        <mat-icon>phone</mat-icon>
+        <div class="kpi-value">{{ data()!.totalCalls }}</div>
+        <div class="kpi-label">Всего звонков</div>
       </div>
 
-      <div *ngIf="loading()" class="loading-container">
-        <mat-spinner></mat-spinner>
-        <p>Загрузка данных...</p>
+      <div class="kpi-card success">
+        <mat-icon>check_circle</mat-icon>
+        <div class="kpi-value">{{ data()!.answeredCalls }}</div>
+        <div class="kpi-label">Отвечено ({{ getAnswerRate() }}%)</div>
       </div>
 
-      <div *ngIf="error()" class="error-container">
-        <mat-icon color="warn">error</mat-icon>
-        <p>{{ error() }}</p>
+      <div class="kpi-card warning">
+        <mat-icon>phone_missed</mat-icon>
+        <div class="kpi-value">{{ data()!.missedCalls }}</div>
+        <div class="kpi-label">Пропущено</div>
       </div>
-    </mat-card-content>
-  </mat-card>
+
+      <div class="kpi-card danger">
+        <mat-icon>phone_disabled</mat-icon>
+        <div class="kpi-value">{{ data()!.abandonedCalls }}</div>
+        <div class="kpi-label">Брошено</div>
+      </div>
+
+      <div class="kpi-card info">
+        <mat-icon>schedule</mat-icon>
+        <div class="kpi-value">{{ formatTime(data()!.avgDuration) }}</div>
+        <div class="kpi-label">Ср. длительность</div>
+      </div>
+
+      <div class="kpi-card info">
+        <mat-icon>timer</mat-icon>
+        <div class="kpi-value">{{ formatTime(data()!.avgWaitTime) }}</div>
+        <div class="kpi-label">Ср. ожидание</div>
+      </div>
+    </div>
+
+    <!-- Charts Grid -->
+    <div class="charts-grid">
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>Распределение по направлениям</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <canvas
+            baseChart
+            [type]="'pie'"
+            [data]="getDirectionChartData()!"
+            [options]="pieChartOptions"
+          ></canvas>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>Распределение по статусам</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <canvas
+            baseChart
+            [type]="'pie'"
+            [data]="getStatusChartData()!"
+            [options]="pieChartOptions"
+          ></canvas>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="chart-card full-width">
+        <mat-card-header>
+          <mat-card-title>Звонки по дням</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <canvas
+            baseChart
+            [type]="'line'"
+            [data]="getCallsByDayChartData()!"
+            [options]="lineChartOptions"
+          ></canvas>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="chart-card full-width">
+        <mat-card-header>
+          <mat-card-title>Распределение по часам</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <canvas
+            baseChart
+            [type]="'bar'"
+            [data]="getCallsByHourChartData()!"
+            [options]="barChartOptions"
+          ></canvas>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+
+  <div *ngIf="loading()" class="loading-container">
+    <mat-spinner></mat-spinner>
+    <p>Загрузка данных...</p>
+  </div>
+
+  <div *ngIf="error()" class="error-container">
+    <mat-icon color="warn">error</mat-icon>
+    <p>{{ error() }}</p>
+  </div>
 </div>

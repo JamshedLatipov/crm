@@ -1,0 +1,74 @@
+<app-page-layout title="Аналитика и отчеты" icon="analytics">
+  <mat-tab-group animationDuration="300ms" class="analytics-tabs">
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <div class="tab-label">
+          <mat-icon>dashboard</mat-icon>
+          <span class="tab-text">Обзор</span>
+        </div>
+      </ng-template>
+      <app-calls-overview></app-calls-overview>
+    </mat-tab>
+
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <div class="tab-label">
+          <mat-icon>people</mat-icon>
+          <span class="tab-text">Операторы</span>
+        </div>
+      </ng-template>
+      <app-agent-performance></app-agent-performance>
+    </mat-tab>
+
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <div class="tab-label">
+          <mat-icon>queue</mat-icon>
+          <span class="tab-text">Очереди</span>
+        </div>
+      </ng-template>
+      <app-queue-performance></app-queue-performance>
+    </mat-tab>
+
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <div class="tab-label">
+          <mat-icon>verified</mat-icon>
+          <span class="tab-text">SLA</span>
+        </div>
+      </ng-template>
+      <app-sla-metrics></app-sla-metrics>
+    </mat-tab>
+
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <div class="tab-label">
+          <mat-icon>phone_missed</mat-icon>
+          <span class="tab-text">Брошенные</span>
+        </div>
+      </ng-template>
+      <app-abandoned-calls></app-abandoned-calls>
+    </mat-tab>
+
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <div class="tab-label">
+          <mat-icon>phone_forwarded</mat-icon>
+          <span class="tab-text">IVR</span>
+        </div>
+      </ng-template>
+      <app-ivr-analysis></app-ivr-analysis>
+    </mat-tab>
+
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <div class="tab-label">
+          <mat-icon>trending_up</mat-icon>
+          <span class="tab-text">Конверсия</span>
+        </div>
+      </ng-template>
+      <app-call-conversion></app-call-conversion>
+    </mat-tab>
+  </mat-tab-group>
+</app-page-layout>
+

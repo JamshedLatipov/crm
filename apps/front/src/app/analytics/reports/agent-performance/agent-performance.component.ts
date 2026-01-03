@@ -1,7 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
-import { MatTableModule } from '@angular/material/table';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -12,6 +11,7 @@ import {
   AgentPerformance,
   AgentPerformanceResponse,
 } from '../../models/analytics.models';
+import { CrmTableComponent, CrmColumn, CrmColumnTemplateDirective } from '../../../shared/components/crm-table/crm-table.component';
 
 @Component({
   selector: 'app-agent-performance',
@@ -19,11 +19,12 @@ import {
   imports: [
     CommonModule,
     MatCardModule,
-    MatTableModule,
     MatProgressSpinnerModule,
     MatButtonModule,
     MatIconModule,
     ReportFiltersComponent,
+    CrmTableComponent,
+    CrmColumnTemplateDirective,
   ],
   templateUrl: './agent-performance.component.html',
   styleUrls: ['./agent-performance.component.scss'],
@@ -35,14 +36,14 @@ export class AgentPerformanceComponent implements OnInit {
   data = signal<AgentPerformance[]>([]);
   error = signal<string | null>(null);
 
-  displayedColumns = [
-    'agent',
-    'totalCalls',
-    'answeredCalls',
-    'missedCalls',
-    'avgTalkTime',
-    'avgWaitTime',
-    'totalTalkTime',
+  columns: CrmColumn[] = [
+    { key: 'agent', label: 'Оператор' },
+    { key: 'totalCalls', label: 'Всего звонков', cell: (row: AgentPerformance) => row.totalCalls.toString() },
+    { key: 'answeredCalls', label: 'Отвечено', template: 'answeredTemplate' },
+    { key: 'missedCalls', label: 'Пропущено', template: 'missedTemplate' },
+    { key: 'avgTalkTime', label: 'Ср. время разговора', template: 'avgTalkTimeTemplate' },
+    { key: 'avgWaitTime', label: 'Ср. время ожидания', template: 'avgWaitTimeTemplate' },
+    { key: 'totalTalkTime', label: 'Общее время', template: 'totalTalkTimeTemplate' },
   ];
 
   ngOnInit(): void {

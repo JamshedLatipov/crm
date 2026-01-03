@@ -1,13 +1,13 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
-import { MatTableModule } from '@angular/material/table';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration } from 'chart.js';
 import { ReportFiltersComponent } from '../../shared/components/report-filters/report-filters.component';
 import { AnalyticsApiService } from '../../services/analytics-api.service';
 import { CallFilters, IvrAnalysis } from '../../models/analytics.models';
+import { CrmTableComponent, CrmColumn, CrmColumnTemplateDirective } from '../../../shared/components/crm-table/crm-table.component';
 
 @Component({
   selector: 'app-ivr-analysis',
@@ -15,10 +15,11 @@ import { CallFilters, IvrAnalysis } from '../../models/analytics.models';
   imports: [
     CommonModule,
     MatCardModule,
-    MatTableModule,
     MatProgressSpinnerModule,
     BaseChartDirective,
     ReportFiltersComponent,
+    CrmTableComponent,
+    CrmColumnTemplateDirective,
   ],
   templateUrl: './ivr-analysis.component.html',
   styleUrls: ['./ivr-analysis.component.scss'],
@@ -30,9 +31,27 @@ export class IvrAnalysisComponent implements OnInit {
   loading = signal(false);
   error = signal<string | null>(null);
 
-  displayedColumnsPaths = ['path', 'callCount', 'percentage', 'avgTimeInIvr', 'completionRate'];
-  displayedColumnsNodes = ['nodeName', 'visits', 'exitCount', 'exitRate'];
-  displayedColumnsDtmf = ['digit', 'nodeName', 'count', 'percentage'];
+  columnsPaths: CrmColumn[] = [
+    { key: 'path', label: 'Путь' },
+    { key: 'callCount', label: 'Кол-во звонков', cell: (row: any) => row.callCount.toString() },
+    { key: 'percentage', label: '%', template: 'percentageTemplate' },
+    { key: 'avgTimeInIvr', label: 'Ср. время в IVR', template: 'avgTimeTemplate' },
+    { key: 'completionRate', label: 'Завершенность', template: 'completionTemplate' },
+  ];
+
+  columnsNodes: CrmColumn[] = [
+    { key: 'nodeName', label: 'Узел' },
+    { key: 'visits', label: 'Посещений', cell: (row: any) => row.visits.toString() },
+    { key: 'exitCount', label: 'Выходов', cell: (row: any) => row.exitCount.toString() },
+    { key: 'exitRate', label: 'Процент выхода', template: 'exitRateTemplate' },
+  ];
+
+  columnsDtmf: CrmColumn[] = [
+    { key: 'digit', label: 'Цифра' },
+    { key: 'nodeName', label: 'Узел' },
+    { key: 'count', label: 'Кол-во', cell: (row: any) => row.count.toString() },
+    { key: 'percentage', label: '%', template: 'percentageTemplate' },
+  ];
 
   hasData = computed(() => {
     const d = this.data();

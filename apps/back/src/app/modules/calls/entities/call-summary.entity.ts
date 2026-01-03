@@ -83,12 +83,12 @@ export class CallSummary {
   leadId: number;
 
   @Index()
-  @Column({ type: 'int', nullable: true })
-  dealId: number;
+  @Column({ type: 'uuid', nullable: true })
+  dealId: string;
 
   @Index()
-  @Column({ type: 'int', nullable: true })
-  contactId: number;
+  @Column({ type: 'uuid', nullable: true })
+  contactId: string;
 
   @Column({ type: 'text', nullable: true })
   recordingUrl: string;

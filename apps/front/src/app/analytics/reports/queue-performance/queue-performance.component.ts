@@ -1,13 +1,13 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
-import { MatTableModule } from '@angular/material/table';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration } from 'chart.js';
 import { ReportFiltersComponent } from '../../shared/components/report-filters/report-filters.component';
 import { AnalyticsApiService } from '../../services/analytics-api.service';
 import { CallFilters, QueuePerformance } from '../../models/analytics.models';
+import { CrmTableComponent, CrmColumn, CrmColumnTemplateDirective } from '../../../shared/components/crm-table/crm-table.component';
 
 @Component({
   selector: 'app-queue-performance',
@@ -15,10 +15,11 @@ import { CallFilters, QueuePerformance } from '../../models/analytics.models';
   imports: [
     CommonModule,
     MatCardModule,
-    MatTableModule,
     MatProgressSpinnerModule,
     BaseChartDirective,
     ReportFiltersComponent,
+    CrmTableComponent,
+    CrmColumnTemplateDirective,
   ],
   templateUrl: './queue-performance.component.html',
   styleUrls: ['./queue-performance.component.scss'],
@@ -30,19 +31,24 @@ export class QueuePerformanceComponent implements OnInit {
   loading = signal(false);
   error = signal<string | null>(null);
 
-  displayedColumnsQueue: string[] = [
-    'queue',
-    'totalCalls',
-    'answeredCalls',
-    'abandonedCalls',
-    'answerRate',
-    'avgWaitTime',
-    'maxWaitTime',
-    'avgTalkTime',
-    'serviceLevelCompliance',
+  columnsQueue: CrmColumn[] = [
+    { key: 'queue', label: 'Очередь' },
+    { key: 'totalCalls', label: 'Всего', cell: (row: any) => row.totalCalls.toString() },
+    { key: 'answeredCalls', label: 'Отвечено', cell: (row: any) => row.answeredCalls.toString() },
+    { key: 'abandonedCalls', label: 'Брошено', cell: (row: any) => row.abandonedCalls.toString() },
+    { key: 'answerRate', label: '% ответов', template: 'answerRateTemplate' },
+    { key: 'avgWaitTime', label: 'Ср. ожидание', template: 'avgWaitTimeTemplate' },
+    { key: 'maxWaitTime', label: 'Макс. ожидание', template: 'maxWaitTimeTemplate' },
+    { key: 'avgTalkTime', label: 'Ср. разговор', template: 'avgTalkTimeTemplate' },
+    { key: 'serviceLevelCompliance', label: 'SLA %', template: 'slaTemplate' },
   ];
 
-  displayedColumnsAgents: string[] = ['queue', 'agent', 'callsHandled', 'avgHandleTime'];
+  columnsAgents: CrmColumn[] = [
+    { key: 'queue', label: 'Очередь' },
+    { key: 'agent', label: 'Оператор' },
+    { key: 'callsHandled', label: 'Обработано звонков', cell: (row: any) => row.callsHandled.toString() },
+    { key: 'avgHandleTime', label: 'Ср. время обработки', template: 'avgHandleTimeTemplate' },
+  ];
 
   hasData = computed(() => {
     const d = this.data();
