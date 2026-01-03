@@ -116,7 +116,7 @@
     "asterisk-ami-client": "^1.1.5",
     "axios": "^1.6.0",
     "bcryptjs": "^3.0.2",
-    "chart.js": "^4.4.0",
+    "chart.js": "^4.5.1",
     "chartjs-plugin-datalabels": "^2.2.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",

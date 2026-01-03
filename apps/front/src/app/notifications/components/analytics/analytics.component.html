@@ -2,151 +2,202 @@
   title="Аналитика уведомлений"
   subtitle="Подробная статистика по всем рассылкам"
 >
-  <div page-actions>
+  <div page-actions class="analytics-actions">
     <mat-form-field appearance="outline" class="period-select">
       <mat-label>Период</mat-label>
-      <mat-select [(value)]="selectedPeriod">
+      <mat-select [(value)]="selectedPeriod" (selectionChange)="onPeriodChange()">
         <mat-option value="today">Сегодня</mat-option>
         <mat-option value="week">Неделя</mat-option>
         <mat-option value="month">Месяц</mat-option>
-        <mat-option value="custom">Произвольный</mat-option>
+        <mat-option value="quarter">Квартал</mat-option>
+        <mat-option value="year">Год</mat-option>
+        <mat-option value="all">Всё время</mat-option>
       </mat-select>
     </mat-form-field>
-    <button mat-raised-button color="primary">
+    
+    <button 
+      mat-icon-button 
+      (click)="loadAnalytics()" 
+      matTooltip="Обновить данные"
+      [disabled]="loading()"
+    >
+      <mat-icon [class.spinning]="loading()">refresh</mat-icon>
+    </button>
+    
+    <button mat-raised-button color="primary" [disabled]="loading()">
       <mat-icon>download</mat-icon>
-      Экспорт отчета
+      Экспорт
     </button>
   </div>
 
-  <!-- Общая статистика -->
-  <div class="stats-grid">
-    <mat-card class="stat-card">
-      <div class="stat-icon primary">
-        <mat-icon>send</mat-icon>
-      </div>
-      <div class="stat-content">
-        <div class="stat-value">{{ stats().total | number }}</div>
-        <div class="stat-label">Всего отправлено</div>
-      </div>
+  @if (loading()) {
+    <div class="loading-container">
+      <mat-spinner diameter="50"></mat-spinner>
+      <p>Загрузка данных...</p>
+    </div>
+  } @else if (error()) {
+    <mat-card class="error-card">
+      <mat-icon color="warn">error</mat-icon>
+      <p>{{ error() }}</p>
+      <button mat-raised-button color="primary" (click)="loadAnalytics()">
+        Повторить
+      </button>
     </mat-card>
+  } @else {
+    <!-- Общая статистика -->
+    <div class="stats-grid">
+      <mat-card class="stat-card">
+        <div class="stat-icon primary">
+          <mat-icon>send</mat-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats().total | number }}</div>
+          <div class="stat-label">Всего отправлено</div>
+        </div>
+      </mat-card>
 
-    <mat-card class="stat-card">
-      <div class="stat-icon success">
-        <mat-icon>check_circle</mat-icon>
-      </div>
-      <div class="stat-content">
-        <div class="stat-value">{{ stats().delivered | number }}</div>
-        <div class="stat-label">Доставлено</div>
-      </div>
-    </mat-card>
+      <mat-card class="stat-card">
+        <div class="stat-icon success">
+          <mat-icon>check_circle</mat-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats().delivered | number }}</div>
+          <div class="stat-label">Доставлено</div>
+        </div>
+      </mat-card>
 
-    <mat-card class="stat-card">
-      <div class="stat-icon warning">
-        <mat-icon>error</mat-icon>
-      </div>
-      <div class="stat-content">
-        <div class="stat-value">{{ stats().failed | number }}</div>
-        <div class="stat-label">Ошибки</div>
-      </div>
-    </mat-card>
+      <mat-card class="stat-card">
+        <div class="stat-icon warning">
+          <mat-icon>error</mat-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats().failed | number }}</div>
+          <div class="stat-label">Ошибки</div>
+        </div>
+      </mat-card>
 
-    <mat-card class="stat-card">
-      <div class="stat-icon accent">
-        <mat-icon>trending_up</mat-icon>
-      </div>
-      <div class="stat-content">
-        <div class="stat-value">{{ stats().deliveryRate }}%</div>
-        <div class="stat-label">Доставляемость</div>
-      </div>
-    </mat-card>
-  </div>
+      <mat-card class="stat-card">
+        <div class="stat-icon accent">
+          <mat-icon>trending_up</mat-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats().deliveryRate | number: '1.1-1' }}%</div>
+          <div class="stat-label">Доставляемость</div>
+        </div>
+      </mat-card>
+    </div>
 
-  <!-- Статистика по каналам -->
-  <mat-card class="channels-card">
-    <mat-card-header>
-      <mat-card-title>
-        <mat-icon>hub</mat-icon>
-        Статистика по каналам
-      </mat-card-title>
-    </mat-card-header>
-    <mat-card-content>
-      <div class="channels-grid">
-        @for (channel of channelStats(); track channel.name) {
-          <div class="channel-box">
-            <div class="channel-header">
-              <h3>{{ channel.name }}</h3>
-              <span class="channel-rate" [class.high]="channel.deliveryRate > 95">
-                {{ channel.deliveryRate }}%
-              </span>
-            </div>
-            <div class="channel-metrics">
-              <div class="metric-item">
-                <span class="metric-label">Отправлено</span>
-                <span class="metric-value">{{ channel.sent | number }}</span>
+    <!-- Статистика по каналам -->
+    <mat-card class="channels-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>hub</mat-icon>
+          Статистика по каналам
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        @if (channelStats().length === 0) {
+          <p class="no-data">Нет данных по каналам за выбранный период</p>
+        } @else {
+          <div class="channels-grid">
+            @for (channel of channelStats(); track channel.name) {
+              <div class="channel-box" [class.no-data]="channel.sent === 0">
+                <div class="channel-header">
+                  <div class="channel-title">
+                    @if (channel.name === 'SMS') {
+                      <mat-icon class="channel-icon sms">sms</mat-icon>
+                    } @else if (channel.name === 'Email') {
+                      <mat-icon class="channel-icon email">email</mat-icon>
+                    } @else {
+                      <mat-icon class="channel-icon">notifications</mat-icon>
+                    }
+                    <h3>{{ channel.name }}</h3>
+                  </div>
+                  <span class="channel-rate" [class.high]="channel.deliveryRate > 95" [class.zero]="channel.sent === 0">
+                    {{ channel.deliveryRate | number: '1.1-1' }}%
+                  </span>
+                </div>
+                <div class="channel-metrics">
+                  <div class="metric-item">
+                    <span class="metric-label">Отправлено</span>
+                    <span class="metric-value">{{ channel.sent | number }}</span>
+                  </div>
+                  <div class="metric-item">
+                    <span class="metric-label">Доставлено</span>
+                    <span class="metric-value success">{{ channel.delivered | number }}</span>
+                  </div>
+                  <div class="metric-item">
+                    <span class="metric-label">Ошибки</span>
+                    <span class="metric-value error">{{ channel.failed | number }}</span>
+                  </div>
+                </div>
+                @if (channel.sent === 0) {
+                  <div class="no-data-overlay">
+                    <small>Нет данных за выбранный период</small>
+                  </div>
+                }
               </div>
-              <div class="metric-item">
-                <span class="metric-label">Доставлено</span>
-                <span class="metric-value success">{{ channel.delivered | number }}</span>
-              </div>
-              <div class="metric-item">
-                <span class="metric-label">Ошибки</span>
-                <span class="metric-value error">{{ channel.failed | number }}</span>
-              </div>
-            </div>
+            }
           </div>
         }
-      </div>
-    </mat-card-content>
-  </mat-card>
+      </mat-card-content>
+    </mat-card>
 
-  <!-- График (заглушка) -->
-  <mat-card class="chart-card">
-    <mat-card-header>
-      <mat-card-title>
-        <mat-icon>show_chart</mat-icon>
-        График отправок за период
-      </mat-card-title>
-    </mat-card-header>
-    <mat-card-content>
-      <div class="chart-placeholder">
-        <mat-icon>bar_chart</mat-icon>
-        <p>График будет добавлен позже</p>
-        <small>Интеграция с Chart.js, ngx-charts или Apache ECharts</small>
-      </div>
-    </mat-card-content>
-  </mat-card>
+    <!-- График отправок -->
+    <mat-card class="chart-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>show_chart</mat-icon>
+          График отправок за период
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="chart-container">
+          <canvas baseChart
+            [data]="lineChartData"
+            [options]="lineChartOptions"
+            type="line">
+          </canvas>
+        </div>
+      </mat-card-content>
+    </mat-card>
 
-  <!-- Топ кампаний -->
-  <mat-card class="campaigns-card">
-    <mat-card-header>
-      <mat-card-title>
-        <mat-icon>emoji_events</mat-icon>
-        Топ кампаний по доставляемости
-      </mat-card-title>
-    </mat-card-header>
-    <mat-card-content>
-      <div class="campaigns-list">
-        @for (campaign of topCampaigns(); track campaign.id; let i = $index) {
-          <div class="campaign-row">
-            <div class="campaign-rank">{{ i + 1 }}</div>
-            <div class="campaign-info">
-              <div class="campaign-name">{{ campaign.name }}</div>
-              <div class="campaign-stats">
-                {{ campaign.sent | number }} отправлено · {{ campaign.deliveryRate }}% доставлено
+    <!-- Топ кампаний -->
+    <mat-card class="campaigns-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>emoji_events</mat-icon>
+          Топ кампаний по доставляемости
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        @if (topCampaigns().length === 0) {
+          <p class="no-data">Нет данных по кампаниям за выбранный период</p>
+        } @else {
+          <div class="campaigns-list">
+            @for (campaign of topCampaigns(); track campaign.id; let i = $index) {
+              <div class="campaign-row">
+                <div class="campaign-rank">{{ i + 1 }}</div>
+                <div class="campaign-info">
+                  <div class="campaign-name">{{ campaign.name }}</div>
+                  <div class="campaign-stats">
+                    {{ campaign.sent | number }} отправлено · {{ campaign.deliveryRate | number: '1.1-1' }}% доставлено
+                  </div>
+                </div>
+                <div class="campaign-badge">
+                  @if (i === 0) {
+                    <mat-icon class="gold">emoji_events</mat-icon>
+                  } @else if (i === 1) {
+                    <mat-icon class="silver">emoji_events</mat-icon>
+                  } @else if (i === 2) {
+                    <mat-icon class="bronze">emoji_events</mat-icon>
+                  }
+                </div>
               </div>
-            </div>
-            <div class="campaign-badge">
-              @if (i === 0) {
-                <mat-icon class="gold">emoji_events</mat-icon>
-              } @else if (i === 1) {
-                <mat-icon class="silver">emoji_events</mat-icon>
-              } @else if (i === 2) {
-                <mat-icon class="bronze">emoji_events</mat-icon>
-              }
-            </div>
+            }
           </div>
         }
-      </div>
-    </mat-card-content>
-  </mat-card>
+      </mat-card-content>
+    </mat-card>
+  }
 </app-page-layout>

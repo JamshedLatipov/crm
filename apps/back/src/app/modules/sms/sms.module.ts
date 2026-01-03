@@ -10,6 +10,7 @@ import { SmsMessage } from './entities/sms-message.entity';
 import { SmsSegment } from './entities/sms-segment.entity';
 import { SmsAnalytics } from './entities/sms-analytics.entity';
 import { EmailTemplate } from './entities/email-template.entity';
+import { EmailMessage } from './entities/email-message.entity';
 import { NotificationCampaign } from './entities/notification-campaign.entity';
 import { Contact } from '../contacts/contact.entity';
 import { Lead } from '../leads/lead.entity';
@@ -42,6 +43,7 @@ import { NotificationController } from './controllers/notification.controller';
       SmsSegment,
       SmsAnalytics,
       EmailTemplate,
+      EmailMessage,
       NotificationCampaign,
       Contact,
       Lead,

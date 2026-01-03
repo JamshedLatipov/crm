@@ -127,6 +127,11 @@ export class NotificationService {
       to: payload.recipient,
       subject: payload.subject || 'Notification',
       html,
+      campaignId: payload.metadata?.campaignId,
+      contactId: payload.metadata?.contactId,
+      leadId: payload.metadata?.leadId,
+      recipientName: payload.metadata?.recipientName,
+      metadata: payload.metadata,
     });
 
     return {
@@ -136,6 +141,7 @@ export class NotificationService {
       error: result.error,
       details: {
         rejectedRecipients: result.rejectedRecipients,
+        emailMessageId: result.emailMessageId,
       },
     };
   }

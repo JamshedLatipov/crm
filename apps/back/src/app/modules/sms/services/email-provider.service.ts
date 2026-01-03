@@ -1,14 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import * as nodemailer from 'nodemailer';
 import { Transporter } from 'nodemailer';
 import Mail from 'nodemailer/lib/mailer';
+import { EmailMessage, EmailStatus } from '../entities/email-message.entity';
 
 export interface SendEmailResult {
   success: boolean;
   messageId?: string;
   error?: string;
   rejectedRecipients?: string[];
+  emailMessageId?: string; // ID записи в базе данных
 }
 
 export interface EmailOptions {
@@ -25,6 +29,12 @@ export interface EmailOptions {
     content?: string | Buffer;
     path?: string;
   }>;
+  // Дополнительные поля для сохранения в БД
+  campaignId?: string;
+  contactId?: string;
+  leadId?: string;
+  recipientName?: string;
+  metadata?: Record<string, any>;
 }
 
 @Injectable()
@@ -33,7 +43,11 @@ export class EmailProviderService {
   private transporter: Transporter | null = null;
   private readonly isEnabled: boolean;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    @InjectRepository(EmailMessage)
+    private emailMessageRepository: Repository<EmailMessage>
+  ) {
     this.isEnabled = this.configService.get<boolean>('FEATURE_EMAIL_ENABLED', false);
     
     if (this.isEnabled) {
@@ -96,11 +110,46 @@ export class EmailProviderService {
    * Отправка email
    */
   async sendEmail(options: EmailOptions): Promise<SendEmailResult> {
+    // Получаем email адрес получателя
+    const recipientEmail = Array.isArray(options.to) ? options.to[0] : options.to;
+
+    // Создаем запись в БД со статусом PENDING
+    const emailMessage = this.emailMessageRepository.create({
+      email: recipientEmail,
+      recipientName: options.recipientName,
+      subject: options.subject,
+      htmlContent: options.html || '',
+      textContent: options.text || '',
+      status: EmailStatus.PENDING,
+      campaign: options.campaignId ? ({ id: options.campaignId } as any) : null,
+      contact: options.contactId ? ({ id: options.contactId } as any) : null,
+      lead: options.leadId ? ({ id: options.leadId } as any) : null,
+      metadata: options.metadata || {},
+      tracking: {
+        opens: 0,
+        clicks: 0,
+        bounces: 0,
+      },
+    });
+
+    await this.emailMessageRepository.save(emailMessage);
+    
     if (!this.isEnabled || !this.transporter) {
       this.logger.warn('Email provider is not enabled or not configured');
+      
+      // Обновляем статус на FAILED
+      emailMessage.status = EmailStatus.FAILED;
+      emailMessage.failedAt = new Date();
+      emailMessage.metadata = {
+        ...emailMessage.metadata,
+        error: 'Email provider is not enabled or not configured',
+      };
+      await this.emailMessageRepository.save(emailMessage);
+      
       return {
         success: false,
         error: 'Email provider is not enabled or not configured',
+        emailMessageId: emailMessage.id,
       };
     }
 
@@ -124,20 +173,49 @@ export class EmailProviderService {
 
       this.logger.log(`Sending email to ${mailOptions.to}`);
 
+      // Обновляем статус на SENDING
+      emailMessage.status = EmailStatus.SENDING;
+      emailMessage.queuedAt = new Date();
+      await this.emailMessageRepository.save(emailMessage);
+
       const info = await this.transporter.sendMail(mailOptions);
 
       this.logger.log(`Email sent successfully: ${info.messageId}`);
+
+      // Обновляем статус на SENT
+      emailMessage.status = EmailStatus.SENT;
+      emailMessage.sentAt = new Date();
+      emailMessage.metadata = {
+        ...emailMessage.metadata,
+        messageId: info.messageId,
+        accepted: info.accepted,
+        rejected: info.rejected,
+      };
+      await this.emailMessageRepository.save(emailMessage);
 
       return {
         success: true,
         messageId: info.messageId,
         rejectedRecipients: info.rejected as string[],
+        emailMessageId: emailMessage.id,
       };
     } catch (error) {
       this.logger.error(`Failed to send email: ${error.message}`, error.stack);
+      
+      // Обновляем статус на FAILED
+      emailMessage.status = EmailStatus.FAILED;
+      emailMessage.failedAt = new Date();
+      emailMessage.metadata = {
+        ...emailMessage.metadata,
+        error: error.message,
+        stack: error.stack,
+      };
+      await this.emailMessageRepository.save(emailMessage);
+      
       return {
         success: false,
         error: error.message,
+        emailMessageId: emailMessage.id,
       };
     }
   }

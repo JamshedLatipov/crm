@@ -236,19 +236,6 @@ export interface ChannelStat {
   clickRate?: number;
 }
 
-// Analytics
-export interface DashboardStats {
-  totalSent: number;
-  totalDelivered: number;
-  totalFailed: number;
-  totalCost: number;
-  deliveryRate: number;
-  avgDeliveryTime: number;
-  activeCampaigns: number;
-  activeSegments: number;
-  channelStats: ChannelStat[];
-}
-
 export interface CampaignPerformance {
   campaignId: string;
   campaignName: string;
@@ -321,6 +308,30 @@ export interface HealthCheckResponse {
   sms: ChannelHealth;
   email: ChannelHealth;
   webhook: ChannelHealth;
+}
+
+// Analytics
+export interface DashboardStats {
+  total: number;
+  delivered: number;
+  failed: number;
+  pending: number;
+  deliveryRate: number;
+}
+
+export interface ChannelStats {
+  name: string;
+  sent: number;
+  delivered: number;
+  failed: number;
+  deliveryRate: number;
+}
+
+export interface CampaignStats {
+  id: string;
+  name: string;
+  sent: number;
+  deliveryRate: number;
 }
 
 // Filter and Sort

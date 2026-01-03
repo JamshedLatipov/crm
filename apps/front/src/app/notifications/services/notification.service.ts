@@ -8,6 +8,9 @@ import {
   MultiChannelResult,
   HealthCheckResponse,
   ChannelStat,
+  DashboardStats,
+  ChannelStats,
+  CampaignStats,
 } from '../models/notification.models';
 import { environment } from '@crm/front/environments/environment';
 
@@ -51,5 +54,60 @@ export class NotificationService {
    */
   getStats(): Observable<{ [key: string]: ChannelStat }> {
     return this.http.get<{ [key: string]: ChannelStat }>(`${this.apiUrl}/stats`);
+  }
+
+  /**
+   * Получить общую статистику панели управления
+   */
+  getDashboardStats(startDate?: string, endDate?: string): Observable<DashboardStats> {
+    let params = new HttpParams();
+    if (startDate) params = params.set('startDate', startDate);
+    if (endDate) params = params.set('endDate', endDate);
+    
+    return this.http.get<DashboardStats>(`${this.apiUrl}/analytics/dashboard`, { params });
+  }
+
+  /**
+   * Получить статистику по каналам доставки
+   */
+  getChannelStats(startDate?: string, endDate?: string): Observable<ChannelStats[]> {
+    let params = new HttpParams();
+    if (startDate) params = params.set('startDate', startDate);
+    if (endDate) params = params.set('endDate', endDate);
+    
+    return this.http.get<ChannelStats[]>(`${this.apiUrl}/analytics/channels`, { params });
+  }
+
+  /**
+   * Получить топ кампаний
+   */
+  getTopCampaigns(limit?: number, startDate?: string, endDate?: string): Observable<CampaignStats[]> {
+    let params = new HttpParams();
+    if (limit) params = params.set('limit', limit.toString());
+    if (startDate) params = params.set('startDate', startDate);
+    if (endDate) params = params.set('endDate', endDate);
+    
+    return this.http.get<CampaignStats[]>(`${this.apiUrl}/analytics/campaigns`, { params });
+  }
+
+  /**
+   * Получить статистику по дням
+   */
+  getStatsByDay(startDate: string, endDate: string): Observable<Array<{
+    date: string;
+    total: number;
+    delivered: number;
+    failed: number;
+  }>> {
+    let params = new HttpParams();
+    params = params.set('startDate', startDate);
+    params = params.set('endDate', endDate);
+    
+    return this.http.get<Array<{
+      date: string;
+      total: number;
+      delivered: number;
+      failed: number;
+    }>>(`${this.apiUrl}/analytics/by-day`, { params });
   }
 }
