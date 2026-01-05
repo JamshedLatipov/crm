@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatIconModule } from '@angular/material/icon';
-import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.component';
+import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.component';
 import { AgentPerformanceComponent } from '../../reports/agent-performance/agent-performance.component';
 import { CallsOverviewComponent } from '../../reports/calls-overview/calls-overview.component';
 import { SlaMetricsComponent } from '../../reports/sla-metrics/sla-metrics.component';

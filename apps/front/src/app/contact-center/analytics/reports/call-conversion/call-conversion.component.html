@@ -7,44 +7,44 @@
     <div class="kpi-grid">
       <mat-card class="kpi-card">
         <mat-card-content>
-          <div class="kpi-label">Total Calls</div>
+          <div class="kpi-label">Всего звонков</div>
           <div class="kpi-value">{{ conversion.totalCalls }}</div>
         </mat-card-content>
       </mat-card>
 
       <mat-card class="kpi-card">
         <mat-card-content>
-          <div class="kpi-label">Lead Conversion Rate</div>
+          <div class="kpi-label">Конверсия в лиды</div>
           <div class="kpi-value">{{ conversion.leadConversionRate.toFixed(1) }}%</div>
-          <div class="kpi-detail">{{ conversion.callsWithLeads }} calls</div>
+          <div class="kpi-detail">{{ conversion.callsWithLeads }} звонков</div>
         </mat-card-content>
       </mat-card>
 
       <mat-card class="kpi-card">
         <mat-card-content>
-          <div class="kpi-label">Deal Conversion Rate</div>
+          <div class="kpi-label">Конверсия в сделки</div>
           <div class="kpi-value">{{ conversion.dealConversionRate.toFixed(1) }}%</div>
-          <div class="kpi-detail">{{ conversion.callsWithDeals }} deals</div>
+          <div class="kpi-detail">{{ conversion.callsWithDeals }} сделок</div>
         </mat-card-content>
       </mat-card>
 
       <mat-card class="kpi-card">
         <mat-card-content>
-          <div class="kpi-label">Total Revenue</div>
+          <div class="kpi-label">Общая выручка</div>
           <div class="kpi-value">{{ formatCurrency(conversion.totalRevenue) }}</div>
         </mat-card-content>
       </mat-card>
 
       <mat-card class="kpi-card">
         <mat-card-content>
-          <div class="kpi-label">Average Revenue per Deal</div>
+          <div class="kpi-label">Средняя выручка на сделку</div>
           <div class="kpi-value">{{ formatCurrency(conversion.avgRevenue) }}</div>
         </mat-card-content>
       </mat-card>
 
       <mat-card class="kpi-card">
         <mat-card-content>
-          <div class="kpi-label">Revenue per Call (ROI)</div>
+          <div class="kpi-label">Выручка на звонок (ROI)</div>
           <div class="kpi-value">{{ formatCurrency(conversion.revenuePerCall) }}</div>
         </mat-card-content>
       </mat-card>
@@ -54,7 +54,7 @@
     <div class="charts-row">
       <mat-card class="chart-card">
         <mat-card-header>
-          <mat-card-title>Agent Performance with Revenue</mat-card-title>
+          <mat-card-title>Производительность операторов с выручкой</mat-card-title>
         </mat-card-header>
         <mat-card-content>
           <div class="chart-container">
@@ -72,7 +72,7 @@
 
       <mat-card class="chart-card">
         <mat-card-header>
-          <mat-card-title>Conversion Trend</mat-card-title>
+          <mat-card-title>Тренд конверсии</mat-card-title>
         </mat-card-header>
         <mat-card-content>
           <div class="chart-container">
@@ -93,7 +93,7 @@
     @if (conversion.dealStages.length > 0) {
       <mat-card class="chart-card">
         <mat-card-header>
-          <mat-card-title>Deal Stages Distribution</mat-card-title>
+          <mat-card-title>Распределение по стадиям сделок</mat-card-title>
         </mat-card-header>
         <mat-card-content>
           <div class="chart-container-small">
@@ -113,7 +113,7 @@
     <!-- Agent Details Table -->
     <mat-card class="table-card">
       <mat-card-header>
-        <mat-card-title>Agent Conversion Details</mat-card-title>
+        <mat-card-title>Детали конверсии по операторам</mat-card-title>
       </mat-card-header>
       <mat-card-content>
         <crm-table
@@ -144,7 +144,7 @@
     <!-- Trend Details Table -->
     <mat-card class="table-card">
       <mat-card-header>
-        <mat-card-title>Conversion Trend Details (Last 30 Days)</mat-card-title>
+        <mat-card-title>Тренд конверсии (последние 30 дней)</mat-card-title>
       </mat-card-header>
       <mat-card-content>
         <crm-table
@@ -168,7 +168,7 @@
     @if (conversion.dealStages.length > 0) {
       <mat-card class="table-card">
         <mat-card-header>
-          <mat-card-title>Deal Stages Breakdown</mat-card-title>
+          <mat-card-title>Разбивка по стадиям сделок</mat-card-title>
         </mat-card-header>
         <mat-card-content>
           <crm-table

@@ -11,7 +11,7 @@ import {
   AgentPerformance,
   AgentPerformanceResponse,
 } from '../../models/analytics.models';
-import { CrmTableComponent, CrmColumn, CrmColumnTemplateDirective } from '../../../shared/components/crm-table/crm-table.component';
+import { CrmTableComponent, CrmColumn, CrmColumnTemplateDirective } from '../../../../shared/components/crm-table/crm-table.component';
 
 @Component({
   selector: 'app-agent-performance',

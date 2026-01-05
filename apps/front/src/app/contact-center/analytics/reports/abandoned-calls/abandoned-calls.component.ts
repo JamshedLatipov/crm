@@ -7,7 +7,7 @@ import { ChartConfiguration } from 'chart.js';
 import { ReportFiltersComponent } from '../../shared/components/report-filters/report-filters.component';
 import { AnalyticsApiService } from '../../services/analytics-api.service';
 import { CallFilters, AbandonedCalls } from '../../models/analytics.models';
-import { CrmTableComponent, CrmColumn, CrmColumnTemplateDirective } from '../../../shared/components/crm-table/crm-table.component';
+import { CrmTableComponent, CrmColumn, CrmColumnTemplateDirective } from '../../../../shared/components/crm-table/crm-table.component';
 
 @Component({
   selector: 'app-abandoned-calls',

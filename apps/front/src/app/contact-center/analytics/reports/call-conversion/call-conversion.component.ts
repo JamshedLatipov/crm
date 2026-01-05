@@ -7,7 +7,7 @@ import { ChartConfiguration } from 'chart.js';
 import { AnalyticsApiService } from '../../services/analytics-api.service';
 import { ReportFiltersComponent } from '../../shared/components/report-filters/report-filters.component';
 import { CallFilters, CallConversion } from '../../models/analytics.models';
-import { CrmTableComponent, CrmColumn, CrmColumnTemplateDirective } from '../../../shared/components/crm-table/crm-table.component';
+import { CrmTableComponent, CrmColumn, CrmColumnTemplateDirective } from '../../../../shared/components/crm-table/crm-table.component';
 
 @Component({
   selector: 'app-call-conversion',
@@ -66,14 +66,14 @@ export class CallConversionComponent implements OnInit {
     maintainAspectRatio: false,
     plugins: {
       legend: { display: true },
-      title: { display: true, text: 'Agent Performance with Revenue' },
+      title: { display: true, text: 'Производительность операторов с выручкой' },
     },
     scales: {
-      y: { beginAtZero: true, title: { display: true, text: 'Count' } },
+      y: { beginAtZero: true, title: { display: true, text: 'Количество' } },
       y1: { 
         beginAtZero: true, 
         position: 'right', 
-        title: { display: true, text: 'Revenue (₽)' },
+        title: { display: true, text: 'Выручка (₽)' },
         grid: { drawOnChartArea: false }
       }
     }
@@ -84,10 +84,10 @@ export class CallConversionComponent implements OnInit {
     maintainAspectRatio: false,
     plugins: {
       legend: { display: true },
-      title: { display: true, text: 'Conversion Trend Over Time' },
+      title: { display: true, text: 'Тренд конверсии во времени' },
     },
     scales: {
-      y: { beginAtZero: true, title: { display: true, text: 'Conversion Rate (%)' } },
+      y: { beginAtZero: true, title: { display: true, text: 'Процент конверсии (%)' } },
     }
   };
 
@@ -96,7 +96,7 @@ export class CallConversionComponent implements OnInit {
     maintainAspectRatio: false,
     plugins: {
       legend: { display: true, position: 'right' },
-      title: { display: true, text: 'Deal Stages Distribution' },
+      title: { display: true, text: 'Распределение по стадиям сделок' },
     },
   };
 

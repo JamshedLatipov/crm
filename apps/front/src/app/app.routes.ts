@@ -67,8 +67,11 @@ export const appRoutes: Route[] = [
             { path: 'ivr', component: IvrAdminComponent },
             { path: 'scripts', component: CallScriptsManagerComponent },
             { path: 'scripts/categories', component: CallScriptCategoriesListPageComponent },
-            { path: 'scripts/view/:id', component: CallScriptPreviewPageComponent }
-            // contact-center specific routes (monitoring, calls, ivr, scripts)
+            { path: 'scripts/view/:id', component: CallScriptPreviewPageComponent },
+            {
+                path: 'analytics',
+                loadChildren: () => import('./contact-center/analytics/analytics.routes').then(m => m.analyticsRoutes)
+            }
         ]
     },
     { path: 'calls', redirectTo: 'softphone' }, // Redirect calls to softphone
@@ -118,12 +121,6 @@ export const appRoutes: Route[] = [
     { path: 'promo-companies', component: PromoCompaniesComponent, canActivate: [authGuard] },
     { path: 'integrations', component: IntegrationsComponent, canActivate: [authGuard] },
     { path: 'client-info', component: ClientInfoPageComponent, canActivate: [authGuard] },
-    // Analytics routes
-    {
-        path: 'analytics',
-        canActivate: [authGuard],
-        loadChildren: () => import('./analytics/analytics.routes').then(m => m.analyticsRoutes)
-    },
     // Forecasting routes
     {
         path: 'forecasting',
