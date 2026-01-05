@@ -1,9 +1,14 @@
 <div class="analytics-modal">
   <div class="modal-header">
-    <h2 mat-dialog-title>
-      <mat-icon>analytics</mat-icon>
-      Аналитика воронки продаж
-    </h2>
+    <div class="header-content">
+      <div class="header-icon-wrapper">
+        <mat-icon class="header-icon">analytics</mat-icon>
+      </div>
+      <div class="header-text">
+        <h2 mat-dialog-title>Аналитика воронки продаж</h2>
+        <p class="header-subtitle">Подробный анализ эффективности</p>
+      </div>
+    </div>
     <button mat-icon-button [mat-dialog-close]="false" class="close-button">
       <mat-icon>close</mat-icon>
     </button>

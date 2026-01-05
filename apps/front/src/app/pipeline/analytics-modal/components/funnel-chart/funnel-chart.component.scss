@@ -1,6 +1,80 @@
-.funnel-chart { padding: 20px; background: #f9fafb; border-radius: 12px; border: 1px solid #e5e7eb; }
-.funnel-canvas-wrapper { position: relative; height: 400px; margin-bottom: 20px; }
-.funnel-metrics-summary { display:flex; gap: 24px; justify-content:center; flex-wrap:wrap; padding-top: 12px; border-top: 1px solid #e0e0e0; }
-.metric-summary-card, .metric-summary { display:flex; align-items:center; gap:12px; padding:14px 18px; background:white; border-radius:12px; border:2px solid #e5e7eb; min-width:160px; }
-.metric-info .metric-label { font-size:12px; color:#6b7280; font-weight:600 }
-.metric-info .metric-value { font-size:18px; font-weight:700; color:#1a1a1a }
+.funnel-chart {
+  padding: 24px;
+  background: white;
+  border-radius: 20px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+}
+
+.funnel-chart:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+.funnel-canvas-wrapper {
+  position: relative;
+  height: 400px;
+  margin-bottom: 20px;
+}
+
+.funnel-canvas-wrapper canvas {
+  max-height: 100%;
+}
+
+.funnel-metrics-summary {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding-top: 20px;
+  border-top: 1px solid #dee2e6;
+}
+
+.metric-summary-card,
+.metric-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  min-width: 160px;
+  transition: all 0.18s ease;
+}
+
+.metric-summary-card:hover,
+.metric-summary:hover {
+  border-color: var(--primary-color, #4285f4);
+  box-shadow: 0 4px 12px rgba(66, 133, 244, 0.1);
+  transform: translateY(-2px);
+}
+
+.metric-summary-card mat-icon,
+.metric-summary mat-icon {
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
+  color: var(--primary-color, #4285f4);
+}
+
+.metric-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.metric-info .metric-label {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.metric-info .metric-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+}

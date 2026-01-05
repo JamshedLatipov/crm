@@ -84,28 +84,6 @@ export class SidebarComponent {
       ],
     },
     {
-      icon: 'assessment',
-      label: 'Отчеты',
-      expanded: false,
-      children: [
-        {
-          icon: 'insights',
-          label: 'Источники звонков',
-          route: '/reports/contact-center/sources',
-        },
-        {
-          icon: 'people_alt',
-          label: 'Отчёт операторов',
-          route: '/reports/contact-center/operators',
-        },
-        {
-          icon: 'queue',
-          label: 'Отчёт по службам',
-          route: '/reports/contact-center/queues',
-        },
-      ],
-    },
-    {
       icon: 'integration_instructions',
       label: 'Интеграции',
       expanded: false,
