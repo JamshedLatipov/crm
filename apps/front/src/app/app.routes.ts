@@ -34,7 +34,7 @@ import { ContactCenterCallsComponent } from './contact-center/calls/calls-list.c
 import { QueuesPageComponent } from './contact-center/queues/queues.component';
 import { IntegrationsComponent } from './pages/integrations/integrations.component';
 import { ClientInfoPageComponent } from './pages/client-info/client-info.component';
-import { NOTIFICATION_ROUTES } from './notifications/notifications.routes';
+import { MESSAGE_ROUTES } from './messages/messages.routes';
 
 export const appRoutes: Route[] = [
     { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
@@ -120,6 +120,6 @@ export const appRoutes: Route[] = [
         canActivate: [authGuard],
         loadChildren: () => import('./forecasting/forecasting.routes').then(m => m.FORECASTING_ROUTES)
     },
-    // Notification Center routes
-    ...NOTIFICATION_ROUTES
+    // Messages Hub routes (SMS, Email, WhatsApp, Telegram, Campaigns)
+    ...MESSAGE_ROUTES
 ];

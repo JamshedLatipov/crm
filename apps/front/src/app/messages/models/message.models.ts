@@ -8,7 +8,6 @@ export enum MessageChannel {
   PUSH = 'push',
 }
 
-// Campaign-specific enums
 export enum CampaignType {
   IMMEDIATE = 'immediate',
   SCHEDULED = 'scheduled',

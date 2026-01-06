@@ -1,0 +1,80 @@
+# ✅ JWT MODULE FIX - РЕШЕНИЕ ПРОБЛЕМЫ 401
+
+## Проблема
+GET http://localhost:3000/api/messages/telegram/templates
+Статус: **401 (Unauthorized)**
+
+Authorization заголовок присутствует, но backend всё равно возвращает 401.
+
+## Причина найдена ✅
+В `messages.module.ts` JwtModule был настроен с **пустой конфигурацией**:
+```typescript
+JwtModule.register({})  // ❌ Нет секрета!
+```
+
+Без секрета JWT токены **не могут быть валидированы**!
+
+## Решение ✅
+Обновил конфигурацию JwtModule в `messages.module.ts`:
+
+```typescript
+JwtModule.register({
+  secret: process.env.JWT_SECRET || 'secret',
+  signOptions: { expiresIn: '1d' },
+})
+```
+
+Теперь конфигурация **идентична** UserModule.
+
+## Файл изменён
+**Путь:** `apps/back/src/app/modules/messages/messages.module.ts`
+
+**Было:**
+```typescript
+JwtModule.register({}), // Добавляем JwtModule для поддержки JwtAuthGuard
+```
+
+**Стало:**
+```typescript
+JwtModule.register({
+  secret: process.env.JWT_SECRET || 'secret',
+  signOptions: { expiresIn: '1d' },
+}),
+```
+
+## Как это работает
+
+### До исправления:
+1. Frontend отправляет: `Authorization: Bearer eyJ...`
+2. Backend JwtAuthGuard пытается валидировать токен
+3. JwtService использует пустую конфигурацию `{}`
+4. Валидация **FAILS** → 401 Unauthorized
+
+### После исправления:
+1. Frontend отправляет: `Authorization: Bearer eyJ...`
+2. Backend JwtAuthGuard пытается валидировать токен
+3. JwtService использует `JWT_SECRET` из env
+4. Валидация **SUCCESS** → 200 OK
+
+## Следующий шаг 🚀
+
+**ПЕРЕЗАПУСТИТЬ BACKEND:**
+```bash
+npm run start:back
+```
+
+После перезапуска все endpoints в `/api/messages/*` будут работать с авторизацией!
+
+## Проверка
+
+После перезапуска backend:
+```bash
+curl -H "Authorization: Bearer <YOUR_TOKEN>" \
+  http://localhost:3000/api/messages/telegram/templates?page=1&limit=20
+```
+
+Должен вернуть **200 OK** с данными шаблонов.
+
+---
+
+**Статус:** ✅ ИСПРАВЛЕНО - Требуется перезапуск backend

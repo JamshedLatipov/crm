@@ -1,0 +1,101 @@
+# 🔍 ДИАГНОСТИКА ПРОБЛЕМЫ 401 UNAUTHORIZED
+
+## Проблема
+GET http://localhost:3000/api/messages/telegram/templates?page=1&limit=20
+Статус: **401 (Unauthorized)**
+
+## Причина
+Backend controller требует JWT токен через `@UseGuards(JwtAuthGuard)`
+
+## Проверка
+
+### 1️⃣ Проверить наличие токена в браузере
+Открыть DevTools Console и выполнить:
+```javascript
+localStorage.getItem('crm_auth')
+```
+
+Если `null` → **Пользователь не залогинен**
+
+### 2️⃣ Проверить AuthInterceptor
+**Файл:** `apps/front/src/app/auth/auth.interceptor.ts`
+**Статус:** ✅ Зарегистрирован в `app.config.ts`
+
+**Логика:**
+- Берёт токен из `authService.getToken()`
+- Добавляет заголовок `Authorization: Bearer <token>`
+- Проверяет, что URL содержит `/api/`
+
+### 3️⃣ Проверить Backend Guard
+**Файл:** `apps/back/src/app/modules/messages/controllers/telegram-template.controller.ts`
+**Статус:** ✅ Использует `@UseGuards(JwtAuthGuard)`
+
+**Контроллер:**
+```typescript
+@Controller('messages/telegram/templates')
+@UseGuards(JwtAuthGuard)  // <-- Требует авторизацию
+@ApiBearerAuth()
+export class TelegramTemplateController {
+```
+
+## Решение
+
+### Вариант А: Залогиниться
+1. Открыть `/login`
+2. Ввести credentials
+3. После успешного логина токен сохранится в localStorage
+
+### Вариант Б: Убрать Guard (только для разработки!)
+**НЕ РЕКОМЕНДУЕТСЯ** для production
+
+Закомментировать в controller:
+```typescript
+// @UseGuards(JwtAuthGuard)
+```
+
+### Вариант В: Проверить срок действия токена
+Токен может истечь. Проверка в DevTools Console:
+```javascript
+const data = JSON.parse(localStorage.getItem('crm_auth'));
+if (data.exp) {
+  const isExpired = Date.now() / 1000 > data.exp;
+  console.log('Token expired:', isExpired);
+  console.log('Expires at:', new Date(data.exp * 1000));
+}
+```
+
+## Тестирование
+
+### Правильный запрос с токеном:
+```bash
+curl -H "Authorization: Bearer <YOUR_TOKEN>" \
+  http://localhost:3000/api/messages/telegram/templates?page=1&limit=20
+```
+
+### Запрос без токена (должен вернуть 401):
+```bash
+curl http://localhost:3000/api/messages/telegram/templates?page=1&limit=20
+```
+
+## Проверочный список
+
+- [ ] Пользователь залогинен?
+- [ ] Токен присутствует в localStorage?
+- [ ] Токен не истёк?
+- [ ] AuthInterceptor зарегистрирован?
+- [ ] Backend controller использует JwtAuthGuard?
+- [ ] URL запроса содержит `/api/`?
+
+## Быстрая проверка
+
+Открыть Network tab в DevTools:
+1. Найти запрос к `/api/messages/telegram/templates`
+2. Проверить **Request Headers**
+3. Должен быть заголовок: `Authorization: Bearer eyJ...`
+
+Если заголовка нет → проблема в frontend (AuthInterceptor)
+Если заголовок есть → проблема в backend (JwtAuthGuard/token validation)
+
+---
+
+**Следующий шаг:** Проверить localStorage в браузере

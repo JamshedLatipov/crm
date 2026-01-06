@@ -75,7 +75,10 @@ import { MessageAnalyticsController } from './controllers/message-analytics.cont
     ]),
     ConfigModule,
     ScheduleModule.forRoot(),
-    JwtModule.register({}), // Добавляем JwtModule для поддержки JwtAuthGuard
+    JwtModule.register({
+      secret: process.env.JWT_SECRET || 'secret',
+      signOptions: { expiresIn: '1d' },
+    }),
     // RabbitMQ для массовых рассылок
     ClientsModule.registerAsync([
       {
