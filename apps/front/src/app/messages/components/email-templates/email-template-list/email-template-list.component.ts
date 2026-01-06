@@ -94,4 +94,9 @@ export class EmailTemplateListComponent implements OnInit {
     // TODO: Реализовать диалог для ввода email и переменных
     this.snackBar.open('Функция в разработке', 'Закрыть', { duration: 3000 });
   }
+
+  getVariableKeys(variables: Record<string, string> | null | undefined): string[] {
+    if (!variables) return [];
+    return Object.keys(variables);
+  }
 }

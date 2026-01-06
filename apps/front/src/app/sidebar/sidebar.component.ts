@@ -145,6 +145,11 @@ export class SidebarComponent {
           label: 'Аналитика',
           route: '/messages/analytics',
         },
+        {
+          icon: 'settings',
+          label: 'Настройки каналов',
+          route: '/messages/settings',
+        },
       ],
     },
     { icon: 'help_outline', label: 'Помощь', route: '/help' },

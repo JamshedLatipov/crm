@@ -1,13 +1,21 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
+import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatSelectModule } from '@angular/material/select';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTabsModule } from '@angular/material/tabs';
+import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.component';
+import { VariableSelectorComponent } from '../../variable-selector/variable-selector.component';
+import { EmailTemplateService } from '../../../services/email-template.service';
+import { CreateEmailTemplateDto, EmailTemplateCategory } from '../../../models/message.models';
 
 @Component({
   selector: 'app-email-template-form',
@@ -15,151 +23,193 @@ import { MatTabsModule } from '@angular/material/tabs';
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    MatButtonModule,
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
-    MatButtonModule,
+    MatIconModule,
     MatSlideToggleModule,
-    MatTabsModule
+    MatSelectModule,
+    MatSnackBarModule,
+    MatProgressSpinnerModule,
+    MatTabsModule,
+    PageLayoutComponent,
+    VariableSelectorComponent
   ],
-  template: `
-    <div class="template-form-container">
-      <mat-card>
-        <mat-card-header>
-          <mat-card-title>
-            {{ templateId() ? 'Редактировать Email шаблон' : 'Новый Email шаблон' }}
-          </mat-card-title>
-        </mat-card-header>
-
-        <mat-card-content>
-          <form [formGroup]="form">
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Название шаблона</mat-label>
-              <input matInput formControlName="name" placeholder="Введите название">
-              @if (form.get('name')?.hasError('required')) {
-                <mat-error>Название обязательно</mat-error>
-              }
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Тема письма</mat-label>
-              <input matInput formControlName="subject" placeholder="Введите тему">
-              @if (form.get('subject')?.hasError('required')) {
-                <mat-error>Тема обязательна</mat-error>
-              }
-            </mat-form-field>
-
-            <mat-tab-group>
-              <mat-tab label="HTML">
-                <div class="tab-content">
-                  <mat-form-field appearance="outline" class="full-width">
-                    <mat-label>HTML содержимое</mat-label>
-                    <textarea 
-                      matInput 
-                      formControlName="htmlBody" 
-                      rows="15" 
-                      placeholder="Введите HTML код">
-                    </textarea>
-                  </mat-form-field>
-                </div>
-              </mat-tab>
-
-              <mat-tab label="Текст">
-                <div class="tab-content">
-                  <mat-form-field appearance="outline" class="full-width">
-                    <mat-label>Текстовая версия</mat-label>
-                    <textarea 
-                      matInput 
-                      formControlName="textBody" 
-                      rows="15" 
-                      placeholder="Введите текст (опционально)">
-                    </textarea>
-                    <mat-hint>Рекомендуется для почтовых клиентов без поддержки HTML</mat-hint>
-                  </mat-form-field>
-                </div>
-              </mat-tab>
-            </mat-tab-group>
-
-            <mat-slide-toggle formControlName="isActive" class="full-width">
-              Активен
-            </mat-slide-toggle>
-          </form>
-        </mat-card-content>
-
-        <mat-card-actions align="end">
-          <button mat-button (click)="cancel()">Отмена</button>
-          <button mat-raised-button color="accent" (click)="preview()">
-            Предпросмотр
-          </button>
-          <button mat-raised-button color="primary" (click)="save()" [disabled]="form.invalid">
-            Сохранить
-          </button>
-        </mat-card-actions>
-      </mat-card>
-    </div>
-  `,
-  styles: [`
-    .template-form-container {
-      padding: 24px;
-      max-width: 1000px;
-      margin: 0 auto;
-    }
-
-    .full-width {
-      width: 100%;
-      margin-bottom: 16px;
-    }
-
-    .tab-content {
-      padding: 16px 0;
-    }
-  `]
+  templateUrl: './email-template-form.component.html',
+  styleUrl: './email-template-form.component.scss'
 })
 export class EmailTemplateFormComponent implements OnInit {
+  private readonly fb = inject(FormBuilder);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly emailService = inject(EmailTemplateService);
+  private readonly snackBar = inject(MatSnackBar);
+
   form!: FormGroup;
   templateId = signal<string | null>(null);
+  loading = signal(false);
 
-  constructor(
-    private fb: FormBuilder,
-    private route: ActivatedRoute,
-    private router: Router
-  ) {
-    this.initForm();
-  }
+  categories = [
+    { value: EmailTemplateCategory.MARKETING, label: 'Маркетинг' },
+    { value: EmailTemplateCategory.TRANSACTIONAL, label: 'Транзакционное' },
+    { value: EmailTemplateCategory.NOTIFICATION, label: 'Уведомление' },
+    { value: EmailTemplateCategory.NEWSLETTER, label: 'Новостная рассылка' },
+    { value: EmailTemplateCategory.WELCOME, label: 'Приветствие' },
+    { value: EmailTemplateCategory.PROMOTIONAL, label: 'Промо' },
+    { value: EmailTemplateCategory.SYSTEM, label: 'Системное' },
+    { value: EmailTemplateCategory.OTHER, label: 'Другое' }
+  ];
 
   ngOnInit() {
+    this.initForm();
+    
     const id = this.route.snapshot.paramMap.get('id');
     this.templateId.set(id);
     
     if (id && id !== 'new') {
-      // TODO: Загрузить данные шаблона
+      this.loadTemplate(id);
     }
   }
 
   initForm() {
     this.form = this.fb.group({
       name: ['', Validators.required],
+      description: [''],
       subject: ['', Validators.required],
-      htmlBody: ['', Validators.required],
-      textBody: [''],
+      htmlContent: ['', Validators.required],
+      textContent: [''],
+      category: [EmailTemplateCategory.MARKETING],
+      preheader: [''],
+      cssStyles: [''],
       isActive: [true]
     });
   }
 
-  save() {
-    if (this.form.valid) {
-      // TODO: Сохранить через сервис
-      console.log('Saving template:', this.form.value);
-      this.router.navigate(['/notifications/email-templates']);
-    }
+  loadTemplate(id: string) {
+    this.loading.set(true);
+    this.emailService.getById(id).subscribe({
+      next: (template) => {
+        this.form.patchValue({
+          name: template.name,
+          description: template.description || '',
+          subject: template.subject,
+          htmlContent: template.htmlContent,
+          textContent: template.textContent || '',
+          category: template.category,
+          preheader: template.preheader || '',
+          cssStyles: template.cssStyles || '',
+          isActive: template.isActive
+        });
+        this.loading.set(false);
+      },
+      error: () => {
+        this.snackBar.open('Ошибка загрузки шаблона', 'Закрыть', { duration: 3000 });
+        this.loading.set(false);
+        this.router.navigate(['/messages/email-templates']);
+      }
+    });
   }
 
-  preview() {
-    const id = this.templateId() || 'new';
-    this.router.navigate(['/notifications/email-templates', id, 'preview']);
+  save() {
+    if (this.form.invalid) {
+      this.snackBar.open('Заполните все обязательные поля', 'Закрыть', { duration: 3000 });
+      return;
+    }
+
+    this.loading.set(true);
+    const formValue = this.form.value;
+    
+    // Извлечь переменные из всех полей
+    const variables = this.extractVariables(
+      formValue.subject + ' ' + 
+      formValue.htmlContent + ' ' + 
+      (formValue.textContent || '')
+    );
+    
+    const dto: CreateEmailTemplateDto = {
+      name: formValue.name,
+      description: formValue.description || undefined,
+      subject: formValue.subject,
+      htmlContent: formValue.htmlContent,
+      textContent: formValue.textContent || undefined,
+      category: formValue.category,
+      preheader: formValue.preheader || undefined,
+      cssStyles: formValue.cssStyles || undefined,
+      variables: variables.length > 0 ? this.variablesToObject(variables) : undefined
+    };
+
+    const operation = this.templateId()
+      ? this.emailService.update(this.templateId()!, dto)
+      : this.emailService.create(dto);
+
+    operation.subscribe({
+      next: () => {
+        this.snackBar.open(
+          this.templateId() ? 'Шаблон обновлён' : 'Шаблон создан',
+          'Закрыть',
+          { duration: 3000 }
+        );
+        this.router.navigate(['/messages/email-templates']);
+      },
+      error: (error) => {
+        this.snackBar.open(
+          error.error?.message || 'Ошибка сохранения шаблона',
+          'Закрыть',
+          { duration: 5000 }
+        );
+        this.loading.set(false);
+      }
+    });
   }
 
   cancel() {
-    this.router.navigate(['/notifications/email-templates']);
+    this.router.navigate(['/messages/email-templates']);
+  }
+
+  extractVariables(content: string): string[] {
+    const regex = /\{\{(\w+)\}\}/g;
+    const variables: string[] = [];
+    let match;
+    
+    while ((match = regex.exec(content)) !== null) {
+      if (!variables.includes(match[1])) {
+        variables.push(match[1]);
+      }
+    }
+    
+    return variables;
+  }
+
+  variablesToObject(variables: string[]): Record<string, string> {
+    const obj: Record<string, string> = {};
+    variables.forEach(v => {
+      obj[v] = ''; // Backend will provide descriptions
+    });
+    return obj;
+  }
+
+  /**
+   * Вставить переменную в позицию курсора в textarea
+   */
+  insertVariable(variableSyntax: string, textarea: HTMLTextAreaElement): void {
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const controlName = textarea.getAttribute('formControlName');
+    
+    if (!controlName) return;
+    
+    const currentValue = this.form.get(controlName)?.value || '';
+    
+    // Вставляем переменную в позицию курсора
+    const newText = currentValue.substring(0, start) + variableSyntax + currentValue.substring(end);
+    this.form.patchValue({ [controlName]: newText });
+    
+    // Устанавливаем курсор после вставленной переменной
+    setTimeout(() => {
+      const newCursorPos = start + variableSyntax.length;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+      textarea.focus();
+    });
   }
 }

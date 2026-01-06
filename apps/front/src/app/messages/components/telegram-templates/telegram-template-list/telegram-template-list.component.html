@@ -31,7 +31,7 @@
 
       <ng-template crmColumnTemplate="variablesTemplate" let-template>
         <div class="variables-list">
-          @for (variable of template.variables; track variable) {
+          @for (variable of template?.variables; track variable) {
             <span class="variable-chip">{{ variable }}</span>
           }
           @if (template?.variables?.length === 0) {

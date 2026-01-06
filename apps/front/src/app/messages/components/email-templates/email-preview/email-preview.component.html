@@ -1,0 +1,102 @@
+<app-page-layout
+  [title]="template()?.name || 'Предпросмотр Email шаблона'"
+  subtitle="Предварительный просмотр шаблона с переменными"
+>
+  <div page-actions>
+    <button mat-stroked-button (click)="goBack()">
+      <mat-icon>arrow_back</mat-icon>
+      Назад
+    </button>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-container">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
+  } @else if (template()) {
+    <div class="preview-container">
+      <mat-card>
+        <mat-card-content>
+          @if (getVariableKeys().length > 0) {
+            <div class="variables-section">
+              <h3>Заполните переменные для предпросмотра:</h3>
+              <div class="variables-grid">
+                @for (variable of getVariableKeys(); track variable) {
+                  <mat-form-field appearance="outline">
+                    <mat-label>{{ variable }}</mat-label>
+                    <input 
+                      matInput 
+                      [(ngModel)]="variableValues()[variable]"
+                      (ngModelChange)="updatePreview()"
+                      [placeholder]="'Введите ' + variable">
+                    <mat-icon matPrefix>code</mat-icon>
+                  </mat-form-field>
+                }
+              </div>
+            </div>
+          }
+
+          <mat-tab-group>
+            <mat-tab>
+              <ng-template mat-tab-label>
+                <mat-icon class="tab-icon">preview</mat-icon>
+                Предпросмотр
+              </ng-template>
+              <div class="tab-content">
+                <div class="email-preview">
+                  <div class="email-header">
+                    <div class="header-row">
+                      <strong>Тема:</strong>
+                      <span>{{ renderedSubject() }}</span>
+                    </div>
+                    @if (template()?.preheader) {
+                      <div class="header-row preheader">
+                        <strong>Preheader:</strong>
+                        <span class="text-muted">{{ template()?.preheader }}</span>
+                      </div>
+                    }
+                  </div>
+                  <div class="email-body" [innerHTML]="renderedHtml()"></div>
+                </div>
+              </div>
+            </mat-tab>
+
+            <mat-tab>
+              <ng-template mat-tab-label>
+                <mat-icon class="tab-icon">code</mat-icon>
+                HTML код
+              </ng-template>
+              <div class="tab-content">
+                <pre class="code-block">{{ template()?.htmlContent }}</pre>
+              </div>
+            </mat-tab>
+
+            @if (template()?.textContent) {
+              <mat-tab>
+                <ng-template mat-tab-label>
+                  <mat-icon class="tab-icon">text_fields</mat-icon>
+                  Текстовая версия
+                </ng-template>
+                <div class="tab-content">
+                  <pre class="code-block">{{ renderedText() }}</pre>
+                </div>
+              </mat-tab>
+            }
+
+            @if (template()?.cssStyles) {
+              <mat-tab>
+                <ng-template mat-tab-label>
+                  <mat-icon class="tab-icon">style</mat-icon>
+                  CSS стили
+                </ng-template>
+                <div class="tab-content">
+                  <pre class="code-block">{{ template()?.cssStyles }}</pre>
+                </div>
+              </mat-tab>
+            }
+          </mat-tab-group>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  }
+</app-page-layout>

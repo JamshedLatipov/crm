@@ -3,7 +3,7 @@
   [subtitle]="'Всего: ' + (templates()?.length || 0) + ' шаблонов'"
 >
   <div page-actions>
-    <button mat-raised-button color="primary" routerLink="/notifications/email-templates/new">
+    <button mat-raised-button color="primary" routerLink="/messages/email-templates/new">
       <mat-icon>add</mat-icon>
       Создать шаблон
     </button>
@@ -14,7 +14,7 @@
       <mat-icon>mail</mat-icon>
       <h3>Нет шаблонов</h3>
       <p>Создайте первый Email шаблон для использования в кампаниях</p>
-      <button mat-raised-button color="primary" routerLink="/notifications/email-templates/new">
+      <button mat-raised-button color="primary" routerLink="/messages/email-templates/new">
         <mat-icon>add</mat-icon>
         Создать шаблон
       </button>
@@ -31,10 +31,10 @@
 
       <ng-template crmColumnTemplate="variablesTemplate" let-template>
         <div class="variables-list">
-          @for (variable of template.variables; track variable) {
+          @for (variable of getVariableKeys(template?.variables); track variable) {
             <span class="variable-chip">{{ variable }}</span>
           }
-          @if (template.variables.length === 0) {
+          @if (getVariableKeys(template?.variables).length === 0) {
             <span class="text-muted">—</span>
           }
         </div>
@@ -47,10 +47,10 @@
       </ng-template>
 
       <ng-template crmColumnTemplate="actionsTemplate" let-template>
-        <button mat-icon-button [routerLink]="['/notifications/email-templates', template.id]" matTooltip="Редактировать">
+        <button mat-icon-button [routerLink]="['/messages/email-templates', template.id]" matTooltip="Редактировать">
           <mat-icon>edit</mat-icon>
         </button>
-        <button mat-icon-button [routerLink]="['/notifications/email-templates', template.id, 'preview']" matTooltip="Предпросмотр">
+        <button mat-icon-button [routerLink]="['/messages/email-templates', template.id, 'preview']" matTooltip="Предпросмотр">
           <mat-icon>visibility</mat-icon>
         </button>
         <button mat-icon-button [matMenuTriggerFor]="actionMenu" matTooltip="Еще">

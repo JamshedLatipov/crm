@@ -16,6 +16,7 @@ import {
   CreateEmailTemplateDto,
   UpdateEmailTemplateDto,
 } from '../services/email-template.service';
+import { JwtAuthGuard } from '../../user/jwt-auth.guard';
 
 export class RenderTemplateDto {
   variables: Record<string, any>;
@@ -27,6 +28,7 @@ export class ValidateTemplateDto {
 
 @ApiTags('Email Templates')
 @ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('messages/email/templates')
 export class EmailTemplateController {
   constructor(

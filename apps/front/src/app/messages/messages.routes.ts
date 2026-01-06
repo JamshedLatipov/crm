@@ -176,6 +176,11 @@ export const MESSAGE_ROUTES: Routes = [
           ),
       },
       {
+        path: 'settings',
+        loadComponent: () =>
+          import('./components/settings/settings.component').then((m) => m.SettingsComponent),
+      },
+      {
         path: 'analytics',
         loadComponent: () =>
           import('./components/analytics/analytics.component').then((m) => m.AnalyticsComponent),

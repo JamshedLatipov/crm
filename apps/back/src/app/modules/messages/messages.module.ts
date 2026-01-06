@@ -19,6 +19,7 @@ import { TelegramMessage } from './entities/telegram-message.entity';
 import { TelegramTemplate } from './entities/telegram-template.entity';
 import { MessageCampaign } from './entities/message-campaign.entity';
 import { Media } from './entities/media.entity';
+import { Setting } from './entities/setting.entity';
 import { NotificationAnalytics } from '../shared/entities/notification-analytics.entity';
 import { Contact } from '../contacts/contact.entity';
 import { Lead } from '../leads/lead.entity';
@@ -41,6 +42,7 @@ import { TemplateRenderService } from './services/template-render.service';
 import { MessageQueueService } from './services/message-queue.service';
 import { MessageAnalyticsService } from './services/message-analytics.service';
 import { MediaService } from './services/media.service';
+import { SettingService } from './services/setting.service';
 
 // Controllers
 import { SmsTemplateController } from './controllers/sms-template.controller';
@@ -54,6 +56,7 @@ import { TelegramTemplateController } from './controllers/telegram-template.cont
 import { MessageWorkerController } from './controllers/message-worker.controller';
 import { MessageAnalyticsController } from './controllers/message-analytics.controller';
 import { MediaController } from './controllers/media.controller';
+import { SettingController } from './controllers/setting.controller';
 
 @Module({
   imports: [
@@ -71,6 +74,7 @@ import { MediaController } from './controllers/media.controller';
       TelegramTemplate,
       MessageCampaign,
       Media,
+      Setting,
       NotificationAnalytics,
       Contact,
       Lead,
@@ -119,6 +123,7 @@ import { MediaController } from './controllers/media.controller';
     MessageWorkerController,
     MessageAnalyticsController,
     MediaController,
+    SettingController,
   ],
   providers: [
     SmsProviderService,
@@ -136,6 +141,7 @@ import { MediaController } from './controllers/media.controller';
     MessageQueueService,
     MessageAnalyticsService,
     MediaService,
+    SettingService,
   ],
   exports: [
     SmsProviderService,
@@ -153,6 +159,7 @@ import { MediaController } from './controllers/media.controller';
     MessageQueueService,
     MessageAnalyticsService,
     MediaService,
+    SettingService,
   ],
 })
 export class MessagesModule {}
