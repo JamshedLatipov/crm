@@ -5,10 +5,8 @@
   <div page-actions>
     <button mat-stroked-button (click)="cancel()" [disabled]="loading()">
       <mat-icon>close</mat-icon>
-      Отм              <div class="info-row">
-                <span class="info-label">Примерная стоимость:</span>
-                <span class="info-value">{{ estimatedCost() | currencyFormat }}</span>
-              </div>    </button>
+      Отменить
+    </button>
     <button mat-raised-button color="primary" (click)="save()" [disabled]="form.invalid || loading()">
       @if (loading()) {
         <mat-spinner diameter="20"></mat-spinner>
@@ -207,7 +205,7 @@
               
               <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Сегмент получателей</mat-label>
-                <mat-select formControlName="segmentId">
+                <mat-select formControlName="segmentId" (selectionChange)="onSegmentChange($event)">
                   @if (availableSegments().length === 0) {
                     <mat-option disabled>Загрузка...</mat-option>
                   }
@@ -329,7 +327,7 @@
               <mat-icon>attach_money</mat-icon>
               <div class="info-content">
                 <span class="info-label">Примерная стоимость</span>
-                <span class="info-value">{{ estimatedCost() }} ₽</span>
+                <span class="info-value">{{ estimatedCost() | currencyFormat }}</span>
               </div>
             </div>
 

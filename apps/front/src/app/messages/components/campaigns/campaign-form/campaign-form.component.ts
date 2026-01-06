@@ -15,6 +15,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.component';
 import { CampaignService } from '../../../services/campaign.service';
 import { SmsTemplateService } from '../../../services/sms-template.service';
@@ -23,7 +24,6 @@ import { WhatsAppTemplateService } from '../../../services/whatsapp-template.ser
 import { TelegramTemplateService } from '../../../services/telegram-template.service';
 import { SegmentService } from '../../../services/segment.service';
 import { SettingService } from '../../../services/setting.service';
-import { CurrencyService } from '../../../../services/currency.service';
 import { CurrencyFormatPipe } from '../../../../shared/pipes/currency-format.pipe';
 import { CampaignType, CreateCampaignDto, MessageChannel } from '../../../models/message.models';
 
@@ -84,7 +84,6 @@ export class CampaignFormComponent implements OnInit {
   // Computed property для получения текущих шаблонов в зависимости от выбранного канала
   currentTemplates = computed(() => {
     const channel = this.form?.get('channel')?.value?.toUpperCase();
-    console.log('Computing templates for channel:', channel);
     let templates;
     switch (channel) {
       case 'SMS':
@@ -102,7 +101,6 @@ export class CampaignFormComponent implements OnInit {
       default:
         templates = [];
     }
-    console.log('Available templates:', templates);
     return templates;
   });
 
@@ -115,11 +113,20 @@ export class CampaignFormComponent implements OnInit {
   selectedMediaFile = signal<File | null>(null);
   mediaPreviewUrl = signal<string | null>(null);
 
+  // Signal для отслеживания segmentId из формы (инициализируется после формы)
+  segmentIdSignal!: ReturnType<typeof toSignal<string>>;
+
   estimatedRecipients = computed(() => {
-    const segmentId = this.form?.get('segmentId')?.value;
+    const segmentId = this.segmentIdSignal?.() || '';
     if (!segmentId) return '0';
     
-    // Получаем реальные данные из загруженных сегментов
+    // Сначала проверяем selectedSegment (для загруженной кампании)
+    const selected = this.selectedSegment();
+    if (selected && selected.id === segmentId) {
+      return selected.contactsCount?.toLocaleString('ru-RU') || '0';
+    }
+    
+    // Иначе ищем в загруженных сегментах
     const segment = this.availableSegments().find(s => s.id === segmentId);
     return segment?.contactsCount?.toLocaleString('ru-RU') || '0';
   });
@@ -142,6 +149,8 @@ export class CampaignFormComponent implements OnInit {
 
   constructor() {
     this.initForm();
+    // Инициализируем signal после создания формы
+    this.segmentIdSignal = toSignal(this.form.get('segmentId')!.valueChanges, { initialValue: '' });
   }
 
   ngOnInit() {
@@ -169,8 +178,6 @@ export class CampaignFormComponent implements OnInit {
     this.loading.set(true);
     this.campaignService.getById(id).subscribe({
       next: (campaign) => {
-        console.log('Loaded campaign:', campaign); // Добавляем логирование для отладки
-        
         // Получаем segmentId из вложенного объекта segment или используем прямое значение
         const segmentId = (campaign as any).segment?.id || (campaign as any).segmentId;
         
@@ -206,10 +213,6 @@ export class CampaignFormComponent implements OnInit {
           this.loadCostForChannel(campaign.channel);
         }
         
-        console.log('Form values after patch:', this.form.value);
-        console.log('Selected template:', this.selectedTemplate());
-        console.log('Selected segment:', this.selectedSegment());
-        
         this.loading.set(false);
       },
       error: (error) => {
@@ -224,47 +227,34 @@ export class CampaignFormComponent implements OnInit {
   loadSegmentForCampaign(segmentId: string) {
     this.segmentService.getById(segmentId).subscribe({
       next: (segment) => this.selectedSegment.set(segment),
-      error: () => console.warn('Failed to load segment')
+      error: (err) => console.warn('Failed to load segment', err)
     });
   }
   
   loadTemplateForCampaign(channel: string, templateId: string) {
     const channelLower = channel.toLowerCase();
-    console.log('Loading template for channel:', channelLower, 'templateId:', templateId);
     switch (channelLower) {
       case 'sms':
         this.smsTemplateService.getById(templateId).subscribe({
-          next: (template) => {
-            console.log('Loaded SMS template:', template);
-            this.selectedTemplate.set(template);
-          },
+          next: (template) => this.selectedTemplate.set(template),
           error: (err) => console.warn('Failed to load SMS template', err)
         });
         break;
       case 'email':
         this.emailTemplateService.getById(templateId).subscribe({
-          next: (template) => {
-            console.log('Loaded Email template:', template);
-            this.selectedTemplate.set(template);
-          },
+          next: (template) => this.selectedTemplate.set(template),
           error: (err) => console.warn('Failed to load Email template', err)
         });
         break;
       case 'whatsapp':
         this.whatsappTemplateService.getById(templateId).subscribe({
-          next: (template) => {
-            console.log('Loaded WhatsApp template:', template);
-            this.selectedTemplate.set(template);
-          },
+          next: (template) => this.selectedTemplate.set(template),
           error: (err) => console.warn('Failed to load WhatsApp template', err)
         });
         break;
       case 'telegram':
         this.telegramTemplateService.getById(templateId).subscribe({
-          next: (template) => {
-            console.log('Loaded Telegram template:', template);
-            this.selectedTemplate.set(template);
-          },
+          next: (template) => this.selectedTemplate.set(template),
           error: (err) => console.warn('Failed to load Telegram template', err)
         });
         break;
@@ -278,10 +268,7 @@ export class CampaignFormComponent implements OnInit {
     if (!channel) return;
     
     this.settingService.getCostPerMessage(channel).subscribe({
-      next: (cost) => {
-        console.log(`Loaded cost for ${channel}:`, cost);
-        this.channelCost.set(cost);
-      },
+      next: (cost) => this.channelCost.set(cost),
       error: (err) => {
         console.warn(`Failed to load cost for ${channel}`, err);
         this.channelCost.set(0);
@@ -352,6 +339,12 @@ export class CampaignFormComponent implements OnInit {
     this.selectedTemplate.set(template || null);
   }
 
+  onSegmentChange(event: any) {
+    const segmentId = event.value;
+    const segment = this.availableSegments().find(s => s.id === segmentId);
+    this.selectedSegment.set(segment || null);
+  }
+
   onScheduleToggle() {
     const isScheduled = this.form.get('isScheduled')?.value;
     if (isScheduled) {
@@ -402,8 +395,6 @@ export class CampaignFormComponent implements OnInit {
         trackDelivery: this.form.value.trackDelivery
       }
     };
-
-    console.log('Saving campaign with DTO:', dto); // Добавляем логирование
 
     this.loading.set(true);
 
