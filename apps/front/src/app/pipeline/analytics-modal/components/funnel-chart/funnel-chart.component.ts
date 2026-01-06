@@ -36,6 +36,20 @@ export class FunnelChartComponent implements AfterViewInit, OnDestroy {
     return Math.round(sum / this.stages.length);
   }
 
+  bestStage(): StageAnalytics | null {
+    if (!this.stages || !this.stages.length) return null;
+    return this.stages.reduce((best, current) => 
+      (current.conversion > best.conversion) ? current : best
+    );
+  }
+
+  worstStage(): StageAnalytics | null {
+    if (!this.stages || !this.stages.length) return null;
+    return this.stages.reduce((worst, current) => 
+      (current.conversion < worst.conversion) ? current : worst
+    );
+  }
+
   private getFunnelColor(index: number): string {
     const colors = [
       '#667eea',
@@ -55,8 +69,16 @@ export class FunnelChartComponent implements AfterViewInit, OnDestroy {
   private renderChart() {
     if (!this.stages || !this.funnelCanvas?.nativeElement) return;
 
-    const ctx = this.funnelCanvas.nativeElement.getContext('2d');
+    const canvas = this.funnelCanvas.nativeElement;
+    const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
+    // Устанавливаем фиксированные размеры canvas
+    const container = canvas.parentElement;
+    if (container) {
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientHeight;
+    }
 
     const labels = this.stages.map(s => s.name);
     const counts = this.stages.map(s => s.count);
@@ -76,7 +98,7 @@ export class FunnelChartComponent implements AfterViewInit, OnDestroy {
             backgroundColor: colors.map(color => color + '80'), // Прозрачные цвета
             borderColor: colors,
             borderWidth: 2,
-            borderRadius: 4,
+            borderRadius: 8,
             borderSkipped: false,
           },
           {
@@ -85,12 +107,12 @@ export class FunnelChartComponent implements AfterViewInit, OnDestroy {
             type: 'line',
             backgroundColor: '#ffffff',
             borderColor: '#ff6b6b',
-            borderWidth: 3,
+            borderWidth: 2,
             pointBackgroundColor: '#ff6b6b',
             pointBorderColor: '#ffffff',
             pointBorderWidth: 2,
-            pointRadius: 6,
-            pointHoverRadius: 8,
+            pointRadius: 4,
+            pointHoverRadius: 6,
             yAxisID: 'y1',
             tension: 0.4,
             fill: false
@@ -101,12 +123,37 @@ export class FunnelChartComponent implements AfterViewInit, OnDestroy {
         indexAxis: 'y',
         responsive: true,
         maintainAspectRatio: false,
+        animation: {
+          duration: 0
+        },
         plugins: {
           legend: {
             display: true,
-            position: 'top'
+            position: 'top',
+            labels: {
+              font: {
+                size: 12
+              },
+              padding: 16,
+              usePointStyle: true,
+              color: '#6b7280'
+            }
           },
           tooltip: {
+            backgroundColor: 'rgba(255, 255, 255, 0.98)',
+            titleColor: '#111827',
+            bodyColor: '#6b7280',
+            borderColor: '#e5e7eb',
+            borderWidth: 1,
+            cornerRadius: 12,
+            padding: 12,
+            titleFont: {
+              size: 13,
+              weight: 'bold'
+            },
+            bodyFont: {
+              size: 12
+            },
             callbacks: {
               label: (context) => {
                 let label = context.dataset.label || '';
@@ -130,14 +177,31 @@ export class FunnelChartComponent implements AfterViewInit, OnDestroy {
             beginAtZero: true,
             title: {
               display: true,
-              text: 'Количество сделок'
+              text: 'Количество сделок',
+              font: {
+                size: 12,
+                weight: 'bold'
+              },
+              color: '#6b7280'
+            },
+            ticks: {
+              font: {
+                size: 11
+              },
+              color: '#6b7280'
             },
             grid: {
               display: true,
-              color: 'rgba(0,0,0,0.1)'
+              color: 'rgba(0, 0, 0, 0.06)'
             }
           },
           y: {
+            ticks: {
+              font: {
+                size: 11
+              },
+              color: '#6b7280'
+            },
             grid: {
               display: false
             }
@@ -150,16 +214,23 @@ export class FunnelChartComponent implements AfterViewInit, OnDestroy {
             max: 100,
             title: {
               display: true,
-              text: 'Конверсия (%)'
+              text: 'Конверсия (%)',
+              font: {
+                size: 12,
+                weight: 'bold'
+              },
+              color: '#6b7280'
+            },
+            ticks: {
+              font: {
+                size: 11
+              },
+              color: '#6b7280'
             },
             grid: {
               drawOnChartArea: false,
             },
           }
-        },
-        animation: {
-          duration: 1000,
-          easing: 'easeInOutQuart'
         }
       }
     };

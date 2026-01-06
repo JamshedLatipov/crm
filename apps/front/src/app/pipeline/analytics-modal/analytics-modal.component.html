@@ -45,7 +45,7 @@
             Менеджеры
           </ng-template>
           <div class="tab-content chart-tab">
-            <app-managers-analysis [stages]="data.analytics?.byStage"></app-managers-analysis>
+            <app-managers-analysis [analytics]="data.analytics"></app-managers-analysis>
           </div>
         </mat-tab>
 
@@ -67,9 +67,6 @@
             Воронка
           </ng-template>
           <div class="tab-content chart-tab">
-            <!-- Общая статистика -->
-            <app-analytics-summary [analytics]="data.analytics"></app-analytics-summary>
-
             <!-- Funnel Chart -->
             <app-funnel-chart [stages]="data.analytics?.byStage"></app-funnel-chart>
 

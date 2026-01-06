@@ -1,11 +1,13 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
-import { MatTableModule } from '@angular/material/table';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatChipsModule } from '@angular/material/chips';
-import { StageAnalytics } from '../../../dtos';
+import { PipelineAnalytics, StageAnalytics, Deal } from '../../../dtos';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../../../environments/environment';
+import { CrmTableComponent, CrmColumn } from '../../../../shared/components/crm-table/crm-table.component';
 
 interface ManagerStats {
   managerId: string;
@@ -27,69 +29,181 @@ interface ManagerStats {
     CommonModule,
     MatCardModule,
     MatIconModule,
-    MatTableModule,
     MatProgressBarModule,
-    MatChipsModule
+    MatChipsModule,
+    CrmTableComponent
   ],
   templateUrl: './managers-analysis.component.html',
   styleUrls: ['./managers-analysis.component.scss']
 })
-export class ManagersAnalysisComponent {
-  @Input() stages: StageAnalytics[] | null = null;
+export class ManagersAnalysisComponent implements OnInit {
+  @Input() analytics: PipelineAnalytics | null = null;
+  
+  private http = inject(HttpClient);
+  private apiUrl = `${environment.apiBase}/pipeline`;
 
-  displayedColumns = ['manager', 'deals', 'amount', 'conversion', 'performance'];
+  managersStats: ManagerStats[] = [];
+  isLoading = true;
 
-  // Демо-данные менеджеров (в реальности должны приходить с сервера)
-  managersStats: ManagerStats[] = [
+  // Конфигурация колонок для crm-table
+  columns: CrmColumn[] = [
     {
-      managerId: '1',
-      managerName: 'Анна Петрова',
-      dealsCount: 45,
-      totalAmount: 12500000,
-      averageAmount: 277777,
-      conversionRate: 78.5,
-      wonDeals: 35,
-      lostDeals: 8,
-      activeDeals: 2,
-      averageCycleTime: 24
+      key: 'managerName',
+      label: 'Менеджер',
+      sortable: true,
+      cell: (row: ManagerStats) => row.managerName
     },
     {
-      managerId: '2',
-      managerName: 'Иван Сидоров',
-      dealsCount: 38,
-      totalAmount: 8750000,
-      averageAmount: 230263,
-      conversionRate: 65.2,
-      wonDeals: 25,
-      lostDeals: 10,
-      activeDeals: 3,
-      averageCycleTime: 31
+      key: 'dealsCount',
+      label: 'Всего сделок',
+      sortable: true,
+      cell: (row: ManagerStats) => row.dealsCount
     },
     {
-      managerId: '3',
-      managerName: 'Мария Иванова',
-      dealsCount: 52,
-      totalAmount: 15200000,
-      averageAmount: 292307,
-      conversionRate: 82.1,
-      wonDeals: 43,
-      lostDeals: 6,
-      activeDeals: 3,
-      averageCycleTime: 19
+      key: 'wonDeals',
+      label: 'Выиграно',
+      sortable: true,
+      cell: (row: ManagerStats) => row.wonDeals
     },
     {
-      managerId: '4',
-      managerName: 'Дмитрий Кузнецов',
-      dealsCount: 29,
-      totalAmount: 6800000,
-      averageAmount: 234482,
-      conversionRate: 58.9,
-      wonDeals: 17,
-      lostDeals: 9,
-      activeDeals: 3,
-      averageCycleTime: 35
+      key: 'activeDeals',
+      label: 'Активных',
+      sortable: true,
+      cell: (row: ManagerStats) => row.activeDeals
+    },
+    {
+      key: 'lostDeals',
+      label: 'Проиграно',
+      sortable: true,
+      cell: (row: ManagerStats) => row.lostDeals
+    },
+    {
+      key: 'totalAmount',
+      label: 'Общая сумма',
+      sortable: true,
+      template: 'totalAmount'
+    },
+    {
+      key: 'averageAmount',
+      label: 'Средняя сумма',
+      sortable: true,
+      template: 'averageAmount'
+    },
+    {
+      key: 'conversionRate',
+      label: 'Конверсия',
+      sortable: true,
+      template: 'conversionRate'
+    },
+    {
+      key: 'averageCycleTime',
+      label: 'Цикл (дни)',
+      sortable: true,
+      cell: (row: ManagerStats) => row.averageCycleTime
+    },
+    {
+      key: 'performance',
+      label: 'Показатель',
+      sortable: false,
+      template: 'performance'
     }
   ];
+
+  ngOnInit() {
+    this.loadManagersData();
+  }
+
+  async loadManagersData() {
+    try {
+      // Получаем все deals для анализа
+      const deals = await this.http.get<Deal[]>(`${this.apiUrl}/deals`).toPromise();
+      
+      if (deals && deals.length > 0) {
+        this.managersStats = this.calculateManagersStats(deals);
+      } else {
+        this.managersStats = [];
+      }
+    } catch (error) {
+      console.error('Error loading managers data:', error);
+      this.managersStats = [];
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  private calculateManagersStats(deals: Deal[]): ManagerStats[] {
+    const managerMap = new Map<string, {
+      deals: Deal[];
+      wonDeals: number;
+      lostDeals: number;
+      activeDeals: number;
+    }>();
+
+    // Группируем сделки по менеджерам
+    deals.forEach(deal => {
+      if (!deal.assignedTo) return;
+
+      if (!managerMap.has(deal.assignedTo)) {
+        managerMap.set(deal.assignedTo, {
+          deals: [],
+          wonDeals: 0,
+          lostDeals: 0,
+          activeDeals: 0
+        });
+      }
+
+      const manager = managerMap.get(deal.assignedTo)!;
+      manager.deals.push(deal);
+
+      if (deal.status === 'won') {
+        manager.wonDeals++;
+      } else if (deal.status === 'lost') {
+        manager.lostDeals++;
+      } else {
+        manager.activeDeals++;
+      }
+    });
+
+    // Вычисляем статистику для каждого менеджера
+    return Array.from(managerMap.entries()).map(([managerId, data]) => {
+      const totalDeals = data.deals.length;
+      const totalAmount = data.deals
+        .filter(d => d.status === 'won')
+        .reduce((sum, d) => sum + (d.amount || 0), 0);
+      
+      const averageAmount = data.wonDeals > 0 ? totalAmount / data.wonDeals : 0;
+      const conversionRate = totalDeals > 0 ? (data.wonDeals / totalDeals) * 100 : 0;
+
+      // Вычисляем средний цикл сделки (дни от создания до закрытия)
+      const closedDeals = data.deals.filter(d => d.status === 'won' && d.actualCloseDate);
+      const averageCycleTime = closedDeals.length > 0
+        ? closedDeals.reduce((sum, d) => {
+            const created = new Date(d.createdAt).getTime();
+            const closed = new Date(d.actualCloseDate!).getTime();
+            return sum + (closed - created) / (1000 * 60 * 60 * 24);
+          }, 0) / closedDeals.length
+        : 0;
+
+      return {
+        managerId,
+        managerName: this.getManagerName(managerId),
+        dealsCount: totalDeals,
+        totalAmount,
+        averageAmount,
+        conversionRate,
+        wonDeals: data.wonDeals,
+        lostDeals: data.lostDeals,
+        activeDeals: data.activeDeals,
+        averageCycleTime: Math.round(averageCycleTime)
+      };
+    }).sort((a, b) => b.conversionRate - a.conversionRate); // Сортируем по конверсии
+  }
+
+  private getManagerName(managerId: string): string {
+    // TODO: Получить реальное имя менеджера из справочника пользователей
+    // Пока возвращаем ID как имя
+    return `Менеджер ${managerId}`;
+  }
 
   getTopPerformer(): ManagerStats | null {
     if (this.managersStats.length === 0) return null;
