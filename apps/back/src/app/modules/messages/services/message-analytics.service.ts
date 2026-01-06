@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SmsMessage, MessageStatus } from '../entities/sms-message.entity';
 import { EmailMessage, EmailStatus } from '../entities/email-message.entity';
+import { WhatsAppMessage, WhatsAppMessageStatus } from '../entities/whatsapp-message.entity';
+import { TelegramMessage, TelegramMessageStatus } from '../entities/telegram-message.entity';
 import { MessageCampaign, MessageChannelType } from '../entities/message-campaign.entity';
 import { NotificationAnalytics, NotificationMetricType } from '../../shared/entities/notification-analytics.entity';
 
@@ -41,6 +43,10 @@ export class MessageAnalyticsService {
     private smsMessageRepository: Repository<SmsMessage>,
     @InjectRepository(EmailMessage)
     private emailMessageRepository: Repository<EmailMessage>,
+    @InjectRepository(WhatsAppMessage)
+    private whatsappMessageRepository: Repository<WhatsAppMessage>,
+    @InjectRepository(TelegramMessage)
+    private telegramMessageRepository: Repository<TelegramMessage>,
     @InjectRepository(MessageCampaign)
     private campaignRepository: Repository<MessageCampaign>,
     @InjectRepository(NotificationAnalytics)
@@ -49,11 +55,13 @@ export class MessageAnalyticsService {
 
   /**
    * Получение общей статистики панели управления
-   * Использует таблицы sms_messages и email_messages
+   * Использует таблицы sms_messages, email_messages, whatsapp_messages и telegram_messages
    */
   async getDashboardStats(dateRange?: AnalyticsDateRange): Promise<DashboardStats> {
     let smsQuery = this.smsMessageRepository.createQueryBuilder('sms');
     let emailQuery = this.emailMessageRepository.createQueryBuilder('email');
+    let whatsappQuery = this.whatsappMessageRepository.createQueryBuilder('whatsapp');
+    let telegramQuery = this.telegramMessageRepository.createQueryBuilder('telegram');
 
     if (dateRange) {
       smsQuery = smsQuery.where('sms.createdAt BETWEEN :startDate AND :endDate', {
@@ -61,6 +69,14 @@ export class MessageAnalyticsService {
         endDate: dateRange.endDate,
       });
       emailQuery = emailQuery.where('email.createdAt BETWEEN :startDate AND :endDate', {
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate,
+      });
+      whatsappQuery = whatsappQuery.where('whatsapp.createdAt BETWEEN :startDate AND :endDate', {
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate,
+      });
+      telegramQuery = telegramQuery.where('telegram.createdAt BETWEEN :startDate AND :endDate', {
         startDate: dateRange.startDate,
         endDate: dateRange.endDate,
       });
@@ -80,10 +96,24 @@ export class MessageAnalyticsService {
       emailQuery.clone().andWhere('email.status IN (:...statuses)', { statuses: [EmailStatus.PENDING, EmailStatus.QUEUED] }).getCount(),
     ]);
 
-    const total = smsTotal + emailTotal;
-    const delivered = smsDelivered + emailDelivered;
-    const failed = smsFailed + emailFailed;
-    const pending = smsPending + emailPending;
+    const [whatsappTotal, whatsappDelivered, whatsappFailed, whatsappPending] = await Promise.all([
+      whatsappQuery.clone().getCount(),
+      whatsappQuery.clone().andWhere('whatsapp.status = :status', { status: WhatsAppMessageStatus.DELIVERED }).getCount(),
+      whatsappQuery.clone().andWhere('whatsapp.status = :status', { status: WhatsAppMessageStatus.FAILED }).getCount(),
+      whatsappQuery.clone().andWhere('whatsapp.status IN (:...statuses)', { statuses: [WhatsAppMessageStatus.PENDING, WhatsAppMessageStatus.QUEUED] }).getCount(),
+    ]);
+
+    const [telegramTotal, telegramDelivered, telegramFailed, telegramPending] = await Promise.all([
+      telegramQuery.clone().getCount(),
+      telegramQuery.clone().andWhere('telegram.status = :status', { status: TelegramMessageStatus.DELIVERED }).getCount(),
+      telegramQuery.clone().andWhere('telegram.status = :status', { status: TelegramMessageStatus.FAILED }).getCount(),
+      telegramQuery.clone().andWhere('telegram.status IN (:...statuses)', { statuses: [TelegramMessageStatus.PENDING, TelegramMessageStatus.QUEUED] }).getCount(),
+    ]);
+
+    const total = smsTotal + emailTotal + whatsappTotal + telegramTotal;
+    const delivered = smsDelivered + emailDelivered + whatsappDelivered + telegramDelivered;
+    const failed = smsFailed + emailFailed + whatsappFailed + telegramFailed;
+    const pending = smsPending + emailPending + whatsappPending + telegramPending;
     const deliveryRate = total > 0 ? (delivered / total) * 100 : 0;
 
     return {
@@ -159,6 +189,66 @@ export class MessageAnalyticsService {
       delivered: emailDelivered,
       failed: emailFailed,
       deliveryRate: emailSent > 0 ? (emailDelivered / emailSent) * 100 : 0,
+    });
+
+    // WhatsApp статистика
+    let whatsappQuery = this.whatsappMessageRepository.createQueryBuilder('whatsapp');
+    if (dateRange) {
+      whatsappQuery = whatsappQuery.where('whatsapp.createdAt BETWEEN :startDate AND :endDate', {
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate,
+      });
+    }
+
+    const whatsappStats = await whatsappQuery
+      .select('COUNT(*)', 'sent')
+      .addSelect('SUM(CASE WHEN whatsapp.status = :delivered THEN 1 ELSE 0 END)', 'delivered')
+      .addSelect('SUM(CASE WHEN whatsapp.status = :failed THEN 1 ELSE 0 END)', 'failed')
+      .setParameter('delivered', WhatsAppMessageStatus.DELIVERED)
+      .setParameter('failed', WhatsAppMessageStatus.FAILED)
+      .getRawOne();
+
+    const whatsappSent = parseInt(whatsappStats?.sent || '0');
+    const whatsappDelivered = parseInt(whatsappStats?.delivered || '0');
+    const whatsappFailed = parseInt(whatsappStats?.failed || '0');
+
+    // Всегда добавляем WhatsApp канал
+    channelStats.push({
+      name: 'WhatsApp',
+      sent: whatsappSent,
+      delivered: whatsappDelivered,
+      failed: whatsappFailed,
+      deliveryRate: whatsappSent > 0 ? (whatsappDelivered / whatsappSent) * 100 : 0,
+    });
+
+    // Telegram статистика
+    let telegramQuery = this.telegramMessageRepository.createQueryBuilder('telegram');
+    if (dateRange) {
+      telegramQuery = telegramQuery.where('telegram.createdAt BETWEEN :startDate AND :endDate', {
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate,
+      });
+    }
+
+    const telegramStats = await telegramQuery
+      .select('COUNT(*)', 'sent')
+      .addSelect('SUM(CASE WHEN telegram.status = :delivered THEN 1 ELSE 0 END)', 'delivered')
+      .addSelect('SUM(CASE WHEN telegram.status = :failed THEN 1 ELSE 0 END)', 'failed')
+      .setParameter('delivered', TelegramMessageStatus.DELIVERED)
+      .setParameter('failed', TelegramMessageStatus.FAILED)
+      .getRawOne();
+
+    const telegramSent = parseInt(telegramStats?.sent || '0');
+    const telegramDelivered = parseInt(telegramStats?.delivered || '0');
+    const telegramFailed = parseInt(telegramStats?.failed || '0');
+
+    // Всегда добавляем Telegram канал
+    channelStats.push({
+      name: 'Telegram',
+      sent: telegramSent,
+      delivered: telegramDelivered,
+      failed: telegramFailed,
+      deliveryRate: telegramSent > 0 ? (telegramDelivered / telegramSent) * 100 : 0,
     });
 
     return channelStats;

@@ -104,10 +104,14 @@
               <div class="channel-box" [class.no-data]="channel.sent === 0">
                 <div class="channel-header">
                   <div class="channel-title">
-                    @if (channel.name === 'SMS') {
+                    @if (channel.name === 'SMS' || channel.name === 'sms') {
                       <mat-icon class="channel-icon sms">sms</mat-icon>
-                    } @else if (channel.name === 'Email') {
+                    } @else if (channel.name === 'Email' || channel.name === 'email') {
                       <mat-icon class="channel-icon email">email</mat-icon>
+                    } @else if (channel.name === 'WhatsApp' || channel.name === 'whatsapp') {
+                      <mat-icon class="channel-icon whatsapp">chat</mat-icon>
+                    } @else if (channel.name === 'Telegram' || channel.name === 'telegram') {
+                      <mat-icon class="channel-icon telegram">send</mat-icon>
                     } @else {
                       <mat-icon class="channel-icon">notifications</mat-icon>
                     }
