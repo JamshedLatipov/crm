@@ -168,6 +168,8 @@
       <app-softphone-call-history
         *ngIf="activeTab === 'history'"
         [operatorId]="sipUser"
+        (callRequested)="callFromHistory($event)"
+        (callDetailsRequested)="showCallDetailsModal($event)"
       />
 
       <!-- Info Tab (extracted to component) -->

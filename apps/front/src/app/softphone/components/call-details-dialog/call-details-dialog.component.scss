@@ -1,0 +1,206 @@
+.call-details-dialog {
+  width: 600px;
+  max-width: 90vw;
+
+  .dialog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+
+    h2 {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #1f2937;
+
+      mat-icon {
+        color: #3b82f6;
+      }
+    }
+
+    .close-btn {
+      color: #6b7280;
+
+      &:hover {
+        color: #374151;
+        background: #f3f4f6;
+      }
+    }
+  }
+
+  mat-dialog-content {
+    padding: 1.5rem;
+    max-height: 70vh;
+    overflow-y: auto;
+
+    .details-section {
+      margin-bottom: 1.5rem;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      .section-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+
+        mat-icon {
+          font-size: 1.25rem;
+          width: 1.25rem;
+          height: 1.25rem;
+          color: #6366f1;
+        }
+
+        h3 {
+          margin: 0;
+          font-size: 1rem;
+          font-weight: 600;
+          color: #374151;
+        }
+      }
+
+      .detail-row {
+        display: flex;
+        align-items: flex-start;
+        padding: 0.625rem 0;
+        border-bottom: 1px solid #f3f4f6;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        .label {
+          flex: 0 0 200px;
+          font-weight: 500;
+          color: #6b7280;
+          font-size: 0.875rem;
+        }
+
+        .value {
+          flex: 1;
+          color: #1f2937;
+          font-size: 0.875rem;
+          word-break: break-word;
+
+          &.mono {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.8125rem;
+          }
+
+          &.small {
+            font-size: 0.75rem;
+          }
+
+          mat-icon {
+            font-size: 1rem;
+            width: 1rem;
+            height: 1rem;
+            vertical-align: middle;
+            margin-right: 0.25rem;
+
+            &.incoming {
+              color: #059669;
+            }
+
+            &.outgoing {
+              color: #2563eb;
+            }
+          }
+
+          mat-chip {
+            font-size: 0.75rem;
+            min-height: 24px;
+            padding: 0 0.75rem;
+
+            &.status-answered {
+              background: #d1fae5;
+              color: #065f46;
+            }
+
+            &.status-no-answer,
+            &.status-busy {
+              background: #fef3c7;
+              color: #92400e;
+            }
+
+            &.status-failed {
+              background: #fee2e2;
+              color: #991b1b;
+            }
+
+            &.status-unknown {
+              background: #f3f4f6;
+              color: #4b5563;
+            }
+          }
+        }
+      }
+
+      .notes-content {
+        padding: 1rem;
+        background: #f9fafb;
+        border-radius: 0.375rem;
+        border: 1px solid #e5e7eb;
+        font-size: 0.875rem;
+        color: #374151;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+    }
+
+    mat-divider {
+      margin: 1.5rem 0;
+    }
+  }
+
+  mat-dialog-actions {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e5e7eb;
+  }
+}
+
+@media (max-width: 768px) {
+  .call-details-dialog {
+    width: 100%;
+
+    .dialog-header {
+      padding: 0.75rem 1rem;
+
+      h2 {
+        font-size: 1.125rem;
+      }
+    }
+
+    mat-dialog-content {
+      padding: 1rem;
+
+      .details-section {
+        .detail-row {
+          flex-direction: column;
+          gap: 0.25rem;
+
+          .label {
+            flex: none;
+            font-size: 0.75rem;
+          }
+
+          .value {
+            font-size: 0.8125rem;
+          }
+        }
+      }
+    }
+
+    mat-dialog-actions {
+      padding: 0.75rem 1rem;
+    }
+  }
+}
