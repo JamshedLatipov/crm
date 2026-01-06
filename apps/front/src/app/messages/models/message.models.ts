@@ -139,8 +139,12 @@ export interface Campaign {
   description?: string;
   type: CampaignType;
   status: CampaignStatus;
+  channel: MessageChannel; // Добавлено поле канала
   templateId?: string;
   segmentId?: string;
+  template?: any; // deprecated, для обратной совместимости
+  segment?: any;
+  templateData?: any; // Данные шаблона из бекенда
   scheduledAt?: Date;
   startedAt?: Date;
   completedAt?: Date;
@@ -149,6 +153,11 @@ export interface Campaign {
   totalDelivered: number;
   totalFailed: number;
   totalCost: number;
+  // Алиасы для обратной совместимости
+  sentCount?: number;
+  deliveredCount?: number;
+  failedCount?: number;
+  pendingCount?: number;
   settings: CampaignSettings;
   createdAt: Date;
   updatedAt: Date;
@@ -168,6 +177,7 @@ export interface CreateCampaignDto {
   name: string;
   description?: string;
   type: CampaignType;
+  channel?: MessageChannel;
   templateId: string;
   segmentId?: string | null;
   scheduledAt?: Date;

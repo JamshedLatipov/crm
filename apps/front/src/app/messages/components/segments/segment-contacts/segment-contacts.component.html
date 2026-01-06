@@ -1,0 +1,117 @@
+<app-page-layout
+  [title]="segment() ? segment()!.name : 'Контакты сегмента'"
+  [subtitle]="'Всего контактов: ' + totalContacts()"
+>
+  <div page-actions>
+    <button mat-stroked-button (click)="goBack()">
+      <mat-icon>arrow_back</mat-icon>
+      Назад к сегментам
+    </button>
+  </div>
+
+  @if (loading() && contacts().length === 0) {
+    <div class="loading-container">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
+  } @else if (contacts().length === 0) {
+    <div class="empty-state">
+      <mat-icon>people_outline</mat-icon>
+      <h3>Нет контактов</h3>
+      <p>В этом сегменте пока нет контактов</p>
+    </div>
+  } @else {
+    <!-- Информация о сегменте -->
+    @if (segment()) {
+      <div class="segment-info">
+        <div class="info-card">
+          <mat-icon>filter_alt</mat-icon>
+          <div>
+            <span class="label">Фильтры</span>
+            <span class="value">{{ segment()!.filters.length }}</span>
+          </div>
+        </div>
+        
+        <div class="info-card">
+          <mat-icon>account_tree</mat-icon>
+          <div>
+            <span class="label">Логика</span>
+            <span class="value">{{ segment()!.filterLogic }}</span>
+          </div>
+        </div>
+        
+        <div class="info-card">
+          <mat-icon>{{ segment()!.isDynamic ? 'sync' : 'lock' }}</mat-icon>
+          <div>
+            <span class="label">Тип</span>
+            <span class="value">{{ segment()!.isDynamic ? 'Динамический' : 'Статический' }}</span>
+          </div>
+        </div>
+
+        @if (segment()!.description) {
+          <div class="info-card description">
+            <mat-icon>description</mat-icon>
+            <div>
+              <span class="label">Описание</span>
+              <span class="value">{{ segment()!.description }}</span>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Таблица контактов -->
+    <crm-table
+      [columns]="columns"
+      [data]="contacts()"
+      [pageSize]="pageSize"
+    >
+      <ng-template crmColumnTemplate="emailTemplate" let-contact>
+        <a [href]="'mailto:' + contact.email" class="email-link">
+          {{ contact.email }}
+        </a>
+      </ng-template>
+
+      <ng-template crmColumnTemplate="phoneTemplate" let-contact>
+        <a [href]="'tel:' + contact.phone" class="phone-link">
+          <mat-icon>phone</mat-icon>
+          {{ contact.phone }}
+        </a>
+      </ng-template>
+
+      <ng-template crmColumnTemplate="statusTemplate" let-contact>
+        <mat-chip [class]="'status-' + getStatusColor(contact.status)">
+          {{ contact.status || 'N/A' }}
+        </mat-chip>
+      </ng-template>
+
+      <ng-template crmColumnTemplate="dateTemplate" let-contact>
+        <span class="date-text">{{ formatDate(contact.createdAt) }}</span>
+      </ng-template>
+    </crm-table>
+
+    <!-- Пагинация -->
+    @if (totalPages() > 1) {
+      <div class="pagination">
+        <button 
+          mat-icon-button 
+          [disabled]="currentPage() === 1 || loading()"
+          (click)="onPageChange(currentPage() - 1)"
+        >
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        
+        <span class="page-info">
+          Страница {{ currentPage() }} из {{ totalPages() }}
+        </span>
+        
+        <button 
+          mat-icon-button 
+          [disabled]="currentPage() === totalPages() || loading()"
+          (click)="onPageChange(currentPage() + 1)"
+        >
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+    }
+  }
+</app-page-layout>

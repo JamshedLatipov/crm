@@ -19,6 +19,7 @@ import {
   TestSettingDto,
 } from '../dto/setting.dto';
 import { JwtAuthGuard } from '../../user/jwt-auth.guard';
+import { Public } from '../decorators/public.decorator';
 
 @ApiTags('Settings')
 @ApiBearerAuth()
@@ -41,6 +42,7 @@ export class SettingController {
     return this.settingService.findByCategory(category);
   }
 
+  @Public()
   @Get('key/:key')
   @ApiOperation({ summary: 'Получить настройку по ключу' })
   @ApiResponse({ status: 200, description: 'Настройка найдена' })
@@ -78,6 +80,7 @@ export class SettingController {
     return { message: 'Setting deleted successfully' };
   }
 
+  @Public()
   @Post('initialize-defaults')
   @ApiOperation({ summary: 'Инициализировать настройки по умолчанию из .env' })
   @ApiResponse({ status: 200, description: 'Настройки инициализированы' })

@@ -337,4 +337,11 @@ export class EmailTemplateService {
 
     await this.emailTemplateRepository.save(template);
   }
+
+  /**
+   * Увеличить счётчик использования шаблона
+   */
+  async incrementUsageCount(id: string): Promise<void> {
+    await this.emailTemplateRepository.increment({ id }, 'totalSent', 1);
+  }
 }

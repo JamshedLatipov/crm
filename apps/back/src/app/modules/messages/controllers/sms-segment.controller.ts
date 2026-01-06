@@ -14,9 +14,9 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { SmsSegmentService } from '../services/sms-segment.service';
 import { CreateSegmentDto, UpdateSegmentDto } from '../dto/segment.dto';
 
-@ApiTags('SMS Segments')
+@ApiTags('Message Segments')
 @ApiBearerAuth()
-@Controller('sms/segments')
+@Controller('messages/segments')
 export class SmsSegmentController {
   constructor(private readonly segmentService: SmsSegmentService) {}
 
@@ -71,17 +71,25 @@ export class SmsSegmentController {
     return { message: 'Segment deleted successfully' };
   }
 
+  @Post(':id/duplicate')
+  @ApiOperation({ summary: 'Дублировать сегмент' })
+  @ApiResponse({ status: 201, description: 'Сегмент успешно дублирован' })
+  @ApiResponse({ status: 404, description: 'Сегмент не найден' })
+  async duplicate(@Param('id') id: string, @Req() req: any) {
+    return this.segmentService.duplicate(id, req.user);
+  }
+
   @Get(':id/contacts')
   @ApiOperation({ summary: 'Получить контакты сегмента' })
   @ApiResponse({ status: 200, description: 'Список контактов' })
   async getContacts(
     @Param('id') id: string,
-    @Query('limit') limit?: string,
-    @Query('offset') offset?: string
+    @Query('page') page?: string,
+    @Query('limit') limit?: string
   ) {
     return this.segmentService.getSegmentContacts(id, {
-      limit: limit ? parseInt(limit) : undefined,
-      offset: offset ? parseInt(offset) : undefined,
+      page: page ? parseInt(page) : 1,
+      limit: limit ? parseInt(limit) : 20,
     });
   }
 
@@ -92,12 +100,12 @@ export class SmsSegmentController {
     return this.segmentService.getSegmentPhoneNumbers(id);
   }
 
-  @Post(':id/recalculate')
-  @ApiOperation({ summary: 'Пересчитать количество контактов в сегменте' })
-  @ApiResponse({ status: 200, description: 'Сегмент пересчитан' })
-  async recalculate(@Param('id') id: string) {
+  @Post(':id/refresh')
+  @ApiOperation({ summary: 'Обновить количество контактов в сегменте' })
+  @ApiResponse({ status: 200, description: 'Сегмент обновлен' })
+  async refresh(@Param('id') id: string) {
     const count = await this.segmentService.recalculateSegment(id);
-    return { message: 'Segment recalculated', contactsCount: count };
+    return { count };
   }
 
   @Post('preview')

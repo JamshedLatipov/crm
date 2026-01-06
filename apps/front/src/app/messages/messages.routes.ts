@@ -176,6 +176,13 @@ export const MESSAGE_ROUTES: Routes = [
           ),
       },
       {
+        path: 'segments/:id/contacts',
+        loadComponent: () =>
+          import('./components/segments/segment-contacts/segment-contacts.component').then(
+            (m) => m.SegmentContactsComponent
+          ),
+      },
+      {
         path: 'settings',
         loadComponent: () =>
           import('./components/settings/settings.component').then((m) => m.SettingsComponent),

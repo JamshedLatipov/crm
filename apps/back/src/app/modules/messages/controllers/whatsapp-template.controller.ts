@@ -1,13 +1,12 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { WhatsAppTemplate } from '../entities/whatsapp-template.entity';
 import { CreateWhatsAppTemplateDto, UpdateWhatsAppTemplateDto } from '../dto/whatsapp-template.dto';
 import { BulkSendDto } from '../dto/bulk-send.dto';
+import { WhatsAppTemplateService } from '../services/whatsapp-template.service';
 import { TemplateRenderService } from '../services/template-render.service';
 import { MessageQueueService } from '../services/message-queue.service';
 import { JwtAuthGuard } from '../../user/jwt-auth.guard';
+import { PaginationDto } from '../../../common/dto/pagination.dto';
 
 @ApiTags('WhatsApp Templates')
 @Controller('messages/whatsapp/templates')
@@ -15,8 +14,7 @@ import { JwtAuthGuard } from '../../user/jwt-auth.guard';
 @ApiBearerAuth()
 export class WhatsAppTemplateController {
   constructor(
-    @InjectRepository(WhatsAppTemplate)
-    private readonly templateRepo: Repository<WhatsAppTemplate>,
+    private readonly templateService: WhatsAppTemplateService,
     private readonly renderService: TemplateRenderService,
     private readonly queueService: MessageQueueService,
   ) {}
@@ -28,29 +26,20 @@ export class WhatsAppTemplateController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('isActive') isActive?: boolean,
+    @Query('category') category?: string,
+    @Query('search') search?: string,
   ) {
-    const pageNum = page ? parseInt(page, 10) : 1;
-    const limitNum = limit ? parseInt(limit, 10) : 20;
-
-    const where: any = {};
-    if (isActive !== undefined) {
-      where.isActive = isActive;
-    }
-
-    const [data, total] = await this.templateRepo.findAndCount({
-      where,
-      skip: (pageNum - 1) * limitNum,
-      take: limitNum,
-      order: { createdAt: 'DESC' },
-    });
-
-    return {
-      data,
-      total,
-      page: pageNum,
-      limit: limitNum,
-      hasMore: total > pageNum * limitNum,
+    const paginationDto: PaginationDto = {
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 20,
     };
+
+    const filters: any = {};
+    if (isActive !== undefined) filters.isActive = isActive;
+    if (category) filters.category = category;
+    if (search) filters.search = search;
+
+    return this.templateService.findAll(paginationDto, filters);
   }
 
   @Get(':id')
@@ -58,59 +47,37 @@ export class WhatsAppTemplateController {
   @ApiResponse({ status: 200, description: 'Шаблон найден' })
   @ApiResponse({ status: 404, description: 'Шаблон не найден' })
   async findOne(@Param('id') id: string) {
-    const template = await this.templateRepo.findOne({ where: { id } });
-    if (!template) {
-      throw new Error('Template not found');
-    }
-    return template;
+    return this.templateService.findOne(id);
   }
 
   @Post()
   @ApiOperation({ summary: 'Создать новый WhatsApp шаблон' })
   @ApiResponse({ status: 201, description: 'Шаблон создан' })
   @ApiResponse({ status: 400, description: 'Некорректные данные' })
-  async create(@Body() dto: CreateWhatsAppTemplateDto) {
+  async create(@Body() dto: CreateWhatsAppTemplateDto, @Req() req: any) {
     // Валидация шаблона
     const validation = this.renderService.validateTemplate(dto.content);
     if (!validation.valid) {
       throw new Error(`Invalid variables: ${validation.invalidVariables.join(', ')}`);
     }
 
-    // Извлекаем переменные
-    const variables = this.renderService.extractVariables(dto.content);
-
-    const template = this.templateRepo.create({
-      ...dto,
-      variables, // Теперь это отдельное поле
-    });
-
-    return this.templateRepo.save(template);
+    return this.templateService.create(dto as any, req.user);
   }
 
-  @Put(':id')
+  @Patch(':id')
   @ApiOperation({ summary: 'Обновить WhatsApp шаблон' })
   @ApiResponse({ status: 200, description: 'Шаблон обновлен' })
   @ApiResponse({ status: 404, description: 'Шаблон не найден' })
   async update(@Param('id') id: string, @Body() dto: UpdateWhatsAppTemplateDto) {
-    const template = await this.templateRepo.findOne({ where: { id } });
-    if (!template) {
-      throw new Error('Template not found');
-    }
-
     // Если обновляется контент, валидируем его
     if (dto.content) {
       const validation = this.renderService.validateTemplate(dto.content);
       if (!validation.valid) {
         throw new Error(`Invalid variables: ${validation.invalidVariables.join(', ')}`);
       }
-
-      // Обновляем переменные (теперь отдельное поле)
-      const variables = this.renderService.extractVariables(dto.content);
-      template.variables = variables;
     }
 
-    Object.assign(template, dto);
-    return this.templateRepo.save(template);
+    return this.templateService.update(id, dto as any);
   }
 
   @Delete(':id')
@@ -118,10 +85,7 @@ export class WhatsAppTemplateController {
   @ApiResponse({ status: 200, description: 'Шаблон удален' })
   @ApiResponse({ status: 404, description: 'Шаблон не найден' })
   async remove(@Param('id') id: string) {
-    const result = await this.templateRepo.delete(id);
-    if (result.affected === 0) {
-      throw new Error('Template not found');
-    }
+    await this.templateService.remove(id);
     return { success: true, message: 'Template deleted' };
   }
 
@@ -129,13 +93,15 @@ export class WhatsAppTemplateController {
   @ApiOperation({ summary: 'Переключить статус активности шаблона' })
   @ApiResponse({ status: 200, description: 'Статус изменен' })
   async toggleActive(@Param('id') id: string) {
-    const template = await this.templateRepo.findOne({ where: { id } });
-    if (!template) {
-      throw new Error('Template not found');
-    }
+    const template = await this.templateService.findOne(id);
+    return this.templateService.update(id, { isActive: !template.isActive });
+  }
 
-    template.isActive = !template.isActive;
-    return this.templateRepo.save(template);
+  @Post(':id/duplicate')
+  @ApiOperation({ summary: 'Создать копию шаблона' })
+  @ApiResponse({ status: 201, description: 'Копия создана' })
+  async duplicate(@Param('id') id: string, @Req() req: any) {
+    return this.templateService.duplicate(id, req.user);
   }
 
   @Post(':id/preview')
@@ -145,10 +111,7 @@ export class WhatsAppTemplateController {
     @Param('id') id: string,
     @Body() contextIds: { contactId?: string; leadId?: number; dealId?: string; companyId?: string },
   ) {
-    const template = await this.templateRepo.findOne({ where: { id } });
-    if (!template) {
-      throw new Error('Template not found');
-    }
+    const template = await this.templateService.findOne(id);
 
     // Загружаем контекст
     const context = await this.renderService.loadContext(contextIds);
@@ -172,10 +135,7 @@ export class WhatsAppTemplateController {
   @ApiOperation({ summary: 'Массовая отправка WhatsApp сообщений' })
   @ApiResponse({ status: 200, description: 'Сообщения поставлены в очередь' })
   async sendBulk(@Param('id') id: string, @Body() dto: BulkSendDto) {
-    const template = await this.templateRepo.findOne({ where: { id } });
-    if (!template) {
-      throw new Error('Template not found');
-    }
+    const template = await this.templateService.findOne(id);
 
     if (!template.isActive) {
       throw new Error('Template is not active');

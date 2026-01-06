@@ -64,33 +64,36 @@
                 <mat-form-field appearance="outline">
                   <mat-label>Канал отправки</mat-label>
                   <mat-select formControlName="channel" (selectionChange)="onChannelChange()">
-                    <mat-option value="SMS">
+                    <mat-select-trigger>
+                      {{ getChannelDisplayName(form.get('channel')?.value) }}
+                    </mat-select-trigger>
+                    <mat-option value="sms">
                       <div class="channel-option">
-                        <mat-icon>sms</mat-icon>
+                        <mat-icon fontIcon="sms"></mat-icon>
                         <span>SMS</span>
                       </div>
                     </mat-option>
-                    <mat-option value="EMAIL">
+                    <mat-option value="email">
                       <div class="channel-option">
-                        <mat-icon>email</mat-icon>
+                        <mat-icon fontIcon="email"></mat-icon>
                         <span>Email</span>
                       </div>
                     </mat-option>
-                    <mat-option value="WHATSAPP">
+                    <mat-option value="whatsapp">
                       <div class="channel-option">
-                        <mat-icon>chat</mat-icon>
+                        <mat-icon fontIcon="chat"></mat-icon>
                         <span>WhatsApp</span>
                       </div>
                     </mat-option>
-                    <mat-option value="TELEGRAM">
+                    <mat-option value="telegram">
                       <div class="channel-option">
-                        <mat-icon>telegram</mat-icon>
+                        <mat-icon fontIcon="send"></mat-icon>
                         <span>Telegram</span>
                       </div>
                     </mat-option>
-                    <mat-option value="MULTI">
+                    <mat-option value="multi">
                       <div class="channel-option">
-                        <mat-icon>layers</mat-icon>
+                        <mat-icon fontIcon="layers"></mat-icon>
                         <span>Мультиканальная</span>
                       </div>
                     </mat-option>
@@ -203,16 +206,20 @@
               <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Сегмент получателей</mat-label>
                 <mat-select formControlName="segmentId">
-                  <mat-option value="">Все контакты</mat-option>
-                  <mat-option value="segment-1">VIP клиенты (245 контактов)</mat-option>
-                  <mat-option value="segment-2">Новые подписчики (1,234 контакта)</mat-option>
-                  <mat-option value="segment-3">Активные за 30 дней (567 контактов)</mat-option>
+                  @if (availableSegments().length === 0) {
+                    <mat-option disabled>Загрузка...</mat-option>
+                  }
+                  @for (segment of availableSegments(); track segment.id) {
+                    <mat-option [value]="segment.id">
+                      {{ segment.name }} ({{ segment.contactsCount || 0 }} контактов)
+                    </mat-option>
+                  }
                 </mat-select>
                 <mat-icon matPrefix>filter_list</mat-icon>
                 @if (form.get('segmentId')?.hasError('required')) {
                   <mat-error>Выберите сегмент</mat-error>
                 }
-                <mat-hint>Выберите сегмент или отправьте всем</mat-hint>
+                <mat-hint>Выберите сегмент получателей</mat-hint>
               </mat-form-field>
             </div>
 

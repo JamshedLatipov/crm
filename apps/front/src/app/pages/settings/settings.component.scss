@@ -1,0 +1,128 @@
+.settings-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.settings-header {
+  margin-bottom: 32px;
+}
+
+.page-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 28px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 8px 0;
+
+  mat-icon {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+    color: #6366f1;
+  }
+}
+
+.page-description {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.settings-tabs {
+  ::ng-deep .mat-mdc-tab-label {
+    min-width: 140px;
+    padding: 0 24px;
+  }
+
+  ::ng-deep .mat-mdc-tab-body-wrapper {
+    padding-top: 24px;
+  }
+}
+
+.tab-icon {
+  margin-right: 8px;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+.tab-content {
+  padding: 0;
+}
+
+.settings-card {
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.pricing-form,
+.general-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 0;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-field {
+  width: 100%;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+
+  button {
+    mat-icon {
+      margin-right: 8px;
+    }
+  }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 24px;
+  text-align: center;
+
+  mat-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    color: #d1d5db;
+    margin-bottom: 16px;
+  }
+
+  p {
+    font-size: 16px;
+    color: #6b7280;
+    margin: 0;
+  }
+}
+
+::ng-deep .mat-mdc-card-header {
+  padding: 24px 24px 0;
+}
+
+::ng-deep .mat-mdc-card-content {
+  padding: 0 24px 24px;
+}

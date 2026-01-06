@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import {
   Setting,
   SettingCategory,
@@ -80,5 +81,18 @@ export class SettingService {
    */
   test(dto: TestSettingDto): Observable<TestSettingResponse> {
     return this.http.post<TestSettingResponse>(`${this.apiUrl}/test`, dto);
+  }
+
+  /**
+   * Получить стоимость отправки сообщения для указанного канала
+   * @param channel - Канал отправки (sms, email, whatsapp, telegram)
+   * @returns Observable с числовым значением стоимости
+   */
+  getCostPerMessage(channel: string): Observable<number> {
+    const key = `${channel.toUpperCase()}_COST_PER_MESSAGE`;
+    return this.findByKey(key).pipe(
+      map(setting => setting?.value ? parseFloat(setting.value) : 0),
+      catchError(() => of(0))
+    );
   }
 }

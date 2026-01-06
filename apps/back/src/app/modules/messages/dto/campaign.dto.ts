@@ -12,6 +12,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CampaignType } from '../entities/sms-campaign.entity';
+import { MessageChannel } from '../services/message-queue.service';
 
 export class CampaignSettingsDto {
   @ApiProperty({ description: 'Скорость отправки (сообщений в минуту)', required: false, default: 60 })
@@ -53,7 +54,16 @@ export class CreateCampaignDto {
   @IsString()
   description?: string;
 
-  @ApiProperty({ description: 'ID шаблона СМС' })
+  @ApiProperty({ 
+    description: 'Канал отправки', 
+    enum: MessageChannel,
+    default: MessageChannel.SMS 
+  })
+  @IsOptional()
+  @IsEnum(MessageChannel)
+  channel?: MessageChannel;
+
+  @ApiProperty({ description: 'ID шаблона' })
   @IsString()
   templateId: string;
 
@@ -96,7 +106,16 @@ export class UpdateCampaignDto {
   @IsString()
   description?: string;
 
-  @ApiProperty({ description: 'ID шаблона СМС', required: false })
+  @ApiProperty({ 
+    description: 'Канал отправки', 
+    enum: MessageChannel,
+    required: false 
+  })
+  @IsOptional()
+  @IsEnum(MessageChannel)
+  channel?: MessageChannel;
+
+  @ApiProperty({ description: 'ID шаблона', required: false })
   @IsOptional()
   @IsString()
   templateId?: string;

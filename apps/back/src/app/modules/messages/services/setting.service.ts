@@ -260,6 +260,12 @@ export class SettingService {
       { key: 'WEBHOOK_AUTH_TYPE', value: process.env.WEBHOOK_AUTH_TYPE || 'none', category: SettingCategory.WEBHOOK, description: 'Тип авторизации (none, basic, bearer, api_key)' },
       { key: 'WEBHOOK_AUTH_VALUE', value: process.env.WEBHOOK_AUTH_VALUE || '', category: SettingCategory.WEBHOOK, isSecret: true, description: 'Значение авторизации' },
       
+      // Campaign Cost Settings
+      { key: 'SMS_COST_PER_MESSAGE', value: process.env.SMS_COST_PER_MESSAGE || '1.50', category: SettingCategory.CAMPAIGN, description: 'Стоимость отправки одного SMS сообщения в рублях' },
+      { key: 'EMAIL_COST_PER_MESSAGE', value: process.env.EMAIL_COST_PER_MESSAGE || '0.05', category: SettingCategory.CAMPAIGN, description: 'Стоимость отправки одного Email сообщения в рублях' },
+      { key: 'WHATSAPP_COST_PER_MESSAGE', value: process.env.WHATSAPP_COST_PER_MESSAGE || '0.80', category: SettingCategory.CAMPAIGN, description: 'Стоимость отправки одного WhatsApp сообщения в рублях' },
+      { key: 'TELEGRAM_COST_PER_MESSAGE', value: process.env.TELEGRAM_COST_PER_MESSAGE || '0.00', category: SettingCategory.CAMPAIGN, description: 'Стоимость отправки одного Telegram сообщения в рублях (обычно бесплатно)' },
+      
       // Feature Flags
       { key: 'FEATURE_SMS_ENABLED', value: process.env.FEATURE_SMS_ENABLED || 'true', category: SettingCategory.FEATURE, description: 'Включить SMS' },
       { key: 'FEATURE_EMAIL_ENABLED', value: process.env.FEATURE_EMAIL_ENABLED || 'true', category: SettingCategory.FEATURE, description: 'Включить Email' },

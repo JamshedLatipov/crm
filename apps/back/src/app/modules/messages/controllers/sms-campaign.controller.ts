@@ -24,7 +24,7 @@ import { CampaignStatus, CampaignType } from '../entities/sms-campaign.entity';
 
 @ApiTags('SMS Campaigns')
 @ApiBearerAuth()
-@Controller('sms/campaigns')
+@Controller('messages/campaigns')
 export class SmsCampaignController {
   constructor(private readonly campaignService: SmsCampaignService) {}
 

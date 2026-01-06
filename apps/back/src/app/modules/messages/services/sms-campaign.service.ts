@@ -6,10 +6,14 @@ import { SmsCampaign, CampaignStatus, CampaignType } from '../entities/sms-campa
 import { SmsMessage, MessageStatus } from '../entities/sms-message.entity';
 import { CreateCampaignDto, UpdateCampaignDto } from '../dto/campaign.dto';
 import { SmsTemplateService } from './sms-template.service';
+import { EmailTemplateService } from './email-template.service';
+import { WhatsAppTemplateService } from './whatsapp-template.service';
+import { TelegramTemplateService } from './telegram-template.service';
 import { SmsSegmentService } from './sms-segment.service';
 import { SmsProviderService } from './sms-provider.service';
 import { User } from '../../user/user.entity';
 import { QueueProducerService } from '../../queues/queue-producer.service';
+import { MessageChannel } from './message-queue.service';
 
 @Injectable()
 export class SmsCampaignService {
@@ -20,7 +24,10 @@ export class SmsCampaignService {
     private campaignRepository: Repository<SmsCampaign>,
     @InjectRepository(SmsMessage)
     private messageRepository: Repository<SmsMessage>,
-    private templateService: SmsTemplateService,
+    private smsTemplateService: SmsTemplateService,
+    private emailTemplateService: EmailTemplateService,
+    private whatsappTemplateService: WhatsAppTemplateService,
+    private telegramTemplateService: TelegramTemplateService,
     private segmentService: SmsSegmentService,
     private providerService: SmsProviderService,
     @Optional() private queueProducer?: QueueProducerService,
@@ -30,8 +37,27 @@ export class SmsCampaignService {
    * Создание новой кампании
    */
   async create(createDto: CreateCampaignDto, user: User): Promise<SmsCampaign> {
-    // Проверяем существование шаблона
-    const template = await this.templateService.findOne(createDto.templateId);
+    // Определяем канал (по умолчанию SMS для обратной совместимости)
+    const channel = createDto.channel || MessageChannel.SMS;
+    
+    // Проверяем существование шаблона в зависимости от канала
+    let template;
+    switch (channel) {
+      case MessageChannel.SMS:
+        template = await this.smsTemplateService.findOne(createDto.templateId);
+        break;
+      case MessageChannel.EMAIL:
+        template = await this.emailTemplateService.findOne(createDto.templateId);
+        break;
+      case MessageChannel.WHATSAPP:
+        template = await this.whatsappTemplateService.findOne(createDto.templateId);
+        break;
+      case MessageChannel.TELEGRAM:
+        template = await this.telegramTemplateService.findOne(createDto.templateId);
+        break;
+      default:
+        throw new BadRequestException(`Канал ${channel} не поддерживается`);
+    }
 
     // Проверяем существование сегмента (если указан)
     let segment = null;
@@ -39,10 +65,12 @@ export class SmsCampaignService {
       segment = await this.segmentService.findOne(createDto.segmentId);
     }
 
+    // Создаем кампанию с новыми полями templateId и channel
     const campaign = this.campaignRepository.create({
       name: createDto.name,
       description: createDto.description,
-      template,
+      templateId: createDto.templateId, // Просто UUID без FK
+      channel: channel, // Канал для определения типа шаблона
       segment,
       type: createDto.type || CampaignType.IMMEDIATE,
       scheduledAt: createDto.scheduledAt ? new Date(createDto.scheduledAt) : null,
@@ -105,6 +133,27 @@ export class SmsCampaignService {
       throw new NotFoundException(`Campaign with ID ${id} not found`);
     }
 
+    // Динамически загружаем шаблон на основе канала
+    if (campaign.templateId && campaign.channel) {
+      let template;
+      switch (campaign.channel) {
+        case MessageChannel.SMS:
+          template = await this.smsTemplateService.findOne(campaign.templateId);
+          break;
+        case MessageChannel.EMAIL:
+          template = await this.emailTemplateService.findOne(campaign.templateId);
+          break;
+        case MessageChannel.WHATSAPP:
+          template = await this.whatsappTemplateService.findOne(campaign.templateId);
+          break;
+        case MessageChannel.TELEGRAM:
+          template = await this.telegramTemplateService.findOne(campaign.templateId);
+          break;
+      }
+      // Добавляем шаблон в объект кампании для обратной совместимости
+      (campaign as any).templateData = template;
+    }
+
     return campaign;
   }
 
@@ -120,7 +169,35 @@ export class SmsCampaignService {
     }
 
     if (updateDto.templateId) {
-      campaign.template = await this.templateService.findOne(updateDto.templateId);
+      // Проверяем существование шаблона в зависимости от канала
+      const channel = updateDto.channel || campaign.channel;
+      let template;
+      switch (channel) {
+        case MessageChannel.SMS:
+          template = await this.smsTemplateService.findOne(updateDto.templateId);
+          break;
+        case MessageChannel.EMAIL:
+          template = await this.emailTemplateService.findOne(updateDto.templateId);
+          break;
+        case MessageChannel.WHATSAPP:
+          template = await this.whatsappTemplateService.findOne(updateDto.templateId);
+          break;
+        case MessageChannel.TELEGRAM:
+          template = await this.telegramTemplateService.findOne(updateDto.templateId);
+          break;
+        default:
+          throw new BadRequestException(`Unsupported channel: ${channel}`);
+      }
+      
+      if (!template) {
+        throw new NotFoundException(`Template with ID ${updateDto.templateId} not found for channel ${channel}`);
+      }
+
+      // Обновляем templateId и channel
+      campaign.templateId = updateDto.templateId;
+      if (updateDto.channel) {
+        campaign.channel = updateDto.channel;
+      }
     }
 
     if (updateDto.segmentId) {
@@ -161,6 +238,13 @@ export class SmsCampaignService {
       throw new BadRequestException('Campaign must have a segment');
     }
 
+    // Получаем шаблон (из нового поля templateData или старого template)
+    const template = (campaign as any).templateData || campaign.template;
+    
+    if (!template) {
+      throw new BadRequestException('Campaign must have a template');
+    }
+
     // Получаем контакты из сегмента
     const phoneNumbers = await this.segmentService.getSegmentPhoneNumbers(campaign.segment.id);
 
@@ -169,7 +253,7 @@ export class SmsCampaignService {
     // Создаём сообщения для каждого контакта
     const messages = phoneNumbers.map((contact) => {
       // Рендерим шаблон (в базовой версии без переменных)
-      const content = campaign.template.content;
+      const content = template.content;
 
       return this.messageRepository.create({
         campaign,
@@ -430,7 +514,30 @@ export class SmsCampaignService {
       await this.messageRepository.save(message);
 
       // Обновляем статистику использования шаблона
-      await this.templateService.incrementUsageCount(message.campaign.template.id);
+      try {
+        if (message.campaign.templateId && message.campaign.channel) {
+          switch (message.campaign.channel) {
+            case MessageChannel.SMS:
+              await this.smsTemplateService.incrementUsageCount(message.campaign.templateId);
+              break;
+            case MessageChannel.EMAIL:
+              await this.emailTemplateService.incrementUsageCount(message.campaign.templateId);
+              break;
+            case MessageChannel.WHATSAPP:
+              await this.whatsappTemplateService.incrementUsageCount(message.campaign.templateId);
+              break;
+            case MessageChannel.TELEGRAM:
+              await this.telegramTemplateService.incrementUsageCount(message.campaign.templateId);
+              break;
+          }
+        } else if (message.campaign.template) {
+          // Fallback для старых кампаний
+          await this.smsTemplateService.incrementUsageCount(message.campaign.template.id);
+        }
+      } catch (error) {
+        // Игнорируем ошибки обновления счетчика, это не критично
+        this.logger.warn(`Failed to increment usage count for template ${message.campaign.templateId || message.campaign.template?.id}`);
+      }
     } catch (error) {
       this.logger.error(`Failed to send message ${messageId}: ${error.message}`, error.stack);
 

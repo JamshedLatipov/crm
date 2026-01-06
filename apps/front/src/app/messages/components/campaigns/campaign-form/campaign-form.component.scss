@@ -84,7 +84,7 @@ mat-divider { margin: 32px 0; border-top-color: #e5e7eb; }
 .channel-option mat-icon { 
   font-size: 20px; 
   width: 20px; 
-  height: 20px; 
+  height: 20px;
 }
 
 .template-preview { 
@@ -245,6 +245,14 @@ mat-divider { margin: 32px 0; border-top-color: #e5e7eb; }
   font-size: 18px;
   font-weight: 700;
   color: #111827;
+}
+
+.info-hint {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: #6b7280;
+  margin-top: 2px;
 }
 
 .tips-list {

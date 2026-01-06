@@ -10,7 +10,23 @@ import { User } from '../../user/user.entity';
 
 export interface SegmentFilter {
   field: string; // Например: 'leadStatus', 'dealAmount', 'lastContactDate'
-  operator: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'greater' | 'less' | 'between' | 'in' | 'not_in';
+  operator: 
+    | 'equals' 
+    | 'notEquals' 
+    | 'not_equals' 
+    | 'contains' 
+    | 'notContains'
+    | 'not_contains' 
+    | 'startsWith'
+    | 'starts_with'
+    | 'endsWith'
+    | 'ends_with'
+    | 'greater' 
+    | 'less' 
+    | 'between' 
+    | 'in' 
+    | 'notIn'
+    | 'not_in';
   value: any;
 }
 

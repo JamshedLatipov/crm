@@ -34,7 +34,9 @@ import { SmsSegmentService } from './services/sms-segment.service';
 import { SmsAnalyticsService } from './services/sms-analytics.service';
 import { EmailProviderService } from './services/email-provider.service';
 import { WhatsAppProviderService } from './services/whatsapp-provider.service';
+import { WhatsAppTemplateService } from './services/whatsapp-template.service';
 import { TelegramProviderService } from './services/telegram-provider.service';
+import { TelegramTemplateService } from './services/telegram-template.service';
 import { RestApiProviderService } from './services/rest-api-provider.service';
 import { NotificationService } from './services/notification.service';
 import { EmailTemplateService } from './services/email-template.service';
@@ -132,11 +134,13 @@ import { SettingController } from './controllers/setting.controller';
     SmsSegmentService,
     SmsAnalyticsService,
     EmailProviderService,
+    EmailTemplateService,
     WhatsAppProviderService,
+    WhatsAppTemplateService,
     TelegramProviderService,
+    TelegramTemplateService,
     RestApiProviderService,
     NotificationService,
-    EmailTemplateService,
     TemplateRenderService,
     MessageQueueService,
     MessageAnalyticsService,
@@ -150,11 +154,13 @@ import { SettingController } from './controllers/setting.controller';
     SmsSegmentService,
     SmsAnalyticsService,
     EmailProviderService,
+    EmailTemplateService,
     WhatsAppProviderService,
+    WhatsAppTemplateService,
     TelegramProviderService,
+    TelegramTemplateService,
     RestApiProviderService,
     NotificationService,
-    EmailTemplateService,
     TemplateRenderService,
     MessageQueueService,
     MessageAnalyticsService,

@@ -1172,6 +1172,9 @@ export class CampaignWizardComponent {
   loadingTemplates = signal(false);
   loadingSegments = signal(false);
   minDate = new Date();
+  
+  // Signal для отслеживания выбранного канала
+  selectedChannel = signal<string>('SMS');
 
   basicInfoForm: FormGroup;
   channelForm: FormGroup;
@@ -1181,7 +1184,7 @@ export class CampaignWizardComponent {
 
   // Computed property для получения текущих шаблонов в зависимости от выбранного канала
   availableTemplates = computed(() => {
-    const channel = this.channelForm?.get('channel')?.value;
+    const channel = this.selectedChannel();
     switch (channel) {
       case 'SMS':
         return this.smsTemplateService.templates();
@@ -1282,6 +1285,10 @@ export class CampaignWizardComponent {
 
   selectChannel(channel: string) {
     this.channelForm.patchValue({ channel });
+    this.selectedChannel.set(channel); // Обновляем signal для реактивности
+    
+    // Сбрасываем выбранный шаблон при смене канала
+    this.contentForm.patchValue({ templateId: null });
     
     // Загрузить шаблоны для выбранного канала
     this.loadingTemplates.set(true);
@@ -1386,6 +1393,7 @@ export class CampaignWizardComponent {
       name: this.basicInfoForm.value.name,
       description: this.basicInfoForm.value.description,
       type: this.scheduleForm.value.scheduleType === 'immediate' ? CampaignType.IMMEDIATE : CampaignType.SCHEDULED,
+      channel: this.selectedChannel().toLowerCase() as any, // Приводим к lowercase для backend
       templateId: this.contentForm.value.templateId,
       segmentId: this.audienceForm.value.segmentId,
       scheduledAt: scheduledDateTime

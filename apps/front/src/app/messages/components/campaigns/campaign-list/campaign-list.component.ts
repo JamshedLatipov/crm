@@ -10,7 +10,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.component';
-import { CrmTableComponent, CrmColumn } from '../../../../shared/components/crm-table/crm-table.component';
+import { CrmTableComponent, CrmColumn, CrmColumnTemplateDirective } from '../../../../shared/components/crm-table/crm-table.component';
 import { CampaignService } from '../../../services/campaign.service';
 import { Campaign } from '../../../models/message.models';
 
@@ -29,7 +29,8 @@ import { Campaign } from '../../../models/message.models';
     MatSnackBarModule,
     MatDialogModule,
     PageLayoutComponent,
-    CrmTableComponent
+    CrmTableComponent,
+    CrmColumnTemplateDirective
   ],
   templateUrl: './campaign-list.component.html',
   styleUrl: './campaign-list.component.scss'
@@ -58,7 +59,12 @@ export class CampaignListComponent implements OnInit {
 
   loadCampaigns() {
     this.campaignService.getAll().subscribe({
+      next: (campaigns) => {
+        console.log('Loaded campaigns:', campaigns);
+        console.log('Campaigns signal:', this.campaigns());
+      },
       error: (error) => {
+        console.error('Error loading campaigns:', error);
         this.snackBar.open('Ошибка загрузки кампаний', 'Закрыть', { duration: 3000 });
       }
     });
@@ -114,8 +120,15 @@ export class CampaignListComponent implements OnInit {
 
   getChannelIcon(channel: string): string {
     const icons: Record<string, string> = {
+      sms: 'sms',
       SMS: 'sms',
+      email: 'email',
       EMAIL: 'email',
+      whatsapp: 'chat',
+      WHATSAPP: 'chat',
+      telegram: 'telegram',
+      TELEGRAM: 'telegram',
+      webhook: 'webhook',
       WEBHOOK: 'webhook'
     };
     return icons[channel] || 'notifications';

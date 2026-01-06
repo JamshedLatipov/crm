@@ -131,27 +131,61 @@ export class SmsSegmentService {
   }
 
   /**
-   * Получение контактов по сегменту
+   * Дублирование сегмента
+   */
+  async duplicate(id: string, user: User): Promise<SmsSegment> {
+    const segment = await this.findOne(id);
+
+    const duplicate = this.segmentRepository.create({
+      name: `${segment.name} (копия)`,
+      description: segment.description,
+      filters: segment.filters,
+      filterLogic: segment.filterLogic,
+      isDynamic: segment.isDynamic,
+      isActive: segment.isActive,
+      createdBy: user,
+    });
+
+    const savedSegment = await this.segmentRepository.save(duplicate);
+
+    // Подсчитываем количество контактов в новом сегменте
+    await this.recalculateSegment(savedSegment.id);
+
+    return this.findOne(savedSegment.id);
+  }
+
+  /**
+   * Получение контактов по сегменту с пагинацией
    */
   async getSegmentContacts(segmentId: string, options?: {
+    page?: number;
     limit?: number;
-    offset?: number;
-  }): Promise<{ contacts: Contact[]; total: number }> {
+  }): Promise<{
+    data: Contact[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
     const segment = await this.findOne(segmentId);
+
+    const page = options?.page || 1;
+    const limit = options?.limit || 20;
+    const skip = (page - 1) * limit;
 
     const query = this.buildContactQuery(segment.filters, segment.filterLogic);
 
-    if (options?.limit) {
-      query.take(options.limit);
-    }
+    query.skip(skip).take(limit);
 
-    if (options?.offset) {
-      query.skip(options.offset);
-    }
+    const [data, total] = await query.getManyAndCount();
 
-    const [contacts, total] = await query.getManyAndCount();
-
-    return { contacts, total };
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   /**
@@ -223,6 +257,7 @@ export class SmsSegmentService {
           parameters[paramKey] = filter.value;
           break;
 
+        case 'notEquals':
         case 'not_equals':
           condition = `contact.${filter.field} != :${paramKey}`;
           parameters[paramKey] = filter.value;
@@ -233,9 +268,22 @@ export class SmsSegmentService {
           parameters[paramKey] = `%${filter.value}%`;
           break;
 
+        case 'notContains':
         case 'not_contains':
           condition = `contact.${filter.field} NOT ILIKE :${paramKey}`;
           parameters[paramKey] = `%${filter.value}%`;
+          break;
+
+        case 'startsWith':
+        case 'starts_with':
+          condition = `contact.${filter.field} ILIKE :${paramKey}`;
+          parameters[paramKey] = `${filter.value}%`;
+          break;
+
+        case 'endsWith':
+        case 'ends_with':
+          condition = `contact.${filter.field} ILIKE :${paramKey}`;
+          parameters[paramKey] = `%${filter.value}`;
           break;
 
         case 'greater':
@@ -259,6 +307,7 @@ export class SmsSegmentService {
           parameters[paramKey] = Array.isArray(filter.value) ? filter.value : [filter.value];
           break;
 
+        case 'notIn':
         case 'not_in':
           condition = `contact.${filter.field} NOT IN (:...${paramKey})`;
           parameters[paramKey] = Array.isArray(filter.value) ? filter.value : [filter.value];

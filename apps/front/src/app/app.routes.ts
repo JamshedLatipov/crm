@@ -114,6 +114,12 @@ export const appRoutes: Route[] = [
     { path: 'promo-companies', component: PromoCompaniesComponent, canActivate: [authGuard] },
     { path: 'integrations', component: IntegrationsComponent, canActivate: [authGuard] },
     { path: 'client-info', component: ClientInfoPageComponent, canActivate: [authGuard] },
+    // Settings page
+    { 
+        path: 'settings', 
+        loadComponent: () => import('./pages/settings/settings.component').then(m => m.SettingsComponent),
+        canActivate: [authGuard] 
+    },
     // Forecasting routes
     {
         path: 'forecasting',

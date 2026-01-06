@@ -12,6 +12,7 @@ import { User } from '../../user/user.entity';
 import { SmsTemplate } from './sms-template.entity';
 import { SmsSegment } from './sms-segment.entity';
 import { SmsMessage } from './sms-message.entity';
+import { MessageChannel } from '../services/message-queue.service';
 
 export enum CampaignStatus {
   DRAFT = 'draft',
@@ -49,8 +50,20 @@ export class SmsCampaign {
   @Column({ nullable: true })
   description: string;
 
-  @ManyToOne(() => SmsTemplate)
-  @JoinColumn({ name: 'templateId' })
+  // Новые поля для мультиканальной поддержки
+  @Column({ type: 'uuid', nullable: true })
+  templateId: string;
+
+  @Column({
+    type: 'enum',
+    enum: MessageChannel,
+    default: MessageChannel.SMS,
+  })
+  channel: MessageChannel;
+
+  // DEPRECATED: Оставлен для обратной совместимости со старыми SMS кампаниями
+  @ManyToOne(() => SmsTemplate, { nullable: true })
+  @JoinColumn({ name: 'legacyTemplateId' })
   template: SmsTemplate;
 
   @ManyToOne(() => SmsSegment, { nullable: true })

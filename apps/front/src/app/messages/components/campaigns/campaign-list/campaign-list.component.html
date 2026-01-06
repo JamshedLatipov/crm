@@ -40,9 +40,9 @@
       </ng-template>
 
       <ng-template crmColumnTemplate="channelTemplate" let-campaign>
-        <div class="channel-badge" [class]="'channel-' + campaign.channel.toLowerCase()">
-          <mat-icon>{{ getChannelIcon(campaign.channel) }}</mat-icon>
-          <span>{{ campaign.channel }}</span>
+        <div class="channel-badge" [class]="'channel-' + (campaign.channel || 'sms').toLowerCase()">
+          <mat-icon>{{ getChannelIcon(campaign.channel || 'sms') }}</mat-icon>
+          <span>{{ campaign.channel || 'SMS' }}</span>
         </div>
       </ng-template>
 
@@ -54,9 +54,9 @@
 
       <ng-template crmColumnTemplate="progressTemplate" let-campaign>
         <div class="progress-info">
-          <span>{{ campaign.sentCount }} / {{ campaign.totalRecipients }}</span>
+          <span>{{ campaign.totalSent || campaign.sentCount || 0 }} / {{ campaign.totalRecipients || 0 }}</span>
           <div class="progress-bar">
-            <div class="progress-fill" [style.width.%]="(campaign.sentCount / campaign.totalRecipients) * 100"></div>
+            <div class="progress-fill" [style.width.%]="campaign.totalRecipients > 0 ? ((campaign.totalSent || campaign.sentCount || 0) / campaign.totalRecipients) * 100 : 0"></div>
           </div>
         </div>
       </ng-template>
@@ -76,10 +76,10 @@
             <mat-icon>pause</mat-icon>
           </button>
         }
-        <button mat-icon-button [routerLink]="['/notifications/campaigns', campaign.id]" matTooltip="Редактировать">
+        <button mat-icon-button [routerLink]="['/messages/campaigns', campaign.id]" matTooltip="Редактировать">
           <mat-icon>edit</mat-icon>
         </button>
-        <button mat-icon-button [routerLink]="['/notifications/campaigns', campaign.id, 'stats']" matTooltip="Статистика">
+        <button mat-icon-button [routerLink]="['/messages/campaigns', campaign.id, 'stats']" matTooltip="Статистика">
           <mat-icon>bar_chart</mat-icon>
         </button>
         <button mat-icon-button [matMenuTriggerFor]="actionMenu" matTooltip="Еще">

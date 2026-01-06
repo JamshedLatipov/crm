@@ -10,7 +10,7 @@ import { environment } from '@crm/front/environments/environment';
 })
 export class SegmentService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = environment.apiBase + '/sms/segments';
+  private readonly apiUrl = environment.apiBase + '/messages/segments';
 
   // Signals для реактивного состояния
   segments = signal<Segment[]>([]);

@@ -47,7 +47,7 @@
         <button mat-icon-button [routerLink]="['/messages/segments', segment.id]" matTooltip="Редактировать">
           <mat-icon>edit</mat-icon>
         </button>
-        <button mat-icon-button matTooltip="Просмотр контактов">
+        <button mat-icon-button [routerLink]="['/messages/segments', segment.id, 'contacts']" matTooltip="Просмотр контактов">
           <mat-icon>people</mat-icon>
         </button>
         <button mat-icon-button [matMenuTriggerFor]="actionMenu" matTooltip="Еще">
