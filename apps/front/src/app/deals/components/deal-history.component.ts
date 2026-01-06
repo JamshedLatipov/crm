@@ -23,6 +23,7 @@ import {
   DealHistoryResponse, 
   DealChangeType 
 } from '../../pipeline/dtos';
+import { CurrencyService } from '../../services/currency.service';
 
 @Component({
   selector: 'app-deal-history',
@@ -276,6 +277,7 @@ export class DealHistoryComponent implements OnInit, OnChanges {
   @Input() dealId!: string;
 
   private readonly dealsService = inject(DealsService);
+  private readonly currencyService = inject(CurrencyService);
 
   // Данные
   history: DealHistory[] = [];
@@ -468,7 +470,7 @@ export class DealHistoryComponent implements OnInit, OnChanges {
     // Форматирование в зависимости от типа поля
     switch (fieldName) {
       case 'amount':
-        return new Intl.NumberFormat('ru-RU').format(Number(value)) + ' ₽';
+        return this.currencyService.formatAmount(Number(value));
       case 'probability':
         return value + '%';
       case 'expectedCloseDate':

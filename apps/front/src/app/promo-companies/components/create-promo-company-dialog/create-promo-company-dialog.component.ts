@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
@@ -14,6 +14,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { PromoCompaniesService } from '../../services/promo-companies.service';
 import { CreatePromoCompanyRequest } from '../../models/promo-company.model';
+import { CurrencySymbolPipe } from '../../../shared/pipes/currency-symbol.pipe';
 
 @Component({
   selector: 'app-create-promo-company-dialog',
@@ -31,6 +32,7 @@ import { CreatePromoCompanyRequest } from '../../models/promo-company.model';
     MatSnackBarModule,
     MatIconModule,
     MatProgressSpinnerModule,
+    CurrencySymbolPipe,
   ],
   template: `
     <div mat-dialog-title class="dialog-header">
@@ -101,7 +103,7 @@ import { CreatePromoCompanyRequest } from '../../models/promo-company.model';
               </mat-form-field>
 
               <mat-form-field appearance="outline">
-                <mat-label>Бюджет (₽)</mat-label>
+                <mat-label>Бюджет ({{ '' | currencySymbol }})</mat-label>
                 <input matInput type="number" formControlName="budget" placeholder="0">
                 <mat-icon matSuffix>attach_money</mat-icon>
               </mat-form-field>

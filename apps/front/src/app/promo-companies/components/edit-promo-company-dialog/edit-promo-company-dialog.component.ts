@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
@@ -14,6 +14,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { PromoCompaniesService } from '../../services/promo-companies.service';
 import { PromoCompany } from '../../models/promo-company.model';
+import { CurrencyService } from '../../../services/currency.service';
 
 @Component({
   selector: 'app-edit-promo-company-dialog',
@@ -146,13 +147,13 @@ import { PromoCompany } from '../../models/promo-company.model';
 
             <div class="form-row">
               <mat-form-field appearance="outline">
-                <mat-label>Бюджет (₽)</mat-label>
+                <mat-label>Бюджет ({{ currencySymbol() }})</mat-label>
                 <input matInput type="number" formControlName="budget" placeholder="0">
                 <mat-icon matSuffix>attach_money</mat-icon>
               </mat-form-field>
 
               <mat-form-field appearance="outline">
-                <mat-label>Потрачено (₽)</mat-label>
+                <mat-label>Потрачено ({{ currencySymbol() }})</mat-label>
                 <input matInput type="number" formControlName="spent" placeholder="0">
                 <mat-icon matSuffix>money_off</mat-icon>
               </mat-form-field>
@@ -486,6 +487,7 @@ export class EditPromoCompanyDialogComponent {
     private promoCompaniesService: PromoCompaniesService,
     private dialogRef: MatDialogRef<EditPromoCompanyDialogComponent>,
     private snackBar: MatSnackBar,
+    private currencyService: CurrencyService,
     @Inject(MAT_DIALOG_DATA) public data: { promoCompany: PromoCompany }
   ) {
     this.promoCompanyForm = this.fb.group({
@@ -514,6 +516,10 @@ export class EditPromoCompanyDialogComponent {
         notes: data.promoCompany.notes
       });
     }
+  }
+
+  currencySymbol() {
+    return this.currencyService.currencySymbol();
   }
 
   cancel(): void {

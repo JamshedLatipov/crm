@@ -74,8 +74,8 @@ export class SettingsComponent implements OnInit {
 
     // Форма настроек валюты
     this.currencySettingsForm = this.fb.group({
-      defaultCurrency: ['RUB', Validators.required],
-      currencySymbol: ['₽', Validators.required],
+      defaultCurrency: [this.currencyService.currencyCode(), Validators.required],
+      currencySymbol: [this.currencyService.currencySymbol(), Validators.required],
     });
   }
 
@@ -102,7 +102,7 @@ export class SettingsComponent implements OnInit {
         // Заполняем форму валюты
         this.currencySettingsForm.patchValue({
           defaultCurrency: settings.defaultCurrency?.value || 'RUB',
-          currencySymbol: settings.currencySymbol?.value || '₽',
+            currencySymbol: settings.currencySymbol?.value || this.currencyService.currencySymbol(),
         });
 
         this.loading.set(false);
