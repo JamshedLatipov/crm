@@ -42,3 +42,95 @@
     height: 20px;
   }
 }
+
+.media-upload-section {
+  margin: 24px 0;
+  padding: 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: #fafafa;
+
+  h4 {
+    margin: 0 0 16px 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+  }
+
+  .upload-area {
+    text-align: center;
+    padding: 24px;
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    background-color: white;
+    transition: all 0.3s ease;
+
+    &:hover {
+      border-color: #1976d2;
+      background-color: #f5f5f5;
+    }
+
+    button {
+      margin-bottom: 12px;
+
+      mat-icon {
+        margin-right: 8px;
+      }
+    }
+
+    .upload-hint {
+      margin: 0;
+      font-size: 12px;
+      color: #999;
+    }
+  }
+
+  .upload-progress {
+    margin: 8px 0 0 0;
+    text-align: center;
+    font-size: 14px;
+    color: #1976d2;
+    font-weight: 500;
+  }
+
+  .uploaded-file {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    background-color: white;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+
+    .file-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      mat-icon {
+        color: #4caf50;
+      }
+
+      span {
+        font-size: 14px;
+        color: #333;
+      }
+    }
+  }
+
+  .media-preview {
+    margin-top: 16px;
+    text-align: center;
+
+    img {
+      max-width: 100%;
+      max-height: 300px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+  }
+}
+
+mat-progress-bar {
+  margin-top: 8px;
+}

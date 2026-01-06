@@ -18,6 +18,7 @@ import { WhatsAppTemplate } from './entities/whatsapp-template.entity';
 import { TelegramMessage } from './entities/telegram-message.entity';
 import { TelegramTemplate } from './entities/telegram-template.entity';
 import { MessageCampaign } from './entities/message-campaign.entity';
+import { Media } from './entities/media.entity';
 import { NotificationAnalytics } from '../shared/entities/notification-analytics.entity';
 import { Contact } from '../contacts/contact.entity';
 import { Lead } from '../leads/lead.entity';
@@ -39,6 +40,7 @@ import { EmailTemplateService } from './services/email-template.service';
 import { TemplateRenderService } from './services/template-render.service';
 import { MessageQueueService } from './services/message-queue.service';
 import { MessageAnalyticsService } from './services/message-analytics.service';
+import { MediaService } from './services/media.service';
 
 // Controllers
 import { SmsTemplateController } from './controllers/sms-template.controller';
@@ -51,6 +53,7 @@ import { WhatsAppTemplateController } from './controllers/whatsapp-template.cont
 import { TelegramTemplateController } from './controllers/telegram-template.controller';
 import { MessageWorkerController } from './controllers/message-worker.controller';
 import { MessageAnalyticsController } from './controllers/message-analytics.controller';
+import { MediaController } from './controllers/media.controller';
 
 @Module({
   imports: [
@@ -67,6 +70,7 @@ import { MessageAnalyticsController } from './controllers/message-analytics.cont
       TelegramMessage,
       TelegramTemplate,
       MessageCampaign,
+      Media,
       NotificationAnalytics,
       Contact,
       Lead,
@@ -114,6 +118,7 @@ import { MessageAnalyticsController } from './controllers/message-analytics.cont
     TelegramTemplateController,
     MessageWorkerController,
     MessageAnalyticsController,
+    MediaController,
   ],
   providers: [
     SmsProviderService,
@@ -130,6 +135,7 @@ import { MessageAnalyticsController } from './controllers/message-analytics.cont
     TemplateRenderService,
     MessageQueueService,
     MessageAnalyticsService,
+    MediaService,
   ],
   exports: [
     SmsProviderService,
@@ -146,6 +152,7 @@ import { MessageAnalyticsController } from './controllers/message-analytics.cont
     TemplateRenderService,
     MessageQueueService,
     MessageAnalyticsService,
+    MediaService,
   ],
 })
 export class MessagesModule {}

@@ -19,6 +19,9 @@ import { MatDividerModule } from '@angular/material/divider';
 import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.component';
 import { CampaignService } from '../../../services/campaign.service';
 import { SmsTemplateService } from '../../../services/sms-template.service';
+import { EmailTemplateService } from '../../../services/email-template.service';
+import { WhatsAppTemplateService } from '../../../services/whatsapp-template.service';
+import { TelegramTemplateService } from '../../../services/telegram-template.service';
 import { CreateCampaignDto, CampaignType, SmsTemplate } from '../../../models/message.models';
 
 @Component({
@@ -178,6 +181,30 @@ import { CreateCampaignDto, CampaignType, SmsTemplate } from '../../../models/me
                           </div>
                         </mat-card>
 
+                        <mat-card class="channel-card" [class.selected]="channelForm.get('channel')?.value === 'WHATSAPP'" (click)="selectChannel('WHATSAPP')">
+                          <div class="channel-content">
+                            <mat-icon class="channel-icon">chat</mat-icon>
+                            <h3>WhatsApp</h3>
+                            <p>Мгновенные сообщения через WhatsApp</p>
+                            <div class="channel-features">
+                              <span class="feature-badge">Высокий отклик</span>
+                              <span class="feature-badge">Медиа файлы</span>
+                            </div>
+                          </div>
+                        </mat-card>
+
+                        <mat-card class="channel-card" [class.selected]="channelForm.get('channel')?.value === 'TELEGRAM'" (click)="selectChannel('TELEGRAM')">
+                          <div class="channel-content">
+                            <mat-icon class="channel-icon">telegram</mat-icon>
+                            <h3>Telegram</h3>
+                            <p>Быстрая доставка через Telegram Bot</p>
+                            <div class="channel-features">
+                              <span class="feature-badge">Мгновенная доставка</span>
+                              <span class="feature-badge">Интерактивность</span>
+                            </div>
+                          </div>
+                        </mat-card>
+
                         <mat-card class="channel-card" [class.selected]="channelForm.get('channel')?.value === 'MULTI'" (click)="selectChannel('MULTI')">
                           <div class="channel-content">
                             <mat-icon class="channel-icon">layers</mat-icon>
@@ -247,18 +274,10 @@ import { CreateCampaignDto, CampaignType, SmsTemplate } from '../../../models/me
                                 }
                               </div>
                               <div class="template-content">
-                                {{ template.content }}
+                                {{ getTemplatePreview(template) }}
                               </div>
-                              @if (template.variables && template.variables.length > 0) {
-                                <div class="template-variables">
-                                  @for (variable of template.variables; track variable) {
-                                    <span class="variable-chip">{{ variable }}</span>
-                                  }
-                                </div>
-                              }
                               <div class="template-stats">
-                                <span><mat-icon>send</mat-icon> {{ template.usageCount || 0 }}</span>
-                                <span><mat-icon>check_circle</mat-icon> {{ (template.successRate || 0) }}%</span>
+                                <span><mat-icon>description</mat-icon> {{ template.category || 'Без категории' }}</span>
                               </div>
                             </mat-card>
                           }
@@ -1143,6 +1162,9 @@ export class CampaignWizardComponent {
   private readonly router = inject(Router);
   private readonly campaignService = inject(CampaignService);
   private readonly smsTemplateService = inject(SmsTemplateService);
+  private readonly emailTemplateService = inject(EmailTemplateService);
+  private readonly whatsappTemplateService = inject(WhatsAppTemplateService);
+  private readonly telegramTemplateService = inject(TelegramTemplateService);
   private readonly snackBar = inject(MatSnackBar);
 
   currentStep = signal(0);
@@ -1156,7 +1178,22 @@ export class CampaignWizardComponent {
   audienceForm: FormGroup;
   scheduleForm: FormGroup;
 
-  availableTemplates = this.smsTemplateService.templates;
+  // Computed property для получения текущих шаблонов в зависимости от выбранного канала
+  availableTemplates = computed(() => {
+    const channel = this.channelForm?.get('channel')?.value;
+    switch (channel) {
+      case 'SMS':
+        return this.smsTemplateService.templates();
+      case 'EMAIL':
+        return this.emailTemplateService.templates();
+      case 'WHATSAPP':
+        return this.whatsappTemplateService.templates();
+      case 'TELEGRAM':
+        return this.telegramTemplateService.templates();
+      default:
+        return [];
+    }
+  });
 
   steps = [
     { index: 0, label: 'Основная информация', description: 'Название и описание' },
@@ -1221,12 +1258,31 @@ export class CampaignWizardComponent {
     this.currentStep.set(event.selectedIndex);
   }
 
-  selectTemplate(template: SmsTemplate) {
+  selectTemplate(template: any) {
     this.contentForm.patchValue({ templateId: template.id });
   }
 
   selectChannel(channel: string) {
     this.channelForm.patchValue({ channel });
+    
+    // Загрузить шаблоны для выбранного канала
+    this.loadingTemplates.set(true);
+    switch (channel) {
+      case 'SMS':
+        this.smsTemplateService.getAll().subscribe(() => this.loadingTemplates.set(false));
+        break;
+      case 'EMAIL':
+        this.emailTemplateService.getAll().subscribe(() => this.loadingTemplates.set(false));
+        break;
+      case 'WHATSAPP':
+        this.whatsappTemplateService.getAll().subscribe(() => this.loadingTemplates.set(false));
+        break;
+      case 'TELEGRAM':
+        this.telegramTemplateService.getAll().subscribe(() => this.loadingTemplates.set(false));
+        break;
+      default:
+        this.loadingTemplates.set(false);
+    }
   }
 
   selectSegment(segmentId: string) {
@@ -1245,6 +1301,8 @@ export class CampaignWizardComponent {
     const labels: Record<string, string> = {
       'SMS': 'SMS',
       'EMAIL': 'Email',
+      'WHATSAPP': 'WhatsApp',
+      'TELEGRAM': 'Telegram',
       'MULTI': 'Мультиканальная'
     };
     return labels[channel] || 'Не выбрано';
@@ -1263,6 +1321,15 @@ export class CampaignWizardComponent {
   getTemplateName(templateId: string): string {
     const template = this.availableTemplates().find(t => t.id === templateId);
     return template?.name || 'Не выбрано';
+  }
+
+  getTemplatePreview(template: any): string {
+    // Универсальный метод для получения превью любого типа шаблона
+    if (template.content) return template.content;
+    if (template.subject) return template.subject;
+    if (template.message) return template.message;
+    if (template.text) return template.text;
+    return 'Нет контента';
   }
 
   getRecipientCount(segmentId: string): string {

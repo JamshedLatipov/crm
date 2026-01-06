@@ -76,6 +76,18 @@
                         <span>Email</span>
                       </div>
                     </mat-option>
+                    <mat-option value="WHATSAPP">
+                      <div class="channel-option">
+                        <mat-icon>chat</mat-icon>
+                        <span>WhatsApp</span>
+                      </div>
+                    </mat-option>
+                    <mat-option value="TELEGRAM">
+                      <div class="channel-option">
+                        <mat-icon>telegram</mat-icon>
+                        <span>Telegram</span>
+                      </div>
+                    </mat-option>
                     <mat-option value="MULTI">
                       <div class="channel-option">
                         <mat-icon>layers</mat-icon>
@@ -89,10 +101,10 @@
                 <mat-form-field appearance="outline">
                   <mat-label>Шаблон</mat-label>
                   <mat-select formControlName="templateId" (selectionChange)="onTemplateChange($event)">
-                    @if (availableTemplates().length === 0) {
+                    @if (currentTemplates().length === 0) {
                       <mat-option disabled>Загрузка...</mat-option>
                     }
-                    @for (template of availableTemplates(); track template.id) {
+                    @for (template of currentTemplates(); track template.id) {
                       <mat-option [value]="template.id">
                         {{ template.name }}
                       </mat-option>
@@ -121,6 +133,58 @@
                       @for (variable of selectedTemplate()!.variables; track variable) {
                         <span class="variable-chip">{{ variable }}</span>
                       }
+                    </div>
+                  }
+                </div>
+              }
+
+              <!-- Media Upload Section (только для WhatsApp и Telegram) -->
+              @if (showMediaUpload()) {
+                <div class="media-upload-section">
+                  <h4 class="section-subtitle">
+                    <mat-icon>attach_file</mat-icon>
+                    Медиафайл (опционально)
+                  </h4>
+                  
+                  @if (!selectedMediaFile()) {
+                    <div class="upload-area">
+                      <input 
+                        type="file" 
+                        #fileInput 
+                        (change)="onMediaFileSelected($event)" 
+                        accept="image/*,video/mp4,application/pdf"
+                        style="display: none"
+                      />
+                      <button 
+                        mat-stroked-button 
+                        type="button"
+                        (click)="fileInput.click()"
+                        class="upload-button"
+                      >
+                        <mat-icon>cloud_upload</mat-icon>
+                        Загрузить файл
+                      </button>
+                      <p class="upload-hint">
+                        Поддерживаются: JPG, PNG, GIF, MP4, PDF (макс. 10MB)
+                      </p>
+                    </div>
+                  } @else {
+                    <div class="media-preview">
+                      @if (mediaPreviewUrl()) {
+                        <img [src]="mediaPreviewUrl()!" alt="Preview" class="media-preview-image">
+                      }
+                      <div class="media-info">
+                        <span class="file-name">{{ selectedMediaFile()!.name }}</span>
+                        <span class="file-size">{{ (selectedMediaFile()!.size / 1024 / 1024).toFixed(2) }} MB</span>
+                      </div>
+                      <button 
+                        mat-icon-button 
+                        type="button"
+                        color="warn" 
+                        (click)="removeMediaFile()"
+                      >
+                        <mat-icon>delete</mat-icon>
+                      </button>
                     </div>
                   }
                 </div>

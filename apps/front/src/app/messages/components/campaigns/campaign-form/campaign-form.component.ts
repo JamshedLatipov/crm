@@ -18,6 +18,9 @@ import { MatDividerModule } from '@angular/material/divider';
 import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.component';
 import { CampaignService } from '../../../services/campaign.service';
 import { SmsTemplateService } from '../../../services/sms-template.service';
+import { EmailTemplateService } from '../../../services/email-template.service';
+import { WhatsAppTemplateService } from '../../../services/whatsapp-template.service';
+import { TelegramTemplateService } from '../../../services/telegram-template.service';
 import { CampaignType, CreateCampaignDto, MessageChannel } from '../../../models/message.models';
 
 @Component({
@@ -50,6 +53,9 @@ export class CampaignFormComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly campaignService = inject(CampaignService);
   private readonly smsTemplateService = inject(SmsTemplateService);
+  private readonly emailTemplateService = inject(EmailTemplateService);
+  private readonly whatsappTemplateService = inject(WhatsAppTemplateService);
+  private readonly telegramTemplateService = inject(TelegramTemplateService);
   private readonly snackBar = inject(MatSnackBar);
 
   form!: FormGroup;
@@ -57,8 +63,37 @@ export class CampaignFormComponent implements OnInit {
   loading = signal(false);
   minDate = new Date();
 
-  availableTemplates = this.smsTemplateService.templates;
+  availableSmsTemplates = this.smsTemplateService.templates;
+  availableEmailTemplates = this.emailTemplateService.templates;
+  availableWhatsAppTemplates = this.whatsappTemplateService.templates;
+  availableTelegramTemplates = this.telegramTemplateService.templates;
   selectedTemplate = signal<any>(null);
+
+  // Computed property для получения текущих шаблонов в зависимости от выбранного канала
+  currentTemplates = computed(() => {
+    const channel = this.form?.get('channel')?.value;
+    switch (channel) {
+      case 'SMS':
+        return this.availableSmsTemplates();
+      case 'EMAIL':
+        return this.availableEmailTemplates();
+      case 'WHATSAPP':
+        return this.availableWhatsAppTemplates();
+      case 'TELEGRAM':
+        return this.availableTelegramTemplates();
+      default:
+        return [];
+    }
+  });
+
+  // Показывать секцию медиафайлов только для WhatsApp и Telegram
+  showMediaUpload = computed(() => {
+    const channel = this.form?.get('channel')?.value;
+    return channel === 'WHATSAPP' || channel === 'TELEGRAM';
+  });
+
+  selectedMediaFile = signal<File | null>(null);
+  mediaPreviewUrl = signal<string | null>(null);
 
   estimatedRecipients = computed(() => {
     const segmentId = this.form?.get('segmentId')?.value;
@@ -96,8 +131,11 @@ export class CampaignFormComponent implements OnInit {
     const id = this.route.snapshot.paramMap.get('id');
     this.campaignId.set(id);
     
-    // Загружаем шаблоны
+    // Загружаем все шаблоны для всех каналов
     this.smsTemplateService.getAll().subscribe();
+    this.emailTemplateService.getAll().subscribe();
+    this.whatsappTemplateService.getAll().subscribe();
+    this.telegramTemplateService.getAll().subscribe();
     
     if (id && id !== 'new') {
       this.loadCampaign(id);
@@ -122,7 +160,7 @@ export class CampaignFormComponent implements OnInit {
       error: () => {
         this.snackBar.open('Ошибка загрузки кампании', 'Закрыть', { duration: 3000 });
         this.loading.set(false);
-        this.router.navigate(['/notifications/campaigns']);
+        this.router.navigate(['/messages/campaigns']);
       }
     });
   }
@@ -134,6 +172,8 @@ export class CampaignFormComponent implements OnInit {
       channel: ['SMS', Validators.required],
       templateId: ['', Validators.required],
       segmentId: ['', Validators.required],
+      mediaUrl: [''],
+      mediaFile: [null],
       isScheduled: [false],
       scheduledAt: [null],
       scheduledTime: [''],
@@ -148,13 +188,28 @@ export class CampaignFormComponent implements OnInit {
     // Сбросить выбранный шаблон при смене канала
     this.form.patchValue({ templateId: '' });
     this.selectedTemplate.set(null);
+    
     // Загрузить шаблоны для выбранного канала
-    this.smsTemplateService.getAll().subscribe();
+    const channel = this.form.get('channel')?.value;
+    switch (channel) {
+      case 'SMS':
+        this.smsTemplateService.getAll().subscribe();
+        break;
+      case 'EMAIL':
+        this.emailTemplateService.getAll().subscribe();
+        break;
+      case 'WHATSAPP':
+        this.whatsappTemplateService.getAll().subscribe();
+        break;
+      case 'TELEGRAM':
+        this.telegramTemplateService.getAll().subscribe();
+        break;
+    }
   }
 
   onTemplateChange(event: any) {
     const templateId = event.value;
-    const template = this.availableTemplates().find(t => t.id === templateId);
+    const template = this.currentTemplates().find((t: any) => t.id === templateId);
     this.selectedTemplate.set(template || null);
   }
 
@@ -221,7 +276,7 @@ export class CampaignFormComponent implements OnInit {
           'Закрыть',
           { duration: 3000 }
         );
-        this.router.navigate(['/notifications/campaigns']);
+        this.router.navigate(['/messages/campaigns']);
       },
       error: (error) => {
         this.snackBar.open(
@@ -235,6 +290,46 @@ export class CampaignFormComponent implements OnInit {
   }
 
   cancel() {
-    this.router.navigate(['/notifications/campaigns']);
+    this.router.navigate(['/messages/campaigns']);
+  }
+
+  onMediaFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      const file = input.files[0];
+      
+      // Проверка размера файла (макс 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        this.snackBar.open('Размер файла не должен превышать 10MB', 'Закрыть', { duration: 3000 });
+        return;
+      }
+
+      // Проверка типа файла
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'application/pdf'];
+      if (!allowedTypes.includes(file.type)) {
+        this.snackBar.open('Неподдерживаемый тип файла', 'Закрыть', { duration: 3000 });
+        return;
+      }
+
+      this.selectedMediaFile.set(file);
+      this.form.patchValue({ mediaFile: file });
+
+      // Создать превью для изображений
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          this.mediaPreviewUrl.set(e.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        this.mediaPreviewUrl.set(null);
+      }
+    }
+  }
+
+  removeMediaFile() {
+    this.selectedMediaFile.set(null);
+    this.mediaPreviewUrl.set(null);
+    this.form.patchValue({ mediaFile: null, mediaUrl: '' });
   }
 }

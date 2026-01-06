@@ -76,12 +76,12 @@ export class WhatsAppTemplateController {
       throw new Error(`Invalid variables: ${validation.invalidVariables.join(', ')}`);
     }
 
-    // Извлекаем переменные для метаданных
+    // Извлекаем переменные
     const variables = this.renderService.extractVariables(dto.content);
 
     const template = this.templateRepo.create({
       ...dto,
-      metadata: { variables },
+      variables, // Теперь это отдельное поле
     });
 
     return this.templateRepo.save(template);
@@ -104,9 +104,9 @@ export class WhatsAppTemplateController {
         throw new Error(`Invalid variables: ${validation.invalidVariables.join(', ')}`);
       }
 
-      // Обновляем переменные в метаданных
+      // Обновляем переменные (теперь отдельное поле)
       const variables = this.renderService.extractVariables(dto.content);
-      template.metadata = { ...template.metadata, variables };
+      template.variables = variables;
     }
 
     Object.assign(template, dto);

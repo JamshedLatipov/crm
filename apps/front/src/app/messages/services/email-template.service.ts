@@ -1,6 +1,6 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import {
   EmailTemplate,
   CreateEmailTemplateDto,
@@ -15,10 +15,18 @@ export class EmailTemplateService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = environment.apiBase + '/messages/email/templates';
 
+  // Signals for reactive state
+  templates = signal<EmailTemplate[]>([]);
+  isLoading = signal(false);
+  error = signal<string | null>(null);
+
   /**
    * Получить все Email шаблоны
    */
   getAll(page = 1, limit = 20, category?: string, isActive?: boolean): Observable<PaginatedResponse<EmailTemplate>> {
+    this.isLoading.set(true);
+    this.error.set(null);
+
     let params = new HttpParams()
       .set('page', page.toString())
       .set('limit', limit.toString());
@@ -30,7 +38,18 @@ export class EmailTemplateService {
       params = params.set('isActive', isActive.toString());
     }
 
-    return this.http.get<PaginatedResponse<EmailTemplate>>(this.apiUrl, { params });
+    return this.http.get<PaginatedResponse<EmailTemplate>>(this.apiUrl, { params }).pipe(
+      tap({
+        next: (response) => {
+          this.templates.set(response.data);
+          this.isLoading.set(false);
+        },
+        error: (error) => {
+          this.error.set(error.message || 'Ошибка загрузки Email шаблонов');
+          this.isLoading.set(false);
+        },
+      })
+    );
   }
 
   /**

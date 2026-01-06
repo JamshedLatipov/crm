@@ -9,7 +9,7 @@ import { environment } from '@crm/front/environments/environment';
 })
 export class CampaignService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = environment.apiBase + '/sms/campaigns';
+  private readonly apiUrl = environment.apiBase + '/messages/campaigns';
 
   // Signals for reactive state
   campaigns = signal<Campaign[]>([]);

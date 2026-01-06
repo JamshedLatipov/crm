@@ -1,37 +1,140 @@
 <app-page-layout
-  title="Предпросмотр Telegram Сообщения"
+  [title]="'Предпросмотр: ' + (template()?.name || 'Загрузка...')"
   subtitle="Просмотр шаблона в формате Telegram"
 >
   <div page-actions>
-    <button mat-stroked-button routerLink="/notifications/telegram-templates">
+    <button mat-stroked-button routerLink="/messages/telegram-templates">
       <mat-icon>arrow_back</mat-icon>
       Назад
     </button>
-    <button mat-raised-button color="primary">
+    <button 
+      mat-raised-button 
+      color="primary"
+      (click)="sendTest()"
+      [disabled]="loading() || !template()"
+    >
       <mat-icon>send</mat-icon>
       Отправить тест
     </button>
   </div>
 
-  <div class="preview-container">
-    <div class="phone-mockup telegram">
-      <div class="phone-header">
-        <mat-icon>arrow_back</mat-icon>
-        <div class="contact-info">
-          <span class="contact-name">Тестовый контакт</span>
-          <span class="contact-status">был(а) недавно</span>
-        </div>
-        <mat-icon>more_vert</mat-icon>
+  @if (loading()) {
+    <div class="loading-state">
+      <p>Загрузка шаблона...</p>
+    </div>
+  } @else if (template()) {
+    <div class="preview-layout">
+      <!-- Левая панель: форма переменных -->
+      <div class="variables-panel">
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>Переменные шаблона</mat-card-title>
+            <mat-card-subtitle>
+              Заполните тестовые значения для предпросмотра
+            </mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            @if (template()!.variables && template()!.variables!.length > 0) {
+              <form [formGroup]="variablesForm" class="variables-form">
+                @for (variable of template()!.variables; track variable) {
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>{{ variable }}</mat-label>
+                    <input 
+                      matInput 
+                      [formControlName]="variable"
+                      [placeholder]="'Значение для ' + variable"
+                    />
+                  </mat-form-field>
+                }
+              </form>
+            } @else {
+              <p class="no-variables">Этот шаблон не содержит переменных</p>
+            }
+
+            <!-- Информация о шаблоне -->
+            <div class="template-info">
+              <h4>Информация о шаблоне</h4>
+              <div class="info-row">
+                <span class="label">Категория:</span>
+                <span class="value">{{ template()!.category || 'Не указана' }}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Статус:</span>
+                <span class="value">
+                  <span [class.active]="template()!.isActive" [class.inactive]="!template()!.isActive">
+                    {{ template()!.isActive ? 'Активен' : 'Неактивен' }}
+                  </span>
+                </span>
+              </div>
+              <div class="info-row">
+                <span class="label">Использований:</span>
+                <span class="value">{{ template()!.usageCount || 0 }}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Успешность:</span>
+                <span class="value">{{ template()!.successRate || 0 }}%</span>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
       </div>
-      
-      <div class="messages-area">
-        <div class="message outgoing">
-          <div class="message-bubble">
-            <p>Привет! Это тестовое Telegram сообщение.</p>
-            <span class="message-time">12:34</span>
+
+      <!-- Правая панель: превью телефона -->
+      <div class="preview-panel">
+        <div class="phone-mockup telegram">
+          <div class="phone-header">
+            <mat-icon>arrow_back</mat-icon>
+            <div class="contact-info">
+              <span class="contact-name">Тестовый контакт</span>
+              <span class="contact-status">был(а) недавно</span>
+            </div>
+            <div class="header-actions">
+              <mat-icon>call</mat-icon>
+              <mat-icon>more_vert</mat-icon>
+            </div>
+          </div>
+          
+          <div class="messages-area">
+            <div class="message outgoing">
+              <!-- Медиафайл, если есть -->
+              @if (template()!.mediaUrl) {
+                <div class="message-media">
+                  @if (isImage(template()!.mediaUrl)) {
+                    <img [src]="template()!.mediaUrl" alt="Media" />
+                  } @else if (isVideo(template()!.mediaUrl)) {
+                    <video controls>
+                      <source [src]="template()!.mediaUrl" type="video/mp4" />
+                    </video>
+                  }
+                </div>
+              }
+              
+              <!-- Текст сообщения -->
+              <div class="message-bubble">
+                <p [innerHTML]="renderedContent() | nl2br"></p>
+                
+                <div class="message-footer">
+                  <span class="message-time">{{ getCurrentTime() }}</span>
+                  <mat-icon class="message-status">done_all</mat-icon>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Поле ввода (неактивное) -->
+          <div class="input-area">
+            <mat-icon>sentiment_satisfied_alt</mat-icon>
+            <input type="text" placeholder="Сообщение" disabled />
+            <mat-icon>attach_file</mat-icon>
+            <mat-icon>mic</mat-icon>
           </div>
         </div>
       </div>
     </div>
-  </div>
+  } @else {
+    <div class="error-state">
+      <mat-icon>error_outline</mat-icon>
+      <p>Шаблон не найден</p>
+    </div>
+  }
 </app-page-layout>

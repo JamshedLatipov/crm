@@ -1,4 +1,4 @@
-import { IsString, IsBoolean, IsOptional, MaxLength } from 'class-validator';
+import { IsString, IsBoolean, IsOptional, MaxLength, IsArray, IsUrl } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateWhatsAppTemplateDto {
@@ -10,6 +10,28 @@ export class CreateWhatsAppTemplateDto {
   @ApiProperty({ description: 'Содержимое шаблона с переменными' })
   @IsString()
   content: string;
+
+  @ApiProperty({ description: 'Категория шаблона', required: false })
+  @IsOptional()
+  @IsString()
+  category?: string;
+
+  @ApiProperty({ description: 'URL медиафайла', required: false })
+  @IsOptional()
+  @IsString()
+  @IsUrl()
+  mediaUrl?: string;
+
+  @ApiProperty({ description: 'Текст кнопки', required: false })
+  @IsOptional()
+  @IsString()
+  buttonText?: string;
+
+  @ApiProperty({ description: 'Переменные в шаблоне', type: [String], required: false })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  variables?: string[];
 
   @ApiProperty({ description: 'Активен ли шаблон', default: true })
   @IsOptional()
@@ -28,6 +50,28 @@ export class UpdateWhatsAppTemplateDto {
   @IsOptional()
   @IsString()
   content?: string;
+
+  @ApiProperty({ description: 'Категория шаблона', required: false })
+  @IsOptional()
+  @IsString()
+  category?: string;
+
+  @ApiProperty({ description: 'URL медиафайла', required: false })
+  @IsOptional()
+  @IsString()
+  @IsUrl()
+  mediaUrl?: string;
+
+  @ApiProperty({ description: 'Текст кнопки', required: false })
+  @IsOptional()
+  @IsString()
+  buttonText?: string;
+
+  @ApiProperty({ description: 'Переменные в шаблоне', type: [String], required: false })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  variables?: string[];
 
   @ApiProperty({ description: 'Активен ли шаблон', required: false })
   @IsOptional()

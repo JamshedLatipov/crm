@@ -34,7 +34,7 @@
           @for (variable of template.variables; track variable) {
             <span class="variable-chip">{{ variable }}</span>
           }
-          @if (template.variables.length === 0) {
+          @if (template?.variables?.length === 0) {
             <span class="text-muted">—</span>
           }
         </div>
