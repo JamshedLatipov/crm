@@ -8,6 +8,7 @@ export enum SettingCategory {
   NOTIFICATION = 'notification',
   FEATURE = 'feature',
   GENERAL = 'general',
+  CURRENCY = 'currency',
 }
 
 export interface Setting {

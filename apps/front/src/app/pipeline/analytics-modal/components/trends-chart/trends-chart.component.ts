@@ -1,4 +1,4 @@
-import { Component, Input, AfterViewInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
+import { Component, Input, AfterViewInit, ViewChild, ElementRef, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -8,6 +8,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { FormsModule } from '@angular/forms';
 import { StageAnalytics } from '../../../dtos';
 import { Chart, registerables, ChartConfiguration } from 'chart.js';
+import { CurrencyService } from '../../../../services/currency.service';
 
 Chart.register(...registerables);
 
@@ -30,6 +31,7 @@ export class TrendsChartComponent implements AfterViewInit, OnDestroy {
   @Input() stages: StageAnalytics[] | null = null;
   @ViewChild('trendsCanvas', { static: false }) trendsCanvas!: ElementRef<HTMLCanvasElement>;
 
+  private currencyService = inject(CurrencyService);
   private trendsChart: Chart | null = null;
   selectedMetric: 'count' | 'amount' | 'conversion' | 'time' = 'count';
   selectedPeriod: '7d' | '30d' | '90d' | '1y' = '30d';
@@ -339,17 +341,14 @@ export class TrendsChartComponent implements AfterViewInit, OnDestroy {
   }
 
   formatCurrency(value: number, compact: boolean = false): string {
+    const currencySymbol = this.currencyService.currencySymbol();
+    
     if (compact && value >= 1000000) {
-      return Math.round(value / 1000000) + 'M SM';
+      return Math.round(value / 1000000) + 'M ' + currencySymbol;
     } else if (compact && value >= 1000) {
-      return Math.round(value / 1000) + 'K SM';
+      return Math.round(value / 1000) + 'K ' + currencySymbol;
     } else {
-      return new Intl.NumberFormat('ru-RU', {
-        style: 'currency',
-        currency: 'TJS',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-      }).format(value);
+      return this.currencyService.formatAmount(value);
     }
   }
 

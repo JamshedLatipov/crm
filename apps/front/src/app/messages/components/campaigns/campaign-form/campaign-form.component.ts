@@ -23,6 +23,8 @@ import { WhatsAppTemplateService } from '../../../services/whatsapp-template.ser
 import { TelegramTemplateService } from '../../../services/telegram-template.service';
 import { SegmentService } from '../../../services/segment.service';
 import { SettingService } from '../../../services/setting.service';
+import { CurrencyService } from '../../../../services/currency.service';
+import { CurrencyFormatPipe } from '../../../../shared/pipes/currency-format.pipe';
 import { CampaignType, CreateCampaignDto, MessageChannel } from '../../../models/message.models';
 
 @Component({
@@ -44,7 +46,8 @@ import { CampaignType, CreateCampaignDto, MessageChannel } from '../../../models
     MatSlideToggleModule,
     MatChipsModule,
     MatDividerModule,
-    PageLayoutComponent
+    PageLayoutComponent,
+    CurrencyFormatPipe,
   ],
   templateUrl: './campaign-form.component.html',
   styleUrl: './campaign-form.component.scss'

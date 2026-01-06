@@ -19,6 +19,7 @@ import { PipelineService } from '../../../pipeline/pipeline.service';
 import { Deal, CreateDealDto, UpdateDealDto, Stage, StageType } from '../../../pipeline/dtos';
 import { Contact } from '../../../contacts/contact.interfaces';
 import { UserSelectorComponent } from '../../../shared/components/user-selector/user-selector.component';
+import { CurrencyService } from '../../../services/currency.service';
 
 export interface DealFormData {
   deal?: Deal;
@@ -56,6 +57,7 @@ export class DealFormComponent implements OnInit {
   private readonly dealsService = inject(DealsService);
   private readonly contactsService = inject(ContactsService);
   private readonly pipelineService = inject(PipelineService);
+  private readonly currencyService = inject(CurrencyService);
 
   @Input() deal?: Deal;
   @Input() mode: 'create' | 'edit' = 'create';
@@ -108,7 +110,7 @@ export class DealFormComponent implements OnInit {
     this.dealForm = this.fb.group({
       title: ['', [Validators.required]],
       amount: [0, [Validators.required, Validators.min(0.01)]],
-      currency: ['TJS'],
+      currency: [this.currencyService.currencyCode()],
       probability: [50],
       expectedCloseDate: [new Date(), [Validators.required]],
       stageId: ['', [Validators.required]],

@@ -59,7 +59,7 @@ export class SettingService {
    * Массовое обновление настроек
    */
   bulkUpdate(updates: BulkUpdateSettingDto[]): Observable<Setting[]> {
-    return this.http.put<Setting[]>(`${this.apiUrl}/bulk`, updates);
+    return this.http.post<Setting[]>(`${this.apiUrl}/bulk-update`, updates);
   }
 
   /**

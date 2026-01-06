@@ -58,18 +58,18 @@ export class SettingController {
     return this.settingService.create(dto);
   }
 
+  @Post('bulk-update')
+  @ApiOperation({ summary: 'Массовое обновление настроек' })
+  @ApiResponse({ status: 200, description: 'Настройки обновлены' })
+  async bulkUpdate(@Body() updates: BulkUpdateSettingDto[]) {
+    return this.settingService.bulkUpdate(updates);
+  }
+
   @Put(':key')
   @ApiOperation({ summary: 'Обновить настройку' })
   @ApiResponse({ status: 200, description: 'Настройка обновлена' })
   async update(@Param('key') key: string, @Body() dto: UpdateSettingDto) {
     return this.settingService.update(key, dto);
-  }
-
-  @Put('bulk')
-  @ApiOperation({ summary: 'Массовое обновление настроек' })
-  @ApiResponse({ status: 200, description: 'Настройки обновлены' })
-  async bulkUpdate(@Body() updates: BulkUpdateSettingDto[]) {
-    return this.settingService.bulkUpdate(updates);
   }
 
   @Delete(':key')

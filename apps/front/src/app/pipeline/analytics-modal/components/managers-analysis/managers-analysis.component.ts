@@ -8,6 +8,7 @@ import { PipelineAnalytics, StageAnalytics, Deal } from '../../../dtos';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../../environments/environment';
 import { CrmTableComponent, CrmColumn } from '../../../../shared/components/crm-table/crm-table.component';
+import { CurrencyService } from '../../../../services/currency.service';
 
 interface ManagerStats {
   managerId: string;
@@ -40,6 +41,7 @@ export class ManagersAnalysisComponent implements OnInit {
   @Input() analytics: PipelineAnalytics | null = null;
   
   private http = inject(HttpClient);
+  private currencyService = inject(CurrencyService);
   private apiUrl = `${environment.apiBase}/pipeline`;
 
   managersStats: ManagerStats[] = [];
@@ -233,11 +235,6 @@ export class ManagersAnalysisComponent implements OnInit {
   }
 
   formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('ru-RU', {
-      style: 'currency',
-      currency: 'TJS',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount);
+    return this.currencyService.formatAmount(amount);
   }
 }

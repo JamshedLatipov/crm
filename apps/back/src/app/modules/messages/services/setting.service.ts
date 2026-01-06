@@ -196,7 +196,7 @@ export class SettingService {
     if (key.startsWith('WEBHOOK_')) {
       return SettingCategory.WEBHOOK;
     }
-    if (key.includes('CAMPAIGN')) {
+    if (key.includes('CAMPAIGN') || key.includes('COST_PER_MESSAGE')) {
       return SettingCategory.CAMPAIGN;
     }
     if (key.includes('NOTIFICATION')) {
@@ -204,6 +204,9 @@ export class SettingService {
     }
     if (key.startsWith('FEATURE_')) {
       return SettingCategory.FEATURE;
+    }
+    if (key.includes('CURRENCY') || key === 'DEFAULT_CURRENCY' || key === 'CURRENCY_SYMBOL') {
+      return SettingCategory.CURRENCY;
     }
     return SettingCategory.GENERAL;
   }
@@ -272,6 +275,10 @@ export class SettingService {
       { key: 'FEATURE_WHATSAPP_ENABLED', value: process.env.FEATURE_WHATSAPP_ENABLED || 'false', category: SettingCategory.FEATURE, description: 'Включить WhatsApp' },
       { key: 'FEATURE_TELEGRAM_ENABLED', value: process.env.FEATURE_TELEGRAM_ENABLED || 'false', category: SettingCategory.FEATURE, description: 'Включить Telegram' },
       { key: 'FEATURE_WEBHOOK_ENABLED', value: process.env.FEATURE_WEBHOOK_ENABLED || 'true', category: SettingCategory.FEATURE, description: 'Включить Webhook' },
+      
+      // Currency Settings
+      { key: 'DEFAULT_CURRENCY', value: process.env.DEFAULT_CURRENCY || 'RUB', category: SettingCategory.CURRENCY, description: 'Валюта по умолчанию (RUB, USD, EUR)' },
+      { key: 'CURRENCY_SYMBOL', value: process.env.CURRENCY_SYMBOL || '₽', category: SettingCategory.CURRENCY, description: 'Символ валюты' },
     ];
   }
 }

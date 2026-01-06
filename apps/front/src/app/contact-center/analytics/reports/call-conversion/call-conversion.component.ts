@@ -8,6 +8,7 @@ import { AnalyticsApiService } from '../../services/analytics-api.service';
 import { ReportFiltersComponent } from '../../shared/components/report-filters/report-filters.component';
 import { CallFilters, CallConversion } from '../../models/analytics.models';
 import { CrmTableComponent, CrmColumn, CrmColumnTemplateDirective } from '../../../../shared/components/crm-table/crm-table.component';
+import { CurrencyService } from '../../../../services/currency.service';
 
 @Component({
   selector: 'app-call-conversion',
@@ -26,6 +27,7 @@ import { CrmTableComponent, CrmColumn, CrmColumnTemplateDirective } from '../../
 })
 export class CallConversionComponent implements OnInit {
   private readonly analyticsApi = inject(AnalyticsApiService);
+  private readonly currencyService = inject(CurrencyService);
   
   data = signal<CallConversion | null>(null);
   loading = signal<boolean>(false);
@@ -73,7 +75,7 @@ export class CallConversionComponent implements OnInit {
       y1: { 
         beginAtZero: true, 
         position: 'right', 
-        title: { display: true, text: 'Выручка (₽)' },
+        title: { display: true, text: `Выручка (${this.currencyService.currencySymbol()})` },
         grid: { drawOnChartArea: false }
       }
     }
@@ -199,10 +201,6 @@ export class CallConversionComponent implements OnInit {
   }
 
   formatCurrency(value: number): string {
-    return new Intl.NumberFormat('ru-RU', {
-      style: 'currency',
-      currency: 'RUB',
-      minimumFractionDigits: 0,
-    }).format(value);
+    return this.currencyService.formatAmount(value);
   }
 }

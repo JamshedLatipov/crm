@@ -20,6 +20,7 @@ import { CreatePromoCompanyDialogComponent } from '../create-promo-company-dialo
 import { EditPromoCompanyDialogComponent } from '../edit-promo-company-dialog/edit-promo-company-dialog.component';
 import { ConfirmActionDialogComponent } from '../../../shared/dialogs/confirm-action-dialog.component';
 import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.component';
+import { CurrencyFormatPipe } from '../../../shared/pipes/currency-format.pipe';
 
 @Component({
   selector: 'app-promo-companies-list',
@@ -38,8 +39,9 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
     MatProgressSpinnerModule,
     MatCardModule,
     MatPaginatorModule,
-    MatTooltipModule,
+  MatTooltipModule,
     MatDividerModule,
+  CurrencyFormatPipe,
     PageLayoutComponent,
   ],
   template: `
@@ -194,7 +196,7 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
                 </button>
               </th>
               <td mat-cell *matCellDef="let promoCompany">
-                <div class="budget-cell">{{ promoCompany.budget ? (promoCompany.budget | currency:'RUB':'symbol':'1.0-0') : '-' }}</div>
+                <div class="budget-cell">{{ promoCompany.budget ? (promoCompany.budget | currencyFormat) : '-' }}</div>
               </td>
             </ng-container>
 

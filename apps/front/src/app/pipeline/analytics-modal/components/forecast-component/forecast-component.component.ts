@@ -1,4 +1,4 @@
-import { Component, Input, AfterViewInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
+import { Component, Input, AfterViewInit, ViewChild, ElementRef, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -9,6 +9,7 @@ import { MatInputModule } from '@angular/material/input';
 import { FormsModule } from '@angular/forms';
 import { StageAnalytics, PipelineAnalytics } from '../../../dtos';
 import { Chart, registerables, ChartConfiguration } from 'chart.js';
+import { CurrencyService } from '../../../../services/currency.service';
 
 Chart.register(...registerables);
 
@@ -39,6 +40,7 @@ export class ForecastComponent implements AfterViewInit, OnDestroy {
   @Input() analytics: PipelineAnalytics | null = null;
   @ViewChild('forecastCanvas', { static: false }) forecastCanvas!: ElementRef<HTMLCanvasElement>;
 
+  private currencyService = inject(CurrencyService);
   private forecastChart: Chart | null = null;
   forecastPeriod: '3m' | '6m' | '1y' = '6m';
   targetRevenue: number = 10000000; // Цель на период
@@ -127,11 +129,7 @@ export class ForecastComponent implements AfterViewInit, OnDestroy {
                 }
                 if (context.parsed.y !== null) {
                   if (context.datasetIndex === 1 || context.datasetIndex === 2) {
-                    label += new Intl.NumberFormat('ru-RU', {
-                      style: 'currency',
-                      currency: 'TJS',
-                      minimumFractionDigits: 0
-                    }).format(context.parsed.y);
+                    label += this.currencyService.formatAmount(context.parsed.y);
                   } else {
                     label += Math.round(context.parsed.y).toString();
                   }
@@ -167,18 +165,17 @@ export class ForecastComponent implements AfterViewInit, OnDestroy {
             position: 'right',
             title: {
               display: true,
-              text: 'Доход (SM)'
+              text: `Доход (${this.currencyService.currencySymbol()})`
             },
             grid: {
               drawOnChartArea: false,
             },
             ticks: {
               callback: (value) => {
-                return new Intl.NumberFormat('ru-RU', {
-                  style: 'currency',
-                  currency: 'TJS',
-                  notation: 'compact'
-                }).format(value as number);
+                const formatted = this.currencyService.formatAmount(value as number);
+                // Extract just the numeric part and add symbol
+                const numericPart = formatted.replace(/[^\d\s]/g, '').trim();
+                return numericPart + this.currencyService.currencySymbol();
               }
             }
           }
@@ -266,10 +263,6 @@ export class ForecastComponent implements AfterViewInit, OnDestroy {
   }
 
   formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('ru-RU', {
-      style: 'currency',
-      currency: 'TJS',
-      minimumFractionDigits: 0
-    }).format(amount);
+    return this.currencyService.formatAmount(amount);
   }
 }

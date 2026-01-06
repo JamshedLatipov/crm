@@ -16,6 +16,7 @@ export enum SettingCategory {
   NOTIFICATION = 'notification',
   FEATURE = 'feature',
   GENERAL = 'general',
+  CURRENCY = 'currency',
 }
 
 @Entity('settings')

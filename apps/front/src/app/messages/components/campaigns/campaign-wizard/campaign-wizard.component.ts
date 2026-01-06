@@ -23,6 +23,7 @@ import { EmailTemplateService } from '../../../services/email-template.service';
 import { WhatsAppTemplateService } from '../../../services/whatsapp-template.service';
 import { TelegramTemplateService } from '../../../services/telegram-template.service';
 import { SegmentService } from '../../../services/segment.service';
+import { CurrencyFormatPipe } from '../../../../shared/pipes/currency-format.pipe';
 import { CreateCampaignDto, CampaignType, SmsTemplate } from '../../../models/message.models';
 
 @Component({
@@ -46,7 +47,8 @@ import { CreateCampaignDto, CampaignType, SmsTemplate } from '../../../models/me
     MatDatepickerModule,
     MatNativeDateModule,
     MatDividerModule,
-    PageLayoutComponent
+    PageLayoutComponent,
+    CurrencyFormatPipe,
   ],
   template: `
     <app-page-layout
@@ -469,7 +471,7 @@ import { CreateCampaignDto, CampaignType, SmsTemplate } from '../../../models/me
                             <mat-icon>attach_money</mat-icon>
                             <div>
                               <span class="summary-label">Примерная стоимость</span>
-                              <span class="summary-value">{{ estimatedCost() }} ₽</span>
+                              <span class="summary-value">{{ estimatedCost() | currencyFormat }}</span>
                             </div>
                           </div>
 

@@ -16,6 +16,9 @@ import { Lead } from '../../models/lead.model';
 import { LeadService } from '../../services/lead.service';
 import { PipelineService } from '../../../pipeline/pipeline.service';
 import { Stage, StageType } from '../../../pipeline/dtos';
+import { CurrencyFormatPipe } from '../../../shared/pipes/currency-format.pipe';
+import { CurrencySymbolPipe } from '../../../shared/pipes/currency-symbol.pipe';
+import { CurrencyService } from '../../../services/currency.service';
 
 @Component({
   selector: 'app-convert-to-deal-dialog',
@@ -33,7 +36,9 @@ import { Stage, StageType } from '../../../pipeline/dtos';
     MatNativeDateModule,
     MatProgressSpinnerModule,
     MatSliderModule,
-    MatIconModule
+    MatIconModule,
+    CurrencyFormatPipe,
+    CurrencySymbolPipe,
   ],
   template: `
     <div class="convert-deal-dialog">
@@ -91,7 +96,7 @@ import { Stage, StageType } from '../../../pipeline/dtos';
               </div>
               <div class="info-content">
                 <div class="info-label">Оценочная стоимость</div>
-                <div class="info-value">{{ data.lead.estimatedValue ? (data.lead.estimatedValue | currency:'TJS':'symbol':'1.0-0') : 'Не указана' }}</div>
+                <div class="info-value">{{ data.lead.estimatedValue ? (data.lead.estimatedValue | currencyFormat) : 'Не указана' }}</div>
               </div>
             </div>
             
@@ -127,7 +132,7 @@ import { Stage, StageType } from '../../../pipeline/dtos';
             <mat-form-field appearance="outline">
               <mat-label>Сумма сделки</mat-label>
               <input matInput type="number" formControlName="amount" placeholder="0">
-              <span matSuffix>₽</span>
+              <span matSuffix>{{ '' | currencySymbol }}</span>
               <mat-error *ngIf="convertForm.get('amount')?.hasError('required')">
                 Сумма обязательна
               </mat-error>
@@ -522,6 +527,7 @@ export class ConvertToDealDialogComponent implements OnInit {
   private readonly pipelineService = inject(PipelineService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly dialogRef = inject(MatDialogRef<ConvertToDealDialogComponent>);
+  private readonly currencyService = inject(CurrencyService);
   public readonly data = inject(MAT_DIALOG_DATA) as { lead: Lead };
 
   constructor() {
@@ -531,7 +537,7 @@ export class ConvertToDealDialogComponent implements OnInit {
     this.convertForm = this.fb.group({
       title: [`Сделка от ${this.data.lead.name}`, [Validators.required]],
       amount: [this.data.lead.estimatedValue || 0, [Validators.required, Validators.min(1)]],
-      currency: ['TJS'],
+      currency: [this.currencyService.currencyCode()],
       probability: [this.probabilityControl.value, [Validators.min(0), Validators.max(100)]],
       stageId: ['', [Validators.required]],
       expectedCloseDate: [this.getDefaultCloseDate(), [Validators.required]],
