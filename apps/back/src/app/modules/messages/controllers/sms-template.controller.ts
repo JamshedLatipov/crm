@@ -22,7 +22,7 @@ import { PaginationDto } from '../../../common/dto/pagination.dto';
 
 @ApiTags('SMS Templates')
 @ApiBearerAuth()
-@Controller('sms/templates')
+@Controller('messages/sms/templates')
 export class SmsTemplateController {
   constructor(
     private readonly templateService: SmsTemplateService,

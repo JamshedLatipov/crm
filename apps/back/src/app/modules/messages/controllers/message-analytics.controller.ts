@@ -4,12 +4,12 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { NotificationAnalyticsService } from '../services/notification-analytics.service';
+import { MessageAnalyticsService } from '../services/message-analytics.service';
 
-@ApiTags('Notification Analytics')
-@Controller('notifications/analytics')
-export class NotificationAnalyticsController {
-  constructor(private readonly analyticsService: NotificationAnalyticsService) {}
+@ApiTags('Message Analytics')
+@Controller('messages/analytics')
+export class MessageAnalyticsController {
+  constructor(private readonly analyticsService: MessageAnalyticsService) {}
 
   @Get('dashboard')
   @ApiOperation({ summary: 'Получить общую статистику панели управления' })

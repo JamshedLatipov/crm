@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { SmsMessage, MessageStatus } from '../../sms/entities/sms-message.entity';
-import { EmailMessage, EmailStatus } from '../../sms/entities/email-message.entity';
-import { NotificationCampaign, NotificationChannelType } from '../../sms/entities/notification-campaign.entity';
+import { SmsMessage, MessageStatus } from '../entities/sms-message.entity';
+import { EmailMessage, EmailStatus } from '../entities/email-message.entity';
+import { MessageCampaign, MessageChannelType } from '../entities/message-campaign.entity';
 import { NotificationAnalytics, NotificationMetricType } from '../../shared/entities/notification-analytics.entity';
 
 export interface AnalyticsDateRange {
@@ -35,14 +35,14 @@ export interface CampaignStats {
 }
 
 @Injectable()
-export class NotificationAnalyticsService {
+export class MessageAnalyticsService {
   constructor(
     @InjectRepository(SmsMessage)
     private smsMessageRepository: Repository<SmsMessage>,
     @InjectRepository(EmailMessage)
     private emailMessageRepository: Repository<EmailMessage>,
-    @InjectRepository(NotificationCampaign)
-    private campaignRepository: Repository<NotificationCampaign>,
+    @InjectRepository(MessageCampaign)
+    private campaignRepository: Repository<MessageCampaign>,
     @InjectRepository(NotificationAnalytics)
     private analyticsRepository: Repository<NotificationAnalytics>
   ) {}

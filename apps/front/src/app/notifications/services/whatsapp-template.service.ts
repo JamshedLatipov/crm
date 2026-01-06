@@ -13,7 +13,7 @@ import { environment } from '@crm/front/environments/environment';
 })
 export class WhatsAppTemplateService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = environment.apiBase + '/notifications/whatsapp/templates';
+  private readonly apiUrl = environment.apiBase + '/messages/whatsapp/templates';
 
   // Signals for reactive state
   templates = signal<WhatsAppTemplate[]>([]);

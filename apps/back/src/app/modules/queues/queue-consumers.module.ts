@@ -4,9 +4,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { SmsQueueConsumer } from './consumers/sms-queue.consumer';
 import { LeadQueueConsumer } from './consumers/lead-queue.consumer';
 import { WebhookQueueConsumer } from './consumers/webhook-queue.consumer';
-import { SmsMessage } from '../sms/entities/sms-message.entity';
-import { SmsCampaign } from '../sms/entities/sms-campaign.entity';
-import { SmsModule } from '../sms/sms.module';
+import { SmsMessage } from '../messages/entities/sms-message.entity';
+import { SmsCampaign } from '../messages/entities/sms-campaign.entity';
+import { MessagesModule } from '../messages/messages.module';
 import { LeadModule } from '../leads/lead.module';
 
 /**
@@ -18,7 +18,7 @@ import { LeadModule } from '../leads/lead.module';
   imports: [
     ConfigModule,
     TypeOrmModule.forFeature([SmsMessage, SmsCampaign]),
-    SmsModule,
+    MessagesModule,
     LeadModule,
   ],
   providers: [

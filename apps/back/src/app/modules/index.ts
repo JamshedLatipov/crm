@@ -20,7 +20,7 @@ import { PromoCompaniesModule } from './promo-companies/promo-companies.module';
 import { CallScriptsModule } from './call-scripts/call-scripts.module';
 import { UserActivityModule } from './user-activity/user-activity.module';
 import { IntegrationsModule } from './integrations/integrations.module';
-import { SmsModule } from './sms/sms.module';
+import { MessagesModule } from './messages/messages.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { ForecastingModule } from './forecasting/forecasting.module';
 import { RecordingsModule } from './recordings/recordings.module';
@@ -42,6 +42,7 @@ export const MODULES = [
     ContactsModule,
     CompaniesModule,
     CommentsModule,
+    MessagesModule, // Message hub - handles /messages/* routes (WhatsApp, Telegram, SMS, Email)
     NotificationModule,
     SharedModule,
     AdsIntegrationModule,
@@ -51,7 +52,6 @@ export const MODULES = [
     CallScriptsModule,
     UserActivityModule,
     IntegrationsModule,
-    SmsModule,
     AnalyticsModule,
     ForecastingModule,
     RecordingsModule,

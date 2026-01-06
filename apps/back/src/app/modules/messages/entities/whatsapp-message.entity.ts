@@ -8,54 +8,55 @@ import {
   Index,
   JoinColumn,
 } from 'typeorm';
-import { NotificationCampaign } from './notification-campaign.entity';
+import { MessageCampaign } from './message-campaign.entity';
 import { Contact } from '../../contacts/contact.entity';
 import { Lead } from '../../leads/lead.entity';
 
-export enum TelegramMessageStatus {
+export enum WhatsAppMessageStatus {
   PENDING = 'pending',
   QUEUED = 'queued',
   SENDING = 'sending',
   SENT = 'sent',
   DELIVERED = 'delivered',
+  READ = 'read',
   FAILED = 'failed',
   REJECTED = 'rejected',
 }
 
-export enum TelegramMessageType {
+export enum WhatsAppMessageType {
   TEXT = 'text',
-  PHOTO = 'photo',
-  VIDEO = 'video',
+  TEMPLATE = 'template',
+  IMAGE = 'image',
   DOCUMENT = 'document',
+  VIDEO = 'video',
   AUDIO = 'audio',
-  VOICE = 'voice',
   LOCATION = 'location',
-  CONTACT = 'contact',
-  STICKER = 'sticker',
+  CONTACTS = 'contacts',
 }
 
-export interface TelegramMessageMetadata {
-  messageId?: number; // ID сообщения от Telegram API
+export interface WhatsAppMessageMetadata {
+  messageId?: string; // ID сообщения от WhatsApp API
+  wamid?: string; // WhatsApp Message ID
   errorCode?: string;
   errorMessage?: string;
-  replyToMessageId?: number; // ID сообщения, на которое отвечаем
+  templateName?: string; // Имя шаблона, если используется
+  templateLanguage?: string;
+  templateParameters?: any[];
   retryCount?: number;
   variables?: Record<string, any>;
-  inlineKeyboard?: any; // Inline кнопки
-  replyKeyboard?: any; // Reply кнопки
 }
 
-@Entity('telegram_messages')
+@Entity('whatsapp_messages')
 @Index(['campaign', 'status'])
-@Index(['chatId'])
+@Index(['phoneNumber'])
 @Index(['createdAt'])
-export class TelegramMessage {
+export class WhatsAppMessage {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => NotificationCampaign, { nullable: true })
+  @ManyToOne(() => MessageCampaign, { nullable: true })
   @JoinColumn({ name: 'campaignId' })
-  campaign: NotificationCampaign;
+  campaign: MessageCampaign;
 
   @ManyToOne(() => Contact, { nullable: true })
   @JoinColumn({ name: 'contactId' })
@@ -65,36 +66,31 @@ export class TelegramMessage {
   @JoinColumn({ name: 'leadId' })
   lead: Lead;
 
-  // Chat ID пользователя в Telegram
   @Column()
-  chatId: string;
-
-  // Username пользователя (опционально)
-  @Column({ nullable: true })
-  username: string;
+  phoneNumber: string;
 
   @Column('text')
   content: string;
 
   @Column({
     type: 'enum',
-    enum: TelegramMessageType,
-    default: TelegramMessageType.TEXT,
+    enum: WhatsAppMessageType,
+    default: WhatsAppMessageType.TEXT,
   })
-  messageType: TelegramMessageType;
+  messageType: WhatsAppMessageType;
 
   @Column({
     type: 'enum',
-    enum: TelegramMessageStatus,
-    default: TelegramMessageStatus.PENDING,
+    enum: WhatsAppMessageStatus,
+    default: WhatsAppMessageStatus.PENDING,
   })
-  status: TelegramMessageStatus;
+  status: WhatsAppMessageStatus;
 
   // Метаданные сообщения
   @Column('jsonb', { nullable: true })
-  metadata: TelegramMessageMetadata;
+  metadata: WhatsAppMessageMetadata;
 
-  // URL медиафайла (для фото, видео и т.д.)
+  // URL медиафайла (для изображений, видео и т.д.)
   @Column({ nullable: true })
   mediaUrl: string;
 
@@ -107,6 +103,9 @@ export class TelegramMessage {
 
   @Column({ type: 'timestamp', nullable: true })
   deliveredAt: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  readAt: Date;
 
   @Column({ type: 'timestamp', nullable: true })
   failedAt: Date;

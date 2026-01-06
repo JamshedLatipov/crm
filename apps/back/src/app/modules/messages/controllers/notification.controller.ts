@@ -9,13 +9,13 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import {
   NotificationService,
-  NotificationChannel,
   NotificationPayload,
   MultiChannelPayload,
 } from '../services/notification.service';
+import { MessageChannel } from '../services/message-queue.service';
 
 export class SendNotificationDto {
-  channel: NotificationChannel;
+  channel: MessageChannel;
   recipient: string;
   subject?: string;
   message: string;
@@ -25,7 +25,7 @@ export class SendNotificationDto {
 }
 
 export class SendMultiChannelDto {
-  channels: NotificationChannel[];
+  channels: MessageChannel[];
   sms?: {
     phoneNumber: string;
     message: string;
@@ -44,7 +44,7 @@ export class SendMultiChannelDto {
 }
 
 export class SendBulkDto {
-  channel: NotificationChannel;
+  channel: MessageChannel;
   notifications: Array<{
     recipient: string;
     message: string;

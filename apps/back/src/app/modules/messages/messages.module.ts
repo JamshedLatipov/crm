@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ClientsModule, Transport } from '@nestjs/microservices';
+import { JwtModule } from '@nestjs/jwt';
 
 // Entities
 import { SmsTemplate } from './entities/sms-template.entity';
@@ -15,7 +17,8 @@ import { WhatsAppMessage } from './entities/whatsapp-message.entity';
 import { WhatsAppTemplate } from './entities/whatsapp-template.entity';
 import { TelegramMessage } from './entities/telegram-message.entity';
 import { TelegramTemplate } from './entities/telegram-template.entity';
-import { NotificationCampaign } from './entities/notification-campaign.entity';
+import { MessageCampaign } from './entities/message-campaign.entity';
+import { NotificationAnalytics } from '../shared/entities/notification-analytics.entity';
 import { Contact } from '../contacts/contact.entity';
 import { Lead } from '../leads/lead.entity';
 import { Deal } from '../deals/deal.entity';
@@ -34,6 +37,8 @@ import { RestApiProviderService } from './services/rest-api-provider.service';
 import { NotificationService } from './services/notification.service';
 import { EmailTemplateService } from './services/email-template.service';
 import { TemplateRenderService } from './services/template-render.service';
+import { MessageQueueService } from './services/message-queue.service';
+import { MessageAnalyticsService } from './services/message-analytics.service';
 
 // Controllers
 import { SmsTemplateController } from './controllers/sms-template.controller';
@@ -44,6 +49,8 @@ import { EmailTemplateController } from './controllers/email-template.controller
 import { NotificationController } from './controllers/notification.controller';
 import { WhatsAppTemplateController } from './controllers/whatsapp-template.controller';
 import { TelegramTemplateController } from './controllers/telegram-template.controller';
+import { MessageWorkerController } from './controllers/message-worker.controller';
+import { MessageAnalyticsController } from './controllers/message-analytics.controller';
 
 @Module({
   imports: [
@@ -59,7 +66,8 @@ import { TelegramTemplateController } from './controllers/telegram-template.cont
       WhatsAppTemplate,
       TelegramMessage,
       TelegramTemplate,
-      NotificationCampaign,
+      MessageCampaign,
+      NotificationAnalytics,
       Contact,
       Lead,
       Deal,
@@ -67,6 +75,30 @@ import { TelegramTemplateController } from './controllers/telegram-template.cont
     ]),
     ConfigModule,
     ScheduleModule.forRoot(),
+    JwtModule.register({}), // Добавляем JwtModule для поддержки JwtAuthGuard
+    // RabbitMQ для массовых рассылок
+    ClientsModule.registerAsync([
+      {
+        name: 'NOTIFICATION_QUEUE',
+        imports: [ConfigModule],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.RMQ,
+          options: {
+            urls: [configService.get<string>('RABBITMQ_URL') || 'amqp://guest:guest@localhost:5672'],
+            queue: 'notifications_queue',
+            queueOptions: {
+              durable: true,
+              arguments: {
+                'x-message-ttl': 86400000, // 24 hours
+                'x-max-length': 10000, // Max queue size
+              },
+            },
+            prefetchCount: 10, // Workers берут по 10 сообщений за раз
+          },
+        }),
+        inject: [ConfigService],
+      },
+    ]),
   ],
   controllers: [
     SmsTemplateController,
@@ -77,6 +109,8 @@ import { TelegramTemplateController } from './controllers/telegram-template.cont
     NotificationController,
     WhatsAppTemplateController,
     TelegramTemplateController,
+    MessageWorkerController,
+    MessageAnalyticsController,
   ],
   providers: [
     SmsProviderService,
@@ -91,6 +125,8 @@ import { TelegramTemplateController } from './controllers/telegram-template.cont
     NotificationService,
     EmailTemplateService,
     TemplateRenderService,
+    MessageQueueService,
+    MessageAnalyticsService,
   ],
   exports: [
     SmsProviderService,
@@ -105,6 +141,8 @@ import { TelegramTemplateController } from './controllers/telegram-template.cont
     NotificationService,
     EmailTemplateService,
     TemplateRenderService,
+    MessageQueueService,
+    MessageAnalyticsService,
   ],
 })
-export class SmsModule {}
+export class MessagesModule {}

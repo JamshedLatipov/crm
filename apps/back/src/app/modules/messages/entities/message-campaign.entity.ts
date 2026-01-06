@@ -13,15 +13,17 @@ import { EmailTemplate } from './email-template.entity';
 import { SmsSegment } from './sms-segment.entity';
 import { CampaignStatus, CampaignType } from './sms-campaign.entity';
 
-export enum NotificationChannelType {
+export enum MessageChannelType {
   SMS = 'sms',
   EMAIL = 'email',
+  WHATSAPP = 'whatsapp',
+  TELEGRAM = 'telegram',
   WEBHOOK = 'webhook',
   PUSH = 'push',
 }
 
 export interface MultiChannelSettings {
-  channels: NotificationChannelType[];
+  channels: MessageChannelType[];
   
   // SMS настройки
   sms?: {
@@ -55,15 +57,15 @@ export interface MultiChannelSettings {
 }
 
 export interface ChannelStats {
-  channel: NotificationChannelType;
+  channel: MessageChannelType;
   totalSent: number;
   delivered: number;
   failed: number;
   cost: number;
 }
 
-@Entity('notification_campaigns')
-export class NotificationCampaign {
+@Entity('message_campaigns')
+export class MessageCampaign {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -103,7 +105,7 @@ export class NotificationCampaign {
 
   // Активные каналы
   @Column('simple-array')
-  channels: NotificationChannelType[];
+  channels: MessageChannelType[];
 
   // Настройки мультиканальной кампании
   @Column('jsonb')

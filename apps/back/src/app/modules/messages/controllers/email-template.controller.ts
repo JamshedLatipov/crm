@@ -27,7 +27,7 @@ export class ValidateTemplateDto {
 
 @ApiTags('Email Templates')
 @ApiBearerAuth()
-@Controller('email-templates')
+@Controller('messages/email/templates')
 export class EmailTemplateController {
   constructor(
     private readonly emailTemplateService: EmailTemplateService,

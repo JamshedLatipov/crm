@@ -13,7 +13,7 @@ import { environment } from '@crm/front/environments/environment';
 })
 export class EmailTemplateService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = environment.apiBase + '/email-templates';
+  private readonly apiUrl = environment.apiBase + '/messages/email/templates';
 
   /**
    * Получить все Email шаблоны

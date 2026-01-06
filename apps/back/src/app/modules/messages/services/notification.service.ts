@@ -5,26 +5,21 @@ import { RestApiProviderService, WebhookResult } from './rest-api-provider.servi
 import { WhatsAppProviderService, SendWhatsAppResult } from './whatsapp-provider.service';
 import { TelegramProviderService, SendTelegramResult } from './telegram-provider.service';
 
-export enum NotificationChannel {
-  SMS = 'sms',
-  EMAIL = 'email',
-  WHATSAPP = 'whatsapp',
-  TELEGRAM = 'telegram',
-  WEBHOOK = 'webhook',
-}
+// Используем единый enum MessageChannel из message-queue.service
+import { MessageChannel } from './message-queue.service';
 
 export interface NotificationPayload {
-  channel: NotificationChannel;
-  recipient: string; // Телефон, email или webhook URL
-  subject?: string; // Для email
-  message: string; // Текст или HTML
+  channel: MessageChannel;
+  recipient: string;
+  subject?: string;
+  message: string;
   template?: string;
   variables?: Record<string, any>;
   metadata?: Record<string, any>;
 }
 
 export interface NotificationResult {
-  channel: NotificationChannel;
+  channel: MessageChannel;
   success: boolean;
   messageId?: string;
   error?: string;
@@ -32,7 +27,7 @@ export interface NotificationResult {
 }
 
 export interface MultiChannelPayload {
-  channels: NotificationChannel[];
+  channels: MessageChannel[];
   sms?: {
     phoneNumber: string;
     message: string;
@@ -50,10 +45,6 @@ export interface MultiChannelPayload {
   variables?: Record<string, any>;
 }
 
-/**
- * Unified Notification Service
- * Единый интерфейс для отправки уведомлений через SMS, Email и Webhooks
- */
 @Injectable()
 export class NotificationService {
   private readonly logger = new Logger(NotificationService.name);
@@ -66,29 +57,21 @@ export class NotificationService {
     private telegramProvider: TelegramProviderService
   ) {}
 
-  /**
-   * Отправка уведомления через один канал
-   */
   async send(payload: NotificationPayload): Promise<NotificationResult> {
     this.logger.log(`Sending notification via ${payload.channel} to ${payload.recipient}`);
 
     try {
       switch (payload.channel) {
-        case NotificationChannel.SMS:
+        case MessageChannel.SMS:
           return await this.sendSms(payload);
-
-        case NotificationChannel.EMAIL:
+        case MessageChannel.EMAIL:
           return await this.sendEmail(payload);
-
-        case NotificationChannel.WHATSAPP:
+        case MessageChannel.WHATSAPP:
           return await this.sendWhatsApp(payload);
-
-        case NotificationChannel.TELEGRAM:
+        case MessageChannel.TELEGRAM:
           return await this.sendTelegram(payload);
-
-        case NotificationChannel.WEBHOOK:
+        case MessageChannel.WEBHOOK:
           return await this.sendWebhook(payload);
-
         default:
           throw new Error(`Unsupported channel: ${payload.channel}`);
       }
@@ -102,34 +85,22 @@ export class NotificationService {
     }
   }
 
-  /**
-   * Отправка через SMS
-   */
   private async sendSms(payload: NotificationPayload): Promise<NotificationResult> {
     const message = payload.template && payload.variables
       ? this.renderTemplate(payload.template, payload.variables)
       : payload.message;
 
-    const result: SendSmsResult = await this.smsProvider.sendSms(
-      payload.recipient,
-      message
-    );
+    const result: SendSmsResult = await this.smsProvider.sendSms(payload.recipient, message);
 
     return {
-      channel: NotificationChannel.SMS,
+      channel: MessageChannel.SMS,
       success: result.success,
       messageId: result.providerId,
       error: result.error,
-      details: {
-        cost: result.cost,
-        segmentsCount: result.segmentsCount,
-      },
+      details: { cost: result.cost, segmentsCount: result.segmentsCount },
     };
   }
 
-  /**
-   * Отправка через Email
-   */
   private async sendEmail(payload: NotificationPayload): Promise<NotificationResult> {
     const html = payload.template && payload.variables
       ? this.renderTemplate(payload.template, payload.variables)
@@ -147,7 +118,7 @@ export class NotificationService {
     });
 
     return {
-      channel: NotificationChannel.EMAIL,
+      channel: MessageChannel.EMAIL,
       success: result.success,
       messageId: result.messageId,
       error: result.error,
@@ -158,30 +129,21 @@ export class NotificationService {
     };
   }
 
-  /**
-   * Отправка через Webhook
-   */
   private async sendWebhook(payload: NotificationPayload): Promise<NotificationResult> {
     const webhookPayload = {
       event: payload.metadata?.event || 'notification',
       timestamp: new Date(),
-      data: {
-        message: payload.message,
-        ...payload.variables,
-      },
+      data: { message: payload.message, ...payload.variables },
       metadata: payload.metadata,
     };
 
     const result: WebhookResult = await this.restApiProvider.sendWebhook(
-      {
-        url: payload.recipient,
-        method: 'POST',
-      },
+      { url: payload.recipient, method: 'POST' },
       webhookPayload
     );
 
     return {
-      channel: NotificationChannel.WEBHOOK,
+      channel: MessageChannel.WEBHOOK,
       success: result.success,
       error: result.error,
       details: {
@@ -192,52 +154,45 @@ export class NotificationService {
     };
   }
 
-  /**
-   * Отправка через WhatsApp
-   */
   private async sendWhatsApp(payload: NotificationPayload): Promise<NotificationResult> {
     const message = payload.template && payload.variables
       ? this.renderTemplate(payload.template, payload.variables)
       : payload.message;
 
-    const result: SendWhatsAppResult = await this.whatsappProvider.sendMessage(
-      payload.recipient,
-      message
-    );
+    const result: SendWhatsAppResult = await this.whatsappProvider.sendMessage(payload.recipient, message);
 
     return {
-      channel: NotificationChannel.WHATSAPP,
+      channel: MessageChannel.WHATSAPP,
       success: result.success,
       messageId: result.messageId,
       error: result.error,
-      details: {
-        errorCode: result.errorCode,
-      },
+      details: { errorCode: result.errorCode },
     };
   }
 
-  /**
-   * Отправка через Telegram
-   */
   private async sendTelegram(payload: NotificationPayload): Promise<NotificationResult> {
     const message = payload.template && payload.variables
       ? this.renderTemplate(payload.template, payload.variables)
       : payload.message;
 
-    const result: SendTelegramResult = await this.telegramProvider.sendMessage(
-      payload.recipient,
-      message
-    );
+    const result: SendTelegramResult = await this.telegramProvider.sendMessage(payload.recipient, message);
 
     return {
-      channel: NotificationChannel.TELEGRAM,
+      channel: MessageChannel.TELEGRAM,
       success: result.success,
       messageId: result.messageId?.toString(),
       error: result.error,
-      details: {
-        errorCode: result.errorCode,
-      },
+      details: { errorCode: result.errorCode },
     };
+  }
+
+  private renderTemplate(template: string, variables: Record<string, any>): string {
+    let rendered = template;
+    for (const [key, value] of Object.entries(variables)) {
+      const regex = new RegExp(`{{\\s*${key}\\s*}}`, 'g');
+      rendered = rendered.replace(regex, value?.toString() || '');
+    }
+    return rendered;
   }
 
   /**
@@ -247,10 +202,10 @@ export class NotificationService {
     const tasks: Promise<NotificationResult>[] = [];
 
     // SMS
-    if (payload.channels.includes(NotificationChannel.SMS) && payload.sms) {
+    if (payload.channels.includes(MessageChannel.SMS) && payload.sms) {
       tasks.push(
         this.send({
-          channel: NotificationChannel.SMS,
+          channel: MessageChannel.SMS,
           recipient: payload.sms.phoneNumber,
           message: payload.sms.message,
           variables: payload.variables,
@@ -259,10 +214,10 @@ export class NotificationService {
     }
 
     // Email
-    if (payload.channels.includes(NotificationChannel.EMAIL) && payload.email) {
+    if (payload.channels.includes(MessageChannel.EMAIL) && payload.email) {
       tasks.push(
         this.send({
-          channel: NotificationChannel.EMAIL,
+          channel: MessageChannel.EMAIL,
           recipient: payload.email.to,
           subject: payload.email.subject,
           message: payload.email.html,
@@ -272,10 +227,10 @@ export class NotificationService {
     }
 
     // Webhook
-    if (payload.channels.includes(NotificationChannel.WEBHOOK) && payload.webhook) {
+    if (payload.channels.includes(MessageChannel.WEBHOOK) && payload.webhook) {
       tasks.push(
         this.send({
-          channel: NotificationChannel.WEBHOOK,
+          channel: MessageChannel.WEBHOOK,
           recipient: payload.webhook.url,
           message: '',
           metadata: {
@@ -307,7 +262,7 @@ export class NotificationService {
    * Массовая отправка по одному каналу
    */
   async sendBulk(
-    channel: NotificationChannel,
+    channel: MessageChannel,
     notifications: Array<{
       recipient: string;
       message: string;
@@ -333,98 +288,9 @@ export class NotificationService {
   }
 
   /**
-   * Отправка уведомления о событии кампании
-   */
-  async notifyCampaignEvent(
-    campaignId: string,
-    event: 'started' | 'completed' | 'paused' | 'failed',
-    channels: NotificationChannel[],
-    recipients: {
-      sms?: string;
-      email?: string;
-      webhook?: string;
-    },
-    stats?: any
-  ): Promise<NotificationResult[]> {
-    const message = this.generateCampaignMessage(event, campaignId, stats);
-
-    return this.sendMultiChannel({
-      channels,
-      sms: recipients.sms ? {
-        phoneNumber: recipients.sms,
-        message: message.text,
-      } : undefined,
-      email: recipients.email ? {
-        to: recipients.email,
-        subject: message.subject,
-        html: message.html,
-      } : undefined,
-      webhook: recipients.webhook ? {
-        url: recipients.webhook,
-        event: `campaign.${event}`,
-        data: { campaignId, stats },
-      } : undefined,
-    });
-  }
-
-  /**
-   * Генерация сообщения о событии кампании
-   */
-  private generateCampaignMessage(
-    event: string,
-    campaignId: string,
-    stats?: any
-  ): { text: string; subject: string; html: string } {
-    const eventMessages = {
-      started: {
-        subject: 'Campaign Started',
-        text: `Campaign ${campaignId} has been started`,
-        html: `<h2>Campaign Started</h2><p>Campaign <strong>${campaignId}</strong> has been started</p>`,
-      },
-      completed: {
-        subject: 'Campaign Completed',
-        text: `Campaign ${campaignId} has been completed. Sent: ${stats?.sentCount || 0}, Delivered: ${stats?.deliveredCount || 0}`,
-        html: `<h2>Campaign Completed</h2>
-               <p>Campaign <strong>${campaignId}</strong> has been completed</p>
-               <ul>
-                 <li>Sent: ${stats?.sentCount || 0}</li>
-                 <li>Delivered: ${stats?.deliveredCount || 0}</li>
-                 <li>Failed: ${stats?.failedCount || 0}</li>
-               </ul>`,
-      },
-      paused: {
-        subject: 'Campaign Paused',
-        text: `Campaign ${campaignId} has been paused`,
-        html: `<h2>Campaign Paused</h2><p>Campaign <strong>${campaignId}</strong> has been paused</p>`,
-      },
-      failed: {
-        subject: 'Campaign Failed',
-        text: `Campaign ${campaignId} has failed`,
-        html: `<h2>Campaign Failed</h2><p>Campaign <strong>${campaignId}</strong> has failed</p>`,
-      },
-    };
-
-    return eventMessages[event] || eventMessages.started;
-  }
-
-  /**
-   * Рендеринг шаблона
-   */
-  private renderTemplate(template: string, variables: Record<string, any>): string {
-    let rendered = template;
-
-    for (const [key, value] of Object.entries(variables)) {
-      const regex = new RegExp(`{{\\s*${key}\\s*}}`, 'g');
-      rendered = rendered.replace(regex, value?.toString() || '');
-    }
-
-    return rendered;
-  }
-
-  /**
    * Проверка доступности каналов
    */
-  async checkChannelsHealth(): Promise<Record<NotificationChannel, boolean>> {
+  async checkChannelsHealth(): Promise<Partial<Record<MessageChannel, boolean>>> {
     const [smsHealth, emailHealth, whatsappHealth, telegramHealth, webhookHealth] = await Promise.allSettled([
       this.smsProvider.checkBalance().then(() => true).catch(() => false),
       this.emailProvider.verifyConnection(),
@@ -434,11 +300,11 @@ export class NotificationService {
     ]);
 
     return {
-      [NotificationChannel.SMS]: smsHealth.status === 'fulfilled' && smsHealth.value,
-      [NotificationChannel.EMAIL]: emailHealth.status === 'fulfilled' && emailHealth.value,
-      [NotificationChannel.WHATSAPP]: whatsappHealth.status === 'fulfilled' && whatsappHealth.value,
-      [NotificationChannel.TELEGRAM]: telegramHealth.status === 'fulfilled' && telegramHealth.value,
-      [NotificationChannel.WEBHOOK]: webhookHealth.status === 'fulfilled' && webhookHealth.value,
+      [MessageChannel.SMS]: smsHealth.status === 'fulfilled' && smsHealth.value,
+      [MessageChannel.EMAIL]: emailHealth.status === 'fulfilled' && emailHealth.value,
+      [MessageChannel.WHATSAPP]: whatsappHealth.status === 'fulfilled' && whatsappHealth.value,
+      [MessageChannel.TELEGRAM]: telegramHealth.status === 'fulfilled' && telegramHealth.value,
+      [MessageChannel.WEBHOOK]: webhookHealth.status === 'fulfilled' && webhookHealth.value,
     };
   }
 

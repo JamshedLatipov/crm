@@ -1,10 +1,11 @@
 // Enums
-export enum NotificationChannel {
+export enum MessageChannel {
   SMS = 'sms',
   EMAIL = 'email',
   WHATSAPP = 'whatsapp',
   TELEGRAM = 'telegram',
   WEBHOOK = 'webhook',
+  PUSH = 'push',
 }
 
 export enum CampaignType {
@@ -178,7 +179,7 @@ export interface NotificationCampaign {
   id: string;
   name: string;
   description?: string;
-  channels: NotificationChannel[];
+  channels: MessageChannel[];
   type: CampaignType;
   status: CampaignStatus;
   settings: MultiChannelSettings;
@@ -226,7 +227,7 @@ export interface MultiChannelSettings {
 }
 
 export interface ChannelStat {
-  channel: NotificationChannel;
+  channel: MessageChannel;
   sent: number;
   delivered: number;
   failed: number;
@@ -252,7 +253,7 @@ export interface CampaignPerformance {
 
 // Notification
 export interface SendNotificationDto {
-  channel: NotificationChannel;
+  channel: MessageChannel;
   recipient: string;
   subject?: string;
   message: string;
@@ -262,7 +263,7 @@ export interface SendNotificationDto {
 }
 
 export interface SendMultiChannelDto {
-  channels: NotificationChannel[];
+  channels: MessageChannel[];
   sms?: {
     phoneNumber: string;
     message: string;
@@ -284,11 +285,11 @@ export interface NotificationResult {
   success: boolean;
   messageId?: string;
   error?: string;
-  channel: NotificationChannel;
+  channel: MessageChannel;
 }
 
 export interface MultiChannelResult {
-  results: Record<NotificationChannel, NotificationResult>;
+  results: Record<MessageChannel, NotificationResult>;
   summary: {
     total: number;
     successful: number;

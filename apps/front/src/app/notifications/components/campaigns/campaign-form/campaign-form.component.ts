@@ -18,7 +18,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.component';
 import { CampaignService } from '../../../services/campaign.service';
 import { SmsTemplateService } from '../../../services/sms-template.service';
-import { CreateCampaignDto, CampaignType, NotificationChannel } from '../../../models/notification.models';
+import { MessageChannel } from '../../../models/notification.models'';
 
 @Component({
   selector: 'app-campaign-form',

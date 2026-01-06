@@ -13,7 +13,7 @@ import { environment } from '@crm/front/environments/environment';
 })
 export class SmsTemplateService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = environment.apiBase + '/sms/templates';
+  private readonly apiUrl = environment.apiBase + '/messages/sms/templates';
 
   // Signals for reactive state
   templates = signal<SmsTemplate[]>([]);

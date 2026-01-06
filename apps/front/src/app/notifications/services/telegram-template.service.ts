@@ -13,7 +13,7 @@ import { environment } from '@crm/front/environments/environment';
 })
 export class TelegramTemplateService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = environment.apiBase + '/notifications/telegram/templates';
+  private readonly apiUrl = environment.apiBase + '/messages/telegram/templates';
 
   // Signals for reactive state
   templates = signal<TelegramTemplate[]>([]);

@@ -4,11 +4,13 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TelegramTemplate } from '../entities/telegram-template.entity';
 import { CreateTelegramTemplateDto, UpdateTelegramTemplateDto } from '../dto/telegram-template.dto';
+import { BulkSendDto } from '../dto/bulk-send.dto';
 import { TemplateRenderService } from '../services/template-render.service';
+import { MessageQueueService } from '../services/message-queue.service';
 import { JwtAuthGuard } from '../../user/jwt-auth.guard';
 
 @ApiTags('Telegram Templates')
-@Controller('notifications/telegram-templates')
+@Controller('messages/telegram/templates')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class TelegramTemplateController {
@@ -16,16 +18,20 @@ export class TelegramTemplateController {
     @InjectRepository(TelegramTemplate)
     private readonly templateRepo: Repository<TelegramTemplate>,
     private readonly renderService: TemplateRenderService,
+    private readonly queueService: MessageQueueService,
   ) {}
 
   @Get()
   @ApiOperation({ summary: 'Получить все Telegram шаблоны' })
   @ApiResponse({ status: 200, description: 'Список шаблонов' })
   async findAll(
-    @Query('page') page = 1,
-    @Query('limit') limit = 20,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
     @Query('isActive') isActive?: boolean,
   ) {
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 20;
+
     const where: any = {};
     if (isActive !== undefined) {
       where.isActive = isActive;
@@ -33,17 +39,17 @@ export class TelegramTemplateController {
 
     const [data, total] = await this.templateRepo.findAndCount({
       where,
-      skip: (page - 1) * limit,
-      take: limit,
+      skip: (pageNum - 1) * limitNum,
+      take: limitNum,
       order: { createdAt: 'DESC' },
     });
 
     return {
       data,
       total,
-      page: Number(page),
-      limit: Number(limit),
-      hasMore: total > page * limit,
+      page: pageNum,
+      limit: limitNum,
+      hasMore: total > pageNum * limitNum,
     };
   }
 
@@ -52,6 +58,7 @@ export class TelegramTemplateController {
   @ApiResponse({ status: 200, description: 'Шаблон найден' })
   @ApiResponse({ status: 404, description: 'Шаблон не найден' })
   async findOne(@Param('id') id: string) {
+    console.log('=== findAll called --=ф-ыв=фы0в=-фы0в=-фы0в=-фы0=в ===');
     const template = await this.templateRepo.findOne({ where: { id } });
     if (!template) {
       throw new Error('Template not found');
@@ -159,6 +166,36 @@ export class TelegramTemplateController {
         deal: context.deal?.title,
         company: context.company?.name,
       },
+    };
+  }
+
+  @Post(':id/send-bulk')
+  @ApiOperation({ summary: 'Массовая отправка Telegram сообщений' })
+  @ApiResponse({ status: 200, description: 'Сообщения поставлены в очередь' })
+  async sendBulk(@Param('id') id: string, @Body() dto: BulkSendDto) {
+    const template = await this.templateRepo.findOne({ where: { id } });
+    if (!template) {
+      throw new Error('Template not found');
+    }
+
+    if (!template.isActive) {
+      throw new Error('Template is not active');
+    }
+
+    if (!dto.contactIds || dto.contactIds.length === 0) {
+      throw new Error('No contacts specified');
+    }
+
+    // Отправляем в очередь
+    const result = await this.queueService.queueTelegramBulk({
+      templateId: id,
+      contactIds: dto.contactIds,
+      priority: dto.priority,
+    });
+
+    return {
+      success: true,
+      ...result,
     };
   }
 }

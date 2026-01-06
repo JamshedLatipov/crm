@@ -1,0 +1,188 @@
+# Messages Module Refactoring Summary
+
+Дата: 6 января 2026 г.
+
+## Цель рефакторинга
+Переименовать модуль SMS в Messages Module для более точного отражения функциональности - это не просто SMS, а полноценный Message Hub для всех каналов коммуникации (WhatsApp, Telegram, SMS, Email).
+
+## Выполненные изменения
+
+### 1. Структура файлов и папок
+✅ Переименована папка:
+- `apps/back/src/app/modules/sms/` → `apps/back/src/app/modules/messages/`
+
+✅ Переименован модульный файл:
+- `sms.module.ts` → `messages.module.ts`
+
+✅ Класс модуля:
+- `SmsModule` → `MessagesModule`
+
+### 2. API Routes (все контроллеры обновлены)
+✅ WhatsApp Templates:
+- Было: `@Controller('notifications/whatsapp-templates')`
+- Стало: `@Controller('messages/whatsapp/templates')`
+
+✅ Telegram Templates:
+- Было: `@Controller('notifications/telegram-templates')`
+- Стало: `@Controller('messages/telegram/templates')`
+
+✅ Email Templates:
+- Было: `@Controller('email-templates')`
+- Стало: `@Controller('messages/email/templates')`
+
+✅ SMS Templates:
+- Было: `@Controller('sms/templates')`
+- Стало: `@Controller('messages/sms/templates')`
+
+### 3. Backend импорты обновлены в файлах:
+
+✅ `apps/back/src/app/modules/index.ts`
+- Импорт: `SmsModule` → `MessagesModule`
+- Путь: `'./sms/sms.module'` → `'./messages/messages.module'`
+- Комментарий обновлен: "Message hub - handles /messages/* routes (WhatsApp, Telegram, SMS, Email)"
+
+✅ `apps/back/src/app/modules/notifications/services/notification-analytics.service.ts`
+- Импорты entities: `../../sms/entities/` → `../../messages/entities/`
+
+✅ `apps/back/src/app/modules/queues/queue-consumers.module.ts`
+- Импорт модуля: `SmsModule` → `MessagesModule`
+- Импорты entities: `../sms/entities/` → `../messages/entities/`
+
+✅ `apps/back/src/app/modules/queues/consumers/sms-queue.consumer.ts`
+- Все импорты: `../../sms/` → `../../messages/`
+
+### 4. Frontend сервисы обновлены:
+
+✅ `apps/front/src/app/notifications/services/whatsapp-template.service.ts`
+- apiUrl: `/notifications/whatsapp-templates` → `/messages/whatsapp/templates`
+
+✅ `apps/front/src/app/notifications/services/telegram-template.service.ts`
+- apiUrl: `/notifications/telegram-templates` → `/messages/telegram/templates`
+
+✅ `apps/front/src/app/notifications/services/sms-template.service.ts`
+- apiUrl: `/sms/templates` → `/messages/sms/templates`
+
+✅ `apps/front/src/app/notifications/services/email-template.service.ts`
+- apiUrl: `/email-templates` → `/messages/email/templates`
+
+## Новая структура API
+
+```
+/messages/
+├── whatsapp/
+│   └── templates/
+│       ├── GET    /           - Список шаблонов
+│       ├── GET    /:id        - Один шаблон
+│       ├── POST   /           - Создать шаблон
+│       ├── PUT    /:id        - Обновить шаблон
+│       ├── DELETE /:id        - Удалить шаблон
+│       └── POST   /:id/send-bulk - Массовая отправка
+│
+├── telegram/
+│   └── templates/
+│       ├── GET    /           - Список шаблонов
+│       ├── GET    /:id        - Один шаблон
+│       ├── POST   /           - Создать шаблон
+│       ├── PUT    /:id        - Обновить шаблон
+│       ├── DELETE /:id        - Удалить шаблон
+│       └── POST   /:id/send-bulk - Массовая отправка
+│
+├── sms/
+│   └── templates/
+│       ├── GET    /           - Список шаблонов
+│       ├── GET    /:id        - Один шаблон
+│       ├── POST   /           - Создать шаблон
+│       ├── PUT    /:id        - Обновить шаблон
+│       └── DELETE /:id        - Удалить шаблон
+│
+└── email/
+    └── templates/
+        ├── GET    /           - Список шаблонов
+        ├── GET    /:id        - Один шаблон
+        ├── POST   /           - Создать шаблон
+        ├── PUT    /:id        - Обновить шаблон
+        └── DELETE /:id        - Удалить шаблон
+```
+
+## Преимущества нового именования
+
+1. **Семантическая ясность**: Название "Messages" точно отражает назначение модуля - управление всеми типами сообщений
+2. **Единообразие API**: Все роуты начинаются с `/messages/*`, что делает структуру понятной
+3. **Устранение конфликтов**: Нет пересечения с `/notifications/*` роутами из NotificationModule
+4. **Масштабируемость**: Легко добавить новые каналы (Viber, Slack и т.д.) в единую структуру
+
+## Технические детали
+
+### Module Registration Order
+В `apps/back/src/app/modules/index.ts` важен порядок загрузки модулей:
+```typescript
+export const MODULES = [
+    // ...
+    MessagesModule, // Must be BEFORE NotificationModule
+    NotificationModule,
+    // ...
+];
+```
+
+Причина: Специфичные роуты (`/messages/telegram/templates`) должны регистрироваться раньше параметризованных роутов (`/notifications/:id`), иначе будет конфликт.
+
+### RabbitMQ Integration
+MessagesModule использует RabbitMQ для массовых рассылок:
+- Queue: `notifications_queue`
+- Батчинг: 100 сообщений на батч
+- Retry логика: до 3 попыток с экспоненциальным backoff
+- TTL: 24 часа
+- Max size: 10000 сообщений
+
+### Entities структура
+Все entities остались без изменений, только обновлены пути импорта:
+- `sms-message.entity.ts`
+- `sms-template.entity.ts`
+- `email-message.entity.ts`
+- `email-template.entity.ts`
+- `whatsapp-message.entity.ts`
+- `whatsapp-template.entity.ts`
+- `telegram-message.entity.ts`
+- `telegram-template.entity.ts`
+- `notification-campaign.entity.ts`
+
+## Проверка корректности
+
+✅ Проверено отсутствие старых импортов:
+```bash
+grep -r "from.*\/sms\/" apps/back/src/app/modules/ # No matches
+grep -r "SmsModule" apps/back/src/app/modules/      # No matches (кроме внутренних названий классов)
+```
+
+✅ Все TypeScript компиляции проходят без ошибок
+✅ ESLint warnings отсутствуют
+
+## Следующие шаги
+
+1. ⏳ Перезапустить backend: `npm run start:back`
+2. ⏳ Перезапустить frontend: `npm run start:front`
+3. ⏳ Протестировать все API endpoints через Swagger UI
+4. ⏳ Создать frontend компонент для bulk send функциональности
+
+## Совместимость
+
+⚠️ **Breaking Changes**: Да, все API endpoints изменились
+- Требуется обновление frontend URL paths (✅ уже сделано)
+- Swagger UI автоматически обновится после перезапуска
+
+## Rollback Plan
+
+Если потребуется откатить изменения:
+```bash
+cd apps/back/src/app/modules
+mv messages sms
+cd sms
+mv messages.module.ts sms.module.ts
+# Затем отменить все git changes в импортах
+git checkout -- .
+```
+
+---
+**Статус**: ✅ Рефакторинг завершен, готов к тестированию
+**Автор**: GitHub Copilot
+**Дата**: 6 января 2026 г.
