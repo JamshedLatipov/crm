@@ -1,7 +1,7 @@
 import { Component, signal, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { MatStepperModule } from '@angular/material/stepper';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -22,6 +22,7 @@ import { SmsTemplateService } from '../../../services/sms-template.service';
 import { EmailTemplateService } from '../../../services/email-template.service';
 import { WhatsAppTemplateService } from '../../../services/whatsapp-template.service';
 import { TelegramTemplateService } from '../../../services/telegram-template.service';
+import { SegmentService } from '../../../services/segment.service';
 import { CreateCampaignDto, CampaignType, SmsTemplate } from '../../../models/message.models';
 
 @Component({
@@ -30,6 +31,7 @@ import { CreateCampaignDto, CampaignType, SmsTemplate } from '../../../models/me
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    RouterModule,
     MatStepperModule,
     MatButtonModule,
     MatIconModule,
@@ -310,55 +312,52 @@ import { CreateCampaignDto, CampaignType, SmsTemplate } from '../../../models/me
                     </div>
 
                     <form [formGroup]="audienceForm" class="step-form">
-                      <div class="segments-grid">
-                        <mat-card class="segment-card" [class.selected]="audienceForm.get('segmentId')?.value === 'all'" (click)="selectSegment('all')">
-                          <div class="segment-content">
-                            <mat-icon class="segment-icon">groups</mat-icon>
-                            <h4>Все контакты</h4>
-                            <p>Отправить всем контактам в базе</p>
-                            <div class="segment-count">
-                              <mat-icon>person</mat-icon>
-                              <span>2,456 контактов</span>
+                      @if (loadingSegments()) {
+                        <div class="loading-state">
+                          <mat-spinner diameter="40"></mat-spinner>
+                          <p>Загрузка сегментов...</p>
+                        </div>
+                      } @else if (availableSegments().length === 0) {
+                        <div class="empty-state">
+                          <mat-icon>segment</mat-icon>
+                          <h3>Нет доступных сегментов</h3>
+                          <p>Создайте сегмент аудитории для отправки кампаний</p>
+                          <button mat-raised-button color="primary" routerLink="/messages/segments/new">
+                            <mat-icon>add</mat-icon>
+                            Создать сегмент
+                          </button>
+                        </div>
+                      } @else {
+                        <div class="segments-grid">
+                          <!-- Опция "Все контакты" всегда доступна -->
+                          <mat-card class="segment-card" [class.selected]="audienceForm.get('segmentId')?.value === null" (click)="selectSegment(null)">
+                            <div class="segment-content">
+                              <mat-icon class="segment-icon">groups</mat-icon>
+                              <h4>Все контакты</h4>
+                              <p>Отправить всем контактам в базе</p>
+                              <div class="segment-count">
+                                <mat-icon>person</mat-icon>
+                                <span>Все активные</span>
+                              </div>
                             </div>
-                          </div>
-                        </mat-card>
+                          </mat-card>
 
-                        <mat-card class="segment-card" [class.selected]="audienceForm.get('segmentId')?.value === 'segment-1'" (click)="selectSegment('segment-1')">
-                          <div class="segment-content">
-                            <mat-icon class="segment-icon">star</mat-icon>
-                            <h4>VIP клиенты</h4>
-                            <p>Премиум клиенты с высокой активностью</p>
-                            <div class="segment-count">
-                              <mat-icon>person</mat-icon>
-                              <span>245 контактов</span>
-                            </div>
-                          </div>
-                        </mat-card>
-
-                        <mat-card class="segment-card" [class.selected]="audienceForm.get('segmentId')?.value === 'segment-2'" (click)="selectSegment('segment-2')">
-                          <div class="segment-content">
-                            <mat-icon class="segment-icon">fiber_new</mat-icon>
-                            <h4>Новые подписчики</h4>
-                            <p>Зарегистрированы за последние 30 дней</p>
-                            <div class="segment-count">
-                              <mat-icon>person</mat-icon>
-                              <span>1,234 контакта</span>
-                            </div>
-                          </div>
-                        </mat-card>
-
-                        <mat-card class="segment-card" [class.selected]="audienceForm.get('segmentId')?.value === 'segment-3'" (click)="selectSegment('segment-3')">
-                          <div class="segment-content">
-                            <mat-icon class="segment-icon">trending_up</mat-icon>
-                            <h4>Активные за 30 дней</h4>
-                            <p>Клиенты с недавней активностью</p>
-                            <div class="segment-count">
-                              <mat-icon>person</mat-icon>
-                              <span>567 контактов</span>
-                            </div>
-                          </div>
-                        </mat-card>
-                      </div>
+                          <!-- Динамические сегменты из сервиса -->
+                          @for (segment of availableSegments(); track segment.id) {
+                            <mat-card class="segment-card" [class.selected]="audienceForm.get('segmentId')?.value === segment.id" (click)="selectSegment(segment.id)">
+                              <div class="segment-content">
+                                <mat-icon class="segment-icon">{{ segment.isDynamic ? 'autorenew' : 'filter_list' }}</mat-icon>
+                                <h4>{{ segment.name }}</h4>
+                                <p>{{ segment.description || 'Сегмент контактов' }}</p>
+                                <div class="segment-count">
+                                  <mat-icon>person</mat-icon>
+                                  <span>{{ segment.contactsCount | number }} {{ segment.isDynamic ? '(динамический)' : 'контактов' }}</span>
+                                </div>
+                              </div>
+                            </mat-card>
+                          }
+                        </div>
+                      }
                     </form>
 
                     <div class="step-actions">
@@ -1165,11 +1164,13 @@ export class CampaignWizardComponent {
   private readonly emailTemplateService = inject(EmailTemplateService);
   private readonly whatsappTemplateService = inject(WhatsAppTemplateService);
   private readonly telegramTemplateService = inject(TelegramTemplateService);
+  private readonly segmentService = inject(SegmentService);
   private readonly snackBar = inject(MatSnackBar);
 
   currentStep = signal(0);
   loading = signal(false);
   loadingTemplates = signal(false);
+  loadingSegments = signal(false);
   minDate = new Date();
 
   basicInfoForm: FormGroup;
@@ -1193,6 +1194,11 @@ export class CampaignWizardComponent {
       default:
         return [];
     }
+  });
+
+  // Computed property для получения доступных сегментов
+  availableSegments = computed(() => {
+    return this.segmentService.segments();
   });
 
   steps = [
@@ -1239,8 +1245,9 @@ export class CampaignWizardComponent {
       scheduledTime: ['']
     });
 
-    // Load templates
+    // Load templates and segments
     this.loadTemplates();
+    this.loadSegments();
   }
 
   loadTemplates() {
@@ -1250,6 +1257,17 @@ export class CampaignWizardComponent {
       error: () => {
         this.loadingTemplates.set(false);
         this.snackBar.open('Ошибка загрузки шаблонов', 'Закрыть', { duration: 3000 });
+      }
+    });
+  }
+
+  loadSegments() {
+    this.loadingSegments.set(true);
+    this.segmentService.getAll(1, 100, true).subscribe({
+      next: () => this.loadingSegments.set(false),
+      error: () => {
+        this.loadingSegments.set(false);
+        this.snackBar.open('Ошибка загрузки сегментов', 'Закрыть', { duration: 3000 });
       }
     });
   }
@@ -1308,14 +1326,12 @@ export class CampaignWizardComponent {
     return labels[channel] || 'Не выбрано';
   }
 
-  getSegmentLabel(segmentId: string): string {
-    const labels: Record<string, string> = {
-      'all': 'Все контакты',
-      'segment-1': 'VIP клиенты',
-      'segment-2': 'Новые подписчики',
-      'segment-3': 'Активные за 30 дней'
-    };
-    return labels[segmentId] || 'Не выбрано';
+  getSegmentLabel(segmentId: string | null): string {
+    if (!segmentId) {
+      return 'Все контакты';
+    }
+    const segment = this.availableSegments().find(s => s.id === segmentId);
+    return segment?.name || 'Не выбрано';
   }
 
   getTemplateName(templateId: string): string {
@@ -1332,18 +1348,20 @@ export class CampaignWizardComponent {
     return 'Нет контента';
   }
 
-  getRecipientCount(segmentId: string): string {
+  getRecipientCount(segmentId: string | null): string {
     return this.getRecipientCountNumber(segmentId).toLocaleString('ru-RU');
   }
 
-  getRecipientCountNumber(segmentId: string): number {
-    const counts: Record<string, number> = {
-      'all': 2456,
-      'segment-1': 245,
-      'segment-2': 1234,
-      'segment-3': 567
-    };
-    return counts[segmentId] || 0;
+  getRecipientCountNumber(segmentId: string | null): number {
+    if (!segmentId) {
+      // For "All contacts" - sum all segment contacts or return total from service
+      // For now, return sum of all segment contactCounts
+      const segments = this.availableSegments();
+      if (segments.length === 0) return 0;
+      return segments.reduce((sum, segment) => sum + (segment.contactsCount || 0), 0);
+    }
+    const segment = this.availableSegments().find(s => s.id === segmentId);
+    return segment?.contactsCount || 0;
   }
 
   createCampaign() {

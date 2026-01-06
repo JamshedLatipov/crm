@@ -169,7 +169,7 @@ export interface CreateCampaignDto {
   description?: string;
   type: CampaignType;
   templateId: string;
-  segmentId: string;
+  segmentId?: string | null;
   scheduledAt?: Date;
   settings?: CampaignSettings;
 }

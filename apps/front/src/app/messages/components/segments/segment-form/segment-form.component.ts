@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -8,6 +8,14 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.component';
+import { SegmentService } from '../../../services/segment.service';
+import { CreateSegmentDto } from '../../../models/message.models';
 
 @Component({
   selector: 'app-segment-form',
@@ -20,174 +28,110 @@ import { MatIconModule } from '@angular/material/icon';
     MatInputModule,
     MatSelectModule,
     MatButtonModule,
-    MatIconModule
+    MatIconModule,
+    MatSlideToggleModule,
+    MatChipsModule,
+    MatProgressSpinnerModule,
+    MatDividerModule,
+    MatSnackBarModule,
+    PageLayoutComponent
   ],
-  template: `
-    <div class="segment-form-container">
-      <mat-card>
-        <mat-card-header>
-          <mat-card-title>
-            {{ segmentId() ? 'Редактировать сегмент' : 'Новый сегмент' }}
-          </mat-card-title>
-        </mat-card-header>
-
-        <mat-card-content>
-          <form [formGroup]="form">
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Название сегмента</mat-label>
-              <input matInput formControlName="name" placeholder="Введите название">
-              @if (form.get('name')?.hasError('required')) {
-                <mat-error>Название обязательно</mat-error>
-              }
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Описание</mat-label>
-              <textarea matInput formControlName="description" rows="3"></textarea>
-            </mat-form-field>
-
-            <div class="filters-section">
-              <div class="section-header">
-                <h3>Фильтры</h3>
-                <button mat-mini-fab color="primary" type="button" (click)="addFilter()">
-                  <mat-icon>add</mat-icon>
-                </button>
-              </div>
-
-              <div formArrayName="filters">
-                @for (filter of filters.controls; track filter; let i = $index) {
-                  <mat-card class="filter-card" [formGroupName]="i">
-                    <div class="filter-row">
-                      <mat-form-field appearance="outline">
-                        <mat-label>Поле</mat-label>
-                        <mat-select formControlName="field">
-                          <mat-option value="name">Имя</mat-option>
-                          <mat-option value="email">Email</mat-option>
-                          <mat-option value="phone">Телефон</mat-option>
-                          <mat-option value="status">Статус</mat-option>
-                          <mat-option value="created_at">Дата создания</mat-option>
-                        </mat-select>
-                      </mat-form-field>
-
-                      <mat-form-field appearance="outline">
-                        <mat-label>Оператор</mat-label>
-                        <mat-select formControlName="operator">
-                          <mat-option value="equals">Равно</mat-option>
-                          <mat-option value="not_equals">Не равно</mat-option>
-                          <mat-option value="contains">Содержит</mat-option>
-                          <mat-option value="not_contains">Не содержит</mat-option>
-                          <mat-option value="starts_with">Начинается с</mat-option>
-                          <mat-option value="ends_with">Заканчивается на</mat-option>
-                          <mat-option value="greater">Больше</mat-option>
-                          <mat-option value="less">Меньше</mat-option>
-                        </mat-select>
-                      </mat-form-field>
-
-                      <mat-form-field appearance="outline">
-                        <mat-label>Значение</mat-label>
-                        <input matInput formControlName="value" placeholder="Введите значение">
-                      </mat-form-field>
-
-                      <button mat-icon-button color="warn" type="button" (click)="removeFilter(i)">
-                        <mat-icon>delete</mat-icon>
-                      </button>
-                    </div>
-                  </mat-card>
-                }
-              </div>
-
-              @if (filters.length === 0) {
-                <p class="no-filters">Фильтры не добавлены. Нажмите "+" чтобы добавить.</p>
-              }
-            </div>
-          </form>
-        </mat-card-content>
-
-        <mat-card-actions align="end">
-          <button mat-button (click)="cancel()">Отмена</button>
-          <button mat-raised-button color="primary" (click)="save()" [disabled]="form.invalid">
-            Сохранить
-          </button>
-        </mat-card-actions>
-      </mat-card>
-    </div>
-  `,
-  styles: [`
-    .segment-form-container {
-      padding: 24px;
-      max-width: 1000px;
-      margin: 0 auto;
-    }
-
-    .full-width {
-      width: 100%;
-      margin-bottom: 16px;
-    }
-
-    .filters-section {
-      margin: 24px 0;
-    }
-
-    .section-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-
-    .filter-card {
-      margin-bottom: 16px;
-      padding: 16px;
-    }
-
-    .filter-row {
-      display: flex;
-      gap: 16px;
-      align-items: center;
-    }
-
-    .filter-row mat-form-field {
-      flex: 1;
-    }
-
-    .no-filters {
-      text-align: center;
-      color: #666;
-      font-style: italic;
-      padding: 24px;
-    }
-  `]
+  templateUrl: './segment-form.component.html',
+  styleUrl: './segment-form.component.scss'
 })
 export class SegmentFormComponent implements OnInit {
-  form!: FormGroup;
-  segmentId = signal<string | null>(null);
+  private readonly fb = inject(FormBuilder);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly segmentService = inject(SegmentService);
+  private readonly snackBar = inject(MatSnackBar);
 
-  constructor(
-    private fb: FormBuilder,
-    private route: ActivatedRoute,
-    private router: Router
-  ) {
-    this.initForm();
-  }
+  form!: FormGroup;
+  templateId = signal<string | null>(null);
+  loading = signal(false);
+
+  // Маппинг для читаемых названий полей
+  fieldLabels: Record<string, string> = {
+    'name': 'Имя',
+    'email': 'Email',
+    'phone': 'Телефон',
+    'status': 'Статус',
+    'createdAt': 'Дата создания',
+    'lastContactedAt': 'Последний контакт',
+    'tags': 'Теги'
+  };
+
+  // Маппинг для операторов
+  operatorLabels: Record<string, string> = {
+    'equals': '=',
+    'notEquals': '≠',
+    'contains': 'содержит',
+    'notContains': 'не содержит',
+    'startsWith': 'начинается с',
+    'endsWith': 'заканчивается на',
+    'greater': '>',
+    'less': '<',
+    'between': 'между',
+    'in': 'в списке',
+    'notIn': 'не в списке'
+  };
 
   get filters(): FormArray {
     return this.form.get('filters') as FormArray;
   }
 
   ngOnInit() {
+    this.initForm();
+    
     const id = this.route.snapshot.paramMap.get('id');
-    this.segmentId.set(id);
+    this.templateId.set(id);
     
     if (id && id !== 'new') {
-      // TODO: Загрузить данные сегмента
+      this.loadSegment(id);
     }
   }
 
   initForm() {
     this.form = this.fb.group({
-      name: ['', Validators.required],
+      name: ['', [Validators.required, Validators.minLength(3)]],
       description: [''],
+      filterLogic: ['AND'],
+      isDynamic: [true],
       filters: this.fb.array([])
+    });
+  }
+
+  loadSegment(id: string) {
+    this.loading.set(true);
+    this.segmentService.getById(id).subscribe({
+      next: (segment) => {
+        this.form.patchValue({
+          name: segment.name,
+          description: segment.description,
+          filterLogic: segment.filterLogic,
+          isDynamic: segment.isDynamic
+        });
+
+        // Очистить и добавить фильтры
+        this.filters.clear();
+        segment.filters.forEach(filter => {
+          this.filters.push(this.fb.group({
+            field: [filter.field, Validators.required],
+            operator: [filter.operator, Validators.required],
+            value: [filter.value, Validators.required]
+          }));
+        });
+
+        this.loading.set(false);
+      },
+      error: (error) => {
+        this.snackBar.open(
+          error.error?.message || 'Ошибка загрузки сегмента',
+          'Закрыть',
+          { duration: 5000 }
+        );
+        this.loading.set(false);
+      }
     });
   }
 
@@ -204,15 +148,55 @@ export class SegmentFormComponent implements OnInit {
     this.filters.removeAt(index);
   }
 
+  getFieldLabel(field: string): string {
+    return this.fieldLabels[field] || field;
+  }
+
+  getOperatorLabel(operator: string): string {
+    return this.operatorLabels[operator] || operator;
+  }
+
   save() {
-    if (this.form.valid) {
-      // TODO: Сохранить через сервис
-      console.log('Saving segment:', this.form.value);
-      this.router.navigate(['/notifications/segments']);
+    if (this.form.invalid) {
+      this.snackBar.open('Заполните все обязательные поля', 'Закрыть', { duration: 3000 });
+      return;
     }
+
+    const dto: CreateSegmentDto = {
+      name: this.form.value.name,
+      description: this.form.value.description,
+      filters: this.form.value.filters,
+      filterLogic: this.form.value.filterLogic,
+      isDynamic: this.form.value.isDynamic
+    };
+
+    this.loading.set(true);
+
+    const operation = this.templateId() 
+      ? this.segmentService.update(this.templateId()!, dto)
+      : this.segmentService.create(dto);
+
+    operation.subscribe({
+      next: () => {
+        this.snackBar.open(
+          this.templateId() ? 'Сегмент успешно обновлен!' : 'Сегмент успешно создан!',
+          'Закрыть',
+          { duration: 3000 }
+        );
+        this.router.navigate(['/messages/segments']);
+      },
+      error: (error) => {
+        this.snackBar.open(
+          error.error?.message || 'Ошибка сохранения сегмента',
+          'Закрыть',
+          { duration: 5000 }
+        );
+        this.loading.set(false);
+      }
+    });
   }
 
   cancel() {
-    this.router.navigate(['/notifications/segments']);
+    this.router.navigate(['/messages/segments']);
   }
 }

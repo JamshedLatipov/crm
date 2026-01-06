@@ -3,7 +3,7 @@
   [subtitle]="'Всего: ' + (segments()?.length || 0) + ' сегментов'"
 >
   <div page-actions>
-    <button mat-raised-button color="primary" routerLink="/notifications/segments/new">
+    <button mat-raised-button color="primary" routerLink="/messages/segments/new">
       <mat-icon>add</mat-icon>
       Создать сегмент
     </button>
@@ -14,7 +14,7 @@
       <mat-icon>group_work</mat-icon>
       <h3>Нет сегментов</h3>
       <p>Создайте первый сегмент для группировки контактов</p>
-      <button mat-raised-button color="primary" routerLink="/notifications/segments/new">
+      <button mat-raised-button color="primary" routerLink="/messages/segments/new">
         <mat-icon>add</mat-icon>
         Создать сегмент
       </button>
@@ -44,7 +44,7 @@
       </ng-template>
 
       <ng-template crmColumnTemplate="actionsTemplate" let-segment>
-        <button mat-icon-button [routerLink]="['/notifications/segments', segment.id]" matTooltip="Редактировать">
+        <button mat-icon-button [routerLink]="['/messages/segments', segment.id]" matTooltip="Редактировать">
           <mat-icon>edit</mat-icon>
         </button>
         <button mat-icon-button matTooltip="Просмотр контактов">

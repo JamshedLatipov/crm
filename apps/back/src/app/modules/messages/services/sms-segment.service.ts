@@ -36,13 +36,25 @@ export class SmsSegmentService {
   }
 
   /**
-   * Получение всех сегментов
+   * Получение всех сегментов с пагинацией
    */
   async findAll(filters?: {
+    page?: number;
+    limit?: number;
     isActive?: boolean;
     isDynamic?: boolean;
     search?: string;
-  }): Promise<SmsSegment[]> {
+  }): Promise<{
+    data: SmsSegment[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const page = filters?.page || 1;
+    const limit = filters?.limit || 20;
+    const skip = (page - 1) * limit;
+
     const query = this.segmentRepository.createQueryBuilder('segment')
       .leftJoinAndSelect('segment.createdBy', 'createdBy')
       .orderBy('segment.createdAt', 'DESC');
@@ -62,7 +74,18 @@ export class SmsSegmentService {
       );
     }
 
-    return await query.getMany();
+    const [data, total] = await query
+      .skip(skip)
+      .take(limit)
+      .getManyAndCount();
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   /**

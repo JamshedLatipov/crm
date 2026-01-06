@@ -31,11 +31,15 @@ export class SmsSegmentController {
   @ApiOperation({ summary: 'Получить список всех сегментов' })
   @ApiResponse({ status: 200, description: 'Список сегментов' })
   async findAll(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
     @Query('isActive') isActive?: string,
     @Query('isDynamic') isDynamic?: string,
     @Query('search') search?: string
   ) {
     return this.segmentService.findAll({
+      page: page ? parseInt(page) : 1,
+      limit: limit ? parseInt(limit) : 20,
       isActive: isActive ? isActive === 'true' : undefined,
       isDynamic: isDynamic ? isDynamic === 'true' : undefined,
       search,
