@@ -122,6 +122,70 @@
                     placeholder="Дополнительная информация о прогнозе"></textarea>
         </mat-form-field>
 
+        <!-- Расширенные параметры алгоритма -->
+        <mat-expansion-panel class="advanced-params-panel" [formGroup]="advancedParams">
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              <mat-icon>tune</mat-icon>
+              Расширенные параметры алгоритма
+            </mat-panel-title>
+            <mat-panel-description>
+              Настройка параметров для метода "{{ methodLabels[forecastForm.get('method')?.value] }}"
+            </mat-panel-description>
+          </mat-expansion-panel-header>
+
+          <div class="advanced-params-content">
+            <!-- Window Size (для Moving Average, Weighted Average) -->
+            <mat-form-field appearance="outline" *ngIf="isParamRelevant('windowSize')">
+              <mat-label>Окно скользящего среднего</mat-label>
+              <input matInput type="number" formControlName="windowSize" min="2" max="12">
+              <mat-icon matSuffix matTooltip="{{ getParamTooltip('windowSize') }}">info</mat-icon>
+              <mat-hint>Количество периодов: {{ advancedParams.get('windowSize')?.value }}</mat-hint>
+            </mat-form-field>
+
+            <!-- Alpha (для Exponential Smoothing) -->
+            <mat-form-field appearance="outline" *ngIf="isParamRelevant('alpha')">
+              <mat-label>Коэффициент сглаживания (α)</mat-label>
+              <input matInput type="number" formControlName="alpha" min="0.1" max="0.9" step="0.1">
+              <mat-icon matSuffix matTooltip="{{ getParamTooltip('alpha') }}">info</mat-icon>
+              <mat-hint>Текущее значение: {{ advancedParams.get('alpha')?.value }}</mat-hint>
+            </mat-form-field>
+
+            <!-- Min Data Points -->
+            <mat-form-field appearance="outline" *ngIf="isParamRelevant('minDataPoints')">
+              <mat-label>Минимум данных для прогноза</mat-label>
+              <input matInput type="number" formControlName="minDataPoints" min="3" max="20">
+              <mat-icon matSuffix matTooltip="{{ getParamTooltip('minDataPoints') }}">info</mat-icon>
+              <mat-hint>Минимальное кол-во исторических точек</mat-hint>
+            </mat-form-field>
+
+            <!-- Use Seasonality -->
+            <mat-checkbox formControlName="useSeasonality" *ngIf="isParamRelevant('useSeasonality')" class="param-checkbox">
+              <span>Учитывать сезонность</span>
+              <mat-icon matTooltip="{{ getParamTooltip('useSeasonality') }}" class="info-icon">info</mat-icon>
+            </mat-checkbox>
+
+            <!-- Confidence Level -->
+            <mat-form-field appearance="outline" *ngIf="isParamRelevant('confidenceLevel')">
+              <mat-label>Уровень уверенности</mat-label>
+              <mat-select formControlName="confidenceLevel">
+                <mat-option [value]="0.80">80%</mat-option>
+                <mat-option [value]="0.85">85%</mat-option>
+                <mat-option [value]="0.90">90%</mat-option>
+                <mat-option [value]="0.95">95%</mat-option>
+                <mat-option [value]="0.99">99%</mat-option>
+              </mat-select>
+              <mat-icon matSuffix matTooltip="{{ getParamTooltip('confidenceLevel') }}">info</mat-icon>
+              <mat-hint>Доверительная вероятность прогноза</mat-hint>
+            </mat-form-field>
+
+            <div class="params-note">
+              <mat-icon>lightbulb</mat-icon>
+              <p>Эти параметры влияют на точность прогноза. Оставьте значения по умолчанию, если не уверены.</p>
+            </div>
+          </div>
+        </mat-expansion-panel>
+
         <!-- Предпросмотр периодов -->
         <mat-expansion-panel class="period-preview-panel" *ngIf="periodPreview().length > 0">
           <mat-expansion-panel-header>
@@ -139,18 +203,22 @@
                 {{ period }}
               </mat-chip>
             </mat-chip-set>
-            <p *ngIf="periodPreview().length > 20" class="more-periods">
-              <mat-icon>more_horiz</mat-icon>
-              И еще {{ periodPreview().length - 20 }} периодов...
-            </p>
+            @if (periodPreview().length > 20) {
+              <p class="more-periods">
+                <mat-icon>more_horiz</mat-icon>
+                И еще {{ periodPreview().length - 20 }} периодов...
+              </p>
+            }
           </div>
         </mat-expansion-panel>
 
         <!-- Ошибка -->
-        <div *ngIf="error()" class="error-message">
-          <mat-icon>error</mat-icon>
-          {{ error() }}
-        </div>
+        @if (error()) {
+          <div class="error-message">
+            <mat-icon>error</mat-icon>
+            {{ error() }}
+          </div>
+        }
 
         <!-- Действия -->
         <div class="form-actions">
@@ -158,8 +226,12 @@
             Отмена
           </button>
           <button mat-raised-button color="primary" type="submit" [disabled]="loading() || forecastForm.invalid">
-            <mat-spinner *ngIf="loading()" diameter="20"></mat-spinner>
-            <span *ngIf="!loading()">Создать и рассчитать</span>
+            @if (loading()) {
+              <mat-spinner diameter="20"></mat-spinner>
+            }
+            @if (!loading()) {
+              <span>Создать и рассчитать</span>
+            }
           </button>
         </div>
       </form>

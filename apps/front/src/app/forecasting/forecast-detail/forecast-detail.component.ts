@@ -65,12 +65,70 @@ export class ForecastDetailComponent implements OnInit {
   lineChartOptions: ChartConfiguration['options'] = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: { duration: 0 }, // Отключаем анимацию для производительности
     plugins: {
-      legend: { display: true, position: 'top' },
-      title: { display: true, text: 'Цель vs Прогноз vs Факт' }
+      legend: { 
+        display: true, 
+        position: 'top',
+        labels: { 
+          font: { size: 12 },
+          padding: 12,
+          usePointStyle: true,
+          pointStyle: 'circle'
+        }
+      },
+      title: { 
+        display: true, 
+        text: 'Цель vs Прогноз vs Факт',
+        font: { size: 14, weight: 'bold' },
+        padding: { top: 10, bottom: 20 }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        titleColor: '#1f2937',
+        bodyColor: '#1f2937',
+        borderColor: '#e5e7eb',
+        borderWidth: 1,
+        padding: 12,
+        bodyFont: { size: 12 },
+        titleFont: { size: 13, weight: 'bold' },
+        displayColors: true,
+        boxPadding: 4
+      }
     },
     scales: {
-      y: { beginAtZero: true }
+      y: { 
+        beginAtZero: true,
+        ticks: {
+          font: { size: 11 },
+          color: '#6b7280'
+        },
+        grid: {
+          color: 'rgba(107, 114, 128, 0.06)'
+        }
+      },
+      x: {
+        ticks: {
+          font: { size: 11 },
+          color: '#6b7280',
+          maxRotation: 45,
+          minRotation: 0
+        },
+        grid: {
+          display: false
+        }
+      }
+    },
+    elements: {
+      line: {
+        borderWidth: 2,
+        tension: 0.4
+      },
+      point: {
+        radius: 3,
+        hoverRadius: 6,
+        hitRadius: 10
+      }
     }
   };
   lineChartType: ChartType = 'line';
@@ -80,12 +138,48 @@ export class ForecastDetailComponent implements OnInit {
   barChartOptions: ChartConfiguration['options'] = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: { duration: 0 },
     plugins: {
       legend: { display: false },
-      title: { display: true, text: 'Отклонения (Variance)' }
+      title: { 
+        display: true, 
+        text: 'Отклонения (Variance)',
+        font: { size: 14, weight: 'bold' },
+        padding: { top: 10, bottom: 20 }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        titleColor: '#1f2937',
+        bodyColor: '#1f2937',
+        borderColor: '#e5e7eb',
+        borderWidth: 1,
+        padding: 12,
+        bodyFont: { size: 12 },
+        titleFont: { size: 13, weight: 'bold' }
+      }
     },
     scales: {
-      y: { beginAtZero: true }
+      y: { 
+        beginAtZero: true,
+        ticks: {
+          font: { size: 11 },
+          color: '#6b7280'
+        },
+        grid: {
+          color: 'rgba(107, 114, 128, 0.06)'
+        }
+      },
+      x: {
+        ticks: {
+          font: { size: 11 },
+          color: '#6b7280',
+          maxRotation: 45,
+          minRotation: 0
+        },
+        grid: {
+          display: false
+        }
+      }
     }
   };
   barChartType: ChartType = 'bar';
@@ -95,9 +189,36 @@ export class ForecastDetailComponent implements OnInit {
   pieChartOptions: ChartConfiguration['options'] = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: { duration: 0 },
     plugins: {
-      legend: { display: true, position: 'right' },
-      title: { display: true, text: 'Распределение значений' }
+      legend: { 
+        display: true, 
+        position: 'right',
+        labels: {
+          font: { size: 12 },
+          padding: 12,
+          usePointStyle: true,
+          pointStyle: 'circle',
+          boxWidth: 12,
+          boxHeight: 12
+        }
+      },
+      title: { 
+        display: true, 
+        text: 'Распределение значений',
+        font: { size: 14, weight: 'bold' },
+        padding: { top: 10, bottom: 20 }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        titleColor: '#1f2937',
+        bodyColor: '#1f2937',
+        borderColor: '#e5e7eb',
+        borderWidth: 1,
+        padding: 12,
+        bodyFont: { size: 12 },
+        titleFont: { size: 13, weight: 'bold' }
+      }
     }
   };
   pieChartType: ChartType = 'pie';
@@ -107,12 +228,69 @@ export class ForecastDetailComponent implements OnInit {
   confidenceChartOptions: ChartConfiguration['options'] = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: { duration: 0 },
     plugins: {
-      legend: { display: true },
-      title: { display: true, text: 'Уверенность прогноза по периодам' }
+      legend: { 
+        display: true,
+        labels: {
+          font: { size: 12 },
+          padding: 12,
+          usePointStyle: true,
+          pointStyle: 'circle'
+        }
+      },
+      title: { 
+        display: true, 
+        text: 'Уверенность прогноза по периодам',
+        font: { size: 14, weight: 'bold' },
+        padding: { top: 10, bottom: 20 }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        titleColor: '#1f2937',
+        bodyColor: '#1f2937',
+        borderColor: '#e5e7eb',
+        borderWidth: 1,
+        padding: 12,
+        bodyFont: { size: 12 },
+        titleFont: { size: 13, weight: 'bold' }
+      }
     },
     scales: {
-      y: { beginAtZero: true, max: 100 }
+      y: { 
+        beginAtZero: true, 
+        max: 100,
+        ticks: {
+          font: { size: 11 },
+          color: '#6b7280',
+          callback: (value) => value + '%'
+        },
+        grid: {
+          color: 'rgba(107, 114, 128, 0.06)'
+        }
+      },
+      x: {
+        ticks: {
+          font: { size: 11 },
+          color: '#6b7280',
+          maxRotation: 45,
+          minRotation: 0
+        },
+        grid: {
+          display: false
+        }
+      }
+    },
+    elements: {
+      line: {
+        borderWidth: 2,
+        tension: 0.4
+      },
+      point: {
+        radius: 3,
+        hoverRadius: 6,
+        hitRadius: 10
+      }
     }
   };
   confidenceChartType: ChartType = 'line';
@@ -175,33 +353,42 @@ export class ForecastDetailComponent implements OnInit {
     const varianceData = periods.map(p => p.variance || 0);
     const confidenceData = periods.map(p => (p.confidence || 0) * 100);
 
-    // График 1: Линейный
+    // График 1: Линейный (используем цвета проекта #4285f4, #10b981, #f59e0b)
     this.lineChartData = {
       labels,
       datasets: [
         { 
           data: targetData, 
           label: 'Цель', 
-          borderColor: '#3b82f6',
-          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          borderColor: '#4285f4', // Основной цвет проекта
+          backgroundColor: 'rgba(66, 133, 244, 0.1)',
           tension: 0.4,
-          fill: true
+          fill: true,
+          borderWidth: 2,
+          pointRadius: 3,
+          pointHoverRadius: 6
         },
         { 
           data: predictedData, 
           label: 'Прогноз', 
-          borderColor: '#10b981',
+          borderColor: '#10b981', // Success зеленый
           backgroundColor: 'rgba(16, 185, 129, 0.1)',
           tension: 0.4,
-          fill: true
+          fill: true,
+          borderWidth: 2,
+          pointRadius: 3,
+          pointHoverRadius: 6
         },
         { 
           data: actualData, 
           label: 'Факт', 
-          borderColor: '#f59e0b',
+          borderColor: '#f59e0b', // Warning оранжевый
           backgroundColor: 'rgba(245, 158, 11, 0.1)',
           tension: 0.4,
-          fill: true
+          fill: true,
+          borderWidth: 2,
+          pointRadius: 3,
+          pointHoverRadius: 6
         }
       ]
     };
@@ -218,7 +405,7 @@ export class ForecastDetailComponent implements OnInit {
       }]
     };
 
-    // График 3: Круговая диаграмма
+    // График 3: Круговая диаграмма (используем цвета проекта)
     const forecast = this.forecast();
     if (forecast) {
       this.pieChartData = {
@@ -229,14 +416,22 @@ export class ForecastDetailComponent implements OnInit {
             forecast.predictedValue || 0,
             forecast.actualValue || 0
           ],
-          backgroundColor: ['#3b82f6', '#10b981', '#f59e0b'],
-          borderColor: ['#2563eb', '#059669', '#d97706'],
+          backgroundColor: [
+            'rgba(66, 133, 244, 0.7)',   // #4285f4
+            'rgba(16, 185, 129, 0.7)',   // #10b981
+            'rgba(245, 158, 11, 0.7)'    // #f59e0b
+          ],
+          borderColor: [
+            '#4285f4',
+            '#10b981',
+            '#f59e0b'
+          ],
           borderWidth: 2
         }]
       };
     }
 
-    // График 4: Уверенность
+    // График 4: Уверенность (используем фиолетовый как accent)
     this.confidenceChartData = {
       labels,
       datasets: [{
@@ -245,7 +440,10 @@ export class ForecastDetailComponent implements OnInit {
         borderColor: '#8b5cf6',
         backgroundColor: 'rgba(139, 92, 246, 0.1)',
         tension: 0.4,
-        fill: true
+        fill: true,
+        borderWidth: 2,
+        pointRadius: 3,
+        pointHoverRadius: 6
       }]
     };
 
@@ -322,6 +520,91 @@ export class ForecastDetailComponent implements OnInit {
 
   getTotalVariance(): number {
     return this.periods().reduce((sum, p) => sum + (p.variance || 0), 0);
+  }
+
+  /**
+   * Рассчитать среднюю точность прогноза
+   */
+  getAverageAccuracy(): number {
+    const periods = this.periods().filter(p => p.actualValue != null && p.actualValue > 0);
+    if (periods.length === 0) return 0;
+
+    const accuracies = periods.map(p => {
+      const actual = p.actualValue || 0;
+      const predicted = p.predictedValue || 0;
+      if (actual === 0) return 0;
+      
+      const error = Math.abs(actual - predicted);
+      const accuracy = Math.max(0, (1 - error / actual)) * 100;
+      return accuracy;
+    });
+
+    return accuracies.reduce((sum, acc) => sum + acc, 0) / accuracies.length;
+  }
+
+  /**
+   * Получить количество периодов с данными
+   */
+  getPeriodsWithData(): { total: number; withActual: number; withPredicted: number } {
+    const periods = this.periods();
+    return {
+      total: periods.length,
+      withActual: periods.filter(p => p.actualValue != null).length,
+      withPredicted: periods.filter(p => p.predictedValue != null).length
+    };
+  }
+
+  /**
+   * Рассчитать MAPE (Mean Absolute Percentage Error)
+   */
+  getMAPE(): number {
+    const periods = this.periods().filter(p => p.actualValue != null && p.actualValue > 0);
+    if (periods.length === 0) return 0;
+
+    const mape = periods.reduce((sum, p) => {
+      const actual = p.actualValue || 0;
+      const predicted = p.predictedValue || 0;
+      if (actual === 0) return sum;
+      
+      const ape = Math.abs((actual - predicted) / actual) * 100;
+      return sum + ape;
+    }, 0) / periods.length;
+
+    return mape;
+  }
+
+  /**
+   * Получить лучший и худший период по точности
+   */
+  getBestAndWorstPeriods(): { best: ForecastPeriod | null; worst: ForecastPeriod | null } {
+    const periods = this.periods().filter(p => p.actualValue != null && p.actualValue > 0);
+    if (periods.length === 0) return { best: null, worst: null };
+
+    const periodsWithAccuracy = periods.map(p => {
+      const actual = p.actualValue || 0;
+      const predicted = p.predictedValue || 0;
+      const error = Math.abs(actual - predicted);
+      const accuracy = actual === 0 ? 0 : Math.max(0, (1 - error / actual)) * 100;
+      
+      return { period: p, accuracy };
+    });
+
+    periodsWithAccuracy.sort((a, b) => b.accuracy - a.accuracy);
+
+    return {
+      best: periodsWithAccuracy[0]?.period || null,
+      worst: periodsWithAccuracy[periodsWithAccuracy.length - 1]?.period || null
+    };
+  }
+
+  /**
+   * Рассчитать процент достижения цели
+   */
+  getTargetAchievement(): number {
+    const forecast = this.forecast();
+    if (!forecast || !forecast.targetValue || !forecast.actualValue) return 0;
+    
+    return (forecast.actualValue / forecast.targetValue) * 100;
   }
 
   formatCurrency(value: number | undefined): string {

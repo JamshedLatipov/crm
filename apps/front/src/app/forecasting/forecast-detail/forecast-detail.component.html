@@ -198,6 +198,110 @@
       </mat-tab>
     </mat-tab-group>
 
+    <!-- Comparison Section (Сравнение прогноза с фактом) -->
+    <div class="comparison-section" *ngIf="getPeriodsWithData().withActual > 0">
+      <h3>
+        <mat-icon>compare_arrows</mat-icon>
+        Сравнение прогноза с фактом
+      </h3>
+
+      <!-- Карточки метрик -->
+      <div class="comparison-grid">
+        <div class="comparison-card">
+          <div class="label">Средняя точность</div>
+          <div class="value" [ngClass]="getAverageAccuracy() >= 80 ? 'positive' : getAverageAccuracy() >= 60 ? '' : 'negative'">
+            {{ getAverageAccuracy() | number:'1.1-1' }}%
+          </div>
+          <div class="sublabel">{{ getPeriodsWithData().withActual }} из {{ getPeriodsWithData().total }} периодов</div>
+        </div>
+
+        <div class="comparison-card">
+          <div class="label">MAPE</div>
+          <div class="value" [ngClass]="getMAPE() <= 20 ? 'positive' : getMAPE() <= 40 ? '' : 'negative'">
+            {{ getMAPE() | number:'1.1-1' }}%
+          </div>
+          <div class="sublabel">Средняя процентная ошибка</div>
+        </div>
+
+        <div class="comparison-card">
+          <div class="label">Общее отклонение</div>
+          <div class="value" [ngClass]="getTotalVariance() > 0 ? 'positive' : getTotalVariance() < 0 ? 'negative' : ''">
+            {{ formatCurrency(getTotalVariance()) }}
+          </div>
+          <div class="sublabel">{{ getTotalVariance() > 0 ? 'Превышение' : getTotalVariance() < 0 ? 'Недовыполнение' : 'Точное выполнение' }}</div>
+        </div>
+
+        <div class="comparison-card" *ngIf="forecast()?.targetValue && forecast()?.actualValue">
+          <div class="label">Достижение цели</div>
+          <div class="value" [ngClass]="getTargetAchievement() >= 100 ? 'positive' : getTargetAchievement() >= 80 ? '' : 'negative'">
+            {{ getTargetAchievement() | number:'1.1-1' }}%
+          </div>
+          <div class="sublabel">{{ formatCurrency(forecast()!.actualValue!) }} из {{ formatCurrency(forecast()!.targetValue!) }}</div>
+        </div>
+      </div>
+
+      <!-- Лучший и худший периоды -->
+      <div class="best-worst-periods" *ngIf="getBestAndWorstPeriods() as periods">
+        <div class="period-highlight best-period" *ngIf="periods.best">
+          <div class="period-header">
+            <mat-icon>star</mat-icon>
+            <span class="period-title">Лучший период</span>
+          </div>
+          <div class="period-info">
+            <div class="period-name">{{ periods.best.periodLabel }}</div>
+            <div class="period-stats">
+              <span class="stat">
+                <span class="stat-label">Цель:</span>
+                <span class="stat-value">{{ formatCurrency(periods.best.targetValue) }}</span>
+              </span>
+              <span class="stat">
+                <span class="stat-label">Прогноз:</span>
+                <span class="stat-value">{{ formatCurrency(periods.best.predictedValue) }}</span>
+              </span>
+              <span class="stat">
+                <span class="stat-label">Факт:</span>
+                <span class="stat-value">{{ formatCurrency(periods.best.actualValue) }}</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="period-highlight worst-period" *ngIf="periods.worst">
+          <div class="period-header">
+            <mat-icon>warning</mat-icon>
+            <span class="period-title">Требует внимания</span>
+          </div>
+          <div class="period-info">
+            <div class="period-name">{{ periods.worst.periodLabel }}</div>
+            <div class="period-stats">
+              <span class="stat">
+                <span class="stat-label">Цель:</span>
+                <span class="stat-value">{{ formatCurrency(periods.worst.targetValue) }}</span>
+              </span>
+              <span class="stat">
+                <span class="stat-label">Прогноз:</span>
+                <span class="stat-value">{{ formatCurrency(periods.worst.predictedValue) }}</span>
+              </span>
+              <span class="stat">
+                <span class="stat-label">Факт:</span>
+                <span class="stat-value">{{ formatCurrency(periods.worst.actualValue) }}</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Пояснение метрик -->
+      <div class="metrics-explanation">
+        <mat-icon>info_outline</mat-icon>
+        <div class="explanation-text">
+          <strong>Средняя точность</strong> показывает, насколько близки прогнозы к фактическим значениям. 
+          <strong>MAPE</strong> (Mean Absolute Percentage Error) - стандартная метрика точности прогноза.
+          Чем ниже MAPE, тем лучше прогноз (хорошо: &lt;20%, приемлемо: 20-40%, плохо: &gt;40%).
+        </div>
+      </div>
+    </div>
+
     <!-- Periods Table -->
     <mat-card class="periods-table-card">
       <mat-card-header>
