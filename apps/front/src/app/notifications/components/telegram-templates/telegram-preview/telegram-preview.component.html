@@ -1,0 +1,37 @@
+<app-page-layout
+  title="Предпросмотр Telegram Сообщения"
+  subtitle="Просмотр шаблона в формате Telegram"
+>
+  <div page-actions>
+    <button mat-stroked-button routerLink="/notifications/telegram-templates">
+      <mat-icon>arrow_back</mat-icon>
+      Назад
+    </button>
+    <button mat-raised-button color="primary">
+      <mat-icon>send</mat-icon>
+      Отправить тест
+    </button>
+  </div>
+
+  <div class="preview-container">
+    <div class="phone-mockup telegram">
+      <div class="phone-header">
+        <mat-icon>arrow_back</mat-icon>
+        <div class="contact-info">
+          <span class="contact-name">Тестовый контакт</span>
+          <span class="contact-status">был(а) недавно</span>
+        </div>
+        <mat-icon>more_vert</mat-icon>
+      </div>
+      
+      <div class="messages-area">
+        <div class="message outgoing">
+          <div class="message-bubble">
+            <p>Привет! Это тестовое Telegram сообщение.</p>
+            <span class="message-time">12:34</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</app-page-layout>

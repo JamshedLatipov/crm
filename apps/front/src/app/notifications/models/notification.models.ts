@@ -2,6 +2,8 @@
 export enum NotificationChannel {
   SMS = 'sms',
   EMAIL = 'email',
+  WHATSAPP = 'whatsapp',
+  TELEGRAM = 'telegram',
   WEBHOOK = 'webhook',
 }
 
@@ -352,4 +354,62 @@ export interface TableQuery {
   filters?: TableFilter[];
   sort?: TableSort;
   search?: string;
+}
+
+// WhatsApp Template
+export interface WhatsAppTemplate {
+  id: string;
+  name: string;
+  content: string;
+  category: TemplateCategory;
+  variables: string[];
+  isActive: boolean;
+  usageCount: number;
+  successRate: number;
+  mediaUrl?: string;
+  buttonText?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateWhatsAppTemplateDto {
+  name: string;
+  content: string;
+  category?: TemplateCategory;
+  variables?: string[];
+  isActive?: boolean;
+  mediaUrl?: string;
+  buttonText?: string;
+}
+
+// Telegram Template
+export interface TelegramTemplate {
+  id: string;
+  name: string;
+  content: string;
+  category: TemplateCategory;
+  variables: string[];
+  isActive: boolean;
+  usageCount: number;
+  successRate: number;
+  mediaUrl?: string;
+  inlineKeyboard?: TelegramInlineButton[][];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TelegramInlineButton {
+  text: string;
+  url?: string;
+  callback_data?: string;
+}
+
+export interface CreateTelegramTemplateDto {
+  name: string;
+  content: string;
+  category?: TemplateCategory;
+  variables?: string[];
+  isActive?: boolean;
+  mediaUrl?: string;
+  inlineKeyboard?: TelegramInlineButton[][];
 }

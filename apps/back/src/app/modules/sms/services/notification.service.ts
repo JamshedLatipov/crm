@@ -2,10 +2,14 @@ import { Injectable, Logger } from '@nestjs/common';
 import { SmsProviderService, SendSmsResult } from './sms-provider.service';
 import { EmailProviderService, SendEmailResult } from './email-provider.service';
 import { RestApiProviderService, WebhookResult } from './rest-api-provider.service';
+import { WhatsAppProviderService, SendWhatsAppResult } from './whatsapp-provider.service';
+import { TelegramProviderService, SendTelegramResult } from './telegram-provider.service';
 
 export enum NotificationChannel {
   SMS = 'sms',
   EMAIL = 'email',
+  WHATSAPP = 'whatsapp',
+  TELEGRAM = 'telegram',
   WEBHOOK = 'webhook',
 }
 
@@ -57,7 +61,9 @@ export class NotificationService {
   constructor(
     private smsProvider: SmsProviderService,
     private emailProvider: EmailProviderService,
-    private restApiProvider: RestApiProviderService
+    private restApiProvider: RestApiProviderService,
+    private whatsappProvider: WhatsAppProviderService,
+    private telegramProvider: TelegramProviderService
   ) {}
 
   /**
@@ -73,6 +79,12 @@ export class NotificationService {
 
         case NotificationChannel.EMAIL:
           return await this.sendEmail(payload);
+
+        case NotificationChannel.WHATSAPP:
+          return await this.sendWhatsApp(payload);
+
+        case NotificationChannel.TELEGRAM:
+          return await this.sendTelegram(payload);
 
         case NotificationChannel.WEBHOOK:
           return await this.sendWebhook(payload);
@@ -176,6 +188,54 @@ export class NotificationService {
         statusCode: result.statusCode,
         response: result.response,
         retryCount: result.retryCount,
+      },
+    };
+  }
+
+  /**
+   * Отправка через WhatsApp
+   */
+  private async sendWhatsApp(payload: NotificationPayload): Promise<NotificationResult> {
+    const message = payload.template && payload.variables
+      ? this.renderTemplate(payload.template, payload.variables)
+      : payload.message;
+
+    const result: SendWhatsAppResult = await this.whatsappProvider.sendMessage(
+      payload.recipient,
+      message
+    );
+
+    return {
+      channel: NotificationChannel.WHATSAPP,
+      success: result.success,
+      messageId: result.messageId,
+      error: result.error,
+      details: {
+        errorCode: result.errorCode,
+      },
+    };
+  }
+
+  /**
+   * Отправка через Telegram
+   */
+  private async sendTelegram(payload: NotificationPayload): Promise<NotificationResult> {
+    const message = payload.template && payload.variables
+      ? this.renderTemplate(payload.template, payload.variables)
+      : payload.message;
+
+    const result: SendTelegramResult = await this.telegramProvider.sendMessage(
+      payload.recipient,
+      message
+    );
+
+    return {
+      channel: NotificationChannel.TELEGRAM,
+      success: result.success,
+      messageId: result.messageId?.toString(),
+      error: result.error,
+      details: {
+        errorCode: result.errorCode,
       },
     };
   }
@@ -365,15 +425,19 @@ export class NotificationService {
    * Проверка доступности каналов
    */
   async checkChannelsHealth(): Promise<Record<NotificationChannel, boolean>> {
-    const [smsHealth, emailHealth, webhookHealth] = await Promise.allSettled([
+    const [smsHealth, emailHealth, whatsappHealth, telegramHealth, webhookHealth] = await Promise.allSettled([
       this.smsProvider.checkBalance().then(() => true).catch(() => false),
       this.emailProvider.verifyConnection(),
+      this.whatsappProvider.checkHealth(),
+      this.telegramProvider.checkHealth(),
       Promise.resolve(true), // Webhook всегда доступен
     ]);
 
     return {
       [NotificationChannel.SMS]: smsHealth.status === 'fulfilled' && smsHealth.value,
       [NotificationChannel.EMAIL]: emailHealth.status === 'fulfilled' && emailHealth.value,
+      [NotificationChannel.WHATSAPP]: whatsappHealth.status === 'fulfilled' && whatsappHealth.value,
+      [NotificationChannel.TELEGRAM]: telegramHealth.status === 'fulfilled' && telegramHealth.value,
       [NotificationChannel.WEBHOOK]: webhookHealth.status === 'fulfilled' && webhookHealth.value,
     };
   }
@@ -384,11 +448,15 @@ export class NotificationService {
   getChannelStats(): {
     sms: { available: boolean };
     email: { available: boolean };
+    whatsapp: { available: boolean };
+    telegram: { available: boolean };
     webhook: { available: boolean };
   } {
     return {
       sms: { available: true },
       email: { available: true },
+      whatsapp: { available: true },
+      telegram: { available: true },
       webhook: { available: true },
     };
   }

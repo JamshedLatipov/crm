@@ -126,6 +126,16 @@ export class SidebarComponent {
           route: '/notifications/email-templates',
         },
         {
+          icon: 'chat',
+          label: 'WhatsApp шаблоны',
+          route: '/notifications/whatsapp-templates',
+        },
+        {
+          icon: 'send',
+          label: 'Telegram шаблоны',
+          route: '/notifications/telegram-templates',
+        },
+        {
           icon: 'group',
           label: 'Сегменты',
           route: '/notifications/segments',

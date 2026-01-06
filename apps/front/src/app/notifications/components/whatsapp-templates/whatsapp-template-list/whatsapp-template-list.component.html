@@ -1,0 +1,69 @@
+<app-page-layout
+  title="WhatsApp Шаблоны"
+  [subtitle]="'Всего: ' + templates().length + ' шаблонов'"
+>
+  <div page-actions>
+    <button mat-raised-button color="primary" routerLink="/notifications/whatsapp-templates/new">
+      <mat-icon>add</mat-icon>
+      Создать шаблон
+    </button>
+  </div>
+
+  @if (templates().length === 0) {
+    <div class="empty-state">
+      <mat-icon>chat</mat-icon>
+      <h3>Нет шаблонов</h3>
+      <p>Создайте первый WhatsApp шаблон для использования в кампаниях</p>
+      <button mat-raised-button color="primary" routerLink="/notifications/whatsapp-templates/new">
+        <mat-icon>add</mat-icon>
+        Создать шаблон
+      </button>
+    </div>
+  } @else {
+    <crm-table
+      [columns]="columns"
+      [data]="templates()"
+      [pageSize]="20"
+    >
+      <ng-template crmColumnTemplate="contentTemplate" let-template>
+        <div class="content-preview">{{ template.content }}</div>
+      </ng-template>
+
+      <ng-template crmColumnTemplate="variablesTemplate" let-template>
+        <div class="variables-list">
+          @for (variable of template.variables; track variable) {
+            <span class="variable-chip">{{ variable }}</span>
+          }
+          @if (template.variables.length === 0) {
+            <span class="text-muted">—</span>
+          }
+        </div>
+      </ng-template>
+
+      <ng-template crmColumnTemplate="statusTemplate" let-template>
+        <span class="status-badge" [class.active]="template.isActive">
+          {{ template.isActive ? 'Активен' : 'Неактивен' }}
+        </span>
+      </ng-template>
+
+      <ng-template crmColumnTemplate="actionsTemplate" let-template>
+        <button mat-icon-button [routerLink]="['/notifications/whatsapp-templates', template.id]" matTooltip="Редактировать">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button mat-icon-button [routerLink]="['/notifications/whatsapp-templates', template.id, 'preview']" matTooltip="Предпросмотр">
+          <mat-icon>visibility</mat-icon>
+        </button>
+        <button mat-icon-button [matMenuTriggerFor]="actionMenu" matTooltip="Еще">
+          <mat-icon>more_vert</mat-icon>
+        </button>
+        
+        <mat-menu #actionMenu="matMenu">
+          <button mat-menu-item (click)="deleteTemplate(template)">
+            <mat-icon>delete</mat-icon>
+            <span>Удалить</span>
+          </button>
+        </mat-menu>
+      </ng-template>
+    </crm-table>
+  }
+</app-page-layout>

@@ -99,6 +99,62 @@ export const NOTIFICATION_ROUTES: Routes = [
           ),
       },
       {
+        path: 'whatsapp-templates',
+        loadComponent: () =>
+          import('./components/whatsapp-templates/whatsapp-template-list/whatsapp-template-list.component').then(
+            (m) => m.WhatsAppTemplateListComponent
+          ),
+      },
+      {
+        path: 'whatsapp-templates/new',
+        loadComponent: () =>
+          import('./components/whatsapp-templates/whatsapp-template-form/whatsapp-template-form.component').then(
+            (m) => m.WhatsAppTemplateFormComponent
+          ),
+      },
+      {
+        path: 'whatsapp-templates/:id',
+        loadComponent: () =>
+          import('./components/whatsapp-templates/whatsapp-template-form/whatsapp-template-form.component').then(
+            (m) => m.WhatsAppTemplateFormComponent
+          ),
+      },
+      {
+        path: 'whatsapp-templates/:id/preview',
+        loadComponent: () =>
+          import('./components/whatsapp-templates/whatsapp-preview/whatsapp-preview.component').then(
+            (m) => m.WhatsAppPreviewComponent
+          ),
+      },
+      {
+        path: 'telegram-templates',
+        loadComponent: () =>
+          import('./components/telegram-templates/telegram-template-list/telegram-template-list.component').then(
+            (m) => m.TelegramTemplateListComponent
+          ),
+      },
+      {
+        path: 'telegram-templates/new',
+        loadComponent: () =>
+          import('./components/telegram-templates/telegram-template-form/telegram-template-form.component').then(
+            (m) => m.TelegramTemplateFormComponent
+          ),
+      },
+      {
+        path: 'telegram-templates/:id',
+        loadComponent: () =>
+          import('./components/telegram-templates/telegram-template-form/telegram-template-form.component').then(
+            (m) => m.TelegramTemplateFormComponent
+          ),
+      },
+      {
+        path: 'telegram-templates/:id/preview',
+        loadComponent: () =>
+          import('./components/telegram-templates/telegram-preview/telegram-preview.component').then(
+            (m) => m.TelegramPreviewComponent
+          ),
+      },
+      {
         path: 'segments',
         loadComponent: () =>
           import('./components/segments/segment-list/segment-list.component').then(
