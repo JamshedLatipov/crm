@@ -113,4 +113,15 @@ export class SmsCampaignController {
   async getStats(@Param('id') id: string) {
     return this.campaignService.getCampaignStats(id);
   }
+
+  @Get(':id/stats/timeline')
+  @ApiOperation({ summary: 'Получить временную статистику кампании' })
+  @ApiResponse({ status: 200, description: 'Статистика кампании по времени' })
+  async getTimeline(
+    @Param('id') id: string,
+    @Query('interval') interval: 'hour' | 'day' = 'hour',
+    @Query('hours') hours: string = '24'
+  ) {
+    return this.campaignService.getCampaignTimeline(id, interval, parseInt(hours));
+  }
 }

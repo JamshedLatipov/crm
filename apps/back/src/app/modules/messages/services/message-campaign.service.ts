@@ -587,6 +587,99 @@ export class MessageCampaignService {
   }
 
   /**
+   * Получение временной статистики кампании
+   */
+  async getCampaignTimeline(
+    campaignId: string,
+    interval: 'hour' | 'day' = 'hour',
+    hours: number = 24
+  ): Promise<{
+    timeline: Array<{
+      timestamp: string;
+      sent: number;
+      delivered: number;
+      failed: number;
+    }>;
+  }> {
+    const campaign = await this.findOne(campaignId);
+    const messageRepository = this.getMessageRepository(campaign.channel);
+
+    // Определяем начальную дату
+    const endDate = new Date();
+    const startDate = new Date(endDate.getTime() - hours * 60 * 60 * 1000);
+
+    // Определяем формат группировки в зависимости от интервала
+    let dateFormat: string;
+    if (interval === 'hour') {
+      dateFormat = "TO_CHAR(message.createdAt, 'YYYY-MM-DD HH24:00:00')";
+    } else {
+      dateFormat = "TO_CHAR(message.createdAt, 'YYYY-MM-DD')";
+    }
+
+    // Получаем данные с группировкой по времени и статусу
+    const timelineData = await messageRepository
+      .createQueryBuilder('message')
+      .select(`${dateFormat} as timestamp`)
+      .addSelect('message.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .where('message.campaignId = :campaignId', { campaignId })
+      .andWhere('message.createdAt >= :startDate', { startDate })
+      .andWhere('message.createdAt <= :endDate', { endDate })
+      .groupBy(`${dateFormat}`)
+      .addGroupBy('message.status')
+      .orderBy(`${dateFormat}`, 'ASC')
+      .getRawMany();
+
+    // Создаем карту временных меток
+    const timeMap = new Map<string, { sent: number; delivered: number; failed: number }>();
+
+    // Инициализируем все временные метки нулями
+    for (let i = 0; i < hours; i++) {
+      const timestamp = new Date(startDate.getTime() + i * 60 * 60 * 1000);
+      const key = interval === 'hour' 
+        ? timestamp.toISOString().substring(0, 13) + ':00:00'
+        : timestamp.toISOString().substring(0, 10);
+      
+      if (!timeMap.has(key)) {
+        timeMap.set(key, { sent: 0, delivered: 0, failed: 0 });
+      }
+    }
+
+    // Заполняем данными из БД
+    timelineData.forEach(row => {
+      const timestamp = row.timestamp;
+      const status = row.status;
+      const count = parseInt(row.count);
+
+      if (!timeMap.has(timestamp)) {
+        timeMap.set(timestamp, { sent: 0, delivered: 0, failed: 0 });
+      }
+
+      const data = timeMap.get(timestamp)!;
+      
+      if (status === 'delivered') {
+        data.delivered = count;
+        data.sent += count;
+      } else if (status === 'failed') {
+        data.failed = count;
+        data.sent += count;
+      } else if (status === 'sent') {
+        data.sent += count;
+      }
+    });
+
+    // Конвертируем в массив
+    const timeline = Array.from(timeMap.entries())
+      .map(([timestamp, data]) => ({
+        timestamp,
+        ...data
+      }))
+      .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+
+    return { timeline };
+  }
+
+  /**
    * Удаление кампании
    */
   async remove(campaignId: string): Promise<void> {

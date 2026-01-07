@@ -110,4 +110,29 @@ export class NotificationService {
       failed: number;
     }>>(`${this.apiUrl}/analytics/by-day`, { params });
   }
+
+  /**
+   * Получить статистику конкретной кампании
+   */
+  getCampaignStats(campaignId: string): Observable<any> {
+    return this.http.get(`${this.apiUrl}/campaigns/${campaignId}/stats`);
+  }
+
+  /**
+   * Получить временную статистику кампании
+   */
+  getCampaignTimeline(campaignId: string, interval: 'hour' | 'day' = 'hour', hours: number = 24): Observable<{
+    timeline: Array<{
+      timestamp: string;
+      sent: number;
+      delivered: number;
+      failed: number;
+    }>;
+  }> {
+    let params = new HttpParams();
+    params = params.set('interval', interval);
+    params = params.set('hours', hours.toString());
+    
+    return this.http.get<any>(`${this.apiUrl}/campaigns/${campaignId}/stats/timeline`, { params });
+  }
 }
