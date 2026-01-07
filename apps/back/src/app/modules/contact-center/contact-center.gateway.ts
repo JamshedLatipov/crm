@@ -96,13 +96,6 @@ export class ContactCenterGateway
           this.server.emit('queues', messages.queues);
           this.server.emit('activeCalls', messages.activeCalls);
           this.server.emit('stats', messages.stats);
-          
-          const totalSize = JSON.stringify(messages).length;
-          this.logger.debug(
-            `📡 Broadcasted to ${clientCount} clients (${Math.round(
-              totalSize / 1024
-            )}KB total)`
-          );
         }
       } catch (err) {
         this.logger.error('ContactCenter broadcast error', err as Error);

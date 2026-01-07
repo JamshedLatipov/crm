@@ -1,5 +1,5 @@
 <app-page-layout
-  title="Центр уведомлений"
+  title="Центр сообщений"
   subtitle="Управление многоканальными рассылками"
 >
   <div page-actions>
@@ -9,63 +9,162 @@
     </button>
   </div>
 
-  <!-- Stats Grid -->
-  <div class="stats-grid">
-    <mat-card class="stat-card">
-      <div class="stat-content">
-        <div class="stat-icon sms">
-          <mat-icon>sms</mat-icon>
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="loading-container">
+      <mat-spinner></mat-spinner>
+    </div>
+  }
+
+  <!-- Dashboard Content -->
+  @if (!loading()) {
+    <!-- Quick Stats Summary -->
+    <div class="stats-summary">
+      <mat-card class="summary-card">
+        <div class="summary-content">
+          <div class="summary-icon total">
+            <mat-icon>send</mat-icon>
+          </div>
+          <div class="summary-info">
+            <div class="summary-value">{{ stats().total | number }}</div>
+            <div class="summary-label">Всего отправлено</div>
+          </div>
         </div>
-        <div class="stat-info">
-          <div class="stat-label">SMS рассылки</div>
-          <div class="stat-value">Скоро</div>
+      </mat-card>
+
+      <mat-card class="summary-card">
+        <div class="summary-content">
+          <div class="summary-icon success">
+            <mat-icon>done_all</mat-icon>
+          </div>
+          <div class="summary-info">
+            <div class="summary-value">{{ stats().deliveryRate | number:'1.0-0' }}%</div>
+            <div class="summary-label">Доставляемость</div>
+          </div>
+        </div>
+      </mat-card>
+
+      <mat-card class="summary-card">
+        <div class="summary-content">
+          <div class="summary-icon pending">
+            <mat-icon>schedule</mat-icon>
+          </div>
+          <div class="summary-info">
+            <div class="summary-value">{{ stats().pending | number }}</div>
+            <div class="summary-label">В очереди</div>
+          </div>
+        </div>
+      </mat-card>
+    </div>
+
+    <!-- Quick Info -->
+    <mat-card class="info-card">
+      <div class="info-header">
+        <mat-icon>lightbulb</mat-icon>
+        <h3>Быстрый старт</h3>
+      </div>
+      <div class="info-content">
+        <div class="info-step">
+          <div class="step-number">1</div>
+          <div class="step-text">
+            <h4>Создайте шаблон</h4>
+            <p>Подготовьте текст сообщения с переменными</p>
+          </div>
+        </div>
+        <div class="info-step">
+          <div class="step-number">2</div>
+          <div class="step-text">
+            <h4>Настройте сегмент</h4>
+            <p>Определите целевую аудиторию для рассылки</p>
+          </div>
+        </div>
+        <div class="info-step">
+          <div class="step-number">3</div>
+          <div class="step-text">
+            <h4>Запустите кампанию</h4>
+            <p>Выберите канал и запустите рассылку</p>
+          </div>
+        </div>
+        <div class="info-step">
+          <div class="step-number">4</div>
+          <div class="step-text">
+            <h4>Отслеживайте результаты</h4>
+            <p>Анализируйте метрики доставляемости</p>
+          </div>
         </div>
       </div>
     </mat-card>
 
-    <mat-card class="stat-card">
-      <div class="stat-content">
-        <div class="stat-icon email">
-          <mat-icon>email</mat-icon>
-        </div>
-        <div class="stat-info">
-          <div class="stat-label">Email кампании</div>
-          <div class="stat-value">Скоро</div>
-        </div>
-      </div>
-    </mat-card>
+    <!-- Main Actions Grid -->
+    <div class="main-actions">
+      <h2 class="section-title">Основные функции</h2>
+      
+      <div class="actions-grid">
+        <!-- Campaigns -->
+        <mat-card class="action-card campaigns" routerLink="/messages/campaigns">
+          <div class="action-icon">
+            <mat-icon>campaign</mat-icon>
+          </div>
+          <h3>Кампании</h3>
+          <p>Создание и управление многоканальными рассылками</p>
+          <div class="action-footer">
+            <span class="action-link">Перейти <mat-icon>arrow_forward</mat-icon></span>
+          </div>
+        </mat-card>
 
-    <mat-card class="stat-card">
-      <div class="stat-content">
-        <div class="stat-icon webhook">
-          <mat-icon>webhook</mat-icon>
-        </div>
-        <div class="stat-info">
-          <div class="stat-label">Webhooks</div>
-          <div class="stat-value">Скоро</div>
-        </div>
-      </div>
-    </mat-card>
-  </div>
+        <!-- Templates -->
+        <mat-card class="action-card templates">
+          <div class="action-icon">
+            <mat-icon>description</mat-icon>
+          </div>
+          <h3>Шаблоны</h3>
+          <p>Библиотека шаблонов для SMS, Email, WhatsApp и Telegram</p>
+          <div class="action-footer">
+            <div class="template-links">
+              <button mat-button routerLink="/messages/sms-templates">SMS</button>
+              <button mat-button routerLink="/messages/email-templates">Email</button>
+              <button mat-button routerLink="/messages/whatsapp-templates">WhatsApp</button>
+              <button mat-button routerLink="/messages/telegram-templates">Telegram</button>
+            </div>
+          </div>
+        </mat-card>
 
-  <!-- Info Card -->
-  <mat-card class="info-card">
-    <mat-card-header>
-      <mat-card-title>
-        <mat-icon>info</mat-icon>
-        Модуль в разработке
-      </mat-card-title>
-    </mat-card-header>
-    <mat-card-content>
-      <p class="description">Центр уведомлений находится в разработке. Здесь будет доступно:</p>
-      <ul class="feature-list">
-        <li><mat-icon>check_circle</mat-icon>SMS рассылки через SMS.RU, SMSC.RU, Twilio</li>
-        <li><mat-icon>check_circle</mat-icon>Email рассылки через SMTP</li>
-        <li><mat-icon>check_circle</mat-icon>REST API/Webhooks для интеграций</li>
-        <li><mat-icon>check_circle</mat-icon>Многоканальные кампании</li>
-        <li><mat-icon>check_circle</mat-icon>Сегментация контактов</li>
-        <li><mat-icon>check_circle</mat-icon>Аналитика и отчеты</li>
-      </ul>
-    </mat-card-content>
-  </mat-card>
+        <!-- Analytics -->
+        <mat-card class="action-card analytics" routerLink="/messages/analytics">
+          <div class="action-icon">
+            <mat-icon>analytics</mat-icon>
+          </div>
+          <h3>Аналитика</h3>
+          <p>Детальная статистика, графики и отчёты по рассылкам</p>
+          <div class="action-footer">
+            <span class="action-link">Открыть <mat-icon>arrow_forward</mat-icon></span>
+          </div>
+        </mat-card>
+
+        <!-- Segments -->
+        <mat-card class="action-card segments" routerLink="/messages/segments">
+          <div class="action-icon">
+            <mat-icon>group</mat-icon>
+          </div>
+          <h3>Сегменты</h3>
+          <p>Создание и управление группами контактов для таргетинга</p>
+          <div class="action-footer">
+            <span class="action-link">Управление <mat-icon>arrow_forward</mat-icon></span>
+          </div>
+        </mat-card>
+
+        <!-- Settings -->
+        <mat-card class="action-card settings" routerLink="/messages/settings">
+          <div class="action-icon">
+            <mat-icon>settings</mat-icon>
+          </div>
+          <h3>Настройки</h3>
+          <p>Конфигурация каналов доставки и интеграций</p>
+          <div class="action-footer">
+            <span class="action-link">Настроить <mat-icon>arrow_forward</mat-icon></span>
+          </div>
+        </mat-card>
+      </div>
+    </div>
+  }
 </app-page-layout>
