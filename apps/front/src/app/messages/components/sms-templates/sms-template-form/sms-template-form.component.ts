@@ -46,6 +46,7 @@ export class SmsTemplateFormComponent implements OnInit {
   templateId = signal<string | null>(null);
   charCount = signal(0);
   detectedVariables = signal<string[]>([]);
+  existingVariables = signal<string[]>([]); // Храним существующие переменные из загруженного шаблона
   loading = signal(false);
 
   constructor() {
@@ -70,12 +71,22 @@ export class SmsTemplateFormComponent implements OnInit {
           content: template.content,
           isActive: template.isActive
         });
+        
+        // Сохраняем существующие переменные из шаблона
+        if (template.variables && template.variables.length > 0) {
+          this.existingVariables.set(template.variables);
+        }
+        
+        // Обновляем счетчик и обнаруженные переменные
+        this.updateCharCount();
+        this.detectVariables();
+        
         this.loading.set(false);
       },
       error: () => {
         this.snackBar.open('Ошибка загрузки шаблона', 'Закрыть', { duration: 3000 });
         this.loading.set(false);
-        this.router.navigate(['/notifications/sms-templates']);
+        this.router.navigate(['/messages/sms-templates']);
       }
     });
   }
@@ -86,6 +97,10 @@ export class SmsTemplateFormComponent implements OnInit {
       content: ['', Validators.required],
       isActive: [true]
     });
+
+    // Устанавливаем начальные значения
+    this.updateCharCount();
+    this.detectVariables();
 
     // Следим за изменениями контента
     this.form.get('content')?.valueChanges.subscribe(() => {
@@ -101,7 +116,8 @@ export class SmsTemplateFormComponent implements OnInit {
 
   detectVariables() {
     const content = this.form.get('content')?.value || '';
-    const regex = /\{\{(\w+)\}\}/g;
+    // Регулярное выражение для поиска переменных вида {{name}} или {{contact.name}}
+    const regex = /\{\{([\w.]+)\}\}/g;
     const matches = [...content.matchAll(regex)];
     const variables = matches.map(match => match[1]);
     this.detectedVariables.set([...new Set(variables)]);
@@ -112,10 +128,14 @@ export class SmsTemplateFormComponent implements OnInit {
       return;
     }
 
+    // Объединяем существующие переменные с обнаруженными из контента
+    // Это гарантирует, что не потеряем переменные, которые могли быть в исходном шаблоне
+    const allVariables = [...new Set([...this.existingVariables(), ...this.detectedVariables()])];
+
     const dto: CreateSmsTemplateDto = {
       name: this.form.value.name!,
       content: this.form.value.content!,
-      variables: this.detectedVariables(),
+      variables: allVariables,
       isActive: this.form.value.isActive ?? true
     };
 
@@ -132,7 +152,7 @@ export class SmsTemplateFormComponent implements OnInit {
           'Закрыть',
           { duration: 3000 }
         );
-        this.router.navigate(['/notifications/sms-templates']);
+        this.router.navigate(['/messages/sms-templates']);
       },
       error: (error) => {
         this.snackBar.open(
@@ -146,6 +166,6 @@ export class SmsTemplateFormComponent implements OnInit {
   }
 
   cancel() {
-    this.router.navigate(['/notifications/sms-templates']);
+    this.router.navigate(['/messages/sms-templates']);
   }
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -49,6 +49,14 @@ export class EmailTemplateFormComponent implements OnInit {
   form!: FormGroup;
   templateId = signal<string | null>(null);
   loading = signal(false);
+  existingVariables = signal<string[]>([]); // Храним существующие переменные из загруженного шаблона
+  currentContent = signal<string>(''); // Сигнал для отслеживания всего контента (subject + html + text)
+  
+  // Автоматически обнаруживаем переменные из текущего контента
+  detectedVariables = computed(() => {
+    const content = this.currentContent();
+    return this.extractVariables(content);
+  });
 
   categories = [
     { value: EmailTemplateCategory.MARKETING, label: 'Маркетинг' },
@@ -64,12 +72,27 @@ export class EmailTemplateFormComponent implements OnInit {
   ngOnInit() {
     this.initForm();
     
+    // Устанавливаем начальное значение
+    this.updateContentSignal();
+    
+    // Подписываемся на изменения контента для обновления сигнала
+    this.form.get('subject')?.valueChanges.subscribe(() => this.updateContentSignal());
+    this.form.get('htmlContent')?.valueChanges.subscribe(() => this.updateContentSignal());
+    this.form.get('textContent')?.valueChanges.subscribe(() => this.updateContentSignal());
+    
     const id = this.route.snapshot.paramMap.get('id');
     this.templateId.set(id);
     
     if (id && id !== 'new') {
       this.loadTemplate(id);
     }
+  }
+
+  updateContentSignal() {
+    const subject = this.form.get('subject')?.value || '';
+    const htmlContent = this.form.get('htmlContent')?.value || '';
+    const textContent = this.form.get('textContent')?.value || '';
+    this.currentContent.set(subject + ' ' + htmlContent + ' ' + textContent);
   }
 
   initForm() {
@@ -101,6 +124,15 @@ export class EmailTemplateFormComponent implements OnInit {
           cssStyles: template.cssStyles || '',
           isActive: template.isActive
         });
+        
+        // Сохраняем существующие переменные из шаблона (преобразуем Record в массив ключей)
+        if (template.variables && Object.keys(template.variables).length > 0) {
+          this.existingVariables.set(Object.keys(template.variables));
+        }
+        
+        // Обновляем сигнал контента
+        this.updateContentSignal();
+        
         this.loading.set(false);
       },
       error: () => {
@@ -121,11 +153,15 @@ export class EmailTemplateFormComponent implements OnInit {
     const formValue = this.form.value;
     
     // Извлечь переменные из всех полей
-    const variables = this.extractVariables(
+    const extractedVariables = this.extractVariables(
       formValue.subject + ' ' + 
       formValue.htmlContent + ' ' + 
       (formValue.textContent || '')
     );
+    
+    // Объединяем существующие переменные с извлеченными из контента
+    // Это гарантирует, что не потеряем переменные, которые могли быть в исходном шаблоне
+    const allVariables = [...new Set([...this.existingVariables(), ...extractedVariables])];
     
     const dto: CreateEmailTemplateDto = {
       name: formValue.name,
@@ -136,7 +172,7 @@ export class EmailTemplateFormComponent implements OnInit {
       category: formValue.category,
       preheader: formValue.preheader || undefined,
       cssStyles: formValue.cssStyles || undefined,
-      variables: variables.length > 0 ? this.variablesToObject(variables) : undefined
+      variables: allVariables.length > 0 ? this.variablesToObject(allVariables) : undefined
     };
 
     const operation = this.templateId()
@@ -168,7 +204,8 @@ export class EmailTemplateFormComponent implements OnInit {
   }
 
   extractVariables(content: string): string[] {
-    const regex = /\{\{(\w+)\}\}/g;
+    // Регулярное выражение для поиска переменных вида {{name}} или {{contact.name}}
+    const regex = /\{\{([\w.]+)\}\}/g;
     const variables: string[] = [];
     let match;
     

@@ -23,11 +23,14 @@
     </div>
   } @else {
     <div class="form-container">
-      <mat-card>
-        <mat-card-content>
+      <div class="form-layout">
+        <mat-card class="form-card">
           <form [formGroup]="form">
             <div class="form-section">
-              <h3>Основная информация</h3>
+              <h3 class="section-title">
+                <mat-icon>info</mat-icon>
+                Основная информация
+              </h3>
               
               <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Название шаблона</mat-label>
@@ -138,8 +141,46 @@
               </mat-slide-toggle>
             </div>
           </form>
-        </mat-card-content>
-      </mat-card>
+        </mat-card>
+
+        <mat-card class="sidebar-card">
+          <div class="sidebar-section">
+            <h3 class="sidebar-title">
+              <mat-icon>code</mat-icon>
+              Переменные
+            </h3>
+            
+            @if (detectedVariables().length > 0) {
+              <div class="variables-list">
+                @for (variable of detectedVariables(); track variable) {
+                  <div class="variable-item">
+                    <mat-icon>bookmark</mat-icon>
+                    <span>{{'{{'}}{{ variable }}{{'}}'}}</span>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="empty-variables">
+                <mat-icon>info</mat-icon>
+                <p>Переменные не обнаружены</p>
+                <small>Добавьте {{'{{'}}имя{{'}}'}} в текст</small>
+              </div>
+            }
+          </div>
+
+          <div class="sidebar-section">
+            <h3 class="sidebar-title">
+              <mat-icon>tips_and_updates</mat-icon>
+              Подсказки
+            </h3>
+            <ul class="tips-list">
+              <li>Используйте переменные для персонализации</li>
+              <li>Поддерживаются медиафайлы до 20MB</li>
+              <li>Inline-кнопки можно настроить позже</li>
+            </ul>
+          </div>
+        </mat-card>
+      </div>
     </div>
   }
 </app-page-layout>

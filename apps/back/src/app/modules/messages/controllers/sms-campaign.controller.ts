@@ -11,7 +11,7 @@ import {
   Req,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-import { SmsCampaignService } from '../services/sms-campaign.service';
+import { MessageCampaignService } from '../services/message-campaign.service';
 import {
   CreateCampaignDto,
   UpdateCampaignDto,
@@ -26,7 +26,7 @@ import { CampaignStatus, CampaignType } from '../entities/sms-campaign.entity';
 @ApiBearerAuth()
 @Controller('messages/campaigns')
 export class SmsCampaignController {
-  constructor(private readonly campaignService: SmsCampaignService) {}
+  constructor(private readonly campaignService: MessageCampaignService) {}
 
   @Post()
   @ApiOperation({ summary: 'Создать новую кампанию' })

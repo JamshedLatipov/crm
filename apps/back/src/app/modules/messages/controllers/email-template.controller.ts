@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Delete,
   Body,
   Param,
@@ -67,8 +68,19 @@ export class EmailTemplateController {
     return this.emailTemplateService.findOne(id);
   }
 
+  @Patch(':id')
+  @ApiOperation({ summary: 'Обновить шаблон email (частичное обновление)' })
+  @ApiResponse({ status: 200, description: 'Шаблон обновлён' })
+  @ApiResponse({ status: 404, description: 'Шаблон не найден' })
+  async patch(
+    @Param('id') id: string,
+    @Body() dto: UpdateEmailTemplateDto,
+  ) {
+    return this.emailTemplateService.update(id, dto);
+  }
+
   @Put(':id')
-  @ApiOperation({ summary: 'Обновить шаблон email' })
+  @ApiOperation({ summary: 'Обновить шаблон email (полное обновление)' })
   @ApiResponse({ status: 200, description: 'Шаблон обновлён' })
   @ApiResponse({ status: 404, description: 'Шаблон не найден' })
   async update(

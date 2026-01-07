@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Delete,
   Body,
   Param,
@@ -78,8 +79,16 @@ export class SmsTemplateController {
     return this.templateService.findOne(id);
   }
 
+  @Patch(':id')
+  @ApiOperation({ summary: 'Обновить шаблон (частичное обновление)' })
+  @ApiResponse({ status: 200, description: 'Шаблон успешно обновлён' })
+  @ApiResponse({ status: 404, description: 'Шаблон не найден' })
+  async patch(@Param('id') id: string, @Body() updateDto: UpdateTemplateDto) {
+    return this.templateService.update(id, updateDto);
+  }
+
   @Put(':id')
-  @ApiOperation({ summary: 'Обновить шаблон' })
+  @ApiOperation({ summary: 'Обновить шаблон (полное обновление)' })
   @ApiResponse({ status: 200, description: 'Шаблон успешно обновлён' })
   @ApiResponse({ status: 404, description: 'Шаблон не найден' })
   async update(@Param('id') id: string, @Body() updateDto: UpdateTemplateDto) {

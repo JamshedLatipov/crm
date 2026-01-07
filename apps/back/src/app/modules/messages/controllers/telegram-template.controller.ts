@@ -64,9 +64,24 @@ export class TelegramTemplateController {
     return this.templateService.create(dto as any, req.user);
   }
 
-  @Put(':id')
   @Patch(':id')
-  @ApiOperation({ summary: 'Обновить Telegram шаблон' })
+  @ApiOperation({ summary: 'Обновить Telegram шаблон (частичное обновление)' })
+  @ApiResponse({ status: 200, description: 'Шаблон обновлен' })
+  @ApiResponse({ status: 404, description: 'Шаблон не найден' })
+  async patch(@Param('id') id: string, @Body() dto: UpdateTelegramTemplateDto) {
+    // Если обновляется контент, валидируем его
+    if (dto.content) {
+      const validation = this.renderService.validateTemplate(dto.content);
+      if (!validation.valid) {
+        throw new Error(`Invalid variables: ${validation.invalidVariables.join(', ')}`);
+      }
+    }
+
+    return this.templateService.update(id, dto as any);
+  }
+
+  @Put(':id')
+  @ApiOperation({ summary: 'Обновить Telegram шаблон (полное обновление)' })
   @ApiResponse({ status: 200, description: 'Шаблон обновлен' })
   @ApiResponse({ status: 404, description: 'Шаблон не найден' })
   async update(@Param('id') id: string, @Body() dto: UpdateTelegramTemplateDto) {

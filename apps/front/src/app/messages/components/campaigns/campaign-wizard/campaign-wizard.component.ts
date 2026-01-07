@@ -1321,7 +1321,7 @@ export class CampaignWizardComponent {
   }
 
   createNewTemplate() {
-    this.router.navigate(['/notifications/sms-templates/new']);
+    this.router.navigate(['/messages/sms-templates/new']);
   }
 
   getChannelLabel(channel: string): string {

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -53,10 +53,18 @@ export class TelegramTemplateFormComponent implements OnInit {
   loading = signal(false);
   uploadedMediaUrl = signal<string | null>(null);
   uploadedFileName = signal<string | null>(null);
+  existingVariables = signal<string[]>([]); // Храним существующие переменные из загруженного шаблона
+  currentContent = signal<string>(''); // Сигнал для отслеживания текущего контента
   
   // Прогресс загрузки из mediaService
   uploadProgress = computed(() => this.mediaService.uploadProgress());
   isUploading = computed(() => this.mediaService.uploading());
+  
+  // Автоматически обнаруживаем переменные из текущего контента
+  detectedVariables = computed(() => {
+    const content = this.currentContent();
+    return this.extractVariables(content);
+  });
   
   // Проверка, является ли загруженный файл изображением
   isUploadedImage = computed(() => {
@@ -74,6 +82,14 @@ export class TelegramTemplateFormComponent implements OnInit {
 
   ngOnInit() {
     this.initForm();
+    
+    // Устанавливаем начальное значение
+    this.currentContent.set(this.form.get('content')?.value || '');
+    
+    // Подписываемся на изменения контента для обновления сигнала
+    this.form.get('content')?.valueChanges.subscribe((value) => {
+      this.currentContent.set(value || '');
+    });
     
     const id = this.route.snapshot.paramMap.get('id');
     this.templateId.set(id);
@@ -105,6 +121,14 @@ export class TelegramTemplateFormComponent implements OnInit {
           isActive: template.isActive
         });
         
+        // Обновляем сигнал контента
+        this.currentContent.set(template.content);
+        
+        // Сохраняем существующие переменные из шаблона
+        if (template.variables && template.variables.length > 0) {
+          this.existingVariables.set(template.variables);
+        }
+        
         // Если есть mediaUrl, устанавливаем его для отображения
         if (template.mediaUrl) {
           this.uploadedMediaUrl.set(template.mediaUrl);
@@ -133,13 +157,17 @@ export class TelegramTemplateFormComponent implements OnInit {
     const formValue = this.form.value;
     
     // Извлечь переменные из контента
-    const variables = this.extractVariables(formValue.content);
+    const extractedVariables = this.extractVariables(formValue.content);
+    
+    // Объединяем существующие переменные с извлеченными из контента
+    // Это гарантирует, что не потеряем переменные, которые могли быть в исходном шаблоне
+    const allVariables = [...new Set([...this.existingVariables(), ...extractedVariables])];
     
     const dto: CreateTelegramTemplateDto = {
       name: formValue.name,
       content: formValue.content,
       category: formValue.category,
-      variables,
+      variables: allVariables,
       isActive: formValue.isActive,
       mediaUrl: formValue.mediaUrl || undefined
     };
@@ -250,7 +278,8 @@ export class TelegramTemplateFormComponent implements OnInit {
   }
 
   extractVariables(content: string): string[] {
-    const regex = /\{\{(\w+)\}\}/g;
+    // Регулярное выражение для поиска переменных вида {{name}} или {{contact.name}}
+    const regex = /\{\{([\w.]+)\}\}/g;
     const variables: string[] = [];
     let match;
     

@@ -75,7 +75,19 @@ export class MessageCampaign {
   @Column({ nullable: true })
   description: string;
 
-  // Шаблоны для разных каналов
+  // Универсальное поле для ID шаблона (любого канала)
+  @Column('uuid', { nullable: true })
+  templateId: string;
+
+  // Канал кампании (определяет какой шаблон используется)
+  @Column({
+    type: 'enum',
+    enum: MessageChannelType,
+    default: MessageChannelType.SMS,
+  })
+  channel: MessageChannelType;
+
+  // Устаревшие поля (для обратной совместимости, можно удалить позже)
   @ManyToOne(() => SmsTemplate, { nullable: true })
   @JoinColumn({ name: 'smsTemplateId' })
   smsTemplate: SmsTemplate;

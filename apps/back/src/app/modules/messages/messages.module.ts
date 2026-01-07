@@ -30,6 +30,7 @@ import { Company } from '../companies/entities/company.entity';
 import { SmsProviderService } from './services/sms-provider.service';
 import { SmsTemplateService } from './services/sms-template.service';
 import { SmsCampaignService } from './services/sms-campaign.service';
+import { MessageCampaignService } from './services/message-campaign.service';
 import { SmsSegmentService } from './services/sms-segment.service';
 import { SmsAnalyticsService } from './services/sms-analytics.service';
 import { EmailProviderService } from './services/email-provider.service';
@@ -131,6 +132,7 @@ import { SettingController } from './controllers/setting.controller';
     SmsProviderService,
     SmsTemplateService,
     SmsCampaignService,
+    MessageCampaignService,
     SmsSegmentService,
     SmsAnalyticsService,
     EmailProviderService,
@@ -151,6 +153,7 @@ import { SettingController } from './controllers/setting.controller';
     SmsProviderService,
     SmsTemplateService,
     SmsCampaignService,
+    MessageCampaignService,
     SmsSegmentService,
     SmsAnalyticsService,
     EmailProviderService,

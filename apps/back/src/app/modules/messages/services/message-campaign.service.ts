@@ -2,44 +2,90 @@ import { Injectable, NotFoundException, BadRequestException, Logger, Optional } 
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { SmsCampaign, CampaignStatus, CampaignType } from '../entities/sms-campaign.entity';
+import { MessageCampaign, MessageChannelType } from '../entities/message-campaign.entity';
+import { CampaignStatus, CampaignType } from '../entities/sms-campaign.entity';
 import { SmsMessage, MessageStatus } from '../entities/sms-message.entity';
+import { WhatsAppMessage, WhatsAppMessageStatus } from '../entities/whatsapp-message.entity';
+import { TelegramMessage, TelegramMessageStatus } from '../entities/telegram-message.entity';
 import { CreateCampaignDto, UpdateCampaignDto } from '../dto/campaign.dto';
 import { SmsTemplateService } from './sms-template.service';
 import { EmailTemplateService } from './email-template.service';
 import { WhatsAppTemplateService } from './whatsapp-template.service';
 import { TelegramTemplateService } from './telegram-template.service';
 import { SmsSegmentService } from './sms-segment.service';
-import { SmsProviderService } from './sms-provider.service';
 import { User } from '../../user/user.entity';
-import { QueueProducerService } from '../../queues/queue-producer.service';
 import { MessageChannel, MessageQueueService } from './message-queue.service';
 
+/**
+ * Unified service for managing campaigns across all channels (SMS, WhatsApp, Telegram, Email)
+ * Uses MessageCampaign entity and channel-specific message entities
+ */
 @Injectable()
-export class SmsCampaignService {
-  private readonly logger = new Logger(SmsCampaignService.name);
+export class MessageCampaignService {
+  private readonly logger = new Logger(MessageCampaignService.name);
 
   constructor(
-    @InjectRepository(SmsCampaign)
-    private campaignRepository: Repository<SmsCampaign>,
+    @InjectRepository(MessageCampaign)
+    private campaignRepository: Repository<MessageCampaign>,
+    
+    // Channel-specific message repositories
     @InjectRepository(SmsMessage)
-    private messageRepository: Repository<SmsMessage>,
+    private smsMessageRepository: Repository<SmsMessage>,
+    @InjectRepository(WhatsAppMessage)
+    private whatsappMessageRepository: Repository<WhatsAppMessage>,
+    @InjectRepository(TelegramMessage)
+    private telegramMessageRepository: Repository<TelegramMessage>,
+    
+    // Template services
     private smsTemplateService: SmsTemplateService,
     private emailTemplateService: EmailTemplateService,
     private whatsappTemplateService: WhatsAppTemplateService,
     private telegramTemplateService: TelegramTemplateService,
+    
+    // Other services
     private segmentService: SmsSegmentService,
-    private providerService: SmsProviderService,
-    @Optional() private queueProducer?: QueueProducerService,
     @Optional() private messageQueueService?: MessageQueueService,
   ) {}
 
   /**
+   * Get the correct message repository based on channel
+   */
+  private getMessageRepository(channel: MessageChannelType): Repository<any> {
+    switch (channel) {
+      case MessageChannelType.SMS:
+        return this.smsMessageRepository;
+      case MessageChannelType.WHATSAPP:
+        return this.whatsappMessageRepository;
+      case MessageChannelType.TELEGRAM:
+        return this.telegramMessageRepository;
+      default:
+        throw new BadRequestException(`Unsupported channel: ${channel}`);
+    }
+  }
+
+  /**
+   * Get the correct message status enum based on channel
+   */
+  private getMessageStatusEnum(channel: MessageChannelType) {
+    switch (channel) {
+      case MessageChannelType.SMS:
+        return MessageStatus;
+      case MessageChannelType.WHATSAPP:
+        return WhatsAppMessageStatus;
+      case MessageChannelType.TELEGRAM:
+        return TelegramMessageStatus;
+      default:
+        return MessageStatus;
+    }
+  }
+
+  /**
    * Создание новой кампании
    */
-  async create(createDto: CreateCampaignDto, user: User): Promise<SmsCampaign> {
-    // Определяем канал (по умолчанию SMS для обратной совместимости)
+  async create(createDto: CreateCampaignDto, user: User): Promise<MessageCampaign> {
+    // Определяем канал
     const channel = createDto.channel || MessageChannel.SMS;
+    const channelType = this.mapChannelToChannelType(channel);
     
     // Проверяем существование шаблона в зависимости от канала
     let template;
@@ -66,16 +112,20 @@ export class SmsCampaignService {
       segment = await this.segmentService.findOne(createDto.segmentId);
     }
 
-    // Создаем кампанию с новыми полями templateId и channel
+    // Создаем кампанию
     const campaign = this.campaignRepository.create({
       name: createDto.name,
       description: createDto.description,
-      templateId: createDto.templateId, // Просто UUID без FK
-      channel: channel, // Канал для определения типа шаблона
+      templateId: createDto.templateId,
+      channel: channelType,
+      channels: [channelType], // Single channel for now
       segment,
       type: createDto.type || CampaignType.IMMEDIATE,
       scheduledAt: createDto.scheduledAt ? new Date(createDto.scheduledAt) : null,
-      settings: createDto.settings || {},
+      settings: {
+        channels: [channelType],
+        ...createDto.settings,
+      },
       createdBy: user,
     });
 
@@ -90,15 +140,42 @@ export class SmsCampaignService {
   }
 
   /**
+   * Map MessageChannel to MessageChannelType
+   */
+  private mapChannelToChannelType(channel: MessageChannel): MessageChannelType {
+    const mapping = {
+      [MessageChannel.SMS]: MessageChannelType.SMS,
+      [MessageChannel.EMAIL]: MessageChannelType.EMAIL,
+      [MessageChannel.WHATSAPP]: MessageChannelType.WHATSAPP,
+      [MessageChannel.TELEGRAM]: MessageChannelType.TELEGRAM,
+      [MessageChannel.WEBHOOK]: MessageChannelType.WEBHOOK,
+    };
+    return mapping[channel] || MessageChannelType.SMS;
+  }
+
+  /**
+   * Map MessageChannelType to MessageChannel
+   */
+  private mapChannelTypeToChannel(channelType: MessageChannelType): MessageChannel {
+    const mapping = {
+      [MessageChannelType.SMS]: MessageChannel.SMS,
+      [MessageChannelType.EMAIL]: MessageChannel.EMAIL,
+      [MessageChannelType.WHATSAPP]: MessageChannel.WHATSAPP,
+      [MessageChannelType.TELEGRAM]: MessageChannel.TELEGRAM,
+      [MessageChannelType.WEBHOOK]: MessageChannel.WEBHOOK,
+    };
+    return mapping[channelType] || MessageChannel.SMS;
+  }
+
+  /**
    * Получение всех кампаний
    */
   async findAll(filters?: {
     status?: CampaignStatus;
     type?: CampaignType;
     search?: string;
-  }): Promise<SmsCampaign[]> {
+  }): Promise<MessageCampaign[]> {
     const query = this.campaignRepository.createQueryBuilder('campaign')
-      .leftJoinAndSelect('campaign.template', 'template')
       .leftJoinAndSelect('campaign.segment', 'segment')
       .leftJoinAndSelect('campaign.createdBy', 'createdBy')
       .orderBy('campaign.createdAt', 'DESC');
@@ -124,10 +201,10 @@ export class SmsCampaignService {
   /**
    * Получение кампании по ID
    */
-  async findOne(id: string): Promise<SmsCampaign> {
+  async findOne(id: string): Promise<MessageCampaign> {
     const campaign = await this.campaignRepository.findOne({
       where: { id },
-      relations: ['template', 'segment', 'createdBy'],
+      relations: ['segment', 'createdBy'],
     });
 
     if (!campaign) {
@@ -137,7 +214,9 @@ export class SmsCampaignService {
     // Динамически загружаем шаблон на основе канала
     if (campaign.templateId && campaign.channel) {
       let template;
-      switch (campaign.channel) {
+      const channel = this.mapChannelTypeToChannel(campaign.channel);
+      
+      switch (channel) {
         case MessageChannel.SMS:
           template = await this.smsTemplateService.findOne(campaign.templateId);
           break;
@@ -151,7 +230,7 @@ export class SmsCampaignService {
           template = await this.telegramTemplateService.findOne(campaign.templateId);
           break;
       }
-      // Добавляем шаблон в объект кампании для обратной совместимости
+      // Добавляем шаблон в объект кампании
       (campaign as any).templateData = template;
     }
 
@@ -161,7 +240,7 @@ export class SmsCampaignService {
   /**
    * Обновление кампании
    */
-  async update(id: string, updateDto: UpdateCampaignDto): Promise<SmsCampaign> {
+  async update(id: string, updateDto: UpdateCampaignDto): Promise<MessageCampaign> {
     const campaign = await this.findOne(id);
 
     // Проверяем, можно ли редактировать кампанию
@@ -171,8 +250,9 @@ export class SmsCampaignService {
 
     if (updateDto.templateId) {
       // Проверяем существование шаблона в зависимости от канала
-      const channel = updateDto.channel || campaign.channel;
+      const channel = updateDto.channel || this.mapChannelTypeToChannel(campaign.channel);
       let template;
+      
       switch (channel) {
         case MessageChannel.SMS:
           template = await this.smsTemplateService.findOne(updateDto.templateId);
@@ -197,7 +277,7 @@ export class SmsCampaignService {
       // Обновляем templateId и channel
       campaign.templateId = updateDto.templateId;
       if (updateDto.channel) {
-        campaign.channel = updateDto.channel;
+        campaign.channel = this.mapChannelToChannelType(updateDto.channel);
       }
     }
 
@@ -210,27 +290,18 @@ export class SmsCampaignService {
       description: updateDto.description,
       type: updateDto.type,
       scheduledAt: updateDto.scheduledAt ? new Date(updateDto.scheduledAt) : campaign.scheduledAt,
-      settings: updateDto.settings || campaign.settings,
+      settings: updateDto.settings ? {
+        ...campaign.settings,
+        ...updateDto.settings,
+      } : campaign.settings,
     });
 
     return await this.campaignRepository.save(campaign);
   }
 
   /**
-   * Удаление кампании
-   */
-  async remove(id: string): Promise<void> {
-    const campaign = await this.findOne(id);
-
-    if (campaign.status === CampaignStatus.SENDING) {
-      throw new BadRequestException('Cannot delete campaign that is currently sending');
-    }
-
-    await this.campaignRepository.remove(campaign);
-  }
-
-  /**
    * Подготовка сообщений для кампании
+   * Creates message records in the correct table based on campaign channel
    */
   async prepareCampaignMessages(campaignId: string): Promise<void> {
     const campaign = await this.findOne(campaignId);
@@ -239,46 +310,56 @@ export class SmsCampaignService {
       throw new BadRequestException('Campaign must have a segment');
     }
 
-    // Получаем шаблон (из нового поля templateData или старого template)
-    const template = (campaign as any).templateData || campaign.template;
-    
+    const template = (campaign as any).templateData;
     if (!template) {
       throw new BadRequestException('Campaign must have a template');
     }
 
     // Получаем контакты из сегмента
     const phoneNumbers = await this.segmentService.getSegmentPhoneNumbers(campaign.segment.id);
+    this.logger.log(`Preparing ${phoneNumbers.length} messages for campaign ${campaignId} (channel: ${campaign.channel})`);
 
-    this.logger.log(`Preparing ${phoneNumbers.length} messages for campaign ${campaignId}`);
+    // Получаем правильный репозиторий для канала
+    const messageRepository = this.getMessageRepository(campaign.channel);
+    const StatusEnum = this.getMessageStatusEnum(campaign.channel);
 
-    // Создаём сообщения для каждого контакта
+    // Создаём сообщения для каждого контакта в правильной таблице
     const messages = phoneNumbers.map((contact) => {
-      // Рендерим шаблон (в базовой версии без переменных)
-      const content = template.content;
-
-      return this.messageRepository.create({
-        campaign,
+      const messageData: any = {
+        campaign: { id: campaign.id } as any,
         contact: { id: contact.contactId } as any,
         phoneNumber: contact.phoneNumber,
-        content,
-        status: MessageStatus.PENDING,
-        segmentsCount: this.calculateSegments(content),
-      });
+        content: template.content,
+        status: StatusEnum.PENDING,
+      };
+
+      // Для SMS добавляем segmentsCount
+      if (campaign.channel === MessageChannelType.SMS) {
+        messageData.segmentsCount = this.calculateSegments(template.content);
+      }
+
+      // Для Telegram используем chatId вместо phoneNumber
+      if (campaign.channel === MessageChannelType.TELEGRAM) {
+        messageData.chatId = contact.phoneNumber; // Временно, нужно будет добавить chatId в сегмент
+      }
+
+      return messageRepository.create(messageData);
     });
 
-    await this.messageRepository.save(messages);
+    await messageRepository.save(messages);
 
     // Обновляем счётчики кампании
     await this.campaignRepository.update(campaignId, {
       totalRecipients: messages.length,
-      pendingCount: messages.length,
     });
+
+    this.logger.log(`Created ${messages.length} messages in ${campaign.channel}_messages table for campaign ${campaignId}`);
   }
 
   /**
    * Запуск кампании
    */
-  async startCampaign(campaignId: string): Promise<SmsCampaign> {
+  async startCampaign(campaignId: string): Promise<MessageCampaign> {
     const campaign = await this.findOne(campaignId);
 
     if (campaign.status !== CampaignStatus.DRAFT && campaign.status !== CampaignStatus.SCHEDULED) {
@@ -286,7 +367,8 @@ export class SmsCampaignService {
     }
 
     // Проверяем наличие сообщений
-    const messagesCount = await this.messageRepository.count({
+    const messageRepository = this.getMessageRepository(campaign.channel);
+    const messagesCount = await messageRepository.count({
       where: { campaign: { id: campaignId } },
     });
 
@@ -296,58 +378,14 @@ export class SmsCampaignService {
 
     campaign.status = CampaignStatus.SENDING;
     campaign.startedAt = new Date();
-
     await this.campaignRepository.save(campaign);
 
-    // Запускаем процесс отправки через очередь (если доступна) или напрямую
+    // Запускаем процесс отправки через очередь
     if (this.messageQueueService) {
       this.logger.log(`Starting campaign ${campaignId} via MessageQueueService (channel: ${campaign.channel})`);
       await this.queueCampaignMessages(campaignId);
     } else {
-      this.logger.warn(`MessageQueueService not available for campaign ${campaignId}, falling back to sync`);
-      this.processCampaignMessages(campaignId);
-    }
-
-    return campaign;
-  }
-
-  /**
-   * Приостановка кампании
-   */
-  async pauseCampaign(campaignId: string): Promise<SmsCampaign> {
-    const campaign = await this.findOne(campaignId);
-
-    if (campaign.status !== CampaignStatus.SENDING) {
-      throw new BadRequestException('Only SENDING campaigns can be paused');
-    }
-
-    campaign.status = CampaignStatus.PAUSED;
-    campaign.pausedAt = new Date();
-
-    return await this.campaignRepository.save(campaign);
-  }
-
-  /**
-   * Возобновление кампании
-   */
-  async resumeCampaign(campaignId: string): Promise<SmsCampaign> {
-    const campaign = await this.findOne(campaignId);
-
-    if (campaign.status !== CampaignStatus.PAUSED) {
-      throw new BadRequestException('Only PAUSED campaigns can be resumed');
-    }
-
-    campaign.status = CampaignStatus.SENDING;
-
-    await this.campaignRepository.save(campaign);
-
-    // Возобновляем отправку через очередь или напрямую
-    if (this.messageQueueService) {
-      this.logger.log(`Resuming campaign ${campaignId} via MessageQueueService (channel: ${campaign.channel})`);
-      await this.queueCampaignMessages(campaignId);
-    } else {
-      this.logger.warn(`MessageQueueService not available for campaign ${campaignId}, falling back to sync`);
-      this.processCampaignMessages(campaignId);
+      this.logger.warn(`MessageQueueService not available for campaign ${campaignId}`);
     }
 
     return campaign;
@@ -358,11 +396,10 @@ export class SmsCampaignService {
    */
   private async queueCampaignMessages(campaignId: string): Promise<void> {
     if (!this.messageQueueService) {
-      this.logger.warn('Message queue service not available, falling back to sync processing');
-      return this.processCampaignMessages(campaignId);
+      this.logger.warn('Message queue service not available');
+      return;
     }
 
-    // Get campaign to know the channel
     const campaign = await this.campaignRepository.findOne({
       where: { id: campaignId },
       select: ['id', 'channel', 'templateId'],
@@ -372,13 +409,16 @@ export class SmsCampaignService {
       throw new NotFoundException(`Campaign ${campaignId} not found`);
     }
 
-    // Get all pending messages with full data
-    const pendingMessages = await this.messageRepository.find({
+    // Получаем правильный репозиторий для канала
+    const messageRepository = this.getMessageRepository(campaign.channel);
+    const StatusEnum = this.getMessageStatusEnum(campaign.channel);
+
+    // Get all pending messages
+    const pendingMessages = await messageRepository.find({
       where: {
         campaign: { id: campaignId },
-        status: MessageStatus.PENDING,
+        status: StatusEnum.PENDING,
       },
-      select: ['id', 'phoneNumber', 'content', 'metadata'],
       relations: ['contact', 'lead'],
     });
 
@@ -388,15 +428,17 @@ export class SmsCampaignService {
       return;
     }
 
-    // Queue each message individually to the correct channel queue
+    // Queue each message to the correct channel queue
+    const channel = this.mapChannelTypeToChannel(campaign.channel);
     let queuedCount = 0;
+
     for (const message of pendingMessages) {
       try {
         await this.messageQueueService.queueNotification({
-          channel: campaign.channel as MessageChannel,
+          channel: channel,
           templateId: campaign.templateId,
           recipient: {
-            phoneNumber: message.phoneNumber,
+            phoneNumber: message.phoneNumber || (message as any).chatId,
             contactId: message.contact?.id,
             leadId: message.lead?.id,
           },
@@ -421,9 +463,47 @@ export class SmsCampaignService {
   }
 
   /**
+   * Приостановка кампании
+   */
+  async pauseCampaign(campaignId: string): Promise<MessageCampaign> {
+    const campaign = await this.findOne(campaignId);
+
+    if (campaign.status !== CampaignStatus.SENDING) {
+      throw new BadRequestException('Only SENDING campaigns can be paused');
+    }
+
+    campaign.status = CampaignStatus.PAUSED;
+    campaign.pausedAt = new Date();
+
+    return await this.campaignRepository.save(campaign);
+  }
+
+  /**
+   * Возобновление кампании
+   */
+  async resumeCampaign(campaignId: string): Promise<MessageCampaign> {
+    const campaign = await this.findOne(campaignId);
+
+    if (campaign.status !== CampaignStatus.PAUSED) {
+      throw new BadRequestException('Only PAUSED campaigns can be resumed');
+    }
+
+    campaign.status = CampaignStatus.SENDING;
+    await this.campaignRepository.save(campaign);
+
+    // Возобновляем отправку через очередь
+    if (this.messageQueueService) {
+      this.logger.log(`Resuming campaign ${campaignId} via MessageQueueService (channel: ${campaign.channel})`);
+      await this.queueCampaignMessages(campaignId);
+    }
+
+    return campaign;
+  }
+
+  /**
    * Отмена кампании
    */
-  async cancelCampaign(campaignId: string): Promise<SmsCampaign> {
+  async cancelCampaign(campaignId: string): Promise<MessageCampaign> {
     const campaign = await this.findOne(campaignId);
 
     if ([CampaignStatus.COMPLETED, CampaignStatus.CANCELLED].includes(campaign.status)) {
@@ -433,159 +513,19 @@ export class SmsCampaignService {
     campaign.status = CampaignStatus.CANCELLED;
     campaign.completedAt = new Date();
 
-    // Отменяем все ожидающие сообщения
-    await this.messageRepository.update(
-      { campaign: { id: campaignId }, status: MessageStatus.PENDING },
-      { status: MessageStatus.FAILED, metadata: { errorMessage: 'Campaign cancelled' } as any }
+    // Отменяем все ожидающие сообщения в правильной таблице
+    const messageRepository = this.getMessageRepository(campaign.channel);
+    const StatusEnum = this.getMessageStatusEnum(campaign.channel);
+
+    await messageRepository.update(
+      { campaign: { id: campaignId }, status: StatusEnum.PENDING },
+      { 
+        status: StatusEnum.FAILED, 
+        metadata: { errorMessage: 'Campaign cancelled' } as any 
+      }
     );
 
     return await this.campaignRepository.save(campaign);
-  }
-
-  /**
-   * Процесс отправки сообщений кампании
-   */
-  private async processCampaignMessages(campaignId: string): Promise<void> {
-    const campaign = await this.findOne(campaignId);
-
-    const sendingSpeed = campaign.settings?.sendingSpeed || 60; // По умолчанию 60 сообщений в минуту
-    const delayMs = (60 * 1000) / sendingSpeed;
-
-    // Получаем ожидающие сообщения
-    const pendingMessages = await this.messageRepository.find({
-      where: {
-        campaign: { id: campaignId },
-        status: MessageStatus.PENDING,
-      },
-      take: 100, // Обрабатываем по 100 за раз
-    });
-
-    for (const message of pendingMessages) {
-      // Проверяем статус кампании (может быть приостановлена)
-      const currentCampaign = await this.campaignRepository.findOne({
-        where: { id: campaignId },
-        select: ['status'],
-      });
-
-      if (currentCampaign.status !== CampaignStatus.SENDING) {
-        this.logger.log(`Campaign ${campaignId} is not in SENDING status, stopping`);
-        break;
-      }
-
-      await this.sendMessage(message.id);
-
-      // Задержка между сообщениями
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
-    }
-
-    // Проверяем, завершена ли кампания
-    await this.checkCampaignCompletion(campaignId);
-  }
-
-  /**
-   * Отправка одного сообщения
-   */
-  private async sendMessage(messageId: string): Promise<void> {
-    const message = await this.messageRepository.findOne({
-      where: { id: messageId },
-      relations: ['campaign'],
-    });
-
-    if (!message || message.status !== MessageStatus.PENDING) {
-      return;
-    }
-
-    try {
-      // Обновляем статус на "отправляется"
-      message.status = MessageStatus.QUEUED;
-      await this.messageRepository.save(message);
-
-      // Отправляем через провайдера
-      const result = await this.providerService.sendSms(
-        message.phoneNumber,
-        message.content
-      );
-
-      if (result.success) {
-        message.status = MessageStatus.SENT;
-        message.sentAt = new Date();
-        message.cost = result.cost || 0;
-        message.metadata = {
-          ...message.metadata,
-          providerId: result.providerId,
-        };
-
-        // Обновляем счётчики кампании
-        await this.campaignRepository.increment(
-          { id: message.campaign.id },
-          'sentCount',
-          1
-        );
-        await this.campaignRepository.decrement(
-          { id: message.campaign.id },
-          'pendingCount',
-          1
-        );
-      } else {
-        message.status = MessageStatus.FAILED;
-        message.failedAt = new Date();
-        message.metadata = {
-          ...message.metadata,
-          errorMessage: result.error,
-          errorCode: result.errorCode,
-        };
-
-        await this.campaignRepository.increment(
-          { id: message.campaign.id },
-          'failedCount',
-          1
-        );
-        await this.campaignRepository.decrement(
-          { id: message.campaign.id },
-          'pendingCount',
-          1
-        );
-      }
-
-      await this.messageRepository.save(message);
-
-      // Обновляем статистику использования шаблона
-      try {
-        if (message.campaign.templateId && message.campaign.channel) {
-          switch (message.campaign.channel) {
-            case MessageChannel.SMS:
-              await this.smsTemplateService.incrementUsageCount(message.campaign.templateId);
-              break;
-            case MessageChannel.EMAIL:
-              await this.emailTemplateService.incrementUsageCount(message.campaign.templateId);
-              break;
-            case MessageChannel.WHATSAPP:
-              await this.whatsappTemplateService.incrementUsageCount(message.campaign.templateId);
-              break;
-            case MessageChannel.TELEGRAM:
-              await this.telegramTemplateService.incrementUsageCount(message.campaign.templateId);
-              break;
-          }
-        } else if (message.campaign.template) {
-          // Fallback для старых кампаний
-          await this.smsTemplateService.incrementUsageCount(message.campaign.template.id);
-        }
-      } catch (error) {
-        // Игнорируем ошибки обновления счетчика, это не критично
-        this.logger.warn(`Failed to increment usage count for template ${message.campaign.templateId || message.campaign.template?.id}`);
-      }
-    } catch (error) {
-      this.logger.error(`Failed to send message ${messageId}: ${error.message}`, error.stack);
-
-      message.status = MessageStatus.FAILED;
-      message.failedAt = new Date();
-      message.metadata = {
-        ...message.metadata,
-        errorMessage: error.message,
-      };
-
-      await this.messageRepository.save(message);
-    }
   }
 
   /**
@@ -596,13 +536,23 @@ export class SmsCampaignService {
       where: { id: campaignId },
     });
 
-    if (campaign.pendingCount === 0 && campaign.status === CampaignStatus.SENDING) {
+    // Count pending messages in the correct table
+    const messageRepository = this.getMessageRepository(campaign.channel);
+    const StatusEnum = this.getMessageStatusEnum(campaign.channel);
+    
+    const pendingCount = await messageRepository.count({
+      where: {
+        campaign: { id: campaignId },
+        status: StatusEnum.PENDING,
+      },
+    });
+
+    if (pendingCount === 0 && campaign.status === CampaignStatus.SENDING) {
       campaign.status = CampaignStatus.COMPLETED;
       campaign.completedAt = new Date();
       campaign.completionPercentage = 100;
 
       await this.campaignRepository.save(campaign);
-
       this.logger.log(`Campaign ${campaignId} completed`);
     }
   }
@@ -611,15 +561,13 @@ export class SmsCampaignService {
    * Получение статистики кампании
    */
   async getCampaignStats(campaignId: string): Promise<{
-    campaign: SmsCampaign;
+    campaign: MessageCampaign;
     messagesByStatus: Record<string, number>;
-    deliveryRate: number;
-    failureRate: number;
-    avgCost: number;
   }> {
     const campaign = await this.findOne(campaignId);
+    const messageRepository = this.getMessageRepository(campaign.channel);
 
-    const messageStats = await this.messageRepository
+    const messageStats = await messageRepository
       .createQueryBuilder('message')
       .select('message.status', 'status')
       .addSelect('COUNT(*)', 'count')
@@ -632,23 +580,23 @@ export class SmsCampaignService {
       return acc;
     }, {});
 
-    const totalSent = campaign.sentCount + campaign.deliveredCount;
-    const deliveryRate = totalSent > 0 ? (campaign.deliveredCount / totalSent) * 100 : 0;
-    const failureRate = campaign.totalRecipients > 0 ? (campaign.failedCount / campaign.totalRecipients) * 100 : 0;
-
-    const avgCostResult = await this.messageRepository
-      .createQueryBuilder('message')
-      .select('AVG(message.cost)', 'avgCost')
-      .where('message.campaignId = :campaignId', { campaignId })
-      .getRawOne();
-
     return {
       campaign,
       messagesByStatus,
-      deliveryRate,
-      failureRate,
-      avgCost: parseFloat(avgCostResult?.avgCost || '0'),
     };
+  }
+
+  /**
+   * Удаление кампании
+   */
+  async remove(campaignId: string): Promise<void> {
+    const campaign = await this.findOne(campaignId);
+
+    if (campaign.status === CampaignStatus.SENDING) {
+      throw new BadRequestException('Cannot delete campaign that is currently sending');
+    }
+
+    await this.campaignRepository.remove(campaign);
   }
 
   /**

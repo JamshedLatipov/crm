@@ -71,14 +71,39 @@ export class MessageQueueService {
     };
 
     try {
-      // Отправляем в RabbitMQ с routing key по каналу
-      await this.client.emit(`${notification.channel}.send`, payload).toPromise();
+      // Определяем имя очереди по каналу
+      const queueName = this.getQueueNameByChannel(notification.channel);
+      
+      this.logger.log(`Queueing message ${messageId} to queue ${queueName}, channel: ${notification.channel}`);
+      
+      // Отправляем в RabbitMQ, routing key = имя очереди (для default exchange)
+      await this.client.emit(queueName, payload).toPromise();
 
       this.logger.log(`Queued ${notification.channel} message: ${messageId}`);
       return messageId;
     } catch (error) {
       this.logger.error(`Failed to queue message ${messageId}:`, error);
       throw error;
+    }
+  }
+
+  /**
+   * Получить имя очереди по каналу
+   */
+  private getQueueNameByChannel(channel: MessageChannel): string {
+    switch (channel) {
+      case MessageChannel.WHATSAPP:
+        return 'crm_whatsapp_queue';
+      case MessageChannel.TELEGRAM:
+        return 'crm_telegram_queue';
+      case MessageChannel.SMS:
+        return 'crm_sms_queue';
+      case MessageChannel.EMAIL:
+        return 'crm_email_queue';
+      case MessageChannel.WEBHOOK:
+        return 'crm_webhook_queue';
+      default:
+        throw new Error(`Unknown channel: ${channel}`);
     }
   }
 
