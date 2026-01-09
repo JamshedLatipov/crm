@@ -23,10 +23,10 @@ export class EnsurePjsipRecords1770000000000 implements MigrationInterface {
 
     // Ensure operators 1-4 (WebRTC)
     const operators = [
-      { id: 'operator1', transport: 'transport-wss', allow: 'opus,ulaw', webrtc: 'yes' },
-      { id: 'operator2', transport: 'transport-wss', allow: 'opus,ulaw', webrtc: 'yes' },
-      { id: 'operator3', transport: 'transport-wss', allow: 'opus,ulaw,slin', webrtc: 'yes' },
-      { id: 'operator4', transport: 'transport-wss', allow: 'opus,ulaw,slin', webrtc: 'yes' },
+      { id: 'operator1', transport: 'transport-wss', allow: 'alaw,ulaw', webrtc: 'yes' },
+      { id: 'operator2', transport: 'transport-wss', allow: 'alaw,ulaw', webrtc: 'yes' },
+      { id: 'operator3', transport: 'transport-wss', allow: 'alaw,ulaw,slin', webrtc: 'yes' },
+      { id: 'operator4', transport: 'transport-wss', allow: 'alaw,ulaw,slin', webrtc: 'yes' },
     ];
 
     for (const op of operators) {
