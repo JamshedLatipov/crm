@@ -1,9 +1,10 @@
 import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, Like, LessThanOrEqual, Not, IsNull, Or } from 'typeorm';
+import { Repository, Between, Like, LessThanOrEqual, Not, IsNull, Or, MoreThanOrEqual } from 'typeorm';
 import { QueueMember } from '../calls/entities/queue-member.entity';
 import { Queue } from '../calls/entities/queue.entity';
 import { Cdr } from '../calls/entities/cdr.entity';
+import { QueueLog } from '../calls/entities/queuelog.entity';
 import { User } from '../user/user.entity';
 import { AgentStatus } from './entities/agent-status.entity';
 import { AgentStatusHistory } from './entities/agent-status-history.entity';
@@ -69,6 +70,7 @@ export class ContactCenterService {
     @InjectRepository(QueueMember) private readonly membersRepo: Repository<QueueMember>,
     @InjectRepository(Queue) private readonly queueRepo: Repository<Queue>,
     @InjectRepository(Cdr) private readonly cdrRepo: Repository<Cdr>,
+    @InjectRepository(QueueLog) private readonly queueLogRepo: Repository<QueueLog>,
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(AgentStatus) private readonly agentStatusRepo: Repository<AgentStatus>,
     @InjectRepository(AgentStatusHistory) private readonly agentStatusHistoryRepo: Repository<AgentStatusHistory>,
@@ -268,6 +270,46 @@ export class ContactCenterService {
     });
     
     return { allCdrRecords, startOfToday };
+  }
+
+  // Batch load queue_log data for today to calculate queue metrics
+  private async loadQueueLogDataBatch() {
+    // Get start of today (timestamp in seconds since epoch)
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const startTimestamp = Math.floor(startOfToday.getTime() / 1000).toString();
+    
+    this.logger.debug(`Loading queue_log records from timestamp >= ${startTimestamp} (${startOfToday.toISOString()})`);
+    
+    // Load all queue_log records for today
+    // Note: queue_log.time is stored as string timestamp
+    const allQueueLogs = await this.queueLogRepo.find({
+      where: {
+        time: MoreThanOrEqual(startTimestamp),
+      },
+      order: { id: 'DESC' },
+    });
+    
+    this.logger.debug(`Loaded ${allQueueLogs.length} queue_log records for today`);
+    
+    // Log sample of events by queue
+    const queueEventCounts = new Map<string, Map<string, number>>();
+    allQueueLogs.forEach(log => {
+      if (!queueEventCounts.has(log.queuename)) {
+        queueEventCounts.set(log.queuename, new Map());
+      }
+      const eventMap = queueEventCounts.get(log.queuename)!;
+      eventMap.set(log.event, (eventMap.get(log.event) || 0) + 1);
+    });
+    
+    queueEventCounts.forEach((events, queueName) => {
+      const eventSummary = Array.from(events.entries())
+        .map(([event, count]) => `${event}:${count}`)
+        .join(', ');
+      this.logger.debug(`  Queue ${queueName}: ${eventSummary}`);
+    });
+    
+    return allQueueLogs;
   }
 
   // Return operators based on queue_members table enriched with real-time AMI data
@@ -497,15 +539,14 @@ export class ContactCenterService {
   // Return queues with real-time statistics from AMI
   async getQueuesSnapshot(): Promise<QueueStatus[]> {
     // Load all data in parallel
-    const [_, queues, members, cdrData] = await Promise.all([
+    const [_, queues, members, queueLogs] = await Promise.all([
       this.refreshAmiCache(),
       this.queueRepo.find(),
       this.membersRepo.find(),
-      this.loadCdrDataBatch(),
+      this.loadQueueLogDataBatch(),
     ]);
     
     const queueStatusMap = this.amiCache.queueStatus || new Map();
-    const { allCdrRecords } = cdrData;
     
     // Get active channels for validation
     const activeChannels = new Set<string>();
@@ -605,29 +646,60 @@ export class ContactCenterService {
         if (callsInService < 0) callsInService = 0;
       }
 
-      // Filter CDR records for this queue from pre-loaded data
-      const queueCdrRecords = allCdrRecords.filter(cdr => 
-        cdr.lastapp === 'Queue' && cdr.lastdata?.includes(q.name)
-      );
+      // Calculate metrics from queue_log (more accurate than CDR)
+      const queueLogRecords = queueLogs.filter(log => log.queuename === q.name);
       
-      // Get abandoned calls for last 24h
-      const abandonedToday = queueCdrRecords.filter(cdr => 
-        cdr.disposition === 'NO ANSWER'
+      // Debug logging for queue_log data
+      if (queueLogRecords.length > 0) {
+        this.logger.debug(`Queue ${q.name}: Found ${queueLogRecords.length} queue_log records for today`);
+        // Log first few events for inspection
+        const eventsSample = queueLogRecords.slice(0, 5).map(log => 
+          `${log.event}(data1=${log.data1}, data2=${log.data2})`
+        ).join(', ');
+        this.logger.debug(`  Sample events: ${eventsSample}`);
+      } else {
+        this.logger.warn(`Queue ${q.name}: No queue_log records found for today - metrics will be 0`);
+      }
+      
+      // Events that indicate abandoned/missed calls:
+      // ABANDON - caller hung up while waiting
+      // EXITWITHTIMEOUT - caller waited too long
+      // EXITWITHKEY - caller pressed key to exit
+      const abandonedToday = queueLogRecords.filter(log => 
+        log.event === 'ABANDON' || log.event === 'EXITWITHTIMEOUT' || log.event === 'EXITWITHKEY'
       ).length;
 
-      // Calculate service level (calls answered within 20 seconds / total calls)
-      const answeredCalls = queueCdrRecords.filter(cdr => 
-        cdr.disposition === 'ANSWERED' && (cdr.duration || 0) <= 20
+      // Events that indicate answered calls:
+      // COMPLETEAGENT - agent hung up
+      // COMPLETECALLER - caller hung up
+      // CONNECT - call connected to agent (use this for service level)
+      const connectEvents = queueLogRecords.filter(log => log.event === 'CONNECT');
+      const answeredCallsToday = queueLogRecords.filter(log => 
+        log.event === 'COMPLETEAGENT' || log.event === 'COMPLETECALLER'
       ).length;
 
-      const totalCalls = queueCdrRecords.length;
+      // Calculate service level: % of calls answered within threshold (default 20 seconds)
+      // CONNECT event format: data1 = hold time in seconds, data2 = call time, data3 = position
+      const serviceLevelThreshold = 20; // seconds
+      const answeredWithinThreshold = connectEvents.filter(log => {
+        const holdTime = parseInt(log.data1 || '0', 10);
+        return holdTime <= serviceLevelThreshold;
+      }).length;
 
-      const serviceLevel = totalCalls > 0 ? Math.round((answeredCalls / totalCalls) * 100) : 0;
+      const totalCalls = connectEvents.length + abandonedToday;
+      const serviceLevel = totalCalls > 0 ? Math.round((answeredWithinThreshold / totalCalls) * 100) : 0;
 
-      // Total answered calls in last 24h
-      const answeredCallsToday = queueCdrRecords.filter(cdr => 
-        cdr.disposition === 'ANSWERED'
-      ).length;
+      // Log queue metrics for debugging
+      this.logger.debug(
+        `Queue ${q.name} metrics: ` +
+        `queueLogRecords=${queueLogRecords.length}, ` +
+        `connectEvents=${connectEvents.length}, ` +
+        `abandoned=${abandonedToday}, ` +
+        `total=${totalCalls}, ` +
+        `answered=${answeredCallsToday}, ` +
+        `SLA=${serviceLevel}% (${answeredWithinThreshold}/${totalCalls} within ${serviceLevelThreshold}s), ` +
+        `waiting=${waiting}, inService=${callsInService}`
+      );
 
       result.push({
         id: String(q.id),

@@ -585,6 +585,12 @@ export class OnlineMonitoringComponent implements OnInit, OnDestroy {
       width: '10%',
     },
     {
+      key: 'abandonedToday',
+      label: 'Пропущено',
+      width: '10%',
+      template: 'queueAbandonedTemplate',
+    },
+    {
       key: 'serviceLevel',
       label: 'Уровень сервиса',
       width: '13%',
@@ -595,11 +601,6 @@ export class OnlineMonitoringComponent implements OnInit, OnDestroy {
       label: 'Операторы',
       width: '10%',
       template: 'queueMembersTemplate',
-    },
-    {
-      key: 'abandonedToday',
-      label: 'Пропущено',
-      width: '10%',
     },
   ];
 
