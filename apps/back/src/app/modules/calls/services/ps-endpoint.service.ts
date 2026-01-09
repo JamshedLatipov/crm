@@ -50,8 +50,10 @@ export class PsEndpointService {
         dtls_setup: data.dtls_setup || 'actpass',
         ice_support: data.ice_support || 'yes',
         // Кодеки - disallow all, затем allow только нужные
+        // ВАЖНО: Используем только ulaw,alaw для совместимости всех операторов
+        // Это предотвращает ошибки "No path to translate" при передаче звонков в очередях
         disallow: 'all',
-        allow: data.allow || 'opus,ulaw,alaw,g722',
+        allow: data.allow || 'ulaw,alaw',
       });
       const saved = await em.save(endpoint);
 
