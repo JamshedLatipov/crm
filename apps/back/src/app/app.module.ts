@@ -45,7 +45,8 @@ import { CONTACT_CENTER_MIGRATIONS } from './modules/contact-center/migrations';
       synchronize: true,
       autoLoadEntities: true,
       extra: {
-        timezone: 'UTC',
+        // Set timezone to Asia/Tashkent (UTC+5) to match local time
+        timezone: 'Asia/Tashkent',
       },
       migrations: [
         ...CALLS_MIGRATIONS,
