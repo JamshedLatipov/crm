@@ -1,0 +1,173 @@
+:host {
+  display: block;
+}
+
+.dialog-content {
+  padding: 24px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.form-section {
+  margin-bottom: 32px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.87);
+  margin: 0 0 16px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &::before {
+    content: '';
+    width: 4px;
+    height: 16px;
+    background: var(--primary-color, #1976d2);
+    border-radius: 2px;
+  }
+}
+
+.full-width {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.half-width {
+  flex: 1;
+}
+
+.strategy-option {
+  display: flex;
+  flex-direction: column;
+}
+
+.strategy-label {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.strategy-hint {
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 12px;
+  line-height: 1.4;
+  margin-top: 4px;
+  min-height: 32px;
+  display: block;
+}
+
+.toggle-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.toggle-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-left: 8px;
+}
+
+.toggle-label {
+  font-weight: 500;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.toggle-description {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.6);
+  line-height: 1.4;
+}
+
+.dialog-actions {
+  padding: 16px 24px;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+  gap: 8px;
+
+  button {
+    min-width: 100px;
+
+    mat-icon {
+      margin-right: 4px;
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+}
+
+// Material overrides for better visual consistency
+::ng-deep {
+  .mat-mdc-form-field {
+    .mat-mdc-text-field-wrapper {
+      padding-bottom: 0;
+    }
+
+    .mat-mdc-form-field-subscript-wrapper {
+      margin-top: 4px;
+    }
+  }
+
+  .mat-mdc-slide-toggle {
+    .mdc-switch {
+      margin-right: 8px;
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .dialog-content {
+    min-width: unset;
+    width: 100%;
+    padding: 16px;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .half-width {
+    width: 100%;
+  }
+}
+
+// Scrollbar styling
+.dialog-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dialog-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+.dialog-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.3);
+  }
+}
