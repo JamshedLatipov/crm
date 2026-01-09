@@ -26,7 +26,7 @@ export class AbandonedCallsService {
     const statsQuery = baseQuery.clone()
       .select('COUNT(*)', 'totalCalls')
       .addSelect(
-        "COUNT(CASE WHEN (cs.status = 'ABANDON' OR (cs.status = 'NO ANSWER' AND cs.abandonTime IS NOT NULL AND cs.abandonTime > 0)) THEN 1 END)",
+        "COUNT(CASE WHEN cs.status = 'ABANDON' THEN 1 END)",
         'totalAbandoned'
       )
       .addSelect('COALESCE(AVG(CASE WHEN cs.abandonTime > 0 THEN cs.abandonTime END), 0)', 'avgAbandonTime');
@@ -42,7 +42,8 @@ export class AbandonedCallsService {
     // Get median abandon time
     const medianQuery = this.callSummaryRepo.createQueryBuilder('cs')
       .select('cs.abandonTime')
-      .where("(cs.status = 'ABANDON' OR (cs.status = 'NO ANSWER' AND cs.abandonTime IS NOT NULL AND cs.abandonTime > 0))")
+      .where("cs.status = 'ABANDON'")
+      .andWhere('cs.abandonTime > 0')
       .orderBy('cs.abandonTime', 'ASC');
     
     this.applyFilters(medianQuery, filters);
@@ -56,7 +57,7 @@ export class AbandonedCallsService {
       .select('cs.queue', 'queue')
       .addSelect('COUNT(*)', 'totalCalls')
       .addSelect(
-        "COUNT(CASE WHEN (cs.status = 'ABANDON' OR (cs.status = 'NO ANSWER' AND cs.abandonTime IS NOT NULL AND cs.abandonTime > 0)) THEN 1 END)",
+        "COUNT(CASE WHEN cs.status = 'ABANDON' THEN 1 END)",
         'abandonedCount'
       )
       .addSelect('COALESCE(AVG(CASE WHEN cs.abandonTime > 0 THEN cs.abandonTime END), 0)', 'avgAbandonTime')
@@ -83,7 +84,7 @@ export class AbandonedCallsService {
     const hourlyQuery = this.callSummaryRepo.createQueryBuilder('cs')
       .select("EXTRACT(HOUR FROM cs.startedAt)", 'hour')
       .addSelect('COUNT(*)', 'count')
-      .where("(cs.status = 'ABANDON' OR (cs.status = 'NO ANSWER' AND cs.abandonTime IS NOT NULL AND cs.abandonTime > 0))")
+      .where("cs.status = 'ABANDON'")
       .groupBy('hour')
       .orderBy('hour', 'ASC');
 
@@ -99,7 +100,7 @@ export class AbandonedCallsService {
     const dailyQuery = this.callSummaryRepo.createQueryBuilder('cs')
       .select("DATE(cs.startedAt)", 'day')
       .addSelect('COUNT(*)', 'count')
-      .where("(cs.status = 'ABANDON' OR (cs.status = 'NO ANSWER' AND cs.abandonTime IS NOT NULL AND cs.abandonTime > 0))")
+      .where("cs.status = 'ABANDON'")
       .groupBy('day')
       .orderBy('day', 'ASC');
 
@@ -176,7 +177,7 @@ export class AbandonedCallsService {
   ): Promise<number> {
     const query = this.callSummaryRepo.createQueryBuilder('cs')
       .select('COUNT(*)', 'count')
-      .where("(cs.status = 'ABANDON' OR (cs.status = 'NO ANSWER' AND cs.abandonTime IS NOT NULL AND cs.abandonTime > 0))")
+      .where("cs.status = 'ABANDON'")
       .andWhere('cs.abandonTime >= :minTime', { minTime });
 
     if (maxTime !== null) {

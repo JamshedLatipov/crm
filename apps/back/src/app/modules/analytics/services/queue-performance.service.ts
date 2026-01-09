@@ -29,7 +29,7 @@ export class QueuePerformanceService {
           'answeredCalls'
         )
         .addSelect(
-          "COUNT(CASE WHEN (cs.status = 'ABANDON' OR (cs.status = 'NO ANSWER' AND cs.abandonTime IS NOT NULL AND cs.abandonTime > 0)) THEN 1 END)",
+          "COUNT(CASE WHEN cs.status = 'ABANDON' THEN 1 END)",
           'abandonedCalls'
         )
         .addSelect('COALESCE(AVG(cs.waitTime), 0)', 'avgWaitTime')

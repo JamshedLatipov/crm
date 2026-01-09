@@ -37,7 +37,7 @@ export class CallsOverviewService {
         'answeredCalls'
       )
       .addSelect(
-        "COUNT(CASE WHEN cs.status = 'NO ANSWER' OR cs.status = 'BUSY' THEN 1 END)",
+        "COUNT(CASE WHEN cs.status IN ('NO ANSWER', 'BUSY') THEN 1 END)",
         'missedCalls'
       )
       .addSelect(
