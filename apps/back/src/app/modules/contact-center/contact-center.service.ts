@@ -261,10 +261,12 @@ export class ContactCenterService {
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
     
+    const now = new Date();
+    
     // Load all CDR records for today in one query
     const allCdrRecords = await this.cdrRepo.find({
       where: {
-        calldate: Between(startOfToday, new Date()),
+        calldate: Between(startOfToday, now),
       },
       order: { calldate: 'DESC' },
     });
@@ -277,13 +279,11 @@ export class ContactCenterService {
     // Get start of today (timestamp in seconds since epoch)
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
-    const startTimestamp = Math.floor(startOfToday.getTime() / 1000).toString();
     
     // Load all queue_log records for today
-    // Note: queue_log.time is stored as string timestamp
     const allQueueLogs = await this.queueLogRepo.find({
       where: {
-        time: MoreThanOrEqual(startTimestamp),
+        time: MoreThanOrEqual(startOfToday),
       },
       order: { id: 'DESC' },
     });

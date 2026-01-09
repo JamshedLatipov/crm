@@ -331,17 +331,22 @@ export class CallTraceService {
     };
   }
 
-  private parseQueueLogTime(timeStr?: string | null): Date {
-    if (!timeStr) return new Date();
+  private parseQueueLogTime(time?: string | Date | null): Date {
+    if (!time) return new Date();
+    
+    // If already a Date object, return it directly
+    if (time instanceof Date) {
+      return time;
+    }
     
     // Try parsing as datetime string first (format: "2025-12-24 19:28:38.665928")
-    const d = new Date(timeStr);
+    const d = new Date(time);
     if (!isNaN(d.getTime())) {
       return d;
     }
     
     // Fallback: try Unix timestamp format (seconds.microseconds)
-    const parts = timeStr.split('.');
+    const parts = time.split('.');
     const seconds = parseInt(parts[0], 10);
     if (!isNaN(seconds)) {
       const ms = parts[1] ? parseInt(parts[1].substring(0, 3), 10) : 0;

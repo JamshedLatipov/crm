@@ -8,8 +8,8 @@ export class Cdr {
   @PrimaryGeneratedColumn('uuid')
   id?: string;
 
-  @ApiProperty({ description: 'Call start date/time (UTC)' })
-  @Column({ type: 'timestamp', name: 'calldate', default: () => 'CURRENT_TIMESTAMP' })
+  @ApiProperty({ description: 'Call start date/time' })
+  @Column({ type: 'timestamptz', name: 'calldate', default: () => 'CURRENT_TIMESTAMP' })
   calldate!: Date;
 
   @ApiProperty() @Column({ length: 80, default: '' }) clid!: string;
