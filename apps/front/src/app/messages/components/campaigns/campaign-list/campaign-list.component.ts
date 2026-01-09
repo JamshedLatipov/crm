@@ -11,6 +11,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.component';
 import { CrmTableComponent, CrmColumn, CrmColumnTemplateDirective } from '../../../../shared/components/crm-table/crm-table.component';
+import { ConfirmDialogComponent } from '../../../../shared/dialogs/confirm-dialog.component';
 import { CampaignService } from '../../../services/campaign.service';
 import { Campaign } from '../../../models/message.models';
 
@@ -93,16 +94,25 @@ export class CampaignListComponent implements OnInit {
   }
 
   deleteCampaign(campaign: Campaign) {
-    if (confirm(`Удалить кампанию "${campaign.name}"?`)) {
-      this.campaignService.delete(campaign.id).subscribe({
-        next: () => {
-          this.snackBar.open('Кампания удалена', 'Закрыть', { duration: 3000 });
-        },
-        error: () => {
-          this.snackBar.open('Ошибка удаления кампании', 'Закрыть', { duration: 3000 });
-        }
-      });
-    }
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Удалить кампанию',
+        message: `Вы уверены, что хотите удалить кампанию "${campaign.name}"? Это действие нельзя отменить.`
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(confirmed => {
+      if (confirmed) {
+        this.campaignService.delete(campaign.id).subscribe({
+          next: () => {
+            this.snackBar.open('Кампания удалена', 'Закрыть', { duration: 3000 });
+          },
+          error: () => {
+            this.snackBar.open('Ошибка удаления кампании', 'Закрыть', { duration: 3000 });
+          }
+        });
+      }
+    });
   }
 
   getStatusLabel(status: string): string {

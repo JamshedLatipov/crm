@@ -20,7 +20,7 @@ import {
   ResumeCampaignDto,
   CancelCampaignDto,
 } from '../dto/campaign.dto';
-import { CampaignStatus, CampaignType } from '../entities/sms-campaign.entity';
+import { CampaignStatus, CampaignType } from '../entities/message-campaign.entity';
 
 @ApiTags('SMS Campaigns')
 @ApiBearerAuth()
@@ -74,8 +74,11 @@ export class SmsCampaignController {
   @Post(':id/prepare')
   @ApiOperation({ summary: 'Подготовить сообщения для кампании' })
   @ApiResponse({ status: 200, description: 'Сообщения подготовлены' })
-  async prepare(@Param('id') id: string) {
-    await this.campaignService.prepareCampaignMessages(id);
+  async prepare(@Param('id') id: string, @Body() body?: { segmentId?: string }) {
+    // Если segmentId не передан в body, берём из кампании
+    const campaign = await this.campaignService.findOne(id);
+    const segmentId = body?.segmentId || (campaign.segment ? campaign.segment.id : 'all');
+    await this.campaignService.prepareCampaignMessages(id, segmentId);
     return { message: 'Campaign messages prepared successfully' };
   }
 

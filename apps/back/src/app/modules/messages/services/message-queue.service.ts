@@ -1,15 +1,7 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { v4 as uuidv4 } from 'uuid';
-
-export enum MessageChannel {
-  WHATSAPP = 'whatsapp',
-  TELEGRAM = 'telegram',
-  SMS = 'sms',
-  EMAIL = 'email',
-  WEBHOOK = 'webhook',
-  PUSH = 'push',
-}
+import { MessageChannelType } from '../entities/message-campaign.entity';
 
 export enum MessagePriority {
   HIGH = 'high',
@@ -19,7 +11,7 @@ export enum MessagePriority {
 
 export interface QueuedMessage {
   id: string;
-  channel: MessageChannel;
+  channel: MessageChannelType;
   templateId: string;
   recipient: {
     contactId?: string;
@@ -90,17 +82,17 @@ export class MessageQueueService {
   /**
    * Получить имя очереди по каналу
    */
-  private getQueueNameByChannel(channel: MessageChannel): string {
+  private getQueueNameByChannel(channel: MessageChannelType): string {
     switch (channel) {
-      case MessageChannel.WHATSAPP:
+      case MessageChannelType.WHATSAPP:
         return 'crm_whatsapp_queue';
-      case MessageChannel.TELEGRAM:
+      case MessageChannelType.TELEGRAM:
         return 'crm_telegram_queue';
-      case MessageChannel.SMS:
+      case MessageChannelType.SMS:
         return 'crm_sms_queue';
-      case MessageChannel.EMAIL:
+      case MessageChannelType.EMAIL:
         return 'crm_email_queue';
-      case MessageChannel.WEBHOOK:
+      case MessageChannelType.WEBHOOK:
         return 'crm_webhook_queue';
       default:
         throw new Error(`Unknown channel: ${channel}`);
@@ -111,7 +103,7 @@ export class MessageQueueService {
    * Массовая отправка - ставим в очередь сразу много сообщений
    */
   async queueBulkSend(params: {
-    channel: MessageChannel;
+    channel: MessageChannelType;
     templateId: string;
     recipients: Array<{
       contactId?: string;
@@ -204,7 +196,7 @@ export class MessageQueueService {
     }));
 
     return this.queueBulkSend({
-      channel: MessageChannel.WHATSAPP,
+      channel: MessageChannelType.WHATSAPP,
       templateId: params.templateId,
       recipients,
       priority: params.priority,
@@ -224,7 +216,7 @@ export class MessageQueueService {
     }));
 
     return this.queueBulkSend({
-      channel: MessageChannel.TELEGRAM,
+      channel: MessageChannelType.TELEGRAM,
       templateId: params.templateId,
       recipients,
       priority: params.priority,
@@ -235,7 +227,7 @@ export class MessageQueueService {
    * Массовая отправка по сегменту (фильтр контактов)
    */
   async queueBySegment(params: {
-    channel: MessageChannel;
+    channel: MessageChannelType;
     templateId: string;
     segmentFilters: {
       tags?: string[];
@@ -262,7 +254,7 @@ export class MessageQueueService {
    * Отложенная отправка (scheduled)
    */
   async queueScheduled(params: {
-    channel: MessageChannel;
+    channel: MessageChannelType;
     templateId: string;
     recipients: Array<{ contactId: string }>;
     scheduledAt: Date;

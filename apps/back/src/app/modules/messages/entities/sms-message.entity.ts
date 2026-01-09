@@ -8,7 +8,7 @@ import {
   Index,
   JoinColumn,
 } from 'typeorm';
-import { SmsCampaign } from './sms-campaign.entity';
+import { MessageCampaign } from './message-campaign.entity';
 import { Contact } from '../../contacts/contact.entity';
 import { Lead } from '../../leads/lead.entity';
 
@@ -46,9 +46,9 @@ export class SmsMessage {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => SmsCampaign, (campaign) => campaign.messages, { nullable: true })
+  @ManyToOne(() => MessageCampaign, { nullable: true })
   @JoinColumn({ name: 'campaignId' })
-  campaign: SmsCampaign;
+  campaign: MessageCampaign;
 
   @ManyToOne(() => Contact, { nullable: true })
   @JoinColumn({ name: 'contactId' })

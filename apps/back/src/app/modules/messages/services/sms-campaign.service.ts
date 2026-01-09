@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException, Logger, Optional } 
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { SmsCampaign, CampaignStatus, CampaignType } from '../entities/sms-campaign.entity';
+import { MessageCampaign, CampaignStatus, CampaignType, MessageChannelType } from '../entities/message-campaign.entity';
 import { SmsMessage, MessageStatus } from '../entities/sms-message.entity';
 import { CreateCampaignDto, UpdateCampaignDto } from '../dto/campaign.dto';
 import { SmsTemplateService } from './sms-template.service';
@@ -13,15 +13,15 @@ import { SmsSegmentService } from './sms-segment.service';
 import { SmsProviderService } from './sms-provider.service';
 import { User } from '../../user/user.entity';
 import { QueueProducerService } from '../../queues/queue-producer.service';
-import { MessageChannel, MessageQueueService } from './message-queue.service';
+import { MessageQueueService } from './message-queue.service';
 
 @Injectable()
 export class SmsCampaignService {
   private readonly logger = new Logger(SmsCampaignService.name);
 
   constructor(
-    @InjectRepository(SmsCampaign)
-    private campaignRepository: Repository<SmsCampaign>,
+    @InjectRepository(MessageCampaign)
+    private campaignRepository: Repository<MessageCampaign>,
     @InjectRepository(SmsMessage)
     private messageRepository: Repository<SmsMessage>,
     private smsTemplateService: SmsTemplateService,
@@ -37,23 +37,23 @@ export class SmsCampaignService {
   /**
    * Создание новой кампании
    */
-  async create(createDto: CreateCampaignDto, user: User): Promise<SmsCampaign> {
+  async create(createDto: CreateCampaignDto, user: User): Promise<MessageCampaign> {
     // Определяем канал (по умолчанию SMS для обратной совместимости)
-    const channel = createDto.channel || MessageChannel.SMS;
+    const channel = createDto.channel || MessageChannelType.SMS;
     
     // Проверяем существование шаблона в зависимости от канала
     let template;
     switch (channel) {
-      case MessageChannel.SMS:
+      case MessageChannelType.SMS:
         template = await this.smsTemplateService.findOne(createDto.templateId);
         break;
-      case MessageChannel.EMAIL:
+      case MessageChannelType.EMAIL:
         template = await this.emailTemplateService.findOne(createDto.templateId);
         break;
-      case MessageChannel.WHATSAPP:
+      case MessageChannelType.WHATSAPP:
         template = await this.whatsappTemplateService.findOne(createDto.templateId);
         break;
-      case MessageChannel.TELEGRAM:
+      case MessageChannelType.TELEGRAM:
         template = await this.telegramTemplateService.findOne(createDto.templateId);
         break;
       default:
@@ -62,7 +62,7 @@ export class SmsCampaignService {
 
     // Проверяем существование сегмента (если указан)
     let segment = null;
-    if (createDto.segmentId) {
+    if (createDto.segmentId && createDto.segmentId !== 'all') {
       segment = await this.segmentService.findOne(createDto.segmentId);
     }
 
@@ -96,7 +96,7 @@ export class SmsCampaignService {
     status?: CampaignStatus;
     type?: CampaignType;
     search?: string;
-  }): Promise<SmsCampaign[]> {
+  }): Promise<MessageCampaign[]> {
     const query = this.campaignRepository.createQueryBuilder('campaign')
       .leftJoinAndSelect('campaign.template', 'template')
       .leftJoinAndSelect('campaign.segment', 'segment')
@@ -124,7 +124,7 @@ export class SmsCampaignService {
   /**
    * Получение кампании по ID
    */
-  async findOne(id: string): Promise<SmsCampaign> {
+  async findOne(id: string): Promise<MessageCampaign> {
     const campaign = await this.campaignRepository.findOne({
       where: { id },
       relations: ['template', 'segment', 'createdBy'],
@@ -138,16 +138,16 @@ export class SmsCampaignService {
     if (campaign.templateId && campaign.channel) {
       let template;
       switch (campaign.channel) {
-        case MessageChannel.SMS:
+        case MessageChannelType.SMS:
           template = await this.smsTemplateService.findOne(campaign.templateId);
           break;
-        case MessageChannel.EMAIL:
+        case MessageChannelType.EMAIL:
           template = await this.emailTemplateService.findOne(campaign.templateId);
           break;
-        case MessageChannel.WHATSAPP:
+        case MessageChannelType.WHATSAPP:
           template = await this.whatsappTemplateService.findOne(campaign.templateId);
           break;
-        case MessageChannel.TELEGRAM:
+        case MessageChannelType.TELEGRAM:
           template = await this.telegramTemplateService.findOne(campaign.templateId);
           break;
       }
@@ -161,7 +161,7 @@ export class SmsCampaignService {
   /**
    * Обновление кампании
    */
-  async update(id: string, updateDto: UpdateCampaignDto): Promise<SmsCampaign> {
+  async update(id: string, updateDto: UpdateCampaignDto): Promise<MessageCampaign> {
     const campaign = await this.findOne(id);
 
     // Проверяем, можно ли редактировать кампанию
@@ -174,16 +174,16 @@ export class SmsCampaignService {
       const channel = updateDto.channel || campaign.channel;
       let template;
       switch (channel) {
-        case MessageChannel.SMS:
+        case MessageChannelType.SMS:
           template = await this.smsTemplateService.findOne(updateDto.templateId);
           break;
-        case MessageChannel.EMAIL:
+        case MessageChannelType.EMAIL:
           template = await this.emailTemplateService.findOne(updateDto.templateId);
           break;
-        case MessageChannel.WHATSAPP:
+        case MessageChannelType.WHATSAPP:
           template = await this.whatsappTemplateService.findOne(updateDto.templateId);
           break;
-        case MessageChannel.TELEGRAM:
+        case MessageChannelType.TELEGRAM:
           template = await this.telegramTemplateService.findOne(updateDto.templateId);
           break;
         default:
@@ -201,8 +201,10 @@ export class SmsCampaignService {
       }
     }
 
-    if (updateDto.segmentId) {
+    if (updateDto.segmentId && updateDto.segmentId !== 'all') {
       campaign.segment = await this.segmentService.findOne(updateDto.segmentId);
+    } else if (updateDto.segmentId === 'all') {
+      campaign.segment = null;
     }
 
     Object.assign(campaign, {
@@ -240,7 +242,7 @@ export class SmsCampaignService {
     }
 
     // Получаем шаблон (из нового поля templateData или старого template)
-    const template = (campaign as any).templateData || campaign.template;
+    const template = (campaign as any).templateData || campaign.templateId;
     
     if (!template) {
       throw new BadRequestException('Campaign must have a template');
@@ -257,7 +259,7 @@ export class SmsCampaignService {
       const content = template.content;
 
       return this.messageRepository.create({
-        campaign,
+        campaign: { id: campaign.id } as any,
         contact: { id: contact.contactId } as any,
         phoneNumber: contact.phoneNumber,
         content,
@@ -271,14 +273,13 @@ export class SmsCampaignService {
     // Обновляем счётчики кампании
     await this.campaignRepository.update(campaignId, {
       totalRecipients: messages.length,
-      pendingCount: messages.length,
     });
   }
 
   /**
    * Запуск кампании
    */
-  async startCampaign(campaignId: string): Promise<SmsCampaign> {
+  async startCampaign(campaignId: string): Promise<MessageCampaign> {
     const campaign = await this.findOne(campaignId);
 
     if (campaign.status !== CampaignStatus.DRAFT && campaign.status !== CampaignStatus.SCHEDULED) {
@@ -314,7 +315,7 @@ export class SmsCampaignService {
   /**
    * Приостановка кампании
    */
-  async pauseCampaign(campaignId: string): Promise<SmsCampaign> {
+  async pauseCampaign(campaignId: string): Promise<MessageCampaign> {
     const campaign = await this.findOne(campaignId);
 
     if (campaign.status !== CampaignStatus.SENDING) {
@@ -330,7 +331,7 @@ export class SmsCampaignService {
   /**
    * Возобновление кампании
    */
-  async resumeCampaign(campaignId: string): Promise<SmsCampaign> {
+  async resumeCampaign(campaignId: string): Promise<MessageCampaign> {
     const campaign = await this.findOne(campaignId);
 
     if (campaign.status !== CampaignStatus.PAUSED) {
@@ -393,7 +394,7 @@ export class SmsCampaignService {
     for (const message of pendingMessages) {
       try {
         await this.messageQueueService.queueNotification({
-          channel: campaign.channel as MessageChannel,
+          channel: campaign.channel as MessageChannelType, // MessageChannelType совместим с MessageChannel по значениям
           templateId: campaign.templateId,
           recipient: {
             phoneNumber: message.phoneNumber,
@@ -423,7 +424,7 @@ export class SmsCampaignService {
   /**
    * Отмена кампании
    */
-  async cancelCampaign(campaignId: string): Promise<SmsCampaign> {
+  async cancelCampaign(campaignId: string): Promise<MessageCampaign> {
     const campaign = await this.findOne(campaignId);
 
     if ([CampaignStatus.COMPLETED, CampaignStatus.CANCELLED].includes(campaign.status)) {
@@ -448,7 +449,8 @@ export class SmsCampaignService {
   private async processCampaignMessages(campaignId: string): Promise<void> {
     const campaign = await this.findOne(campaignId);
 
-    const sendingSpeed = campaign.settings?.sendingSpeed || 60; // По умолчанию 60 сообщений в минуту
+    // Получаем скорость отправки из настроек SMS или из общих настроек (для обратной совместимости)
+    const sendingSpeed = campaign.settings?.sms?.sendingSpeed || (campaign.settings as any)?.sendingSpeed || 60; // По умолчанию 60 сообщений в минуту
     const delayMs = (60 * 1000) / sendingSpeed;
 
     // Получаем ожидающие сообщения
@@ -518,12 +520,7 @@ export class SmsCampaignService {
         // Обновляем счётчики кампании
         await this.campaignRepository.increment(
           { id: message.campaign.id },
-          'sentCount',
-          1
-        );
-        await this.campaignRepository.decrement(
-          { id: message.campaign.id },
-          'pendingCount',
+          'totalSent',
           1
         );
       } else {
@@ -537,12 +534,7 @@ export class SmsCampaignService {
 
         await this.campaignRepository.increment(
           { id: message.campaign.id },
-          'failedCount',
-          1
-        );
-        await this.campaignRepository.decrement(
-          { id: message.campaign.id },
-          'pendingCount',
+          'totalFailed',
           1
         );
       }
@@ -551,28 +543,29 @@ export class SmsCampaignService {
 
       // Обновляем статистику использования шаблона
       try {
-        if (message.campaign.templateId && message.campaign.channel) {
-          switch (message.campaign.channel) {
-            case MessageChannel.SMS:
+        if (message.campaign.templateId) {
+          // Используем templateId напрямую, так как campaign.channel содержит MessageChannelType
+          // MessageChannelType и MessageChannel имеют одинаковые значения ('sms', 'email', и т.д.)
+          const channelValue = message.campaign.channel;
+          
+          switch (channelValue) {
+            case 'sms':
               await this.smsTemplateService.incrementUsageCount(message.campaign.templateId);
               break;
-            case MessageChannel.EMAIL:
+            case 'email':
               await this.emailTemplateService.incrementUsageCount(message.campaign.templateId);
               break;
-            case MessageChannel.WHATSAPP:
+            case 'whatsapp':
               await this.whatsappTemplateService.incrementUsageCount(message.campaign.templateId);
               break;
-            case MessageChannel.TELEGRAM:
+            case 'telegram':
               await this.telegramTemplateService.incrementUsageCount(message.campaign.templateId);
               break;
           }
-        } else if (message.campaign.template) {
-          // Fallback для старых кампаний
-          await this.smsTemplateService.incrementUsageCount(message.campaign.template.id);
         }
       } catch (error) {
         // Игнорируем ошибки обновления счетчика, это не критично
-        this.logger.warn(`Failed to increment usage count for template ${message.campaign.templateId || message.campaign.template?.id}`);
+        this.logger.warn(`Failed to increment usage count for template ${message.campaign.templateId}`);
       }
     } catch (error) {
       this.logger.error(`Failed to send message ${messageId}: ${error.message}`, error.stack);
@@ -596,7 +589,15 @@ export class SmsCampaignService {
       where: { id: campaignId },
     });
 
-    if (campaign.pendingCount === 0 && campaign.status === CampaignStatus.SENDING) {
+    // Проверяем, остались ли необработанные сообщения
+    const pendingCount = await this.messageRepository.count({
+      where: {
+        campaign: { id: campaignId },
+        status: MessageStatus.PENDING,
+      },
+    });
+
+    if (pendingCount === 0 && campaign.status === CampaignStatus.SENDING) {
       campaign.status = CampaignStatus.COMPLETED;
       campaign.completedAt = new Date();
       campaign.completionPercentage = 100;
@@ -611,7 +612,7 @@ export class SmsCampaignService {
    * Получение статистики кампании
    */
   async getCampaignStats(campaignId: string): Promise<{
-    campaign: SmsCampaign;
+    campaign: MessageCampaign;
     messagesByStatus: Record<string, number>;
     deliveryRate: number;
     failureRate: number;
@@ -632,9 +633,8 @@ export class SmsCampaignService {
       return acc;
     }, {});
 
-    const totalSent = campaign.sentCount + campaign.deliveredCount;
-    const deliveryRate = totalSent > 0 ? (campaign.deliveredCount / totalSent) * 100 : 0;
-    const failureRate = campaign.totalRecipients > 0 ? (campaign.failedCount / campaign.totalRecipients) * 100 : 0;
+    const deliveryRate = campaign.totalSent > 0 ? (campaign.totalDelivered / campaign.totalSent) * 100 : 0;
+    const failureRate = campaign.totalRecipients > 0 ? (campaign.totalFailed / campaign.totalRecipients) * 100 : 0;
 
     const avgCostResult = await this.messageRepository
       .createQueryBuilder('message')

@@ -354,4 +354,26 @@ export class SmsSegmentService {
 
     return { contacts, total };
   }
+
+  /**
+   * Получение всех контактов с телефонами (для segmentId = 'all')
+   */
+  async getAllPhoneNumbers(): Promise<Array<{
+    contactId: string;
+    phoneNumber: string;
+    name: string;
+  }>> {
+    const contacts = await this.contactRepository
+      .createQueryBuilder('contact')
+      .select(['contact.id', 'contact.phone', 'contact.name'])
+      .where('contact.phone IS NOT NULL')
+      .andWhere("contact.phone != ''")
+      .getMany();
+
+    return contacts.map((contact) => ({
+      contactId: contact.id,
+      phoneNumber: contact.phone,
+      name: contact.name,
+    }));
+  }
 }

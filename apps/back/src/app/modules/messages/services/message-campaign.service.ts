@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { MessageCampaign, MessageChannelType } from '../entities/message-campaign.entity';
-import { CampaignStatus, CampaignType } from '../entities/sms-campaign.entity';
+import { CampaignStatus, CampaignType } from '../entities/message-campaign.entity';
 import { SmsMessage, MessageStatus } from '../entities/sms-message.entity';
 import { WhatsAppMessage, WhatsAppMessageStatus } from '../entities/whatsapp-message.entity';
 import { TelegramMessage, TelegramMessageStatus } from '../entities/telegram-message.entity';
@@ -14,7 +14,8 @@ import { WhatsAppTemplateService } from './whatsapp-template.service';
 import { TelegramTemplateService } from './telegram-template.service';
 import { SmsSegmentService } from './sms-segment.service';
 import { User } from '../../user/user.entity';
-import { MessageChannel, MessageQueueService } from './message-queue.service';
+import { Contact } from '../../contacts/contact.entity';
+import { MessageQueueService } from './message-queue.service';
 
 /**
  * Unified service for managing campaigns across all channels (SMS, WhatsApp, Telegram, Email)
@@ -35,6 +36,10 @@ export class MessageCampaignService {
     private whatsappMessageRepository: Repository<WhatsAppMessage>,
     @InjectRepository(TelegramMessage)
     private telegramMessageRepository: Repository<TelegramMessage>,
+    
+    // Contact repository for validation
+    @InjectRepository(Contact)
+    private contactRepository: Repository<Contact>,
     
     // Template services
     private smsTemplateService: SmsTemplateService,
@@ -84,22 +89,21 @@ export class MessageCampaignService {
    */
   async create(createDto: CreateCampaignDto, user: User): Promise<MessageCampaign> {
     // Определяем канал
-    const channel = createDto.channel || MessageChannel.SMS;
-    const channelType = this.mapChannelToChannelType(channel);
+    const channel = createDto.channel || MessageChannelType.SMS;
     
     // Проверяем существование шаблона в зависимости от канала
     let template;
     switch (channel) {
-      case MessageChannel.SMS:
+      case MessageChannelType.SMS:
         template = await this.smsTemplateService.findOne(createDto.templateId);
         break;
-      case MessageChannel.EMAIL:
+      case MessageChannelType.EMAIL:
         template = await this.emailTemplateService.findOne(createDto.templateId);
         break;
-      case MessageChannel.WHATSAPP:
+      case MessageChannelType.WHATSAPP:
         template = await this.whatsappTemplateService.findOne(createDto.templateId);
         break;
-      case MessageChannel.TELEGRAM:
+      case MessageChannelType.TELEGRAM:
         template = await this.telegramTemplateService.findOne(createDto.templateId);
         break;
       default:
@@ -108,7 +112,7 @@ export class MessageCampaignService {
 
     // Проверяем существование сегмента (если указан)
     let segment = null;
-    if (createDto.segmentId) {
+    if (createDto.segmentId && createDto.segmentId !== 'all') {
       segment = await this.segmentService.findOne(createDto.segmentId);
     }
 
@@ -117,13 +121,13 @@ export class MessageCampaignService {
       name: createDto.name,
       description: createDto.description,
       templateId: createDto.templateId,
-      channel: channelType,
-      channels: [channelType], // Single channel for now
+      channel: channel,
+      channels: [channel], // Single channel for now
       segment,
       type: createDto.type || CampaignType.IMMEDIATE,
       scheduledAt: createDto.scheduledAt ? new Date(createDto.scheduledAt) : null,
       settings: {
-        channels: [channelType],
+        channels: [channel],
         ...createDto.settings,
       },
       createdBy: user,
@@ -131,40 +135,12 @@ export class MessageCampaignService {
 
     const savedCampaign = await this.campaignRepository.save(campaign);
 
-    // Если есть сегмент, подготавливаем сообщения
-    if (segment) {
-      await this.prepareCampaignMessages(savedCampaign.id);
+    // Подготавливаем сообщения, если указан segmentId (включая 'all')
+    if (createDto.segmentId) {
+      await this.prepareCampaignMessages(savedCampaign.id, createDto.segmentId);
     }
 
     return this.findOne(savedCampaign.id);
-  }
-
-  /**
-   * Map MessageChannel to MessageChannelType
-   */
-  private mapChannelToChannelType(channel: MessageChannel): MessageChannelType {
-    const mapping = {
-      [MessageChannel.SMS]: MessageChannelType.SMS,
-      [MessageChannel.EMAIL]: MessageChannelType.EMAIL,
-      [MessageChannel.WHATSAPP]: MessageChannelType.WHATSAPP,
-      [MessageChannel.TELEGRAM]: MessageChannelType.TELEGRAM,
-      [MessageChannel.WEBHOOK]: MessageChannelType.WEBHOOK,
-    };
-    return mapping[channel] || MessageChannelType.SMS;
-  }
-
-  /**
-   * Map MessageChannelType to MessageChannel
-   */
-  private mapChannelTypeToChannel(channelType: MessageChannelType): MessageChannel {
-    const mapping = {
-      [MessageChannelType.SMS]: MessageChannel.SMS,
-      [MessageChannelType.EMAIL]: MessageChannel.EMAIL,
-      [MessageChannelType.WHATSAPP]: MessageChannel.WHATSAPP,
-      [MessageChannelType.TELEGRAM]: MessageChannel.TELEGRAM,
-      [MessageChannelType.WEBHOOK]: MessageChannel.WEBHOOK,
-    };
-    return mapping[channelType] || MessageChannel.SMS;
   }
 
   /**
@@ -214,19 +190,18 @@ export class MessageCampaignService {
     // Динамически загружаем шаблон на основе канала
     if (campaign.templateId && campaign.channel) {
       let template;
-      const channel = this.mapChannelTypeToChannel(campaign.channel);
       
-      switch (channel) {
-        case MessageChannel.SMS:
+      switch (campaign.channel) {
+        case MessageChannelType.SMS:
           template = await this.smsTemplateService.findOne(campaign.templateId);
           break;
-        case MessageChannel.EMAIL:
+        case MessageChannelType.EMAIL:
           template = await this.emailTemplateService.findOne(campaign.templateId);
           break;
-        case MessageChannel.WHATSAPP:
+        case MessageChannelType.WHATSAPP:
           template = await this.whatsappTemplateService.findOne(campaign.templateId);
           break;
-        case MessageChannel.TELEGRAM:
+        case MessageChannelType.TELEGRAM:
           template = await this.telegramTemplateService.findOne(campaign.templateId);
           break;
       }
@@ -250,20 +225,20 @@ export class MessageCampaignService {
 
     if (updateDto.templateId) {
       // Проверяем существование шаблона в зависимости от канала
-      const channel = updateDto.channel || this.mapChannelTypeToChannel(campaign.channel);
+      const channel = updateDto.channel || campaign.channel;
       let template;
       
       switch (channel) {
-        case MessageChannel.SMS:
+        case MessageChannelType.SMS:
           template = await this.smsTemplateService.findOne(updateDto.templateId);
           break;
-        case MessageChannel.EMAIL:
+        case MessageChannelType.EMAIL:
           template = await this.emailTemplateService.findOne(updateDto.templateId);
           break;
-        case MessageChannel.WHATSAPP:
+        case MessageChannelType.WHATSAPP:
           template = await this.whatsappTemplateService.findOne(updateDto.templateId);
           break;
-        case MessageChannel.TELEGRAM:
+        case MessageChannelType.TELEGRAM:
           template = await this.telegramTemplateService.findOne(updateDto.templateId);
           break;
         default:
@@ -277,12 +252,14 @@ export class MessageCampaignService {
       // Обновляем templateId и channel
       campaign.templateId = updateDto.templateId;
       if (updateDto.channel) {
-        campaign.channel = this.mapChannelToChannelType(updateDto.channel);
+        campaign.channel = updateDto.channel;
       }
     }
 
-    if (updateDto.segmentId) {
+    if (updateDto.segmentId && updateDto.segmentId !== 'all') {
       campaign.segment = await this.segmentService.findOne(updateDto.segmentId);
+    } else if (updateDto.segmentId === 'all') {
+      campaign.segment = null;
     }
 
     Object.assign(campaign, {
@@ -296,42 +273,90 @@ export class MessageCampaignService {
       } : campaign.settings,
     });
 
-    return await this.campaignRepository.save(campaign);
+    const savedCampaign = await this.campaignRepository.save(campaign);
+
+    // Если изменился сегмент или шаблон, пересоздаём сообщения
+    if (updateDto.segmentId !== undefined || updateDto.templateId) {
+      // Удаляем старые сообщения
+      const messageRepository = this.getMessageRepository(campaign.channel);
+      await messageRepository.delete({ campaign: { id: id } });
+      
+      // Создаём новые сообщения
+      if (updateDto.segmentId) {
+        await this.prepareCampaignMessages(id, updateDto.segmentId);
+      }
+    }
+
+    return savedCampaign;
   }
 
   /**
    * Подготовка сообщений для кампании
    * Creates message records in the correct table based on campaign channel
    */
-  async prepareCampaignMessages(campaignId: string): Promise<void> {
+  async prepareCampaignMessages(campaignId: string, segmentId?: string): Promise<void> {
     const campaign = await this.findOne(campaignId);
-
-    if (!campaign.segment) {
-      throw new BadRequestException('Campaign must have a segment');
-    }
 
     const template = (campaign as any).templateData;
     if (!template) {
       throw new BadRequestException('Campaign must have a template');
     }
 
-    // Получаем контакты из сегмента
-    const phoneNumbers = await this.segmentService.getSegmentPhoneNumbers(campaign.segment.id);
+    // Определяем, откуда получать контакты
+    let phoneNumbers: Array<{ contactId: string; phoneNumber: string; name: string }>;
+    
+    if (segmentId === 'all') {
+      // Получаем все контакты
+      phoneNumbers = await this.segmentService.getAllPhoneNumbers();
+      this.logger.log(`Preparing messages for ALL contacts: ${phoneNumbers.length} recipients`);
+    } else if (campaign.segment) {
+      // Получаем контакты из конкретного сегмента
+      phoneNumbers = await this.segmentService.getSegmentPhoneNumbers(campaign.segment.id);
+      this.logger.log(`Preparing messages for segment ${campaign.segment.id}: ${phoneNumbers.length} recipients`);
+    } else {
+      throw new BadRequestException('Campaign must have a segment or use "all" to send to all contacts');
+    }
+
     this.logger.log(`Preparing ${phoneNumbers.length} messages for campaign ${campaignId} (channel: ${campaign.channel})`);
 
     // Получаем правильный репозиторий для канала
     const messageRepository = this.getMessageRepository(campaign.channel);
     const StatusEnum = this.getMessageStatusEnum(campaign.channel);
 
+    // Получаем список существующих контактов для валидации
+    const contactIds = phoneNumbers
+      .map(c => c.contactId)
+      .filter(id => id != null);
+    
+    const existingContacts = new Set<string>();
+    if (contactIds.length > 0) {
+      const contacts = await this.contactRepository
+        .createQueryBuilder('contact')
+        .select('contact.id')
+        .where('contact.id IN (:...ids)', { ids: contactIds })
+        .getMany();
+      
+      contacts.forEach(c => existingContacts.add(c.id));
+      this.logger.log(`Found ${existingContacts.size}/${contactIds.length} existing contacts`);
+    }
+
     // Создаём сообщения для каждого контакта в правильной таблице
-    const messages = phoneNumbers.map((contact) => {
+    const messages = [];
+    
+    for (const contact of phoneNumbers) {
       const messageData: any = {
         campaign: { id: campaign.id } as any,
-        contact: { id: contact.contactId } as any,
         phoneNumber: contact.phoneNumber,
         content: template.content,
         status: StatusEnum.PENDING,
       };
+
+      // Добавляем ссылку на контакт только если он существует в БД
+      if (contact.contactId && existingContacts.has(contact.contactId)) {
+        messageData.contact = { id: contact.contactId };
+      } else if (contact.contactId) {
+        this.logger.warn(`Contact ${contact.contactId} not found in database, creating message without contact reference`);
+      }
 
       // Для SMS добавляем segmentsCount
       if (campaign.channel === MessageChannelType.SMS) {
@@ -343,8 +368,8 @@ export class MessageCampaignService {
         messageData.chatId = contact.phoneNumber; // Временно, нужно будет добавить chatId в сегмент
       }
 
-      return messageRepository.create(messageData);
-    });
+      messages.push(messageRepository.create(messageData));
+    }
 
     await messageRepository.save(messages);
 
@@ -429,13 +454,12 @@ export class MessageCampaignService {
     }
 
     // Queue each message to the correct channel queue
-    const channel = this.mapChannelTypeToChannel(campaign.channel);
     let queuedCount = 0;
 
     for (const message of pendingMessages) {
       try {
         await this.messageQueueService.queueNotification({
-          channel: channel,
+          channel: campaign.channel,
           templateId: campaign.templateId,
           recipient: {
             phoneNumber: message.phoneNumber || (message as any).chatId,

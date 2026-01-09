@@ -12,10 +12,10 @@ import {
   NotificationPayload,
   MultiChannelPayload,
 } from '../services/notification.service';
-import { MessageChannel } from '../services/message-queue.service';
+import { MessageChannelType } from '../entities/message-campaign.entity';
 
 export class SendNotificationDto {
-  channel: MessageChannel;
+  channel: MessageChannelType;
   recipient: string;
   subject?: string;
   message: string;
@@ -25,7 +25,7 @@ export class SendNotificationDto {
 }
 
 export class SendMultiChannelDto {
-  channels: MessageChannel[];
+  channels: MessageChannelType[];
   sms?: {
     phoneNumber: string;
     message: string;
@@ -44,7 +44,7 @@ export class SendMultiChannelDto {
 }
 
 export class SendBulkDto {
-  channel: MessageChannel;
+  channel: MessageChannelType;
   notifications: Array<{
     recipient: string;
     message: string;

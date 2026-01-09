@@ -6,10 +6,10 @@ import { WhatsAppProviderService, SendWhatsAppResult } from './whatsapp-provider
 import { TelegramProviderService, SendTelegramResult } from './telegram-provider.service';
 
 // Используем единый enum MessageChannel из message-queue.service
-import { MessageChannel } from './message-queue.service';
+import { MessageChannelType } from '../entities/message-campaign.entity';
 
 export interface NotificationPayload {
-  channel: MessageChannel;
+  channel: MessageChannelType;
   recipient: string;
   subject?: string;
   message: string;
@@ -19,7 +19,7 @@ export interface NotificationPayload {
 }
 
 export interface NotificationResult {
-  channel: MessageChannel;
+  channel: MessageChannelType;
   success: boolean;
   messageId?: string;
   error?: string;
@@ -27,7 +27,7 @@ export interface NotificationResult {
 }
 
 export interface MultiChannelPayload {
-  channels: MessageChannel[];
+  channels: MessageChannelType[];
   sms?: {
     phoneNumber: string;
     message: string;
@@ -62,15 +62,15 @@ export class NotificationService {
 
     try {
       switch (payload.channel) {
-        case MessageChannel.SMS:
+        case MessageChannelType.SMS:
           return await this.sendSms(payload);
-        case MessageChannel.EMAIL:
+        case MessageChannelType.EMAIL:
           return await this.sendEmail(payload);
-        case MessageChannel.WHATSAPP:
+        case MessageChannelType.WHATSAPP:
           return await this.sendWhatsApp(payload);
-        case MessageChannel.TELEGRAM:
+        case MessageChannelType.TELEGRAM:
           return await this.sendTelegram(payload);
-        case MessageChannel.WEBHOOK:
+        case MessageChannelType.WEBHOOK:
           return await this.sendWebhook(payload);
         default:
           throw new Error(`Unsupported channel: ${payload.channel}`);
@@ -93,7 +93,7 @@ export class NotificationService {
     const result: SendSmsResult = await this.smsProvider.sendSms(payload.recipient, message);
 
     return {
-      channel: MessageChannel.SMS,
+      channel: MessageChannelType.SMS,
       success: result.success,
       messageId: result.providerId,
       error: result.error,
@@ -118,7 +118,7 @@ export class NotificationService {
     });
 
     return {
-      channel: MessageChannel.EMAIL,
+      channel: MessageChannelType.EMAIL,
       success: result.success,
       messageId: result.messageId,
       error: result.error,
@@ -143,7 +143,7 @@ export class NotificationService {
     );
 
     return {
-      channel: MessageChannel.WEBHOOK,
+      channel: MessageChannelType.WEBHOOK,
       success: result.success,
       error: result.error,
       details: {
@@ -162,7 +162,7 @@ export class NotificationService {
     const result: SendWhatsAppResult = await this.whatsappProvider.sendMessage(payload.recipient, message);
 
     return {
-      channel: MessageChannel.WHATSAPP,
+      channel: MessageChannelType.WHATSAPP,
       success: result.success,
       messageId: result.messageId,
       error: result.error,
@@ -178,7 +178,7 @@ export class NotificationService {
     const result: SendTelegramResult = await this.telegramProvider.sendMessage(payload.recipient, message);
 
     return {
-      channel: MessageChannel.TELEGRAM,
+      channel: MessageChannelType.TELEGRAM,
       success: result.success,
       messageId: result.messageId?.toString(),
       error: result.error,
@@ -202,10 +202,10 @@ export class NotificationService {
     const tasks: Promise<NotificationResult>[] = [];
 
     // SMS
-    if (payload.channels.includes(MessageChannel.SMS) && payload.sms) {
+    if (payload.channels.includes(MessageChannelType.SMS) && payload.sms) {
       tasks.push(
         this.send({
-          channel: MessageChannel.SMS,
+          channel: MessageChannelType.SMS,
           recipient: payload.sms.phoneNumber,
           message: payload.sms.message,
           variables: payload.variables,
@@ -214,10 +214,10 @@ export class NotificationService {
     }
 
     // Email
-    if (payload.channels.includes(MessageChannel.EMAIL) && payload.email) {
+    if (payload.channels.includes(MessageChannelType.EMAIL) && payload.email) {
       tasks.push(
         this.send({
-          channel: MessageChannel.EMAIL,
+          channel: MessageChannelType.EMAIL,
           recipient: payload.email.to,
           subject: payload.email.subject,
           message: payload.email.html,
@@ -227,10 +227,10 @@ export class NotificationService {
     }
 
     // Webhook
-    if (payload.channels.includes(MessageChannel.WEBHOOK) && payload.webhook) {
+    if (payload.channels.includes(MessageChannelType.WEBHOOK) && payload.webhook) {
       tasks.push(
         this.send({
-          channel: MessageChannel.WEBHOOK,
+          channel: MessageChannelType.WEBHOOK,
           recipient: payload.webhook.url,
           message: '',
           metadata: {
@@ -262,7 +262,7 @@ export class NotificationService {
    * Массовая отправка по одному каналу
    */
   async sendBulk(
-    channel: MessageChannel,
+    channel: MessageChannelType,
     notifications: Array<{
       recipient: string;
       message: string;
@@ -290,7 +290,7 @@ export class NotificationService {
   /**
    * Проверка доступности каналов
    */
-  async checkChannelsHealth(): Promise<Partial<Record<MessageChannel, boolean>>> {
+  async checkChannelsHealth(): Promise<Partial<Record<MessageChannelType, boolean>>> {
     const [smsHealth, emailHealth, whatsappHealth, telegramHealth, webhookHealth] = await Promise.allSettled([
       this.smsProvider.checkBalance().then(() => true).catch(() => false),
       this.emailProvider.verifyConnection(),
@@ -300,11 +300,11 @@ export class NotificationService {
     ]);
 
     return {
-      [MessageChannel.SMS]: smsHealth.status === 'fulfilled' && smsHealth.value,
-      [MessageChannel.EMAIL]: emailHealth.status === 'fulfilled' && emailHealth.value,
-      [MessageChannel.WHATSAPP]: whatsappHealth.status === 'fulfilled' && whatsappHealth.value,
-      [MessageChannel.TELEGRAM]: telegramHealth.status === 'fulfilled' && telegramHealth.value,
-      [MessageChannel.WEBHOOK]: webhookHealth.status === 'fulfilled' && webhookHealth.value,
+      [MessageChannelType.SMS]: smsHealth.status === 'fulfilled' && smsHealth.value,
+      [MessageChannelType.EMAIL]: emailHealth.status === 'fulfilled' && emailHealth.value,
+      [MessageChannelType.WHATSAPP]: whatsappHealth.status === 'fulfilled' && whatsappHealth.value,
+      [MessageChannelType.TELEGRAM]: telegramHealth.status === 'fulfilled' && telegramHealth.value,
+      [MessageChannelType.WEBHOOK]: webhookHealth.status === 'fulfilled' && webhookHealth.value,
     };
   }
 

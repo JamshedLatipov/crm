@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { SmsSendJob, SmsBatchJob } from '../queue-producer.service';
 import { QUEUE_NAMES } from '../queue.constants';
 import { SmsMessage, MessageStatus } from '../../messages/entities/sms-message.entity';
-import { SmsCampaign, CampaignStatus } from '../../messages/entities/sms-campaign.entity';
+import { MessageCampaign, CampaignStatus } from '../../messages/entities/message-campaign.entity';
 import { SmsProviderService } from '../../messages/services/sms-provider.service';
 import { SmsTemplateService } from '../../messages/services/sms-template.service';
 import { getRabbitMqUrl } from '../rabbitmq.utils';
@@ -20,8 +20,8 @@ export class SmsQueueConsumer implements OnModuleInit, OnModuleDestroy {
   constructor(
     @InjectRepository(SmsMessage)
     private readonly messageRepo: Repository<SmsMessage>,
-    @InjectRepository(SmsCampaign)
-    private readonly campaignRepo: Repository<SmsCampaign>,
+    @InjectRepository(MessageCampaign)
+    private readonly campaignRepo: Repository<MessageCampaign>,
     private readonly configService: ConfigService,
     private readonly smsProviderService: SmsProviderService,
     private readonly templateService: SmsTemplateService,
@@ -138,8 +138,8 @@ export class SmsQueueConsumer implements OnModuleInit, OnModuleDestroy {
       await this.messageRepo.save(message);
 
       // Update template usage
-      if (message.campaign?.template) {
-        await this.templateService.incrementUsageCount(message.campaign.template.id);
+      if (message.campaign?.templateId) {
+        await this.templateService.incrementUsageCount(message.campaign.templateId);
       }
     } catch (error) {
       await this.handleSendFailure(message, job, (error as Error).message);

@@ -7,7 +7,7 @@ import { TelegramQueueConsumer } from './consumers/telegram-queue.consumer';
 import { LeadQueueConsumer } from './consumers/lead-queue.consumer';
 import { WebhookQueueConsumer } from './consumers/webhook-queue.consumer';
 import { SmsMessage } from '../messages/entities/sms-message.entity';
-import { SmsCampaign } from '../messages/entities/sms-campaign.entity';
+import { MessageCampaign } from '../messages/entities/message-campaign.entity';
 import { WhatsAppMessage } from '../messages/entities/whatsapp-message.entity';
 import { WhatsAppTemplate } from '../messages/entities/whatsapp-template.entity';
 import { TelegramMessage } from '../messages/entities/telegram-message.entity';
@@ -25,7 +25,7 @@ import { LeadModule } from '../leads/lead.module';
     ConfigModule,
     TypeOrmModule.forFeature([
       SmsMessage,
-      SmsCampaign,
+      MessageCampaign,
       WhatsAppMessage,
       WhatsAppTemplate,
       TelegramMessage,

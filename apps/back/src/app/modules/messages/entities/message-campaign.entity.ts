@@ -11,7 +11,6 @@ import { User } from '../../user/user.entity';
 import { SmsTemplate } from './sms-template.entity';
 import { EmailTemplate } from './email-template.entity';
 import { SmsSegment } from './sms-segment.entity';
-import { CampaignStatus, CampaignType } from './sms-campaign.entity';
 
 export enum MessageChannelType {
   SMS = 'sms',
@@ -20,6 +19,31 @@ export enum MessageChannelType {
   TELEGRAM = 'telegram',
   WEBHOOK = 'webhook',
   PUSH = 'push',
+}
+
+export enum CampaignStatus {
+  DRAFT = 'draft',
+  SCHEDULED = 'scheduled',
+  SENDING = 'sending',
+  COMPLETED = 'completed',
+  PAUSED = 'paused',
+  CANCELLED = 'cancelled',
+  FAILED = 'failed',
+}
+
+export enum CampaignType {
+  IMMEDIATE = 'immediate', // Отправить сразу
+  SCHEDULED = 'scheduled', // По расписанию
+  TRIGGERED = 'triggered', // По триггеру (событие)
+  RECURRING = 'recurring', // Периодическая
+}
+
+export interface CampaignSettings {
+  sendingSpeed?: number; // Сообщений в минуту
+  retryFailedMessages?: boolean;
+  maxRetries?: number;
+  scheduleTime?: string; // Время отправки для recurring
+  timezone?: string;
 }
 
 export interface MultiChannelSettings {
