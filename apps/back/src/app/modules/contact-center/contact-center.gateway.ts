@@ -73,6 +73,7 @@ export class ContactCenterGateway
           (sum, q) => sum + q.waiting,
           0
         );
+        
         // Prepare messages
         const messages = {
           operators: { type: 'operators', payload: data.operators },

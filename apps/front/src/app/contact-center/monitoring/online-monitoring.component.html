@@ -237,6 +237,12 @@
           }}
         </ng-template>
 
+        <ng-template crmColumnTemplate="callsTodayTemplate" let-operator>
+          <div class="calls-today-badge">
+            {{ operator.callsToday !== undefined && operator.callsToday !== null ? operator.callsToday : 0 }}
+          </div>
+        </ng-template>
+
         <ng-template crmColumnTemplate="serviceTemplate" let-operator>
           {{ operator.queue || '—' }}
         </ng-template>

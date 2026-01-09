@@ -164,3 +164,51 @@
 - [ ] Операторы на звонке отображаются корректно
 - [ ] Длительность звонков обновляется в реальном времени
 - [ ] График статусов операторов обновляется
+- [ ] Колонка "Звонков" отображает корректное значение
+
+---
+
+## История исправлений
+
+### 10 января 2026 - Исправление колонки "Звонков"
+
+**Проблема:** Колонка "Звонков" (`callsToday`) в таблице операторов не отображалась корректно.
+
+**Причина:** 
+- Колонка не имела явного шаблона для отображения
+- Angular не мог корректно обработать `undefined`/`null` значения
+
+**Исправление:**
+- ✅ Добавлен шаблон `callsTodayTemplate` с явной обработкой всех значений
+- ✅ Добавлено логирование на фронтенде для проверки наличия поля
+- ✅ Добавлено логирование на бэкенде для диагностики CDR данных
+
+**Результат:**
+- Поле `callsToday` теперь корректно передается через WebSocket
+- Шаблон отображает значение (даже если оно = 0)
+- Добавлена диагностика для отслеживания CDR записей
+
+**Файлы изменены:**
+- `apps/front/src/app/contact-center/monitoring/online-monitoring.component.ts`
+- `apps/front/src/app/contact-center/monitoring/online-monitoring.component.html`
+- `apps/back/src/app/modules/contact-center/contact-center.service.ts`
+
+**Тестирование:**
+```javascript
+// Консоль браузера - теперь видно callsToday
+[0] PJSIP/operator2: {status: 'offline', callsToday: 0, ...}
+[1] PJSIP/operator3: {status: 'idle', callsToday: 0, ...}
+```
+
+**Проверка CDR данных:**
+```sql
+SELECT channel, dstchannel, disposition, duration, billsec
+FROM cdr
+WHERE calldate >= CURDATE()
+  AND disposition = 'ANSWERED'
+  AND (channel LIKE '%operator%' OR dstchannel LIKE '%operator%')
+ORDER BY calldate DESC;
+```
+
+Если запрос возвращает записи, но `callsToday` = 0, проверьте формат каналов в CDR - они должны содержать `PJSIP/operatorX`.
+
