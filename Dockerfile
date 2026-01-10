@@ -1,5 +1,5 @@
 # Stage 1: Build
-FROM node:20 AS builder
+FROM node:24.12.0-alpine AS builder
 ARG DUMMY
 WORKDIR /app
 COPY package*.json ./
@@ -7,7 +7,7 @@ RUN npm ci --legacy-peer-deps --loglevel=info
 COPY . .
 
 # Stage 2: Production
-FROM node:20-alpine
+FROM node:24.12.0-alpine
 WORKDIR /app
 COPY --from=builder /app/dist/apps/back ./dist
 # Copy the root package.json (and lockfile if present) so production
