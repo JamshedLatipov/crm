@@ -1,0 +1,34 @@
+# Multi-stage build for the frontend (Angular + Vite)
+# Build stage
+FROM node:20-alpine AS builder
+WORKDIR /workspace
+ENV NODE_ENV=production
+
+# NOTE: This Dockerfile expects the build context to be the repository root.
+# Build command (from repo root):
+# docker build -f apps/front/Dockerfile -t front .
+
+# Install root dependencies (copies package.json / package-lock.json from repo root)
+COPY package*.json ./
+# Use `npm install` since this repo doesn't have a package-lock.json at the root.
+# `npm ci` requires a lockfile and fails when it's missing.
+RUN npm install --silent --no-audit --prefer-offline --legacy-peer-deps
+
+# Copy repository into the image and run the front build inside apps/front
+COPY . .
+WORKDIR /workspace/apps/front
+RUN npm run build:front --loglevel=info
+
+# Production stage
+FROM nginx:stable-alpine AS runner
+
+# Replace default nginx config with SPA-friendly config (we copy a file below)
+RUN rm /etc/nginx/conf.d/default.conf || true
+# nginx.conf is located at apps/front/nginx.conf in the repo root build context
+COPY apps/front/nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copy built artifacts. Adjust path if your build outputs elsewhere.
+COPY --from=builder /workspace/dist/apps/front /usr/share/nginx/html
+
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
