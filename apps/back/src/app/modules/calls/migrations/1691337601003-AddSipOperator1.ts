@@ -29,7 +29,7 @@ export class AddWebRtcOperator31691337601003 implements MigrationInterface {
         rewrite_contact, webrtc, force_rport, rtp_symmetric
       )
       VALUES (
-        'operator3', 'transport-wss', 'operator3', 'operator3', 'default', 'all', 'opus,ulaw,slin',
+        'operator3', 'transport-wss', 'operator3', 'operator3', 'default', 'all', 'alaw,ulaw,slin',
         'no', 'rfc4733', 'yes', 'dtls',
         'yes', 'yes', 'yes', 'yes'
       )
@@ -40,7 +40,7 @@ export class AddWebRtcOperator31691337601003 implements MigrationInterface {
         auth = 'operator3',
         context = 'default',
         disallow = 'all',
-        allow = 'opus,ulaw,slin',
+        allow = 'alaw,ulaw,slin',
         direct_media = 'no',
         dtmf_mode = 'rfc4733',
         ice_support = 'yes',

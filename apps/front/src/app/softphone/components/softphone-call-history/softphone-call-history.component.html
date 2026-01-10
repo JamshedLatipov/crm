@@ -1,97 +1,124 @@
 <div class="call-history-container">
-  <!-- Filters -->
-  <div class="filters">
-    <mat-form-field appearance="outline" class="search-field">
-      <mat-label>Поиск</mat-label>
-      <input matInput [(ngModel)]="searchQuery" (ngModelChange)="onSearchChange($event)" placeholder="Поиск по номеру...">
-      <mat-icon matSuffix>search</mat-icon>
-    </mat-form-field>
-    <button mat-icon-button (click)="refreshHistory()" [disabled]="isLoading()" class="refresh-btn">
-      <mat-icon>refresh</mat-icon>
+  <!-- Header with search -->
+  <div class="header">
+    <div class="search-wrapper">
+      <mat-icon class="search-icon">search</mat-icon>
+      <input 
+        type="text" 
+        class="search-input"
+        [(ngModel)]="searchQuery" 
+        (ngModelChange)="onSearchChange($event)" 
+        placeholder="Поиск по номеру телефона..."
+        [disabled]="isLoading()">
+      <button 
+        *ngIf="searchQuery()" 
+        mat-icon-button 
+        class="clear-search-btn"
+        (click)="clearSearch()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <button 
+      mat-icon-button 
+      (click)="refreshHistory()" 
+      [disabled]="isLoading()" 
+      class="refresh-btn"
+      matTooltip="Обновить">
+      <mat-icon [class.spinning]="isLoading()">refresh</mat-icon>
     </button>
   </div>
 
   <!-- Content -->
   <div class="content">
     <!-- Error State -->
-    <div class="error-state" *ngIf="error()">
-      <mat-icon>error</mat-icon>
+    <div class="state-message error-state" *ngIf="error()">
+      <div class="state-icon error">
+        <mat-icon>error_outline</mat-icon>
+      </div>
+      <h4>Ошибка загрузки</h4>
       <p>{{ error() }}</p>
-      <button mat-raised-button (click)="refreshHistory()">Повторить</button>
+      <button mat-raised-button color="primary" (click)="refreshHistory()">
+        <mat-icon>refresh</mat-icon>
+        Повторить
+      </button>
     </div>
 
     <!-- Empty State -->
-    <div class="empty-state" *ngIf="!isLoading() && !error() && (!calls() || calls().length === 0)">
-      <mat-icon>call_missed</mat-icon>
+    <div class="state-message empty-state" *ngIf="!isLoading() && !error() && (!calls() || calls().length === 0)">
+      <div class="state-icon empty">
+        <mat-icon>phone_disabled</mat-icon>
+      </div>
       <h4>Звонки не найдены</h4>
-      <button mat-stroked-button (click)="clearAllFilters()">Очистить фильтры</button>
+      <p>История звонков пуста. Попробуйте изменить параметры поиска.</p>
+      <button mat-stroked-button (click)="clearAllFilters()">
+        <mat-icon>clear_all</mat-icon>
+        Очистить фильтры
+      </button>
     </div>
 
     <!-- Loading -->
-    <div class="loading" *ngIf="isLoading()">
-      <mat-icon>sync</mat-icon>
-      <p>Загрузка...</p>
+    <div class="state-message loading" *ngIf="isLoading()">
+      <mat-spinner diameter="48" strokeWidth="3"></mat-spinner>
+      <p>Загрузка истории звонков...</p>
     </div>
 
-    <!-- Calls Table -->
-        <!-- Calls Table -->
-    <table class="calls-table" *ngIf="!isLoading() && !error() && calls() && calls().length > 0">
-      <thead>
-        <tr>
-          <th>Номер</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let call of calls(); trackBy: trackByCallId" [class.recent]="isRecentCall(call)">
-          <td>
-            <div class="number-time-cell">
-              <div class="number-cell">
-                <div class="left-group">
-                  <mat-icon
-                    [class]="getDirectionClass(call)"
-                    [matTooltip]="getDirectionLabel(call)"
-                    class="direction-icon">
-                    {{ getDirectionIcon(call) }}
-                  </mat-icon>
-                  <span class="number" [class]="getDispositionClass(call)" [matTooltip]="getDispositionLabel(call)">{{ call.src || call.dst }}</span>
-                  <mat-icon
-                    *ngIf="getCallNotes(call)"
-                    class="notes-icon"
-                    [matTooltip]="getCallNotes(call)">
-                    notes
-                  </mat-icon>
-                </div>
-                <div class="actions">
-                  <button
-                    mat-icon-button
-                    (click)="callNumber(call.src || call.dst)"
-                    [matTooltip]="'Позвонить ' + (call.src || call.dst)"
-                    class="action-btn">
-                    <mat-icon>call</mat-icon>
-                  </button>
-                  <button
-                    mat-icon-button
-                    (click)="showCallDetails(call)"
-                    [matTooltip]="'Показать детали'"
-                    class="action-btn">
-                    <mat-icon>info</mat-icon>
-                  </button>
-                </div>
-              </div>
-              <div class="time-cell">
-                <div class="time-duration-row">
-                  <span class="time">{{ formatCallTime(call.calldate) }}</span>
-                  <span class="date" [matTooltip]="formatCallDate(call.calldate)">{{ formatCallDate(call.calldate) }}</span>
-                  <span class="duration" [matTooltip]="call.billsec + ' сек. оплачено'">
-                    {{ formatDuration(call.duration) }}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <!-- Calls List -->
+    <div class="calls-list" *ngIf="!isLoading() && !error() && calls() && calls().length > 0">
+      <div 
+        *ngFor="let call of calls(); trackBy: trackByCallId" 
+        class="call-item"
+        [class.recent]="isRecentCall(call)"
+        [class.missed]="call.disposition !== 'ANSWERED'">
+        
+        <!-- Call Icon & Direction -->
+        <div class="call-icon" [class.incoming]="getDirectionLabel(call) === 'Входящий'">
+          <mat-icon>{{ getDirectionIcon(call) }}</mat-icon>
+        </div>
+
+        <!-- Call Info -->
+        <div class="call-info">
+          <div class="call-header">
+            <span class="number">{{ call.src || call.dst }}</span>
+            <mat-icon 
+              *ngIf="getCallNotes(call)" 
+              class="notes-badge"
+              [matTooltip]="getCallNotes(call)">
+              chat_bubble
+            </mat-icon>
+          </div>
+          <div class="call-meta">
+            <span class="time">{{ formatCallTime(call.calldate) }}</span>
+            <span class="separator">•</span>
+            <span class="date">{{ formatCallDate(call.calldate) }}</span>
+            <span class="separator">•</span>
+            <span class="duration">{{ formatDuration(call.duration) }}</span>
+          </div>
+        </div>
+
+        <!-- Call Status Badge -->
+        <div class="call-status" [attr.data-status]="call.disposition">
+          <span class="status-text">{{ getDispositionLabel(call) }}</span>
+        </div>
+
+        <!-- Actions -->
+        <div class="call-actions">
+          <button
+            mat-icon-button
+            (click)="callNumber(call.src || call.dst)"
+            matTooltip="Позвонить"
+            class="action-call">
+            <mat-icon>phone</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            (click)="showCallDetails(call)"
+            matTooltip="Детали"
+            class="action-info">
+            <mat-icon>info</mat-icon>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Pagination -->

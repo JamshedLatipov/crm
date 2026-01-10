@@ -45,7 +45,10 @@ import { CONTACT_CENTER_MIGRATIONS } from './modules/contact-center/migrations';
       synchronize: true,
       autoLoadEntities: true,
       extra: {
-        timezone: 'UTC',
+        // Set the PostgreSQL session timezone for all queries
+        // This makes PostgreSQL interpret timestamps in local timezone (Asia/Tashkent, UTC+5)
+        // All Date objects from Node.js will be correctly compared with DB timestamps
+        options: '-c timezone=Asia/Tashkent',
       },
       migrations: [
         ...CALLS_MIGRATIONS,

@@ -45,6 +45,8 @@ export enum NotificationChannel {
   PUSH = 'push',
   IN_APP = 'in_app',
   SMS = 'sms',
+  WHATSAPP = 'whatsapp',
+  TELEGRAM = 'telegram',
   SLACK = 'slack',
   WEBHOOK = 'webhook'
 }

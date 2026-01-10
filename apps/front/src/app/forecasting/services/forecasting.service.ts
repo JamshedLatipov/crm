@@ -11,6 +11,7 @@ import {
   ForecastStatus,
 } from '../models/forecasting.models';
 import { environment } from '@crm/front/environments/environment';
+import { CurrencyService } from '../../services/currency.service';
 
 export interface ForecastQueryParams {
   type?: ForecastType;
@@ -33,6 +34,7 @@ export interface ForecastListResponse {
 })
 export class ForecastingService {
   private http = inject(HttpClient);
+  private currencyService = inject(CurrencyService);
   private readonly apiUrl = environment.apiBase + '/forecasting';
 
   getForecasts(params?: ForecastQueryParams): Observable<ForecastListResponse> {
@@ -107,12 +109,7 @@ export class ForecastingService {
   }
 
   formatCurrency(value: number): string {
-    return new Intl.NumberFormat('ru-RU', {
-      style: 'currency',
-      currency: 'RUB',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
+    return this.currencyService.formatAmount(value);
   }
 
   formatPercentage(value: number | string | null | undefined): string {

@@ -1,10 +1,14 @@
 // Enums
-export enum NotificationChannel {
+export enum MessageChannel {
   SMS = 'sms',
   EMAIL = 'email',
+  WHATSAPP = 'whatsapp',
+  TELEGRAM = 'telegram',
   WEBHOOK = 'webhook',
+  PUSH = 'push',
 }
 
+// Campaign-specific enums
 export enum CampaignType {
   IMMEDIATE = 'immediate',
   SCHEDULED = 'scheduled',
@@ -176,7 +180,7 @@ export interface NotificationCampaign {
   id: string;
   name: string;
   description?: string;
-  channels: NotificationChannel[];
+  channels: MessageChannel[];
   type: CampaignType;
   status: CampaignStatus;
   settings: MultiChannelSettings;
@@ -224,7 +228,7 @@ export interface MultiChannelSettings {
 }
 
 export interface ChannelStat {
-  channel: NotificationChannel;
+  channel: MessageChannel;
   sent: number;
   delivered: number;
   failed: number;
@@ -234,19 +238,6 @@ export interface ChannelStat {
   clicked?: number;
   openRate?: number;
   clickRate?: number;
-}
-
-// Analytics
-export interface DashboardStats {
-  totalSent: number;
-  totalDelivered: number;
-  totalFailed: number;
-  totalCost: number;
-  deliveryRate: number;
-  avgDeliveryTime: number;
-  activeCampaigns: number;
-  activeSegments: number;
-  channelStats: ChannelStat[];
 }
 
 export interface CampaignPerformance {
@@ -263,7 +254,7 @@ export interface CampaignPerformance {
 
 // Notification
 export interface SendNotificationDto {
-  channel: NotificationChannel;
+  channel: MessageChannel;
   recipient: string;
   subject?: string;
   message: string;
@@ -273,7 +264,7 @@ export interface SendNotificationDto {
 }
 
 export interface SendMultiChannelDto {
-  channels: NotificationChannel[];
+  channels: MessageChannel[];
   sms?: {
     phoneNumber: string;
     message: string;
@@ -295,11 +286,11 @@ export interface NotificationResult {
   success: boolean;
   messageId?: string;
   error?: string;
-  channel: NotificationChannel;
+  channel: MessageChannel;
 }
 
 export interface MultiChannelResult {
-  results: Record<NotificationChannel, NotificationResult>;
+  results: Partial<Record<MessageChannel, NotificationResult>>;
   summary: {
     total: number;
     successful: number;
@@ -323,6 +314,30 @@ export interface HealthCheckResponse {
   webhook: ChannelHealth;
 }
 
+// Analytics
+export interface DashboardStats {
+  total: number;
+  delivered: number;
+  failed: number;
+  pending: number;
+  deliveryRate: number;
+}
+
+export interface ChannelStats {
+  name: string;
+  sent: number;
+  delivered: number;
+  failed: number;
+  deliveryRate: number;
+}
+
+export interface CampaignStats {
+  id: string;
+  name: string;
+  sent: number;
+  deliveryRate: number;
+}
+
 // Filter and Sort
 export interface TableFilter {
   field: string;
@@ -341,4 +356,62 @@ export interface TableQuery {
   filters?: TableFilter[];
   sort?: TableSort;
   search?: string;
+}
+
+// WhatsApp Template
+export interface WhatsAppTemplate {
+  id: string;
+  name: string;
+  content: string;
+  category: TemplateCategory;
+  variables: string[];
+  isActive: boolean;
+  usageCount: number;
+  successRate: number;
+  mediaUrl?: string;
+  buttonText?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateWhatsAppTemplateDto {
+  name: string;
+  content: string;
+  category?: TemplateCategory;
+  variables?: string[];
+  isActive?: boolean;
+  mediaUrl?: string;
+  buttonText?: string;
+}
+
+// Telegram Template
+export interface TelegramTemplate {
+  id: string;
+  name: string;
+  content: string;
+  category: TemplateCategory;
+  variables: string[];
+  isActive: boolean;
+  usageCount: number;
+  successRate: number;
+  mediaUrl?: string;
+  inlineKeyboard?: TelegramInlineButton[][];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TelegramInlineButton {
+  text: string;
+  url?: string;
+  callback_data?: string;
+}
+
+export interface CreateTelegramTemplateDto {
+  name: string;
+  content: string;
+  category?: TemplateCategory;
+  variables?: string[];
+  isActive?: boolean;
+  mediaUrl?: string;
+  inlineKeyboard?: TelegramInlineButton[][];
 }

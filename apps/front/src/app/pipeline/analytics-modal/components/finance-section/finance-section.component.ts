@@ -1,9 +1,10 @@
-import { Component, Input, AfterViewInit, ViewChild, ElementRef, OnDestroy, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, AfterViewInit, ViewChild, ElementRef, OnDestroy, OnChanges, SimpleChanges, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { PipelineAnalytics } from '../../../dtos';
 import { Chart, registerables, ChartConfiguration } from 'chart.js';
+import { CurrencyService } from '../../../../services/currency.service';
 
 Chart.register(...registerables);
 
@@ -18,6 +19,7 @@ export class FinanceSectionComponent implements AfterViewInit, OnDestroy, OnChan
   @Input() analytics: PipelineAnalytics | null = null;
   @ViewChild('amountCanvas', { static: false }) amountCanvas!: ElementRef<HTMLCanvasElement>;
 
+  private currencyService = inject(CurrencyService);
   private amountChart: Chart | null = null;
 
   ngAfterViewInit() { this.renderChart(); }
@@ -52,8 +54,8 @@ export class FinanceSectionComponent implements AfterViewInit, OnDestroy, OnChan
       data: {
         labels,
         datasets: [
-          { label: 'Общая сумма (₽)', data: totalAmounts, backgroundColor: 'rgba(16,185,129,0.7)', borderColor: '#10b981', borderWidth: 2, borderRadius: 8, yAxisID: 'y' },
-          { label: 'Средний чек (₽)', data: avgAmounts, backgroundColor: 'rgba(59,130,246,0.7)', borderColor: '#3b82f6', borderWidth: 2, borderRadius: 8, yAxisID: 'y1' }
+          { label: `Общая сумма (${this.currencyService.currencySymbol()})`, data: totalAmounts, backgroundColor: 'rgba(16,185,129,0.7)', borderColor: '#10b981', borderWidth: 2, borderRadius: 8, yAxisID: 'y' },
+          { label: `Средний чек (${this.currencyService.currencySymbol()})`, data: avgAmounts, backgroundColor: 'rgba(59,130,246,0.7)', borderColor: '#3b82f6', borderWidth: 2, borderRadius: 8, yAxisID: 'y1' }
         ]
       },
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }

@@ -5,9 +5,9 @@ export class QueueLog {
   @PrimaryGeneratedColumn()
   id: number;
 
-  // stored by Asterisk as a short text timestamp; keep nullable to match DEFAULT NULL
-  @Column({ type: 'varchar', length: 32, nullable: true })
-  time?: string | null;
+  // Asterisk queue_log timestamp with timezone
+  @Column({ type: 'timestamptz', nullable: true })
+  time?: Date | null;
 
   // unique call identifier from Asterisk (if available)
   @Index()

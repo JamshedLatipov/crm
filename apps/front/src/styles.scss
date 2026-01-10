@@ -332,3 +332,7 @@ mat-progress-bar .mat-mdc-linear-progress-bar__primary-portion {
   display: flex !important;
   gap: 0.75rem !important;
 }
+
+:ng-deep app-analytics-modal .mat-mdc-tab-header  {
+  height: 60px !important;
+}

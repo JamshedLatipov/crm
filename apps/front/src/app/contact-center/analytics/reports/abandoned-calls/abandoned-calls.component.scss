@@ -1,0 +1,5 @@
+@import '../../shared-analytics-styles.scss';
+
+.abandoned-calls-report {
+  @extend .analytics-container;
+}

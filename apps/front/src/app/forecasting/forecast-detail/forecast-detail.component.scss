@@ -1,3 +1,8 @@
+// ==================================================================================
+// Forecast Detail Component Styles
+// Следует дизайну проекта: #4285f4, 20px radius, 0.04 shadow opacity
+// ==================================================================================
+
 .loading-container {
   display: flex;
   justify-content: center;
@@ -10,6 +15,9 @@
   gap: 24px;
 }
 
+// ==================================================================================
+// Summary Cards (Статистические карточки)
+// ==================================================================================
 .summary-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -20,28 +28,29 @@
     align-items: center;
     gap: 20px;
     padding: 24px;
-    border-radius: 16px;
-    border: 1px solid var(--border-color, #e5e7eb);
-    background: linear-gradient(135deg, var(--card-background, #ffffff) 0%, #fafbfc 100%);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 20px; // Стандарт проекта
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); // Стандарт проекта
+    transition: all 0.18s ease;
     position: relative;
     overflow: hidden;
+    border: 1px solid transparent;
 
+    // Полоска сверху при hover
     &::before {
       content: '';
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, transparent, currentColor, transparent);
+      height: 4px;
+      background: currentColor;
       opacity: 0;
-      transition: opacity 0.3s ease;
+      transition: opacity 0.18s ease;
     }
 
     &:hover {
-      transform: translateY(-4px);
+      transform: translateY(-2px);
       box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
       border-color: currentColor;
 
@@ -57,25 +66,15 @@
       width: 56px;
       height: 56px;
       border-radius: 12px;
-      background: rgba(0, 0, 0, 0.05);
-      position: relative;
-
-      &::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        border-radius: 12px;
-        background: currentColor;
-        opacity: 0.1;
-      }
+      background: currentColor;
+      opacity: 0.1;
 
       mat-icon {
         font-size: 28px;
         width: 28px;
         height: 28px;
         color: currentColor;
-        position: relative;
-        z-index: 1;
+        opacity: 1;
       }
     }
 
@@ -83,8 +82,8 @@
       flex: 1;
 
       .stat-label {
-        font-size: 13px;
-        color: var(--text-secondary, #6c757d);
+        font-size: 12px;
+        color: #6b7280;
         font-weight: 500;
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -94,63 +93,73 @@
       .stat-value {
         font-size: 24px;
         font-weight: 700;
-        color: var(--text-primary, #212529);
+        color: #1f2937;
       }
     }
 
-    &-target {
-      color: #3b82f6;
+    // Цвета по типу карточки
+    &.stat-card-target {
+      color: #4285f4; // Primary проекта
     }
 
-    &-predicted {
-      color: #10b981;
+    &.stat-card-predicted {
+      color: #10b981; // Success
     }
 
-    &-actual {
-      color: #f59e0b;
+    &.stat-card-actual {
+      color: #f59e0b; // Warning
     }
 
-    &-confidence {
-      color: #8b5cf6;
+    &.stat-card-confidence {
+      color: #8b5cf6; // Purple
     }
   }
 }
 
+// ==================================================================================
+// Info Grid (Информационные карточки)
+// ==================================================================================
 .info-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
   gap: 20px;
 
   .info-card {
-    border-radius: 16px;
-    border: 1px solid var(--border-color, #e5e7eb);
-    overflow: hidden;
+    border-radius: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    background: #ffffff;
+    padding: 24px;
+    transition: box-shadow 0.18s ease, transform 0.18s ease;
+
+    &:hover {
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+      transform: translateY(-2px);
+    }
 
     .card-header {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 20px 24px;
-      background: var(--primary-light, rgba(59, 130, 246, 0.05));
-      border-bottom: 1px solid var(--border-color, #e5e7eb);
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #e5e7eb;
 
       mat-icon {
-        color: var(--primary-color, #3b82f6);
+        color: #4285f4;
         font-size: 24px;
         width: 24px;
         height: 24px;
       }
 
       h3 {
-        margin: 0;
         font-size: 16px;
         font-weight: 600;
-        color: var(--text-primary, #212529);
+        color: #1f2937;
+        margin: 0;
       }
     }
 
     .info-content {
-      padding: 24px;
       display: flex;
       flex-direction: column;
       gap: 16px;
@@ -159,206 +168,200 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 12px 0;
-        border-bottom: 1px solid var(--border-light, #f3f4f6);
-
-        &:last-child {
-          border-bottom: none;
-        }
+        padding: 10px 0;
 
         .label {
-          font-size: 14px;
-          color: var(--text-secondary, #6c757d);
+          font-size: 13px;
+          color: #6b7280;
           font-weight: 500;
         }
 
         .value {
           font-size: 14px;
+          color: #1f2937;
           font-weight: 600;
-          color: var(--text-primary, #212529);
-          display: flex;
-          align-items: center;
-          gap: 6px;
+          text-align: right;
 
           .inline-icon {
+            vertical-align: middle;
             font-size: 18px;
             width: 18px;
             height: 18px;
-            color: var(--primary-color, #3b82f6);
-          }
-
-          &.variance-positive {
-            color: #10b981;
-          }
-
-          &.variance-negative {
-            color: #ef4444;
-          }
-
-          &.variance-neutral {
-            color: #6c757d;
+            margin-right: 4px;
+            color: #6b7280;
           }
         }
 
+        // Status chips
         .status-chip {
-          padding: 6px 16px;
-          border-radius: 16px;
+          padding: 4px 12px;
+          border-radius: 12px;
           font-size: 12px;
           font-weight: 600;
           text-transform: uppercase;
+          letter-spacing: 0.5px;
+
+          &.status-active {
+            background: rgba(66, 133, 244, 0.1);
+            color: #4285f4;
+          }
+
+          &.status-completed {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+          }
 
           &.status-draft {
             background: rgba(107, 114, 128, 0.1);
             color: #6b7280;
           }
+        }
 
-          &.status-active {
-            background: rgba(16, 185, 129, 0.1);
-            color: #10b981;
-          }
+        // Variance colors
+        .variance-positive {
+          color: #10b981;
+        }
 
-          &.status-completed {
-            background: rgba(59, 130, 246, 0.1);
-            color: #3b82f6;
-          }
+        .variance-negative {
+          color: #ef4444;
+        }
 
-          &.status-archived {
-            background: rgba(107, 114, 128, 0.1);
-            color: #6b7280;
-          }
+        .variance-neutral {
+          color: #6b7280;
         }
       }
     }
   }
 }
 
-// Charts Section
+// ==================================================================================
+// Charts Section (Графики)
+// ==================================================================================
 .charts-tabs {
-  border-radius: 16px;
-  border: 1px solid var(--border-color, #e5e7eb);
-  overflow: hidden;
-  background: white;
-
   ::ng-deep {
-    .mat-mdc-tab-header {
-      background: var(--primary-light, rgba(59, 130, 246, 0.03));
-      border-bottom: 1px solid var(--border-color, #e5e7eb);
-      padding: 0 16px;
-    }
-
     .mat-mdc-tab-labels {
-      gap: 8px;
+      border-bottom: 1px solid #e5e7eb;
     }
 
-    .mat-mdc-tab-label {
-      min-width: 160px;
-      height: 60px;
-      padding: 0 24px;
-      font-weight: 500;
-      font-size: 14px;
-      opacity: 0.7;
-      transition: all 0.3s ease;
-
-      &:hover {
-        opacity: 1;
-        background: rgba(59, 130, 246, 0.05);
-      }
-
+    .mat-mdc-tab {
+      color: #6b7280;
+      
       &.mdc-tab--active {
-        opacity: 1;
-        font-weight: 600;
-      }
-
-      mat-icon {
-        margin-right: 8px;
-        font-size: 20px;
-        width: 20px;
-        height: 20px;
-      }
-
-      .mdc-tab__text-label {
-        display: flex;
-        align-items: center;
-        gap: 8px;
+        color: #4285f4;
       }
     }
 
-    .mat-mdc-tab-body-wrapper {
-      padding: 24px;
+    .mat-mdc-tab-label-content {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 500;
     }
   }
 
   .chart-card {
-    padding: 0;
-    border: none;
-    box-shadow: none;
-    background: transparent;
+    padding: 24px;
+    background: #ffffff;
+    border-radius: 20px;
+    margin-top: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 
     .chart-container {
-      height: 420px;
       position: relative;
-      padding: 16px;
-      background: white;
-      border-radius: 12px;
-      border: 1px solid var(--border-light, #f3f4f6);
+      height: 400px;
+      width: 100%;
 
       canvas {
-        max-height: 100%;
+        max-height: 400px;
       }
+    }
 
-      &-pie {
-        height: 380px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
+    .chart-container-pie {
+      height: 350px;
     }
   }
 }
 
-// Periods Table
-.periods-table-card {
-  border-radius: 16px;
-  border: 1px solid var(--border-color, #e5e7eb);
+// ==================================================================================
+// Periods Table Section
+// ==================================================================================
+.periods-section {
+  margin-top: 24px;
 
-  mat-card-header {
-    padding: 20px 24px;
-    background: var(--primary-light, rgba(59, 130, 246, 0.05));
-    border-bottom: 1px solid var(--border-color, #e5e7eb);
+  h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 
-    mat-card-title {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--text-primary, #212529);
-
-      mat-icon {
-        color: var(--primary-color, #3b82f6);
-        font-size: 24px;
-        width: 24px;
-        height: 24px;
-      }
+    mat-icon {
+      color: #4285f4;
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
     }
   }
 
-  mat-card-content {
-    padding: 0;
+  .periods-table-wrapper {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  }
+}
+
+.periods-table-card {
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  margin-top: 24px;
+
+  ::ng-deep {
+    .mat-mdc-card-header {
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid #e5e7eb;
+
+      .mat-mdc-card-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 18px;
+        font-weight: 600;
+        color: #1f2937;
+        margin: 0;
+
+        mat-icon {
+          color: #4285f4;
+          font-size: 24px;
+          width: 24px;
+          height: 24px;
+        }
+      }
+    }
+
+    .mat-mdc-card-content {
+      padding: 20px 24px;
+    }
   }
 
-  // Стили для crm-table
   .period-label {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-weight: 600;
 
     .table-icon {
-      color: var(--primary-color, #3b82f6);
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: #6b7280;
+    }
+
+    strong {
+      color: #1f2937;
+      font-weight: 600;
     }
   }
 
@@ -376,31 +379,41 @@
 
     &.variance-positive {
       color: #10b981;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+
+      .variance-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
     }
 
     &.variance-negative {
       color: #ef4444;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+
+      .variance-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
     }
 
     &.variance-neutral {
-      color: #6c757d;
-    }
-
-    .variance-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-      vertical-align: middle;
-      margin-right: 4px;
+      color: #6b7280;
     }
   }
 
   .confidence-chip {
-    padding: 6px 12px;
+    display: inline-block;
+    padding: 4px 12px;
     border-radius: 12px;
     font-size: 12px;
     font-weight: 600;
-    display: inline-block;
 
     &.confidence-high {
       background: rgba(16, 185, 129, 0.1);
@@ -423,30 +436,299 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 48px;
-    color: var(--text-secondary, #6c757d);
+    padding: 40px;
+    color: #9ca3af;
 
     mat-icon {
       font-size: 48px;
       width: 48px;
       height: 48px;
-      margin-bottom: 16px;
-      opacity: 0.5;
+      margin-bottom: 12px;
+      color: #d1d5db;
     }
 
     p {
-      font-size: 16px;
+      font-size: 14px;
       margin: 0;
     }
   }
 }
 
+// ==================================================================================
+// Comparison Section (Сравнение прогноза с фактом)
+// ==================================================================================
+.comparison-section {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  margin-top: 24px;
+
+  h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    mat-icon {
+      color: #4285f4;
+    }
+  }
+
+  .comparison-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+
+    .comparison-card {
+      padding: 16px;
+      border-radius: 12px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      transition: all 0.18s ease;
+
+      &:hover {
+        background: #ffffff;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        transform: translateY(-2px);
+      }
+
+      .label {
+        font-size: 12px;
+        color: #6b7280;
+        font-weight: 500;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .value {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 4px;
+
+        &.positive {
+          color: #10b981;
+        }
+
+        &.negative {
+          color: #ef4444;
+        }
+      }
+
+      .sublabel {
+        font-size: 11px;
+        color: #9ca3af;
+        font-weight: 400;
+      }
+    }
+  }
+
+  // Лучший и худший периоды
+  .best-worst-periods {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+
+    .period-highlight {
+      padding: 20px;
+      border-radius: 12px;
+      border: 2px solid;
+      transition: all 0.18s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+      }
+
+      .period-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+
+        mat-icon {
+          font-size: 24px;
+          width: 24px;
+          height: 24px;
+        }
+
+        .period-title {
+          font-size: 14px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+      }
+
+      .period-info {
+        .period-name {
+          font-size: 16px;
+          font-weight: 600;
+          color: #1f2937;
+          margin-bottom: 12px;
+        }
+
+        .period-stats {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+
+          .stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+
+            &:last-child {
+              border-bottom: none;
+            }
+
+            .stat-label {
+              font-size: 12px;
+              color: #6b7280;
+              font-weight: 500;
+            }
+
+            .stat-value {
+              font-size: 14px;
+              font-weight: 600;
+              color: #1f2937;
+            }
+          }
+        }
+      }
+
+      &.best-period {
+        border-color: #10b981;
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.02) 100%);
+
+        .period-header {
+          color: #10b981;
+        }
+      }
+
+      &.worst-period {
+        border-color: #f59e0b;
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(245, 158, 11, 0.02) 100%);
+
+        .period-header {
+          color: #f59e0b;
+        }
+      }
+    }
+  }
+
+  // Пояснение метрик
+  .metrics-explanation {
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+    background: #f0f9ff;
+    border-radius: 12px;
+    border-left: 4px solid #4285f4;
+
+    mat-icon {
+      color: #4285f4;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .explanation-text {
+      font-size: 13px;
+      line-height: 1.6;
+      color: #374151;
+
+      strong {
+        color: #1f2937;
+        font-weight: 600;
+      }
+    }
+  }
+}
+
+// ==================================================================================
+// Action Buttons (Кнопки действий)
+// ==================================================================================
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+
+  button {
+    border-radius: 12px;
+    font-weight: 500;
+    font-size: 14px;
+    padding: 10px 20px;
+    transition: all 0.18s ease;
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      margin-right: 6px;
+    }
+
+    &:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+  }
+}
+
+// ==================================================================================
+// Empty State
+// ==================================================================================
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  text-align: center;
+  color: #6b7280;
+
+  mat-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    color: #d1d5db;
+    margin-bottom: 16px;
+  }
+
+  p {
+    font-size: 16px;
+    margin: 0;
+  }
+}
+
+// ==================================================================================
+// Responsive Design
+// ==================================================================================
 @media (max-width: 768px) {
+  .summary-cards {
+    grid-template-columns: 1fr;
+  }
+
   .info-grid {
     grid-template-columns: 1fr;
   }
 
-  .charts-tabs .chart-card .chart-container {
+  .comparison-section .comparison-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-card .chart-container {
     height: 300px;
   }
 }

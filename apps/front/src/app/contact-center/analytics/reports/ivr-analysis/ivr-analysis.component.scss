@@ -1,0 +1,5 @@
+@import '../../shared-analytics-styles.scss';
+
+.ivr-analysis-report {
+  @extend .analytics-container;
+}

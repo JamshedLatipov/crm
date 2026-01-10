@@ -1,0 +1,186 @@
+<app-page-layout
+  [title]="templateId() ? 'Редактировать Telegram шаблон' : 'Новый Telegram шаблон'"
+  [subtitle]="templateId() ? 'Изменение шаблона Telegram сообщения' : 'Создание шаблона Telegram сообщения'"
+>
+  <div page-actions>
+    <button mat-stroked-button (click)="cancel()" [disabled]="loading()">
+      <mat-icon>close</mat-icon>
+      Отмена
+    </button>
+    <button mat-raised-button color="primary" (click)="save()" [disabled]="form.invalid || loading()">
+      @if (loading()) {
+        <mat-spinner diameter="20"></mat-spinner>
+      } @else {
+        <mat-icon>save</mat-icon>
+      }
+      Сохранить
+    </button>
+  </div>
+
+  @if (loading() && !form.value.name) {
+    <div class="loading-container">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
+  } @else {
+    <div class="form-container">
+      <div class="form-layout">
+        <mat-card class="form-card">
+          <form [formGroup]="form">
+            <div class="form-section">
+              <h3 class="section-title">
+                <mat-icon>info</mat-icon>
+                Основная информация
+              </h3>
+              
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Название шаблона</mat-label>
+                <input matInput formControlName="name" placeholder="Введите название">
+                <mat-icon matPrefix>label</mat-icon>
+                @if (form.get('name')?.hasError('required')) {
+                  <mat-error>Название обязательно</mat-error>
+                }
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Категория</mat-label>
+                <mat-select formControlName="category">
+                  @for (category of categories; track category.value) {
+                    <mat-option [value]="category.value">{{ category.label }}</mat-option>
+                  }
+                </mat-select>
+                <mat-icon matPrefix>category</mat-icon>
+              </mat-form-field>
+
+              <div class="content-field-wrapper">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Содержимое сообщения</mat-label>
+                  <textarea 
+                    #contentTextarea
+                    matInput 
+                    formControlName="content"
+                    rows="6" 
+                    placeholder="Введите текст. Используйте {{'{{'}}variable{{'}}'}} для переменных">
+                  </textarea>
+                  <mat-icon matPrefix>send</mat-icon>
+                  @if (form.get('content')?.hasError('required')) {
+                    <mat-error>Содержимое обязательно</mat-error>
+                  }
+                  <mat-hint>Используйте {{'{{'}}переменная{{'}}'}} для динамического контента</mat-hint>
+                </mat-form-field>
+                
+                <div class="variable-selector-wrapper">
+                  <app-variable-selector 
+                    (variableSelected)="insertVariable($event, contentTextarea)"
+                  ></app-variable-selector>
+                </div>
+              </div>
+
+              <div class="media-upload-section">
+                <h4>Медиафайл (опционально)</h4>
+                
+                @if (!uploadedMediaUrl()) {
+                  <div class="upload-area">
+                    <input 
+                      type="file" 
+                      #fileInput 
+                      (change)="onFileSelected($event)"
+                      accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
+                      hidden
+                    />
+                    <button 
+                      mat-stroked-button 
+                      type="button"
+                      (click)="fileInput.click()"
+                      [disabled]="isUploading()"
+                    >
+                      <mat-icon>cloud_upload</mat-icon>
+                      {{ isUploading() ? 'Загрузка...' : 'Выбрать файл' }}
+                    </button>
+                    <p class="upload-hint">
+                      Изображения, видео, аудио или документы (до 20MB для Telegram)
+                    </p>
+                  </div>
+
+                  @if (isUploading()) {
+                    <mat-progress-bar 
+                      mode="determinate" 
+                      [value]="uploadProgress()"
+                    ></mat-progress-bar>
+                    <p class="upload-progress">{{ uploadProgress() }}%</p>
+                  }
+                } @else {
+                  <div class="uploaded-file">
+                    <div class="file-info">
+                      <mat-icon>check_circle</mat-icon>
+                      <span>{{ uploadedFileName() }}</span>
+                    </div>
+                    <button 
+                      mat-icon-button 
+                      type="button"
+                      (click)="removeMedia()"
+                      color="warn"
+                    >
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                  
+                  <!-- Превью для изображений -->
+                  @if (isUploadedImage()) {
+                    <div class="media-preview">
+                      <img [src]="uploadedMediaUrl()" alt="Preview" />
+                    </div>
+                  }
+                }
+              </div>
+
+              <mat-slide-toggle formControlName="isActive" class="toggle-field">
+                <span class="toggle-label">
+                  <mat-icon>check_circle</mat-icon>
+                  Шаблон активен
+                </span>
+              </mat-slide-toggle>
+            </div>
+          </form>
+        </mat-card>
+
+        <mat-card class="sidebar-card">
+          <div class="sidebar-section">
+            <h3 class="sidebar-title">
+              <mat-icon>code</mat-icon>
+              Переменные
+            </h3>
+            
+            @if (detectedVariables().length > 0) {
+              <div class="variables-list">
+                @for (variable of detectedVariables(); track variable) {
+                  <div class="variable-item">
+                    <mat-icon>bookmark</mat-icon>
+                    <span>{{'{{'}}{{ variable }}{{'}}'}}</span>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="empty-variables">
+                <mat-icon>info</mat-icon>
+                <p>Переменные не обнаружены</p>
+                <small>Добавьте {{'{{'}}имя{{'}}'}} в текст</small>
+              </div>
+            }
+          </div>
+
+          <div class="sidebar-section">
+            <h3 class="sidebar-title">
+              <mat-icon>tips_and_updates</mat-icon>
+              Подсказки
+            </h3>
+            <ul class="tips-list">
+              <li>Используйте переменные для персонализации</li>
+              <li>Поддерживаются медиафайлы до 20MB</li>
+              <li>Inline-кнопки можно настроить позже</li>
+            </ul>
+          </div>
+        </mat-card>
+      </div>
+    </div>
+  }
+</app-page-layout>

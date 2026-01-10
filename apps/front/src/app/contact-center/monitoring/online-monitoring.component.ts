@@ -73,48 +73,32 @@ export class OnlineMonitoringComponent implements OnInit, OnDestroy {
   private readonly ALERT_COOLDOWN = 30000; // 30 секунд между алертами
 
   // Computed values
-  totalOperators = computed(() => {
-    const count = this.operators().length;
-    console.log(`[Computed] totalOperators: ${count}`);
-    return count;
-  });
+  totalOperators = computed(() => this.operators().length);
   
-  activeOperators = computed(() => {
-    const ops = this.operators().filter(op => op.status !== 'offline');
-    console.log(`[Computed] activeOperators: ${ops.length} / ${this.operators().length}`);
-    return ops.length;
-  });
+  activeOperators = computed(() => 
+    this.operators().filter(op => op.status !== 'offline').length
+  );
   
   totalQueues = computed(() => this.queues().length);
   
   // Используем уникальное количество ожидающих из stats
-  totalWaiting = computed(() => {
-    const waiting = this.stats().totalUniqueWaiting;
-    console.log(`[Computed] totalWaiting (from stats): ${waiting}`);
-    return waiting;
-  });
+  totalWaiting = computed(() => this.stats().totalUniqueWaiting);
   
   // Активные звонки = сумма callsInService из всех очередей
-  totalActiveCalls = computed(() => {
-    const total = this.queues().reduce((sum, q) => sum + (q.callsInService || 0), 0);
-    console.log(`[Computed] totalActiveCalls (callsInService sum): ${total}`);
-    return total;
-  });
+  totalActiveCalls = computed(() => 
+    this.queues().reduce((sum, q) => sum + (q.callsInService || 0), 0)
+  );
   
   // Операторы на звонках (для справки и сравнения)
-  operatorsOnCall = computed(() => {
-    const count = this.operators().filter(op => op.status === 'on_call').length;
-    console.log(`[Computed] operatorsOnCall: ${count}`);
-    return count;
-  });
+  operatorsOnCall = computed(() => 
+    this.operators().filter(op => op.status === 'on_call').length
+  );
   
   avgServiceLevel = computed(() => {
     const queues = this.queues();
     if (queues.length === 0) return 0;
     const total = queues.reduce((sum, q) => sum + (q.serviceLevel || 0), 0);
-    const avg = Math.round(total / queues.length);
-    console.log(`[Computed] avgServiceLevel: ${avg}%`);
-    return avg;
+    return Math.round(total / queues.length);
   });
   
   // Sorted queues by priority (most waiting first, then longest wait)
@@ -206,36 +190,15 @@ export class OnlineMonitoringComponent implements OnInit, OnDestroy {
   };
 
   ngOnInit() {
-    console.log('[OnlineMonitoring] Component initialized');
-    
     // Initialize audio alert (optional sound effect)
     // this.alertAudio = new Audio('/assets/sounds/alert.mp3');
     
     this.operators$.pipe(takeUntil(this.destroy$)).subscribe((operators) => {
-      console.log('[OnlineMonitoring] ===== OPERATORS UPDATE =====');
-      console.log('[OnlineMonitoring] Operators received:', operators.length);
-      
       // Валидация данных операторов
       if (!Array.isArray(operators)) {
         console.error('[OnlineMonitoring] ERROR: operators is not an array!', operators);
         return;
       }
-      
-      // Детальный лог операторов
-      operators.forEach((op, idx) => {
-        console.log(`  [${idx}] ${op.name}: status=${op.status}, statusDuration=${op.statusDuration}s, currentCall=${op.currentCall}, currentCallDuration=${op.currentCallDuration}s`);
-        
-        // Валидация полей оператора
-        if (!op.id || !op.name) {
-          console.warn(`  WARNING: Operator ${idx} missing id or name`, op);
-        }
-        if (op.status === 'on_call' && !op.currentCall) {
-          console.warn(`  WARNING: Operator ${op.name} is on_call but has no currentCall`);
-        }
-        if (op.currentCall && !op.currentCallDuration) {
-          console.warn(`  WARNING: Operator ${op.name} has currentCall but no duration`);
-        }
-      });
       
       this.operators.set(operators);
 
@@ -264,10 +227,7 @@ export class OnlineMonitoringComponent implements OnInit, OnDestroy {
     });
 
     this.queues$.pipe(takeUntil(this.destroy$)).subscribe((queues) => {
-      console.log('[OnlineMonitoring] ===== QUEUES UPDATE =====');
-      const now = new Date();
-      console.log(`[${now.toISOString()}] Queues received:`, queues.length);
-      this.lastUpdate.set(now);
+      this.lastUpdate.set(new Date());
       
       // Валидация данных очередей
       if (!Array.isArray(queues)) {
@@ -275,32 +235,12 @@ export class OnlineMonitoringComponent implements OnInit, OnDestroy {
         return;
       }
       
-      // Детальный лог очередей
-      let totalWaitingSum = 0;
-      let totalCallsInService = 0;
-      
+      // Валидация критических ошибок
       queues.forEach((q, idx) => {
-        console.log(`  [${idx}] ${q.name}:`);
-        console.log(`      waiting: ${q.waiting}`);
-        console.log(`      callsInService: ${q.callsInService}`);
-        console.log(`      longestWaiting: ${q.longestWaitingSeconds}s`);
-        console.log(`      availableMembers: ${q.availableMembers}/${q.totalMembers}`);
-        console.log(`      serviceLevel: ${q.serviceLevel}%`);
-        
-        totalWaitingSum += q.waiting || 0;
-        totalCallsInService += q.callsInService || 0;
-        
-        // Валидация данных очередей
-        if (!q.id || !q.name) {
-          console.warn(`    WARNING: Queue ${idx} missing id or name`, q);
-        }
         if (q.waiting < 0 || q.callsInService < 0) {
-          console.error(`    ERROR: Queue ${q.name} has negative values! waiting=${q.waiting}, callsInService=${q.callsInService}`);
+          console.error(`[OnlineMonitoring] Queue ${q.name} has negative values! waiting=${q.waiting}, callsInService=${q.callsInService}`);
         }
       });
-      
-      console.log(`[OnlineMonitoring] Summary: totalWaiting(sum)=${totalWaitingSum}, totalCallsInService=${totalCallsInService}`);
-      console.log('[OnlineMonitoring] Raw queues data:', JSON.stringify(queues, null, 2));
       
       this.queues.set(queues);
       
@@ -311,39 +251,27 @@ export class OnlineMonitoringComponent implements OnInit, OnDestroy {
     });
 
     this.activeCalls$.pipe(takeUntil(this.destroy$)).subscribe((calls) => {
-      console.log('[OnlineMonitoring] ===== ACTIVE CALLS UPDATE =====');
-      console.log('[OnlineMonitoring] Active calls received:', calls.length);
-      
       if (!Array.isArray(calls)) {
         console.error('[OnlineMonitoring] ERROR: activeCalls is not an array!', calls);
         return;
       }
-      
-      calls.forEach((call, idx) => {
-        console.log(`  [${idx}] ${call.callerIdNum} -> ${call.operator || 'unknown'}: duration=${call.duration}s, state=${call.state}, queue=${call.queue || 'none'}`);
-      });
       
       this.activeCalls.set(calls);
       this.cdr.detectChanges();
     });
 
     this.stats$.pipe(takeUntil(this.destroy$)).subscribe((stats) => {
-      console.log('[OnlineMonitoring] ===== STATS UPDATE =====');
-      console.log('[OnlineMonitoring] Stats received:', stats);
-      
       if (!stats || typeof stats.totalUniqueWaiting !== 'number') {
         console.error('[OnlineMonitoring] ERROR: Invalid stats object!', stats);
         return;
       }
       
-      console.log(`[OnlineMonitoring] totalUniqueWaiting: ${stats.totalUniqueWaiting}`);
       this.stats.set(stats);
       this.cdr.detectChanges();
     });
   }
 
   ngOnDestroy() {
-    console.log('[OnlineMonitoring] Component destroyed, cleaning up subscriptions');
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -450,7 +378,6 @@ export class OnlineMonitoringComponent implements OnInit, OnDestroy {
     );
     
     if (criticalQueues.length > 0 && (now - this.lastAlertTime) > this.ALERT_COOLDOWN) {
-      console.warn('[OnlineMonitoring] CRITICAL: Queues need attention:', criticalQueues.map(q => q.name));
       this.playAlert();
       this.lastAlertTime = now;
     }
@@ -479,14 +406,9 @@ export class OnlineMonitoringComponent implements OnInit, OnDestroy {
    * Manual refresh button handler
    */
   refreshData() {
-    console.log('[OnlineMonitoring] Manual refresh triggered');
     // Force re-fetch from backend via REST
-    this.svc.fetchQueuesSnapshot().subscribe(queues => {
-      console.log('[OnlineMonitoring] Manual refresh complete:', queues.length);
-    });
-    this.svc.fetchOperatorsSnapshot().subscribe(operators => {
-      console.log('[OnlineMonitoring] Operators refreshed:', operators.length);
-    });
+    this.svc.fetchQueuesSnapshot().subscribe();
+    this.svc.fetchOperatorsSnapshot().subscribe();
     this.lastUpdate.set(new Date());
   }
   
@@ -495,9 +417,7 @@ export class OnlineMonitoringComponent implements OnInit, OnDestroy {
    */
   requestNotificationPermission() {
     if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission().then(permission => {
-        console.log('[OnlineMonitoring] Notification permission:', permission);
-      });
+      Notification.requestPermission();
     }
   }
   
@@ -546,6 +466,7 @@ export class OnlineMonitoringComponent implements OnInit, OnDestroy {
       key: 'callsToday',
       label: 'Звонков',
       width: '10%',
+      template: 'callsTodayTemplate',
     },
     {
       key: 'service',
@@ -585,6 +506,12 @@ export class OnlineMonitoringComponent implements OnInit, OnDestroy {
       width: '10%',
     },
     {
+      key: 'abandonedToday',
+      label: 'Пропущено',
+      width: '10%',
+      template: 'queueAbandonedTemplate',
+    },
+    {
       key: 'serviceLevel',
       label: 'Уровень сервиса',
       width: '13%',
@@ -595,11 +522,6 @@ export class OnlineMonitoringComponent implements OnInit, OnDestroy {
       label: 'Операторы',
       width: '10%',
       template: 'queueMembersTemplate',
-    },
-    {
-      key: 'abandonedToday',
-      label: 'Пропущено',
-      width: '10%',
     },
   ];
 
@@ -623,12 +545,8 @@ export class OnlineMonitoringComponent implements OnInit, OnDestroy {
     const supervisorExtension = this.getSupervisorExtension();
     const operatorExtension = operator.extension || operator.id;
     
-    console.log('[OnlineMonitoring] Whisper call to:', operator.name);
-    
     this.svc.whisperCall(operatorExtension, supervisorExtension).subscribe(result => {
-      if (result.success) {
-        console.log('[OnlineMonitoring] Whisper started successfully');
-      } else {
+      if (!result.success) {
         alert(result.message);
       }
     });
@@ -646,12 +564,8 @@ export class OnlineMonitoringComponent implements OnInit, OnDestroy {
     const supervisorExtension = this.getSupervisorExtension();
     const operatorExtension = operator.extension || operator.id;
     
-    console.log('[OnlineMonitoring] Barge into call:', operator.name);
-    
     this.svc.bargeCall(operatorExtension, supervisorExtension).subscribe(result => {
-      if (result.success) {
-        console.log('[OnlineMonitoring] Barge started successfully');
-      } else {
+      if (!result.success) {
         alert(result.message);
       }
     });
@@ -661,14 +575,10 @@ export class OnlineMonitoringComponent implements OnInit, OnDestroy {
    * Pause/Resume queue - toggle operator availability in queue
    */
   pauseQueue(queue: QueueStatus) {
-    console.log('[OnlineMonitoring] Pause queue:', queue.name);
-    // This pauses all operators in this specific queue
-    // For now, show a dialog to select which operator to pause
     alert(`Для приостановки операторов в очереди "${queue.name}" используйте кнопку паузы у конкретного оператора`);
   }
 
   resumeQueue(queue: QueueStatus) {
-    console.log('[OnlineMonitoring] Resume queue:', queue.name);
     alert(`Для возобновления операторов в очереди "${queue.name}" используйте кнопку снятия паузы у конкретного оператора`);
   }
 
@@ -679,11 +589,8 @@ export class OnlineMonitoringComponent implements OnInit, OnDestroy {
     const operatorInterface = operator.extension || operator.id;
     const reason = prompt('Причина паузы (необязательно):') || undefined;
     
-    console.log('[OnlineMonitoring] Pausing operator:', operator.name);
-    
     this.svc.pauseQueueMember(operatorInterface, operator.queue || undefined, reason).subscribe(result => {
       if (result.success) {
-        console.log('[OnlineMonitoring] Operator paused successfully');
         this.refreshData();
       } else {
         alert(result.message);
@@ -697,11 +604,8 @@ export class OnlineMonitoringComponent implements OnInit, OnDestroy {
   unpauseOperator(operator: OperatorStatus) {
     const operatorInterface = operator.extension || operator.id;
     
-    console.log('[OnlineMonitoring] Unpausing operator:', operator.name);
-    
     this.svc.unpauseQueueMember(operatorInterface, operator.queue || undefined).subscribe(result => {
       if (result.success) {
-        console.log('[OnlineMonitoring] Operator unpaused successfully');
         this.refreshData();
       } else {
         alert(result.message);
@@ -713,17 +617,13 @@ export class OnlineMonitoringComponent implements OnInit, OnDestroy {
    * Transfer an active call
    */
   transferCall(call: ActiveCall) {
-    console.log('[OnlineMonitoring] Transfer call:', call.uniqueid);
-    
     const targetExtension = prompt('Введите номер для перевода:');
     if (!targetExtension) {
       return;
     }
     
     this.svc.transferCall(call.channel, targetExtension).subscribe(result => {
-      if (result.success) {
-        console.log('[OnlineMonitoring] Transfer initiated successfully');
-      } else {
+      if (!result.success) {
         alert(result.message);
       }
     });
@@ -733,17 +633,13 @@ export class OnlineMonitoringComponent implements OnInit, OnDestroy {
    * Hangup an active call
    */
   hangupCall(call: ActiveCall) {
-    console.log('[OnlineMonitoring] Hangup call:', call.uniqueid);
-    
     const confirmed = window.confirm(`Завершить звонок от ${call.callerIdNum}?`);
     if (!confirmed) {
       return;
     }
     
     this.svc.hangupCall(call.channel).subscribe(result => {
-      if (result.success) {
-        console.log('[OnlineMonitoring] Call hung up successfully');
-      } else {
+      if (!result.success) {
         alert(result.message);
       }
     });
@@ -753,11 +649,8 @@ export class OnlineMonitoringComponent implements OnInit, OnDestroy {
    * Start recording an active call
    */
   recordCall(call: ActiveCall) {
-    console.log('[OnlineMonitoring] Record call:', call.uniqueid);
-    
     this.svc.startRecording(call.channel).subscribe(result => {
       if (result.success) {
-        console.log('[OnlineMonitoring] Recording started:', result.filename);
         alert(`Запись начата: ${result.filename}`);
       } else {
         alert(result.message);
@@ -769,12 +662,8 @@ export class OnlineMonitoringComponent implements OnInit, OnDestroy {
    * Stop recording an active call
    */
   stopRecording(call: ActiveCall) {
-    console.log('[OnlineMonitoring] Stop recording:', call.uniqueid);
-    
     this.svc.stopRecording(call.channel).subscribe(result => {
-      if (result.success) {
-        console.log('[OnlineMonitoring] Recording stopped');
-      } else {
+      if (!result.success) {
         alert(result.message);
       }
     });

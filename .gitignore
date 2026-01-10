@@ -18,3 +18,4 @@ turnserver/data/turnserver/turndb
 tmp/*
 tmp/nx-cache
 /data/asterisk/recordings/*
+/data/messages/*

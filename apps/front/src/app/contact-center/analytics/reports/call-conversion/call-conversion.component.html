@@ -1,0 +1,201 @@
+<div class="conversion-container">
+  <app-report-filters (filtersChange)="onFiltersChange($event)"></app-report-filters>
+
+  @if (data(); as conversion) {
+    <div class="content-wrapper">
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <mat-card class="kpi-card">
+        <mat-card-content>
+          <div class="kpi-label">Всего звонков</div>
+          <div class="kpi-value">{{ conversion.totalCalls }}</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="kpi-card">
+        <mat-card-content>
+          <div class="kpi-label">Конверсия в лиды</div>
+          <div class="kpi-value">{{ conversion.leadConversionRate.toFixed(1) }}%</div>
+          <div class="kpi-detail">{{ conversion.callsWithLeads }} звонков</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="kpi-card">
+        <mat-card-content>
+          <div class="kpi-label">Конверсия в сделки</div>
+          <div class="kpi-value">{{ conversion.dealConversionRate.toFixed(1) }}%</div>
+          <div class="kpi-detail">{{ conversion.callsWithDeals }} сделок</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="kpi-card">
+        <mat-card-content>
+          <div class="kpi-label">Общая выручка</div>
+          <div class="kpi-value">{{ formatCurrency(conversion.totalRevenue) }}</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="kpi-card">
+        <mat-card-content>
+          <div class="kpi-label">Средняя выручка на сделку</div>
+          <div class="kpi-value">{{ formatCurrency(conversion.avgRevenue) }}</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="kpi-card">
+        <mat-card-content>
+          <div class="kpi-label">Выручка на звонок (ROI)</div>
+          <div class="kpi-value">{{ formatCurrency(conversion.revenuePerCall) }}</div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="charts-row">
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>Производительность операторов с выручкой</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="chart-container">
+            @if (agentChartData) {
+              <canvas
+                baseChart
+                [data]="agentChartData"
+                [options]="agentChartOptions"
+                type="bar">
+              </canvas>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>Тренд конверсии</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="chart-container">
+            @if (trendChartData) {
+              <canvas
+                baseChart
+                [data]="trendChartData"
+                [options]="trendChartOptions"
+                type="line">
+              </canvas>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Deal Stages Pie Chart -->
+    @if (conversion.dealStages.length > 0) {
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>Распределение по стадиям сделок</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="chart-container-small">
+            @if (dealStageChartData) {
+              <canvas
+                baseChart
+                [data]="dealStageChartData"
+                [options]="dealStageChartOptions"
+                type="pie">
+              </canvas>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
+
+    <!-- Agent Details Table -->
+    <mat-card class="table-card">
+      <mat-card-header>
+        <mat-card-title>Детали конверсии по операторам</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <crm-table
+          [columns]="agentColumns"
+          [data]="conversion.byAgent"
+          [pageSize]="10"
+          [showPaginator]="true"
+        >
+          <ng-template crmColumnTemplate="leadConversionTemplate" let-row>
+            {{ row.leadConversionRate.toFixed(1) }}%
+          </ng-template>
+
+          <ng-template crmColumnTemplate="dealConversionTemplate" let-row>
+            {{ row.dealConversionRate.toFixed(1) }}%
+          </ng-template>
+
+          <ng-template crmColumnTemplate="revenueTemplate" let-row>
+            {{ formatCurrency(row.totalRevenue) }}
+          </ng-template>
+
+          <ng-template crmColumnTemplate="avgRevenueTemplate" let-row>
+            {{ formatCurrency(row.avgRevenue) }}
+          </ng-template>
+        </crm-table>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Trend Details Table -->
+    <mat-card class="table-card">
+      <mat-card-header>
+        <mat-card-title>Тренд конверсии (последние 30 дней)</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <crm-table
+          [columns]="trendColumns"
+          [data]="conversion.trend.slice(-30)"
+          [pageSize]="10"
+          [showPaginator]="true"
+        >
+          <ng-template crmColumnTemplate="leadConversionTemplate" let-row>
+            {{ row.leadConversionRate.toFixed(1) }}%
+          </ng-template>
+
+          <ng-template crmColumnTemplate="dealConversionTemplate" let-row>
+            {{ row.dealConversionRate.toFixed(1) }}%
+          </ng-template>
+        </crm-table>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Deal Stages Table -->
+    @if (conversion.dealStages.length > 0) {
+      <mat-card class="table-card">
+        <mat-card-header>
+          <mat-card-title>Разбивка по стадиям сделок</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <crm-table
+            [columns]="dealStageColumns"
+            [data]="conversion.dealStages"
+            [pageSize]="10"
+            [showPaginator]="true"
+          >
+            <ng-template crmColumnTemplate="totalValueTemplate" let-row>
+              {{ formatCurrency(row.totalValue) }}
+            </ng-template>
+          </crm-table>
+        </mat-card-content>
+      </mat-card>
+    }
+    </div>
+  } @else {
+    @if (loading()) {
+      <div class="loading-container">
+        <mat-spinner></mat-spinner>
+      </div>
+    } @else if (error()) {
+      <mat-card class="error-card">
+        <mat-card-content>
+          <p class="error-message">{{ error() }}</p>
+        </mat-card-content>
+      </mat-card>
+    }
+  }
+</div>

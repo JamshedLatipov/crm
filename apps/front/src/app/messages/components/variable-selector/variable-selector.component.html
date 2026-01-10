@@ -1,0 +1,41 @@
+<button mat-stroked-button [matMenuTriggerFor]="variablesMenu">
+  <mat-icon>add</mat-icon>
+  Вставить переменную
+</button>
+
+<mat-menu #variablesMenu="matMenu" class="variable-menu">
+  <div class="variable-menu-content" (click)="$event.stopPropagation()">
+    @for (group of variableGroups; track group.name) {
+      <div class="variable-group">
+        <div class="group-header">
+          <mat-icon>{{ group.icon }}</mat-icon>
+          <span>{{ group.name }}</span>
+        </div>
+        
+        <div class="variables-list">
+          @for (variable of group.variables; track variable.key) {
+            <button 
+              mat-menu-item 
+              class="variable-item"
+              (click)="onVariableClick(variable)"
+              [matTooltip]="variable.description || ''"
+              matTooltipPosition="right"
+            >
+              <div class="variable-info">
+                <span class="variable-label">{{ variable.label }}</span>
+                <span class="variable-key">{{ '{{' + variable.key + '}}' }}</span>
+              </div>
+              @if (variable.example) {
+                <span class="variable-example">{{ variable.example }}</span>
+              }
+            </button>
+          }
+        </div>
+      </div>
+      
+      @if (!$last) {
+        <mat-divider></mat-divider>
+      }
+    }
+  </div>
+</mat-menu>

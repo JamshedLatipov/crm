@@ -29,6 +29,7 @@ import {
 import { FormsModule } from '@angular/forms'; // Import FormsModule for ngModel
 import { CommonModule } from '@angular/common'; // Import CommonModule for *ngIf
 import { MatIconModule } from '@angular/material/icon'; // Import MatIconModule for icons
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import {
   SoftphoneStatusBarComponent,
   SoftphoneCallInfoComponent,
@@ -38,8 +39,9 @@ import {
 import { SoftphoneDialTabComponent } from './components/softphone-dial-tab.component';
 import { SoftphoneInfoTabComponent } from './components/softphone-info-tab.component';
 import { SoftphoneCallHistoryComponent } from './components/softphone-call-history/softphone-call-history.component';
-import { CallHistoryItem } from './components/softphone-call-history/softphone-call-history.types';
-import { SoftphoneCallHistoryService } from './components/softphone-call-history/softphone-call-history.service';
+import { SoftphoneCallHistoryService as CallLogService } from './components/softphone-call-history/softphone-call-history.service';
+import { CallDetailsDialogComponent } from './components/call-details-dialog/call-details-dialog.component';
+import { CdrRecord } from './types/cdr.types';
 import { TaskModalService } from '../tasks/services/task-modal.service';
 import { TaskModalComponent } from '../tasks/components/task-modal/task-modal.component';
 import {
@@ -102,6 +104,7 @@ type JsSIPSession = any;
     FormsModule,
     CommonModule,
     MatIconModule,
+    MatDialogModule,
     SoftphoneStatusBarComponent,
     SoftphoneCallActionsComponent,
     SoftphoneScriptsPanelComponent,
@@ -134,8 +137,6 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   // Transfer UI
   transferTarget = '';
 
-  // Call history data
-  callHistory = signal<CallHistoryItem[]>([]);
   // Call scripts UI
   scripts = signal<any[]>([]);
   showScripts = signal(false);
@@ -158,7 +159,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   private readonly ringtone = inject(RingtoneService);
   private readonly audioSvc = inject(SoftphoneAudioService);
   private readonly logger = inject(SoftphoneLoggerService);
-  private readonly callHistoryService = inject(SoftphoneCallHistoryService);
+  private readonly callHistoryService = inject(CallLogService);
   private readonly taskModal = inject(TaskModalService);
   private readonly queueMembersSvc = inject(QueueMembersService);
   private readonly agentStatusSvc = inject(AgentStatusService);
@@ -166,6 +167,7 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   readonly panelSvc = inject(SoftphonePanelService);
   readonly callState = inject(SoftphoneCallStateService);
   private readonly sessionSvc = inject(SoftphoneSessionService);
+  private readonly dialog = inject(MatDialog);
 
   constructor() {
     // Автоподстановка сохранённых SIP реквизитов оператора
@@ -1453,9 +1455,22 @@ export class SoftphoneComponent implements OnInit, OnDestroy {
   }
 
   // Handle call number from history
-  onCallNumber(number: string) {
+  callFromHistory(number: string) {
     this.callee = number;
     this.activeTab = 'dial';
+    // Optionally auto-dial
+    // this.call();
+  }
+
+  // Handle view call details from history
+  showCallDetailsModal(call: CdrRecord) {
+    this.logger.info('Opening call details dialog:', call);
+    this.dialog.open(CallDetailsDialogComponent, {
+      width: '600px',
+      maxWidth: '90vw',
+      data: call,
+      panelClass: 'call-details-dialog-container'
+    });
   }
 
   // Handle view contact from history

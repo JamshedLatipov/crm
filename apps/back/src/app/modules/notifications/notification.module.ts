@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
 import { Notification } from '../shared/entities/notification.entity';
 import { NotificationRule } from '../shared/entities/notification-rule.entity';
+import { NotificationAnalytics } from '../shared/entities/notification-analytics.entity';
 import { NotificationService } from '../shared/services/notification.service';
 import { NotificationRuleService } from '../shared/services/notification-rule.service';
 import { NotificationSchedulerService } from './services/notification-scheduler.service';
@@ -12,6 +13,8 @@ import { NotificationsGateway } from './gateways/notifications.gateway';
 import { Lead } from '../leads/lead.entity';
 import { Deal } from '../deals/deal.entity';
 import { Task } from '../tasks/task.entity';
+import { SmsMessage } from '../messages/entities/sms-message.entity';
+import { EmailMessage } from '../messages/entities/email-message.entity';
 
 @Module({
   imports: [
@@ -19,6 +22,9 @@ import { Task } from '../tasks/task.entity';
     TypeOrmModule.forFeature([
       Notification,
       NotificationRule,
+      NotificationAnalytics,
+      SmsMessage,
+      EmailMessage,
       Lead,
       Deal,
       Task
@@ -26,7 +32,7 @@ import { Task } from '../tasks/task.entity';
   ],
   controllers: [
     NotificationController,
-    NotificationRuleController
+    NotificationRuleController,
   ],
   providers: [
     NotificationService,

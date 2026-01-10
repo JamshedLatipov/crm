@@ -1,0 +1,258 @@
+<app-page-layout
+  [title]="templateId() ? 'Редактировать сегмент' : 'Новый сегмент'"
+  [subtitle]="templateId() ? 'Изменение сегмента контактов' : 'Создание сегмента контактов для таргетированных кампаний'"
+>
+  <div page-actions>
+    <button mat-stroked-button (click)="cancel()" [disabled]="loading()">
+      <mat-icon>close</mat-icon>
+      Отмена
+    </button>
+    <button mat-raised-button color="primary" (click)="save()" [disabled]="form.invalid || loading()">
+      @if (loading()) {
+        <mat-spinner diameter="20"></mat-spinner>
+      } @else {
+        <mat-icon>save</mat-icon>
+      }
+      Сохранить
+    </button>
+  </div>
+
+  @if (loading() && !form.value.name) {
+    <div class="loading-container">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
+  } @else {
+    <div class="form-container">
+      <mat-card>
+        <mat-card-content>
+          <form [formGroup]="form">
+            <!-- Основная информация -->
+            <div class="form-section">
+              <h3>
+                <mat-icon>info</mat-icon>
+                Основная информация
+              </h3>
+              
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Название сегмента</mat-label>
+                <input matInput formControlName="name" placeholder="Например: VIP клиенты">
+                <mat-icon matPrefix>label</mat-icon>
+                @if (form.get('name')?.hasError('required')) {
+                  <mat-error>Название обязательно</mat-error>
+                }
+                @if (form.get('name')?.hasError('minlength')) {
+                  <mat-error>Минимум 3 символа</mat-error>
+                }
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Описание</mat-label>
+                <textarea 
+                  matInput 
+                  formControlName="description"
+                  rows="3"
+                  placeholder="Опишите критерии сегмента...">
+                </textarea>
+                <mat-icon matPrefix>description</mat-icon>
+                <mat-hint>Добавьте описание для лучшего понимания назначения сегмента</mat-hint>
+              </mat-form-field>
+
+              <div class="settings-row">
+                <mat-form-field appearance="outline" style="flex: 1;">
+                  <mat-label>Логика фильтров</mat-label>
+                  <mat-select formControlName="filterLogic">
+                    <mat-option value="AND">
+                      <div class="logic-option">
+                        <strong>И (AND)</strong>
+                        <span>Контакты должны соответствовать всем фильтрам</span>
+                      </div>
+                    </mat-option>
+                    <mat-option value="OR">
+                      <div class="logic-option">
+                        <strong>ИЛИ (OR)</strong>
+                        <span>Контакты должны соответствовать хотя бы одному фильтру</span>
+                      </div>
+                    </mat-option>
+                  </mat-select>
+                  <mat-icon matPrefix>account_tree</mat-icon>
+                </mat-form-field>
+
+                <mat-slide-toggle formControlName="isDynamic" class="toggle-field">
+                  <span class="toggle-label">
+                    <mat-icon>sync</mat-icon>
+                    Динамический сегмент
+                  </span>
+                </mat-slide-toggle>
+              </div>
+
+              @if (form.get('isDynamic')?.value) {
+                <div class="info-box">
+                  <mat-icon>info</mat-icon>
+                  <div>
+                    <strong>Динамический сегмент</strong>
+                    <p>Количество контактов автоматически обновляется при изменении данных контактов</p>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <mat-divider style="margin: 24px 0;"></mat-divider>
+
+            <!-- Фильтры -->
+            <div class="form-section">
+              <div class="section-header">
+                <h3>
+                  <mat-icon>filter_alt</mat-icon>
+                  Фильтры контактов
+                </h3>
+                <button 
+                  mat-mini-fab 
+                  color="primary" 
+                  type="button" 
+                  (click)="addFilter()"
+                  [disabled]="loading()"
+                >
+                  <mat-icon>add</mat-icon>
+                </button>
+              </div>
+
+              <div formArrayName="filters">
+                @for (filter of filters.controls; track filter; let i = $index) {
+                  <mat-card class="filter-card" [formGroupName]="i">
+                    <div class="filter-header">
+                      <span class="filter-number">Фильтр {{ i + 1 }}</span>
+                      @if (i > 0) {
+                        <mat-chip class="logic-chip">
+                          {{ form.get('filterLogic')?.value }}
+                        </mat-chip>
+                      }
+                    </div>
+                    
+                    <div class="filter-row">
+                      <mat-form-field appearance="outline">
+                        <mat-label>Поле</mat-label>
+                        <mat-select formControlName="field">
+                          <mat-option value="name">
+                            <mat-icon>person</mat-icon> Имя
+                          </mat-option>
+                          <mat-option value="email">
+                            <mat-icon>email</mat-icon> Email
+                          </mat-option>
+                          <mat-option value="phone">
+                            <mat-icon>phone</mat-icon> Телефон
+                          </mat-option>
+                          <mat-option value="status">
+                            <mat-icon>flag</mat-icon> Статус
+                          </mat-option>
+                          <mat-option value="createdAt">
+                            <mat-icon>calendar_today</mat-icon> Дата создания
+                          </mat-option>
+                          <mat-option value="lastContactedAt">
+                            <mat-icon>schedule</mat-icon> Последний контакт
+                          </mat-option>
+                          <mat-option value="tags">
+                            <mat-icon>label</mat-icon> Теги
+                          </mat-option>
+                        </mat-select>
+                        @if (filters.at(i).get('field')?.hasError('required')) {
+                          <mat-error>Выберите поле</mat-error>
+                        }
+                      </mat-form-field>
+
+                      <mat-form-field appearance="outline">
+                        <mat-label>Оператор</mat-label>
+                        <mat-select formControlName="operator">
+                          <mat-option value="equals">Равно</mat-option>
+                          <mat-option value="notEquals">Не равно</mat-option>
+                          <mat-option value="contains">Содержит</mat-option>
+                          <mat-option value="notContains">Не содержит</mat-option>
+                          <mat-option value="startsWith">Начинается с</mat-option>
+                          <mat-option value="endsWith">Заканчивается на</mat-option>
+                          <mat-option value="greater">Больше</mat-option>
+                          <mat-option value="less">Меньше</mat-option>
+                          <mat-option value="between">Между</mat-option>
+                          <mat-option value="in">В списке</mat-option>
+                          <mat-option value="notIn">Не в списке</mat-option>
+                        </mat-select>
+                        @if (filters.at(i).get('operator')?.hasError('required')) {
+                          <mat-error>Выберите оператор</mat-error>
+                        }
+                      </mat-form-field>
+
+                      <mat-form-field appearance="outline">
+                        <mat-label>Значение</mat-label>
+                        <input matInput formControlName="value" placeholder="Введите значение">
+                        @if (filters.at(i).get('value')?.hasError('required')) {
+                          <mat-error>Введите значение</mat-error>
+                        }
+                      </mat-form-field>
+
+                      <button 
+                        mat-icon-button 
+                        color="warn" 
+                        type="button" 
+                        (click)="removeFilter(i)"
+                        [disabled]="loading()"
+                      >
+                        <mat-icon>delete</mat-icon>
+                      </button>
+                    </div>
+                  </mat-card>
+                }
+              </div>
+
+              @if (filters.length === 0) {
+                <div class="empty-state">
+                  <mat-icon>filter_alt_off</mat-icon>
+                  <h4>Фильтры не добавлены</h4>
+                  <p>Нажмите кнопку "+" чтобы добавить первый фильтр</p>
+                </div>
+              }
+            </div>
+
+            @if (filters.length > 0) {
+              <mat-divider style="margin: 24px 0;"></mat-divider>
+              
+              <!-- Превью -->
+              <div class="form-section preview-section">
+                <h3>
+                  <mat-icon>preview</mat-icon>
+                  Превью сегмента
+                </h3>
+                
+                <div class="preview-card">
+                  <div class="preview-header">
+                    <mat-icon>people</mat-icon>
+                    <span>{{ form.get('name')?.value || 'Новый сегмент' }}</span>
+                  </div>
+                  
+                  <div class="preview-filters">
+                    <strong>Условия отбора ({{ form.get('filterLogic')?.value }}):</strong>
+                    <ul>
+                      @for (filter of filters.controls; track filter; let i = $index) {
+                        <li>
+                          <mat-chip>
+                            {{ getFieldLabel(filters.at(i).get('field')?.value) }}
+                            {{ getOperatorLabel(filters.at(i).get('operator')?.value) }}
+                            "{{ filters.at(i).get('value')?.value }}"
+                          </mat-chip>
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                  
+                  @if (form.get('isDynamic')?.value) {
+                    <div class="preview-badge">
+                      <mat-icon>sync</mat-icon>
+                      Динамический
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </form>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  }
+</app-page-layout>

@@ -1,0 +1,55 @@
+<div class="agent-performance-container">
+  <app-report-filters
+    (filtersChange)="onFiltersChange($event)"
+  ></app-report-filters>
+
+  @if (!loading() && !error()) {
+    <crm-table
+      [columns]="columns"
+      [data]="data()"
+      [pageSize]="20"
+      [showPaginator]="true"
+    >
+      <ng-template crmColumnTemplate="answeredTemplate" let-row>
+        <span class="success">{{ row.answeredCalls }}</span>
+      </ng-template>
+
+      <ng-template crmColumnTemplate="missedTemplate" let-row>
+        <span class="warning">{{ row.missedCalls }}</span>
+      </ng-template>
+
+      <ng-template crmColumnTemplate="avgTalkTimeTemplate" let-row>
+        {{ formatTime(row.avgTalkTime) }}
+      </ng-template>
+
+      <ng-template crmColumnTemplate="avgWaitTimeTemplate" let-row>
+        {{ formatTime(row.avgWaitTime) }}
+      </ng-template>
+
+      <ng-template crmColumnTemplate="totalTalkTimeTemplate" let-row>
+        {{ formatTime(row.totalTalkTime) }}
+      </ng-template>
+    </crm-table>
+
+    @if (data().length === 0) {
+      <div class="no-data">
+        <mat-icon>info</mat-icon>
+        <p>Нет данных за выбранный период</p>
+      </div>
+    }
+  }
+
+  @if (loading()) {
+    <div class="loading-container">
+      <mat-spinner></mat-spinner>
+      <p>Загрузка данных...</p>
+    </div>
+  }
+
+  @if (error()) {
+    <div class="error-container">
+      <mat-icon color="warn">error</mat-icon>
+      <p>{{ error() }}</p>
+    </div>
+  }
+</div>

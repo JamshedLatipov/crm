@@ -79,7 +79,7 @@ export class EndpointSyncService implements OnModuleInit {
       if (updated > 0) {
         this.logger.log(`✅ Updated ${updated} queue member(s) status`);
       } else {
-        this.logger.debug('✅ All queue members status up-to-date');
+        // this.logger.debug('✅ All queue members status up-to-date');
       }
       
     } catch (err) {

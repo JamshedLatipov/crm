@@ -1,0 +1,119 @@
+<div class="ivr-analysis-report">
+  <app-report-filters (filtersChange)="onFiltersChange($event)" />
+
+  <div *ngIf="loading()" class="loading-container">
+    <mat-spinner></mat-spinner>
+  </div>
+
+  <div *ngIf="error()" class="error-message">{{ error() }}</div>
+
+  <div *ngIf="!loading() && !error() && hasData()" class="report-content">
+    <div class="kpi-cards">
+      <mat-card class="kpi-card">
+        <mat-card-header><mat-card-title>Всего сессий IVR</mat-card-title></mat-card-header>
+        <mat-card-content>
+          <div class="kpi-value">{{ data()?.totalSessions || 0 }}</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="kpi-card" [ngClass]="getCompletionClass(data()?.completionRate || 0)">
+        <mat-card-header><mat-card-title>Завершено</mat-card-title></mat-card-header>
+        <mat-card-content>
+          <div class="kpi-value">{{ (data()?.completionRate || 0).toFixed(1) }}%</div>
+          <div class="kpi-subtitle">{{ data()?.completedSessions || 0 }} звонков</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="kpi-card">
+        <mat-card-header><mat-card-title>Среднее время в IVR</mat-card-title></mat-card-header>
+        <mat-card-content>
+          <div class="kpi-value">{{ formatTime(data()?.avgIvrDuration || 0) }}</div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <div class="charts-row">
+      <mat-card class="chart-card">
+        <mat-card-header><mat-card-title>Топ 5 путей IVR</mat-card-title></mat-card-header>
+        <mat-card-content>
+          <div class="chart-container">
+            <canvas baseChart [data]="pathsChartData()" [options]="chartOptions" type="pie"></canvas>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="chart-card">
+        <mat-card-header><mat-card-title>DTMF выборы</mat-card-title></mat-card-header>
+        <mat-card-content>
+          <div class="chart-container">
+            <canvas baseChart [data]="dtmfChartData()" [options]="chartOptions" type="bar"></canvas>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <mat-card class="table-card">
+      <mat-card-header><mat-card-title>Детальная статистика путей</mat-card-title></mat-card-header>
+      <mat-card-content>
+        <crm-table
+          [columns]="columnsPaths"
+          [data]="data()?.paths || []"
+          [pageSize]="10"
+          [showPaginator]="true"
+        >
+          <ng-template crmColumnTemplate="percentageTemplate" let-row>
+            {{ row.percentage.toFixed(1) }}%
+          </ng-template>
+
+          <ng-template crmColumnTemplate="avgTimeTemplate" let-row>
+            {{ formatTime(row.avgTimeInIvr) }}
+          </ng-template>
+
+          <ng-template crmColumnTemplate="completionTemplate" let-row>
+            <span [ngClass]="getCompletionClass(row.completionRate)">
+              {{ row.completionRate.toFixed(1) }}%
+            </span>
+          </ng-template>
+        </crm-table>
+      </mat-card-content>
+    </mat-card>
+
+    <div class="tables-row">
+      <mat-card class="table-card">
+        <mat-card-header><mat-card-title>Статистика узлов</mat-card-title></mat-card-header>
+        <mat-card-content>
+          <crm-table
+            [columns]="columnsNodes"
+            [data]="data()?.nodes || []"
+            [pageSize]="10"
+            [showPaginator]="true"
+          >
+            <ng-template crmColumnTemplate="exitRateTemplate" let-row>
+              {{ row.exitRate.toFixed(1) }}%
+            </ng-template>
+          </crm-table>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="table-card">
+        <mat-card-header><mat-card-title>DTMF детализация</mat-card-title></mat-card-header>
+        <mat-card-content>
+          <crm-table
+            [columns]="columnsDtmf"
+            [data]="data()?.dtmfSelections || []"
+            [pageSize]="10"
+            [showPaginator]="true"
+          >
+            <ng-template crmColumnTemplate="percentageTemplate" let-row>
+              {{ row.percentage.toFixed(1) }}%
+            </ng-template>
+          </crm-table>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+
+  <div *ngIf="!loading() && !error() && !hasData()" class="no-data">
+    Нет данных за выбранный период
+  </div>
+</div>

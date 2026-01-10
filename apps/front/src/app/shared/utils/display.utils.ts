@@ -119,6 +119,8 @@ export function getCurrencySymbol(currency: string): string {
     CNY: '¥',
     CHF: '₣',
     KZT: '₸',
+    KGS: 'с',
+    UZS: "so'm",
     UAH: '₴',
   };
   
@@ -141,6 +143,8 @@ export function getCurrencyName(currency: string): string {
     CNY: 'Китайский юань',
     CHF: 'Швейцарский франк',
     KZT: 'Казахский тенге',
+    KGS: 'Киргизский сом',
+    UZS: 'Узбекский сум',
     UAH: 'Украинская гривна',
   };
   

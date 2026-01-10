@@ -49,8 +49,8 @@ export class CallConversionService {
       // Revenue calculation
       const revenueQuery = this.dealRepo
         .createQueryBuilder('d')
-        .select('COALESCE(SUM(d.value), 0)', 'totalRevenue')
-        .addSelect('COALESCE(AVG(d.value), 0)', 'avgDealSize')
+        .select('COALESCE(SUM(d.amount), 0)', 'totalRevenue')
+        .addSelect('COALESCE(AVG(d.amount), 0)', 'avgDealSize')
         .addSelect('COUNT(*)', 'totalDeals')
         .innerJoin(CallSummary, 'cs', 'cs.dealId = d.id');
 
@@ -85,7 +85,7 @@ export class CallConversionService {
           // Get agent revenue
           const agentRevenueQuery = this.dealRepo
             .createQueryBuilder('d')
-            .select('COALESCE(SUM(d.value), 0)', 'revenue')
+            .select('COALESCE(SUM(d.amount), 0)', 'revenue')
             .innerJoin(CallSummary, 'cs', 'cs.dealId = d.id')
             .where('cs.agent = :agent', { agent: row.agent });
 
@@ -141,7 +141,7 @@ export class CallConversionService {
         .createQueryBuilder('d')
         .select('d.status', 'status')
         .addSelect('COUNT(*)', 'count')
-        .addSelect('COALESCE(SUM(d.value), 0)', 'totalValue')
+        .addSelect('COALESCE(SUM(d.amount), 0)', 'totalValue')
         .innerJoin(CallSummary, 'cs', 'cs.dealId = d.id')
         .groupBy('d.status')
         .orderBy('"count"', 'DESC');

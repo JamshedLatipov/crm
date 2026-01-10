@@ -32,6 +32,7 @@ import {
   StatusChangeResult,
 } from './components/status-change-dialog.component';
 import { User } from '../users/users.service';
+import { CurrencyFormatPipe } from '../shared/pipes/currency-format.pipe';
 
 @Component({
   selector: 'app-deals',
@@ -55,6 +56,7 @@ import { User } from '../users/users.service';
     PageLayoutComponent,
     MatPaginatorModule,
     MatDialogModule,
+    CurrencyFormatPipe,
   ],
   template: `
     <app-page-layout
@@ -107,9 +109,7 @@ import { User } from '../users/users.service';
             </div>
             <div class="stat-content">
               <div class="stat-value">
-                {{
-                  stats.totalValue || 0 | currency : 'TJS' : 'symbol' : '1.0-0'
-                }}
+                {{ stats.totalValue || 0 | currencyFormat }}
               </div>
               <div class="stat-label">Общая сумма</div>
             </div>

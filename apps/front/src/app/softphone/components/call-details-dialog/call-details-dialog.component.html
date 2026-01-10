@@ -1,0 +1,143 @@
+<div class="call-details-dialog">
+  <div class="dialog-header">
+    <h2 mat-dialog-title>
+      <mat-icon>phone_in_talk</mat-icon>
+      Детали звонка
+    </h2>
+    <button mat-icon-button (click)="close()" class="close-btn">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <mat-dialog-content>
+    <div class="details-section">
+      <div class="section-header">
+        <mat-icon>info</mat-icon>
+        <h3>Основная информация</h3>
+      </div>
+      
+      <div class="detail-row">
+        <span class="label">Дата и время:</span>
+        <span class="value">{{ formatDateTime(data.calldate) }}</span>
+      </div>
+
+      <div class="detail-row">
+        <span class="label">Направление:</span>
+        <span class="value">
+          <mat-icon [class]="getDirectionLabel() === 'Входящий' ? 'incoming' : 'outgoing'">
+            {{ getDirectionLabel() === 'Входящий' ? 'call_received' : 'call_made' }}
+          </mat-icon>
+          {{ getDirectionLabel() }}
+        </span>
+      </div>
+
+      <div class="detail-row">
+        <span class="label">Статус:</span>
+        <span class="value">
+          <mat-chip [class]="getDispositionClass()">{{ getDispositionLabel() }}</mat-chip>
+        </span>
+      </div>
+    </div>
+
+    <mat-divider></mat-divider>
+
+    <div class="details-section">
+      <div class="section-header">
+        <mat-icon>phone</mat-icon>
+        <h3>Номера телефонов</h3>
+      </div>
+      
+      <div class="detail-row">
+        <span class="label">От кого (Src):</span>
+        <span class="value mono">{{ data.src || '—' }}</span>
+      </div>
+
+      <div class="detail-row">
+        <span class="label">Кому (Dst):</span>
+        <span class="value mono">{{ data.dst || '—' }}</span>
+      </div>
+
+      <div class="detail-row" *ngIf="data.clid">
+        <span class="label">Caller ID:</span>
+        <span class="value mono">{{ data.clid }}</span>
+      </div>
+    </div>
+
+    <mat-divider></mat-divider>
+
+    <div class="details-section">
+      <div class="section-header">
+        <mat-icon>timer</mat-icon>
+        <h3>Длительность</h3>
+      </div>
+      
+      <div class="detail-row">
+        <span class="label">Общая длительность:</span>
+        <span class="value mono">{{ formatDuration(data.duration) }}</span>
+      </div>
+
+      <div class="detail-row">
+        <span class="label">Оплачиваемое время:</span>
+        <span class="value mono">{{ formatDuration(data.billsec) }}</span>
+      </div>
+    </div>
+
+    <mat-divider></mat-divider>
+
+    <div class="details-section">
+      <div class="section-header">
+        <mat-icon>settings_input_antenna</mat-icon>
+        <h3>Техническая информация</h3>
+      </div>
+      
+      <div class="detail-row">
+        <span class="label">Канал:</span>
+        <span class="value mono small">{{ data.channel || '—' }}</span>
+      </div>
+
+      <div class="detail-row">
+        <span class="label">Канал назначения:</span>
+        <span class="value mono small">{{ data.dstchannel || '—' }}</span>
+      </div>
+
+      <div class="detail-row">
+        <span class="label">Контекст:</span>
+        <span class="value mono">{{ data.dcontext || '—' }}</span>
+      </div>
+
+      <div class="detail-row">
+        <span class="label">Последнее приложение:</span>
+        <span class="value mono">{{ data.lastapp || '—' }}</span>
+      </div>
+
+      <div class="detail-row" *ngIf="data.lastdata">
+        <span class="label">Параметры приложения:</span>
+        <span class="value mono small">{{ data.lastdata }}</span>
+      </div>
+
+      <div class="detail-row">
+        <span class="label">Уникальный ID:</span>
+        <span class="value mono small">{{ data.uniqueid }}</span>
+      </div>
+    </div>
+
+    <mat-divider *ngIf="data.userfield"></mat-divider>
+
+    <div class="details-section" *ngIf="data.userfield">
+      <div class="section-header">
+        <mat-icon>notes</mat-icon>
+        <h3>Заметки</h3>
+      </div>
+      
+      <div class="notes-content">
+        {{ data.userfield }}
+      </div>
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-raised-button color="primary" (click)="close()">
+      Закрыть
+    </button>
+  </mat-dialog-actions>
+</div>

@@ -1,0 +1,458 @@
+<app-page-layout
+  title="Мастер создания кампании"
+  subtitle="Пошаговое создание кампании за 5 простых шагов"
+>
+  <div page-actions>
+    <button mat-stroked-button (click)="cancel()">
+      <mat-icon>close</mat-icon>
+      Отмена
+    </button>
+  </div>
+
+  <div class="wizard-container">
+    <div class="wizard-layout">
+      <!-- Progress Sidebar -->
+      <div class="progress-sidebar">
+        <h3 class="sidebar-title">Прогресс</h3>
+        <div class="progress-steps">
+          @for (step of steps; track step.index) {
+            <div class="progress-step" [class.active]="currentStep() === step.index" [class.completed]="currentStep() > step.index">
+              <div class="step-indicator">
+                @if (currentStep() > step.index) {
+                  <mat-icon>check</mat-icon>
+                } @else {
+                  <span>{{ step.index + 1 }}</span>
+                }
+              </div>
+              <div class="step-info">
+                <div class="step-label">{{ step.label }}</div>
+                <div class="step-description">{{ step.description }}</div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <mat-divider style="margin: 24px 0;"></mat-divider>
+
+        <div class="campaign-summary">
+          <h4>Краткая информация</h4>
+          <div class="summary-item">
+            <mat-icon>campaign</mat-icon>
+            <span>{{ basicInfoForm.get('name')?.value || 'Не указано' }}</span>
+          </div>
+          <div class="summary-item">
+            <mat-icon>send</mat-icon>
+            <span>{{ getChannelLabel(channelForm.get('channel')?.value) }}</span>
+          </div>
+          <div class="summary-item">
+            <mat-icon>people</mat-icon>
+            <span>{{ getSegmentLabel(audienceForm.get('segmentId')?.value) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Wizard Content -->
+      <div class="wizard-content">
+        <mat-card class="wizard-card">
+          <mat-stepper [linear]="true" #stepper (selectionChange)="onStepChange($event)">
+            
+            <!-- Step 1: Basic Info -->
+            <mat-step [stepControl]="basicInfoForm" label="Основная информация">
+              <div class="step-container">
+                <div class="step-header">
+                  <mat-icon class="step-icon">info</mat-icon>
+                  <div>
+                    <h2>Основная информация</h2>
+                    <p>Дайте название вашей кампании и опишите ее цель</p>
+                  </div>
+                </div>
+
+                <form [formGroup]="basicInfoForm" class="step-form">
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Название кампании</mat-label>
+                    <input matInput formControlName="name" placeholder="Например: Летняя распродажа 2025">
+                    <mat-icon matPrefix>campaign</mat-icon>
+                    @if (basicInfoForm.get('name')?.hasError('required')) {
+                      <mat-error>Название обязательно</mat-error>
+                    }
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Описание кампании</mat-label>
+                    <textarea matInput formControlName="description" rows="4" 
+                              placeholder="Опишите цель и особенности кампании"></textarea>
+                    <mat-icon matPrefix>description</mat-icon>
+                    <mat-hint>Это поможет вам отслеживать назначение кампании</mat-hint>
+                  </mat-form-field>
+                </form>
+
+                <div class="step-actions">
+                  <button mat-raised-button color="primary" matStepperNext [disabled]="basicInfoForm.invalid">
+                    Далее
+                    <mat-icon>arrow_forward</mat-icon>
+                  </button>
+                </div>
+              </div>
+            </mat-step>
+
+            <!-- Step 2: Channel Selection -->
+            <mat-step [stepControl]="channelForm" label="Выбор канала">
+              <div class="step-container">
+                <div class="step-header">
+                  <mat-icon class="step-icon">send</mat-icon>
+                  <div>
+                    <h2>Выберите канал отправки</h2>
+                    <p>Определите, как будут доставлены ваши сообщения</p>
+                  </div>
+                </div>
+
+                <form [formGroup]="channelForm" class="step-form">
+                  <div class="channel-grid">
+                    <mat-card class="channel-card" [class.selected]="channelForm.get('channel')?.value === 'SMS'" (click)="selectChannel('SMS')">
+                      <div class="channel-content">
+                        <mat-icon class="channel-icon">sms</mat-icon>
+                        <h3>SMS</h3>
+                        <p>Быстрая доставка текстовых сообщений</p>
+                        <div class="channel-features">
+                          <span class="feature-badge">98% Open Rate</span>
+                          <span class="feature-badge">3-5 сек доставка</span>
+                        </div>
+                      </div>
+                    </mat-card>
+
+                    <mat-card class="channel-card" [class.selected]="channelForm.get('channel')?.value === 'EMAIL'" (click)="selectChannel('EMAIL')">
+                      <div class="channel-content">
+                        <mat-icon class="channel-icon">email</mat-icon>
+                        <h3>Email</h3>
+                        <p>Детальные сообщения с форматированием</p>
+                        <div class="channel-features">
+                          <span class="feature-badge">HTML поддержка</span>
+                          <span class="feature-badge">Вложения</span>
+                        </div>
+                      </div>
+                    </mat-card>
+
+                    <mat-card class="channel-card" [class.selected]="channelForm.get('channel')?.value === 'WHATSAPP'" (click)="selectChannel('WHATSAPP')">
+                      <div class="channel-content">
+                        <mat-icon class="channel-icon">chat</mat-icon>
+                        <h3>WhatsApp</h3>
+                        <p>Мгновенные сообщения через WhatsApp</p>
+                        <div class="channel-features">
+                          <span class="feature-badge">Высокий отклик</span>
+                          <span class="feature-badge">Медиа файлы</span>
+                        </div>
+                      </div>
+                    </mat-card>
+
+                    <mat-card class="channel-card" [class.selected]="channelForm.get('channel')?.value === 'TELEGRAM'" (click)="selectChannel('TELEGRAM')">
+                      <div class="channel-content">
+                        <mat-icon class="channel-icon">telegram</mat-icon>
+                        <h3>Telegram</h3>
+                        <p>Быстрая доставка через Telegram Bot</p>
+                        <div class="channel-features">
+                          <span class="feature-badge">Мгновенная доставка</span>
+                          <span class="feature-badge">Интерактивность</span>
+                        </div>
+                      </div>
+                    </mat-card>
+
+                    <mat-card class="channel-card" [class.selected]="channelForm.get('channel')?.value === 'MULTI'" (click)="selectChannel('MULTI')">
+                      <div class="channel-content">
+                        <mat-icon class="channel-icon">layers</mat-icon>
+                        <h3>Мультиканальная</h3>
+                        <p>Отправка через несколько каналов</p>
+                        <div class="channel-features">
+                          <span class="feature-badge">Максимальный охват</span>
+                          <span class="feature-badge">Fallback</span>
+                        </div>
+                      </div>
+                    </mat-card>
+                  </div>
+                </form>
+
+                <div class="step-actions">
+                  <button mat-button matStepperPrevious>
+                    <mat-icon>arrow_back</mat-icon>
+                    Назад
+                  </button>
+                  <button mat-raised-button color="primary" matStepperNext [disabled]="channelForm.invalid">
+                    Далее
+                    <mat-icon>arrow_forward</mat-icon>
+                  </button>
+                </div>
+              </div>
+            </mat-step>
+
+            <!-- Step 3: Template Selection -->
+            <mat-step [stepControl]="contentForm" label="Выбор шаблона">
+              <div class="step-container">
+                <div class="step-header">
+                  <mat-icon class="step-icon">description</mat-icon>
+                  <div>
+                    <h2>Выберите шаблон сообщения</h2>
+                    <p>Используйте готовый шаблон или создайте новый</p>
+                  </div>
+                </div>
+
+                <form [formGroup]="contentForm" class="step-form">
+                  @if (loadingTemplates()) {
+                    <div class="loading-state">
+                      <mat-spinner diameter="40"></mat-spinner>
+                      <p>Загрузка шаблонов...</p>
+                    </div>
+                  } @else if (availableTemplates().length === 0) {
+                    <div class="empty-state">
+                      <mat-icon>description</mat-icon>
+                      <h3>Нет доступных шаблонов</h3>
+                      <p>Создайте первый шаблон для использования в кампаниях</p>
+                      <button mat-raised-button color="primary" (click)="createNewTemplate()">
+                        <mat-icon>add</mat-icon>
+                        Создать шаблон
+                      </button>
+                    </div>
+                  } @else {
+                    <div class="templates-grid">
+                      @for (template of availableTemplates(); track template.id) {
+                        <mat-card class="template-card p-2" 
+                                  [class.selected]="contentForm.get('templateId')?.value === template.id"
+                                  (click)="selectTemplate(template)">
+                          <div class="template-header">
+                            <h4>{{ template.name }}</h4>
+                            @if (template.isActive) {
+                              <span class="status-badge active">Активен</span>
+                            } @else {
+                              <span class="status-badge">Неактивен</span>
+                            }
+                          </div>
+                          <div class="template-content">
+                            {{ getTemplatePreview(template) }}
+                          </div>
+                          <div class="template-stats">
+                            <span><mat-icon>description</mat-icon> {{ template.category || 'Без категории' }}</span>
+                          </div>
+                        </mat-card>
+                      }
+                    </div>
+                  }
+                </form>
+
+                <div class="step-actions">
+                  <button mat-button matStepperPrevious>
+                    <mat-icon>arrow_back</mat-icon>
+                    Назад
+                  </button>
+                  <button mat-raised-button color="primary" matStepperNext [disabled]="contentForm.invalid">
+                    Далее
+                    <mat-icon>arrow_forward</mat-icon>
+                  </button>
+                </div>
+              </div>
+            </mat-step>
+
+            <!-- Step 4: Audience Selection -->
+            <mat-step [stepControl]="audienceForm" label="Целевая аудитория">
+              <div class="step-container">
+                <div class="step-header">
+                  <mat-icon class="step-icon">people</mat-icon>
+                  <div>
+                    <h2>Выберите получателей</h2>
+                    <p>Определите, кто получит ваше сообщение</p>
+                  </div>
+                </div>
+
+                <form [formGroup]="audienceForm" class="step-form">
+                  @if (loadingSegments()) {
+                    <div class="loading-state">
+                      <mat-spinner diameter="40"></mat-spinner>
+                      <p>Загрузка сегментов...</p>
+                    </div>
+                  } @else if (availableSegments().length === 0) {
+                    <div class="empty-state">
+                      <mat-icon>segment</mat-icon>
+                      <h3>Нет доступных сегментов</h3>
+                      <p>Создайте сегмент аудитории для отправки кампаний</p>
+                      <button mat-raised-button color="primary" routerLink="/messages/segments/new">
+                        <mat-icon>add</mat-icon>
+                        Создать сегмент
+                      </button>
+                    </div>
+                  } @else {
+                    <div class="segments-grid">
+                      <!-- Опция "Все контакты" всегда доступна -->
+                      <mat-card class="segment-card" [class.selected]="audienceForm.get('segmentId')?.value === 'all'" (click)="selectSegment('all')">
+                        <div class="segment-content">
+                          <mat-icon class="segment-icon">groups</mat-icon>
+                          <h4>Все контакты</h4>
+                          <p>Отправить всем контактам в базе</p>
+                          <div class="segment-count">
+                            <mat-icon>person</mat-icon>
+                            <span>Все активные</span>
+                          </div>
+                        </div>
+                      </mat-card>
+
+                      <!-- Динамические сегменты из сервиса -->
+                      @for (segment of availableSegments(); track segment.id) {
+                        <mat-card class="segment-card" [class.selected]="audienceForm.get('segmentId')?.value === segment.id" (click)="selectSegment(segment.id)">
+                          <div class="segment-content">
+                            <mat-icon class="segment-icon">{{ segment.isDynamic ? 'autorenew' : 'filter_list' }}</mat-icon>
+                            <h4>{{ segment.name }}</h4>
+                            <p>{{ segment.description || 'Сегмент контактов' }}</p>
+                            <div class="segment-count">
+                              <mat-icon>person</mat-icon>
+                              <span>{{ segment.contactsCount | number }} {{ segment.isDynamic ? '(динамический)' : 'контактов' }}</span>
+                            </div>
+                          </div>
+                        </mat-card>
+                      }
+                    </div>
+                  }
+                </form>
+
+                <div class="step-actions">
+                  <button mat-button matStepperPrevious>
+                    <mat-icon>arrow_back</mat-icon>
+                    Назад
+                  </button>
+                  <button mat-raised-button color="primary" matStepperNext [disabled]="audienceForm.invalid">
+                    Далее
+                    <mat-icon>arrow_forward</mat-icon>
+                  </button>
+                </div>
+              </div>
+            </mat-step>
+
+            <!-- Step 5: Schedule & Confirm -->
+            <mat-step [stepControl]="scheduleForm" label="Планирование">
+              <div class="step-container">
+                <div class="step-header">
+                  <mat-icon class="step-icon">schedule</mat-icon>
+                  <div>
+                    <h2>Планирование отправки</h2>
+                    <p>Выберите, когда запустить кампанию</p>
+                  </div>
+                </div>
+
+                <form [formGroup]="scheduleForm" class="step-form">
+                  <div class="schedule-type-group">
+                    <mat-card class="schedule-type-card" [class.selected]="scheduleForm.get('scheduleType')?.value === 'immediate'" (click)="selectScheduleType('immediate')">
+                      <div class="schedule-type-content">
+                        <mat-icon>flash_on</mat-icon>
+                        <h4>Немедленная отправка</h4>
+                        <p>Начать отправку сразу после создания</p>
+                      </div>
+                    </mat-card>
+
+                    <mat-card class="schedule-type-card" [class.selected]="scheduleForm.get('scheduleType')?.value === 'scheduled'" (click)="selectScheduleType('scheduled')">
+                      <div class="schedule-type-content">
+                        <mat-icon>event</mat-icon>
+                        <h4>Отложенная отправка</h4>
+                        <p>Запланировать на определенное время</p>
+                      </div>
+                    </mat-card>
+                  </div>
+
+                  @if (scheduleForm.get('scheduleType')?.value === 'scheduled') {
+                    <div class="schedule-details">
+                      <div class="form-row">
+                        <mat-form-field appearance="outline">
+                          <mat-label>Дата отправки</mat-label>
+                          <input matInput [matDatepicker]="picker" formControlName="scheduledDate" [min]="minDate">
+                          <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                          <mat-datepicker #picker></mat-datepicker>
+                          <mat-icon matPrefix>event</mat-icon>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline">
+                          <mat-label>Время отправки</mat-label>
+                          <input matInput type="time" formControlName="scheduledTime">
+                          <mat-icon matPrefix>access_time</mat-icon>
+                        </mat-form-field>
+                      </div>
+                    </div>
+                  }
+
+                  <mat-divider style="margin: 24px 0;"></mat-divider>
+
+                  <!-- Campaign Summary -->
+                  <div class="final-summary">
+                    <h3>
+                      <mat-icon>summarize</mat-icon>
+                      Итоговая информация
+                    </h3>
+
+                    <div class="summary-grid">
+                      <div class="summary-card">
+                        <mat-icon>campaign</mat-icon>
+                        <div>
+                          <span class="summary-label">Название</span>
+                          <span class="summary-value">{{ basicInfoForm.get('name')?.value }}</span>
+                        </div>
+                      </div>
+
+                      <div class="summary-card">
+                        <mat-icon>send</mat-icon>
+                        <div>
+                          <span class="summary-label">Канал</span>
+                          <span class="summary-value">{{ getChannelLabel(channelForm.get('channel')?.value) }}</span>
+                        </div>
+                      </div>
+
+                      <div class="summary-card">
+                        <mat-icon>description</mat-icon>
+                        <div>
+                          <span class="summary-label">Шаблон</span>
+                          <span class="summary-value">{{ getTemplateName(contentForm.get('templateId')?.value) }}</span>
+                        </div>
+                      </div>
+
+                      <div class="summary-card">
+                        <mat-icon>people</mat-icon>
+                        <div>
+                          <span class="summary-label">Получателей</span>
+                          <span class="summary-value">{{ getRecipientCount(audienceForm.get('segmentId')?.value) }}</span>
+                        </div>
+                      </div>
+
+                      <div class="summary-card">
+                        <mat-icon>attach_money</mat-icon>
+                        <div>
+                          <span class="summary-label">Примерная стоимость</span>
+                          <span class="summary-value">{{ estimatedCost() | currencyFormat }}</span>
+                        </div>
+                      </div>
+
+                      <div class="summary-card">
+                        <mat-icon>schedule</mat-icon>
+                        <div>
+                          <span class="summary-label">Время доставки</span>
+                          <span class="summary-value">{{ estimatedDuration() }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </form>
+
+                <div class="step-actions">
+                  <button mat-button matStepperPrevious>
+                    <mat-icon>arrow_back</mat-icon>
+                    Назад
+                  </button>
+                  <button mat-raised-button color="primary" (click)="createCampaign()" [disabled]="loading() || scheduleForm.invalid">
+                    @if (loading()) {
+                      <mat-spinner diameter="20"></mat-spinner>
+                    } @else {
+                      <mat-icon>rocket_launch</mat-icon>
+                    }
+                    Создать кампанию
+                  </button>
+                </div>
+              </div>
+            </mat-step>
+
+          </mat-stepper>
+        </mat-card>
+      </div>
+    </div>
+  </div>
+</app-page-layout>

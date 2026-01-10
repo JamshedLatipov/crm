@@ -1,0 +1,85 @@
+::ng-deep .variable-menu {
+  max-height: 600px;
+  
+  .mat-mdc-menu-content {
+    padding: 0;
+  }
+}
+
+.variable-menu-content {
+  max-height: 500px;
+  overflow-y: auto;
+  min-width: 400px;
+}
+
+.variable-group {
+  padding: 12px 0;
+
+  .group-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    font-weight: 600;
+    color: #666;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: #999;
+    }
+  }
+
+  .variables-list {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+.variable-item {
+  padding: 12px 16px !important;
+  height: auto !important;
+  line-height: normal !important;
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+  }
+
+  .variable-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    width: 100%;
+
+    .variable-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+    }
+
+    .variable-key {
+      font-size: 12px;
+      font-family: 'Courier New', monospace;
+      color: #1976d2;
+      background: rgba(25, 118, 210, 0.08);
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+  }
+
+  .variable-example {
+    font-size: 12px;
+    color: #999;
+    font-style: italic;
+    margin-top: 4px;
+  }
+}
+
+mat-divider {
+  margin: 8px 0;
+}

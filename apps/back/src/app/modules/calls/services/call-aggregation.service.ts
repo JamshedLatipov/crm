@@ -130,6 +130,31 @@ export class CallAggregationService {
         const firstResponseTime = this.calculateFirstResponseTime(trace);
         const disconnectReason = cdr ? `${cdr.disposition}${cdr.lastapp ? ` (${cdr.lastapp})` : ''}` : null;
         
+        // Determine correct status based on queue events and CDR disposition
+        // IMPORTANT: Check abandonTime BEFORE s.answered because s.answered can be incorrectly set
+        let callStatus = 'NO ANSWER';
+        if (abandonTime && abandonTime > 0) {
+          // Call was abandoned in queue - highest priority
+          callStatus = 'ABANDON';
+        } else if (s.answered || (answeredAt && talkTime && talkTime > 0)) {
+          // Call was actually answered by agent
+          callStatus = 'ANSWERED';
+        } else if (cdr) {
+          // Use CDR disposition as fallback
+          const disposition = cdr.disposition?.toUpperCase();
+          if (disposition === 'ANSWERED') {
+            callStatus = 'ANSWERED';
+          } else if (disposition === 'BUSY') {
+            callStatus = 'BUSY';
+          } else if (disposition === 'FAILED') {
+            callStatus = 'FAILED';
+          } else if (disposition === 'NO ANSWER') {
+            callStatus = 'NO ANSWER';
+          } else {
+            callStatus = disposition || 'NO ANSWER';
+          }
+        }
+        
         // SLA: violated if wait time > 30 seconds or abandoned after 20+ seconds
         const slaViolated = (s.queueWaitTime && s.queueWaitTime > 30) || 
                            (abandonTime && abandonTime > 20) || false;
@@ -146,7 +171,7 @@ export class CallAggregationService {
           duration: s.duration ?? null,
           caller: s.caller,
           destination: s.destination,
-          status: s.answered ? 'ANSWERED' : (s.status || 'NO ANSWER'),
+          status: callStatus,
           queue: s.queueName || null,
           agent: agentName || s.agentAnswered || null,
           waitTime: s.queueWaitTime ?? null,

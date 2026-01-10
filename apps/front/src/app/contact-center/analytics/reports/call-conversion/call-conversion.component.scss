@@ -1,0 +1,11 @@
+@import '../../shared-analytics-styles.scss';
+
+.conversion-container {
+  @extend .analytics-container;
+
+  .content-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+}

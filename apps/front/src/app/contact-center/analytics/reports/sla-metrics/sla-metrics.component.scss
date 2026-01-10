@@ -1,0 +1,34 @@
+@import '../../shared-analytics-styles.scss';
+
+.sla-metrics-container {
+  @extend .analytics-container;
+}
+
+// Component-specific compliance badge
+.compliance-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 13px;
+
+  &.excellent {
+    background: #e8f5e9;
+    color: #2e7d32;
+  }
+
+  &.good {
+    background: #f1f8e9;
+    color: #558b2f;
+  }
+
+  &.warning {
+    background: #fff3e0;
+    color: #ef6c00;
+  }
+
+  &.danger {
+    background: #ffebee;
+    color: #c62828;
+  }
+}

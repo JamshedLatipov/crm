@@ -1,0 +1,109 @@
+<app-page-layout
+  title="Кампании уведомлений"
+  [subtitle]="'Всего: ' + campaigns().length + ' кампаний'"
+>
+  <div page-actions>
+    <button mat-raised-button color="primary" routerLink="/messages/campaigns/new">
+      <mat-icon>add</mat-icon>
+      Создать кампанию
+    </button>
+    <button mat-stroked-button [matMenuTriggerFor]="filterMenu">
+      <mat-icon>filter_list</mat-icon>
+      Фильтры
+    </button>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-container">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
+  } @else if (campaigns().length === 0) {
+    <div class="empty-state">
+      <mat-icon>campaign</mat-icon>
+      <h3>Нет кампаний</h3>
+      <p>Создайте первую кампанию для рассылки уведомлений</p>
+      <button mat-raised-button color="primary" routerLink="/messages/campaigns/new">
+        <mat-icon>add</mat-icon>
+        Создать кампанию
+      </button>
+    </div>
+  } @else {
+    <crm-table
+      [columns]="columns"
+      [data]="campaigns()"
+      [pageSize]="20"
+    >
+      <ng-template crmColumnTemplate="nameTemplate" let-campaign>
+        <div class="campaign-name">
+          <strong>{{ campaign.name }}</strong>
+        </div>
+      </ng-template>
+
+      <ng-template crmColumnTemplate="channelTemplate" let-campaign>
+        <div class="channel-badge" [class]="'channel-' + (campaign.channel || 'sms').toLowerCase()">
+          <mat-icon>{{ getChannelIcon(campaign.channel || 'sms') }}</mat-icon>
+          <span>{{ campaign.channel || 'SMS' }}</span>
+        </div>
+      </ng-template>
+
+      <ng-template crmColumnTemplate="statusTemplate" let-campaign>
+        <span class="status-badge" [class]="'status-' + campaign.status">
+          {{ getStatusLabel(campaign.status) }}
+        </span>
+      </ng-template>
+
+      <ng-template crmColumnTemplate="progressTemplate" let-campaign>
+        <div class="progress-info">
+          <span>{{ campaign.totalSent || campaign.sentCount || 0 }} / {{ campaign.totalRecipients || 0 }}</span>
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="campaign.totalRecipients > 0 ? ((campaign.totalSent || campaign.sentCount || 0) / campaign.totalRecipients) * 100 : 0"></div>
+          </div>
+        </div>
+      </ng-template>
+
+      <ng-template crmColumnTemplate="scheduledAtTemplate" let-campaign>
+        {{ campaign.scheduledAt ? (campaign.scheduledAt | date:'dd.MM.yyyy HH:mm') : '—' }}
+      </ng-template>
+
+      <ng-template crmColumnTemplate="actionsTemplate" let-campaign>
+        @if (campaign.status === 'draft') {
+          <button mat-icon-button (click)="startCampaign(campaign)" matTooltip="Запустить">
+            <mat-icon>play_arrow</mat-icon>
+          </button>
+        }
+        @if (campaign.status === 'running') {
+          <button mat-icon-button (click)="pauseCampaign(campaign)" matTooltip="Приостановить">
+            <mat-icon>pause</mat-icon>
+          </button>
+        }
+        <button mat-icon-button [routerLink]="['/messages/campaigns', campaign.id]" matTooltip="Редактировать">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button mat-icon-button [routerLink]="['/messages/campaigns', campaign.id, 'stats']" matTooltip="Статистика">
+          <mat-icon>bar_chart</mat-icon>
+        </button>
+        <button mat-icon-button [matMenuTriggerFor]="actionMenu" matTooltip="Еще">
+          <mat-icon>more_vert</mat-icon>
+        </button>
+        
+        <mat-menu #actionMenu="matMenu">
+          <button mat-menu-item (click)="deleteCampaign(campaign)">
+            <mat-icon>delete</mat-icon>
+            <span>Удалить</span>
+          </button>
+        </mat-menu>
+      </ng-template>
+    </crm-table>
+  }
+
+  <mat-menu #filterMenu="matMenu">
+    <button mat-menu-item>
+      <mat-icon>filter_list</mat-icon>
+      <span>По статусу</span>
+    </button>
+    <button mat-menu-item>
+      <mat-icon>swap_vert</mat-icon>
+      <span>По дате</span>
+    </button>
+  </mat-menu>
+</app-page-layout>

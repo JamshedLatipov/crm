@@ -41,6 +41,19 @@ export class PsEndpointService {
         dtmf_mode: 'rfc4733',
         direct_media: 'no',
         rewrite_contact: 'yes',
+        force_rport: 'yes',
+        rtp_symmetric: 'yes',
+        // WebRTC настройки
+        webrtc: data.webrtc || 'yes',
+        media_encryption: data.media_encryption || 'dtls',
+        dtls_verify: data.dtls_verify || 'fingerprint',
+        dtls_setup: data.dtls_setup || 'actpass',
+        ice_support: data.ice_support || 'yes',
+        // Кодеки - disallow all, затем allow только нужные
+        // ВАЖНО: Используем только ulaw,alaw для совместимости всех операторов
+        // Это предотвращает ошибки "No path to translate" при передаче звонков в очередях
+        disallow: 'all',
+        allow: data.allow || 'ulaw,alaw',
       });
       const saved = await em.save(endpoint);
 

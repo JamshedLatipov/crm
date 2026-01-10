@@ -1,9 +1,10 @@
 import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, Like, LessThanOrEqual, Not, IsNull, Or } from 'typeorm';
+import { Repository, Between, Like, LessThanOrEqual, Not, IsNull, Or, MoreThanOrEqual } from 'typeorm';
 import { QueueMember } from '../calls/entities/queue-member.entity';
 import { Queue } from '../calls/entities/queue.entity';
 import { Cdr } from '../calls/entities/cdr.entity';
+import { QueueLog } from '../calls/entities/queuelog.entity';
 import { User } from '../user/user.entity';
 import { AgentStatus } from './entities/agent-status.entity';
 import { AgentStatusHistory } from './entities/agent-status-history.entity';
@@ -69,6 +70,7 @@ export class ContactCenterService {
     @InjectRepository(QueueMember) private readonly membersRepo: Repository<QueueMember>,
     @InjectRepository(Queue) private readonly queueRepo: Repository<Queue>,
     @InjectRepository(Cdr) private readonly cdrRepo: Repository<Cdr>,
+    @InjectRepository(QueueLog) private readonly queueLogRepo: Repository<QueueLog>,
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(AgentStatus) private readonly agentStatusRepo: Repository<AgentStatus>,
     @InjectRepository(AgentStatusHistory) private readonly agentStatusHistoryRepo: Repository<AgentStatusHistory>,
@@ -259,15 +261,34 @@ export class ContactCenterService {
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
     
+    const now = new Date();
+    
     // Load all CDR records for today in one query
     const allCdrRecords = await this.cdrRepo.find({
       where: {
-        calldate: Between(startOfToday, new Date()),
+        calldate: Between(startOfToday, now),
       },
       order: { calldate: 'DESC' },
     });
     
     return { allCdrRecords, startOfToday };
+  }
+
+  // Batch load queue_log data for today to calculate queue metrics
+  private async loadQueueLogDataBatch() {
+    // Get start of today (timestamp in seconds since epoch)
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    
+    // Load all queue_log records for today
+    const allQueueLogs = await this.queueLogRepo.find({
+      where: {
+        time: MoreThanOrEqual(startOfToday),
+      },
+      order: { id: 'DESC' },
+    });
+    
+    return allQueueLogs;
   }
 
   // Return operators based on queue_members table enriched with real-time AMI data
@@ -497,15 +518,14 @@ export class ContactCenterService {
   // Return queues with real-time statistics from AMI
   async getQueuesSnapshot(): Promise<QueueStatus[]> {
     // Load all data in parallel
-    const [_, queues, members, cdrData] = await Promise.all([
+    const [_, queues, members, queueLogs] = await Promise.all([
       this.refreshAmiCache(),
       this.queueRepo.find(),
       this.membersRepo.find(),
-      this.loadCdrDataBatch(),
+      this.loadQueueLogDataBatch(),
     ]);
     
     const queueStatusMap = this.amiCache.queueStatus || new Map();
-    const { allCdrRecords } = cdrData;
     
     // Get active channels for validation
     const activeChannels = new Set<string>();
@@ -605,29 +625,36 @@ export class ContactCenterService {
         if (callsInService < 0) callsInService = 0;
       }
 
-      // Filter CDR records for this queue from pre-loaded data
-      const queueCdrRecords = allCdrRecords.filter(cdr => 
-        cdr.lastapp === 'Queue' && cdr.lastdata?.includes(q.name)
-      );
+      // Calculate metrics from queue_log (more accurate than CDR)
+      const queueLogRecords = queueLogs.filter(log => log.queuename === q.name);
       
-      // Get abandoned calls for last 24h
-      const abandonedToday = queueCdrRecords.filter(cdr => 
-        cdr.disposition === 'NO ANSWER'
+      // Events that indicate abandoned/missed calls:
+      // ABANDON - caller hung up while waiting
+      // EXITWITHTIMEOUT - caller waited too long
+      // EXITWITHKEY - caller pressed key to exit
+      const abandonedToday = queueLogRecords.filter(log => 
+        log.event === 'ABANDON' || log.event === 'EXITWITHTIMEOUT' || log.event === 'EXITWITHKEY'
       ).length;
 
-      // Calculate service level (calls answered within 20 seconds / total calls)
-      const answeredCalls = queueCdrRecords.filter(cdr => 
-        cdr.disposition === 'ANSWERED' && (cdr.duration || 0) <= 20
+      // Events that indicate answered calls:
+      // COMPLETEAGENT - agent hung up
+      // COMPLETECALLER - caller hung up
+      // CONNECT - call connected to agent (use this for service level)
+      const connectEvents = queueLogRecords.filter(log => log.event === 'CONNECT');
+      const answeredCallsToday = queueLogRecords.filter(log => 
+        log.event === 'COMPLETEAGENT' || log.event === 'COMPLETECALLER'
       ).length;
 
-      const totalCalls = queueCdrRecords.length;
+      // Calculate service level: % of calls answered within threshold (default 20 seconds)
+      // CONNECT event format: data1 = hold time in seconds, data2 = call time, data3 = position
+      const serviceLevelThreshold = 20; // seconds
+      const answeredWithinThreshold = connectEvents.filter(log => {
+        const holdTime = parseInt(log.data1 || '0', 10);
+        return holdTime <= serviceLevelThreshold;
+      }).length;
 
-      const serviceLevel = totalCalls > 0 ? Math.round((answeredCalls / totalCalls) * 100) : 0;
-
-      // Total answered calls in last 24h
-      const answeredCallsToday = queueCdrRecords.filter(cdr => 
-        cdr.disposition === 'ANSWERED'
-      ).length;
+      const totalCalls = connectEvents.length + abandonedToday;
+      const serviceLevel = totalCalls > 0 ? Math.round((answeredWithinThreshold / totalCalls) * 100) : 0;
 
       result.push({
         id: String(q.id),
@@ -1196,8 +1223,6 @@ export class ContactCenterService {
       ? operatorId.split('/')[1] 
       : operatorId;
 
-    this.logger.log(`[getOperatorCallHistory] operatorId: ${operatorId}, extension: ${extension}, date range: ${startDate.toISOString()} - ${endDate.toISOString()}`);
-
     // Search by dstchannel (where operator answered) OR dst (direct calls)
     const cdrs = await this.cdrRepo.find({
       where: [
@@ -1213,8 +1238,6 @@ export class ContactCenterService {
       order: { calldate: 'DESC' },
       take: 100, // Last 100 calls
     });
-
-    this.logger.log(`[getOperatorCallHistory] Found ${cdrs.length} CDR records for ${extension}`);
 
     return cdrs.map(cdr => ({
       id: cdr.uniqueid,
@@ -1244,8 +1267,6 @@ export class ContactCenterService {
       ? operatorId.split('/')[1] 
       : operatorId;
 
-    this.logger.log(`[getOperatorStatusHistory] operatorId: ${operatorId}, extension: ${extension}, date range: ${startDate.toISOString()} - ${endDate.toISOString()}`);
-
     const statuses = await this.agentStatusHistoryRepo.find({
       where: {
         extension: extension,
@@ -1254,8 +1275,6 @@ export class ContactCenterService {
       order: { statusChangedAt: 'DESC' },
       take: 50, // Last 50 status changes
     });
-
-    this.logger.log(`[getOperatorStatusHistory] Found ${statuses.length} status records for ${extension}`);
 
     return statuses.map(status => ({
       timestamp: status.statusChangedAt,
@@ -1297,8 +1316,6 @@ export class ContactCenterService {
    * Uses ChanSpy with 'w' mode
    */
   async whisperCall(operatorExtension: string, supervisorExtension: string): Promise<{ success: boolean; message: string }> {
-    this.logger.log(`[whisperCall] Supervisor ${supervisorExtension} whispering to ${operatorExtension}`);
-    
     try {
       // Use AMI Originate to create a ChanSpy channel
       // ChanSpy with 'w' option allows whisper mode (speak to spied channel only)
@@ -1322,8 +1339,6 @@ export class ContactCenterService {
    * Uses ChanSpy with 'B' mode (barge)
    */
   async bargeCall(operatorExtension: string, supervisorExtension: string): Promise<{ success: boolean; message: string }> {
-    this.logger.log(`[bargeCall] Supervisor ${supervisorExtension} barging into ${operatorExtension}`);
-    
     try {
       // ChanSpy with 'B' option allows barge mode (speak to both parties)
       await this.amiService.action('Originate', {
@@ -1345,8 +1360,6 @@ export class ContactCenterService {
    * Hangup a call by channel or uniqueid
    */
   async hangupCall(channelOrUniqueid: string): Promise<{ success: boolean; message: string }> {
-    this.logger.log(`[hangupCall] Hanging up: ${channelOrUniqueid}`);
-    
     try {
       // First try to hangup by channel name
       await this.amiService.action('Hangup', {
@@ -1364,8 +1377,6 @@ export class ContactCenterService {
    * Transfer a call to another extension
    */
   async transferCall(channelOrUniqueid: string, targetExtension: string): Promise<{ success: boolean; message: string }> {
-    this.logger.log(`[transferCall] Transferring ${channelOrUniqueid} to ${targetExtension}`);
-    
     try {
       const ariContext = process.env.ASTERISK_FROM_ARI_CONTEXT || 'from-internal';
       
@@ -1389,7 +1400,6 @@ export class ContactCenterService {
    */
   async startRecording(channel: string, filename?: string): Promise<{ success: boolean; message: string; filename?: string }> {
     const recordingFilename = filename || `supervisor_${Date.now()}`;
-    this.logger.log(`[startRecording] Recording channel ${channel} to ${recordingFilename}`);
     
     try {
       await this.amiService.action('MixMonitor', {
@@ -1413,8 +1423,6 @@ export class ContactCenterService {
    * Stop recording a call
    */
   async stopRecording(channel: string): Promise<{ success: boolean; message: string }> {
-    this.logger.log(`[stopRecording] Stopping recording for channel ${channel}`);
-    
     try {
       await this.amiService.action('StopMixMonitor', {
         Channel: channel,
@@ -1431,8 +1439,6 @@ export class ContactCenterService {
    * Pause an operator in a queue (or all queues)
    */
   async pauseQueueMember(operatorInterface: string, queueName?: string, reason?: string): Promise<{ success: boolean; message: string }> {
-    this.logger.log(`[pauseQueueMember] Pausing ${operatorInterface} in queue ${queueName || 'all'}`);
-    
     try {
       const params: Record<string, string> = {
         Interface: operatorInterface.includes('/') ? operatorInterface : `PJSIP/${operatorInterface}`,
@@ -1460,8 +1466,6 @@ export class ContactCenterService {
    * Unpause an operator in a queue (or all queues)
    */
   async unpauseQueueMember(operatorInterface: string, queueName?: string): Promise<{ success: boolean; message: string }> {
-    this.logger.log(`[unpauseQueueMember] Unpausing ${operatorInterface} in queue ${queueName || 'all'}`);
-    
     try {
       const params: Record<string, string> = {
         Interface: operatorInterface.includes('/') ? operatorInterface : `PJSIP/${operatorInterface}`,

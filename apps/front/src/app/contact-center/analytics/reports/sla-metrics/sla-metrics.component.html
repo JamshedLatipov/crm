@@ -1,0 +1,123 @@
+<div class="sla-metrics-container">
+  <app-report-filters
+    (filtersChange)="onFiltersChange($event)"
+  ></app-report-filters>
+
+  <div *ngIf="!loading() && !error() && data()" class="content">
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <div
+        class="kpi-card"
+        [ngClass]="getComplianceClass(data()!.slaComplianceRate)"
+      >
+        <mat-icon>verified</mat-icon>
+        <div class="kpi-value">{{ data()!.slaComplianceRate.toFixed(1) }}%</div>
+        <div class="kpi-label">SLA соответствие</div>
+        <div class="kpi-detail">
+          {{ data()!.slaCompliantCalls }} из {{ data()!.totalCalls }}
+        </div>
+      </div>
+
+      <div class="kpi-card success">
+        <mat-icon>check_circle</mat-icon>
+        <div class="kpi-value">{{ data()!.slaCompliantCalls }}</div>
+        <div class="kpi-label">Успешных звонков</div>
+      </div>
+
+      <div class="kpi-card danger">
+        <mat-icon>error</mat-icon>
+        <div class="kpi-value">{{ data()!.slaViolatedCalls }}</div>
+        <div class="kpi-label">Нарушений SLA</div>
+      </div>
+
+      <div class="kpi-card info">
+        <mat-icon>schedule</mat-icon>
+        <div class="kpi-value">
+          {{ formatTime(data()!.avgFirstResponseTime) }}
+        </div>
+        <div class="kpi-label">Ср. время до ответа</div>
+      </div>
+
+      <div class="kpi-card warning">
+        <mat-icon>phone_disabled</mat-icon>
+        <div class="kpi-value">{{ data()!.abandonedCallsCount }}</div>
+        <div class="kpi-label">Брошенных звонков</div>
+        <div class="kpi-detail">{{ data()!.abandonRate.toFixed(1) }}%</div>
+      </div>
+
+      <div class="kpi-card info">
+        <mat-icon>timer_off</mat-icon>
+        <div class="kpi-value">{{ formatTime(data()!.avgAbandonTime) }}</div>
+        <div class="kpi-label">Ср. время доброса</div>
+      </div>
+    </div>
+
+    <!-- Trend Chart -->
+    <mat-card class="chart-card">
+      <mat-card-header>
+        <mat-card-title>Динамика SLA соответствия</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <canvas
+          *ngIf="getTrendChartData()"
+          baseChart
+          [type]="'line'"
+          [data]="getTrendChartData()!"
+          [options]="lineChartOptions"
+        ></canvas>
+        <div *ngIf="!getTrendChartData()" class="no-data">
+          <p>Недостаточно данных для графика</p>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Queue Table -->
+    <mat-card class="table-card">
+      <mat-card-header>
+        <mat-card-title>SLA по очередям</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <crm-table
+          *ngIf="data()!.byQueue.length > 0"
+          [columns]="columns"
+          [data]="data()!.byQueue"
+          [pageSize]="10"
+          [showPaginator]="true"
+        >
+          <ng-template crmColumnTemplate="compliantTemplate" let-row>
+            <span class="success">{{ row.compliantCalls }}</span>
+          </ng-template>
+
+          <ng-template crmColumnTemplate="violatedTemplate" let-row>
+            <span class="danger">{{ row.violatedCalls }}</span>
+          </ng-template>
+
+          <ng-template crmColumnTemplate="complianceRateTemplate" let-row>
+            <span class="compliance-badge" [ngClass]="getComplianceClass(row.complianceRate)">
+              {{ row.complianceRate.toFixed(1) }}%
+            </span>
+          </ng-template>
+
+          <ng-template crmColumnTemplate="avgWaitTimeTemplate" let-row>
+            {{ formatTime(row.avgWaitTime) }}
+          </ng-template>
+        </crm-table>
+
+        <div *ngIf="data()!.byQueue.length === 0" class="no-data">
+          <mat-icon>info</mat-icon>
+          <p>Нет данных по очередям</p>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <div *ngIf="loading()" class="loading-container">
+    <mat-spinner></mat-spinner>
+    <p>Загрузка данных...</p>
+  </div>
+
+  <div *ngIf="error()" class="error-container">
+    <mat-icon color="warn">error</mat-icon>
+    <p>{{ error() }}</p>
+  </div>
+</div>

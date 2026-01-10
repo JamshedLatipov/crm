@@ -87,7 +87,15 @@ export class ForecastFormComponent {
       ownerId: [''],
       team: [''],
       description: [''],
-      tags: [[]]
+      tags: [[]],
+      // Расширенные параметры для алгоритмов
+      advancedParams: this.fb.group({
+        windowSize: [3, [Validators.min(2), Validators.max(12)]],  // для Moving Average
+        alpha: [0.3, [Validators.min(0.1), Validators.max(0.9)]],   // для Exponential Smoothing
+        minDataPoints: [5, [Validators.min(3), Validators.max(20)]], // минимальное кол-во данных
+        useSeasonality: [false],                                     // учет сезонности
+        confidenceLevel: [0.95, [Validators.min(0.8), Validators.max(0.99)]] // уровень уверенности
+      })
     });
 
     this.loadManagers();
@@ -99,6 +107,55 @@ export class ForecastFormComponent {
     this.forecastForm.valueChanges.subscribe(() => {
       this.updatePeriodPreview();
     });
+  }
+
+  get advancedParams() {
+    return this.forecastForm.get('advancedParams') as FormGroup;
+  }
+
+  /**
+   * Получить релевантные параметры для выбранного метода
+   */
+  getRelevantParams(): string[] {
+    const method = this.forecastForm.get('method')?.value;
+    
+    switch (method) {
+      case ForecastMethod.MOVING_AVERAGE:
+        return ['windowSize', 'minDataPoints'];
+      case ForecastMethod.EXPONENTIAL_SMOOTHING:
+        return ['alpha', 'useSeasonality', 'minDataPoints'];
+      case ForecastMethod.WEIGHTED_AVERAGE:
+        return ['windowSize', 'minDataPoints'];
+      case ForecastMethod.LINEAR_TREND:
+        return ['minDataPoints', 'confidenceLevel'];
+      case ForecastMethod.PIPELINE_CONVERSION:
+        return ['minDataPoints', 'confidenceLevel'];
+      case ForecastMethod.HISTORICAL_AVERAGE:
+        return ['minDataPoints'];
+      default:
+        return [];
+    }
+  }
+
+  /**
+   * Проверить, отображается ли параметр для текущего метода
+   */
+  isParamRelevant(paramName: string): boolean {
+    return this.getRelevantParams().includes(paramName);
+  }
+
+  /**
+   * Получить подсказку для параметра
+   */
+  getParamTooltip(paramName: string): string {
+    const tooltips: Record<string, string> = {
+      windowSize: 'Количество последних периодов для расчета среднего (2-12)',
+      alpha: 'Коэффициент сглаживания: больше = больший вес недавним данным (0.1-0.9)',
+      minDataPoints: 'Минимальное количество исторических данных для прогноза (3-20)',
+      useSeasonality: 'Учитывать сезонные колебания в данных',
+      confidenceLevel: 'Уровень доверительной вероятности прогноза (80%-99%)'
+    };
+    return tooltips[paramName] || '';
   }
 
   private loadManagers(): void {
@@ -192,7 +249,15 @@ export class ForecastFormComponent {
       endDate: formValue.endDate.toISOString(),
       targetValue: formValue.targetValue,
       description: formValue.description,
-      tags: formValue.tags
+      tags: formValue.tags,
+      // Добавить расширенные параметры
+      config: {
+        windowSize: formValue.advancedParams.windowSize,
+        alpha: formValue.advancedParams.alpha,
+        minDataPoints: formValue.advancedParams.minDataPoints,
+        useSeasonality: formValue.advancedParams.useSeasonality,
+        confidenceLevel: formValue.advancedParams.confidenceLevel
+      }
     };
 
     // Добавить опциональные поля

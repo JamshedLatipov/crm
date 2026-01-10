@@ -1,0 +1,451 @@
+<app-page-layout
+  [title]="'Статистика кампании #' + campaignId()"
+  subtitle="Подробная аналитика по выполнению кампании"
+>
+  <div page-actions>
+    <button mat-stroked-button routerLink="/messages/campaigns">
+      <mat-icon>arrow_back</mat-icon>
+      К списку
+    </button>
+    <button mat-raised-button color="primary" [disabled]="loading()">
+      <mat-icon>download</mat-icon>
+      Экспорт
+    </button>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-container">
+      <mat-spinner></mat-spinner>
+      <p>Загрузка статистики...</p>
+    </div>
+  } @else if (campaign()?.status === 'draft') {
+    <mat-card class="info-card">
+      <mat-card-content>
+        <div class="info-message">
+          <mat-icon>info</mat-icon>
+          <div>
+            <h3>Кампания ещё не запущена</h3>
+            <p>Эта кампания находится в статусе черновика. Запустите кампанию, чтобы начать отправку сообщений.</p>
+            <p class="recipients-info">
+              <strong>Получателей:</strong> {{ stats().total }}
+              @if (stats().pending > 0) {
+                <span class="pending-badge">{{ stats().pending }} сообщений подготовлено</span>
+              }
+            </p>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="details-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>info</mat-icon>
+          Детали кампании
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="details-grid">
+          <div class="detail-item">
+            <span class="detail-label">Название:</span>
+            <span class="detail-value">{{ campaign()?.name || 'N/A' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Канал:</span>
+            <span class="detail-value">{{ (campaign()?.channel || 'N/A') | uppercase }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Статус:</span>
+            <span class="detail-value status-badge" [class]="'status-' + campaign()?.status">
+              {{ campaign()?.status || 'N/A' }}
+            </span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Получателей:</span>
+            <span class="detail-value">{{ campaign()?.totalRecipients || 0 }}</span>
+          </div>
+          @if (campaign()?.description) {
+            <div class="detail-item full-width">
+              <span class="detail-label">Описание:</span>
+              <span class="detail-value">{{ campaign()?.description }}</span>
+            </div>
+          }
+          @if (campaign()?.templateData?.name) {
+            <div class="detail-item">
+              <span class="detail-label">Шаблон:</span>
+              <span class="detail-value">{{ campaign()?.templateData?.name }}</span>
+            </div>
+          }
+          @if (campaign()?.segment?.name) {
+            <div class="detail-item">
+              <span class="detail-label">Сегмент:</span>
+              <span class="detail-value">{{ campaign()?.segment?.name }} ({{ campaign()?.segment?.contactsCount }} контактов)</span>
+            </div>
+          }
+        </div>
+      </mat-card-content>
+    </mat-card>
+  } @else {
+    @if (stats().sent === 0 && stats().pending > 0 && (campaign()?.status === 'sending' || campaign()?.status === 'active')) {
+      <mat-card class="info-card warning">
+        <mat-card-content>
+          <div class="info-message">
+            <mat-icon>schedule</mat-icon>
+            <div>
+              <h3>Кампания запущена, отправка в процессе</h3>
+              <p>Сообщения находятся в очереди на отправку. Статистика появится после начала доставки.</p>
+              <p class="recipients-info">
+                <strong>В очереди:</strong> <span class="pending-badge">{{ stats().pending }} сообщений</span>
+              </p>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
+
+    <div class="stats-grid">
+      <mat-card class="stat-card">
+        <div class="stat-icon primary">
+          <mat-icon>send</mat-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats().sent }}</div>
+          <div class="stat-label">Отправлено</div>
+        </div>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <div class="stat-icon success">
+          <mat-icon>check_circle</mat-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats().delivered }}</div>
+          <div class="stat-label">Доставлено</div>
+          <div class="stat-percent">{{ deliveryRatePercent() }}%</div>
+        </div>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <div class="stat-icon warning">
+          <mat-icon>error</mat-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats().failed }}</div>
+          <div class="stat-label">Ошибки</div>
+          <div class="stat-percent">{{ failureRatePercent() }}%</div>
+        </div>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <div class="stat-icon accent">
+          <mat-icon>trending_up</mat-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ deliveryRatePercent() }}%</div>
+          <div class="stat-label">Доставляемость</div>
+        </div>
+      </mat-card>
+    </div>
+
+    <mat-card class="progress-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>show_chart</mat-icon>
+          Прогресс отправки
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="progress-info">
+          <span class="progress-label">{{ stats().sent }} из {{ stats().total }}</span>
+          <span class="progress-percent">{{ progressPercent() }}%</span>
+        </div>
+        <mat-progress-bar 
+          mode="determinate" 
+          [value]="progressPercent()"
+          class="progress-bar-large">
+        </mat-progress-bar>
+      </mat-card-content>
+    </mat-card>
+
+    <div class="charts-grid">
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>bar_chart</mat-icon>
+            График отправок по времени
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="chart-container">
+            <canvas baseChart
+              [data]="lineChartData()"
+              [options]="lineChartOptions"
+              [type]="lineChartType">
+            </canvas>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="chart-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon>pie_chart</mat-icon>
+            Распределение статусов
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="chart-container pie-chart">
+            <canvas baseChart
+              [data]="pieChartData()"
+              [options]="pieChartOptions"
+              [type]="pieChartType">
+            </canvas>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <mat-card class="details-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>info</mat-icon>
+          Детали кампании
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="details-sections">
+          <!-- Основная информация -->
+          <div class="details-section">
+            <h3 class="section-title">
+              <mat-icon>campaign</mat-icon>
+              Основная информация
+            </h3>
+            <div class="details-grid">
+              <div class="detail-item">
+                <div class="detail-icon">
+                  <mat-icon>label</mat-icon>
+                </div>
+                <div class="detail-content">
+                  <span class="detail-label">Название</span>
+                  <span class="detail-value">{{ campaign()?.name || 'N/A' }}</span>
+                </div>
+              </div>
+
+              <div class="detail-item">
+                <div class="detail-icon">
+                  <mat-icon>flag</mat-icon>
+                </div>
+                <div class="detail-content">
+                  <span class="detail-label">Статус</span>
+                  <span class="detail-value">
+                    <span class="status-badge" [class]="'status-' + campaign()?.status">
+                      {{ campaign()?.status || 'N/A' }}
+                    </span>
+                  </span>
+                </div>
+              </div>
+
+              <div class="detail-item">
+                <div class="detail-icon">
+                  <mat-icon>send</mat-icon>
+                </div>
+                <div class="detail-content">
+                  <span class="detail-label">Канал доставки</span>
+                  <span class="detail-value channel-badge" [class]="'channel-' + campaign()?.channel">
+                    <mat-icon class="channel-icon">
+                      @switch(campaign()?.channel) {
+                        @case('sms') { sms }
+                        @case('email') { email }
+                        @case('whatsapp') { chat }
+                        @case('telegram') { telegram }
+                        @default { send }
+                      }
+                    </mat-icon>
+                    {{ (campaign()?.channel || 'N/A') | uppercase }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="detail-item">
+                <div class="detail-icon">
+                  <mat-icon>category</mat-icon>
+                </div>
+                <div class="detail-content">
+                  <span class="detail-label">Тип кампании</span>
+                  <span class="detail-value">{{ campaign()?.type || 'N/A' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Временные метки -->
+          <div class="details-section">
+            <h3 class="section-title">
+              <mat-icon>schedule</mat-icon>
+              Временные метки
+            </h3>
+            <div class="details-grid">
+              <div class="detail-item">
+                <div class="detail-icon">
+                  <mat-icon>event</mat-icon>
+                </div>
+                <div class="detail-content">
+                  <span class="detail-label">Создано</span>
+                  <span class="detail-value">
+                    {{ campaign()?.createdAt ? (campaign()?.createdAt | date:'dd.MM.yyyy HH:mm') : 'N/A' }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="detail-item">
+                <div class="detail-icon">
+                  <mat-icon>play_arrow</mat-icon>
+                </div>
+                <div class="detail-content">
+                  <span class="detail-label">Запущено</span>
+                  <span class="detail-value">{{ stats().startedAt || 'Не запущено' }}</span>
+                </div>
+              </div>
+
+              <div class="detail-item">
+                <div class="detail-icon">
+                  <mat-icon>check_circle</mat-icon>
+                </div>
+                <div class="detail-content">
+                  <span class="detail-label">Завершено</span>
+                  <span class="detail-value">{{ stats().completedAt || 'В процессе' }}</span>
+                </div>
+              </div>
+
+              @if (campaign()?.scheduledAt) {
+                <div class="detail-item">
+                  <div class="detail-icon">
+                    <mat-icon>alarm</mat-icon>
+                  </div>
+                  <div class="detail-content">
+                    <span class="detail-label">Запланировано</span>
+                    <span class="detail-value">
+                      {{ campaign()?.scheduledAt | date:'dd.MM.yyyy HH:mm' }}
+                    </span>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Статистика получателей -->
+          <div class="details-section">
+            <h3 class="section-title">
+              <mat-icon>people</mat-icon>
+              Получатели
+            </h3>
+            <div class="details-grid">
+              <div class="detail-item">
+                <div class="detail-icon">
+                  <mat-icon>groups</mat-icon>
+                </div>
+                <div class="detail-content">
+                  <span class="detail-label">Всего получателей</span>
+                  <span class="detail-value highlight">{{ campaign()?.totalRecipients || 0 }}</span>
+                </div>
+              </div>
+
+              <div class="detail-item">
+                <div class="detail-icon">
+                  <mat-icon>hourglass_empty</mat-icon>
+                </div>
+                <div class="detail-content">
+                  <span class="detail-label">Ожидает отправки</span>
+                  <span class="detail-value">{{ stats().pending }}</span>
+                </div>
+              </div>
+
+              @if (campaign()?.segment?.name) {
+                <div class="detail-item full-width">
+                  <div class="detail-icon">
+                    <mat-icon>filter_alt</mat-icon>
+                  </div>
+                  <div class="detail-content">
+                    <span class="detail-label">Сегмент</span>
+                    <span class="detail-value">
+                      {{ campaign()?.segment?.name }}
+                      @if (campaign()?.segment?.contactsCount) {
+                        <span class="segment-count">({{ campaign()?.segment?.contactsCount }} контактов)</span>
+                      }
+                    </span>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Контент -->
+          <div class="details-section">
+            <h3 class="section-title">
+              <mat-icon>description</mat-icon>
+              Контент
+            </h3>
+            <div class="details-grid">
+              @if (campaign()?.templateData?.name) {
+                <div class="detail-item full-width">
+                  <div class="detail-icon">
+                    <mat-icon>article</mat-icon>
+                  </div>
+                  <div class="detail-content">
+                    <span class="detail-label">Шаблон</span>
+                    <span class="detail-value">{{ campaign()?.templateData?.name }}</span>
+                  </div>
+                </div>
+              }
+
+              @if (campaign()?.description) {
+                <div class="detail-item full-width">
+                  <div class="detail-icon">
+                    <mat-icon>notes</mat-icon>
+                  </div>
+                  <div class="detail-content">
+                    <span class="detail-label">Описание</span>
+                    <span class="detail-value description-text">{{ campaign()?.description }}</span>
+                  </div>
+                </div>
+              }
+
+              @if (campaign()?.templateData?.content) {
+                <div class="detail-item full-width">
+                  <div class="detail-icon">
+                    <mat-icon>message</mat-icon>
+                  </div>
+                  <div class="detail-content">
+                    <span class="detail-label">Текст сообщения</span>
+                    <div class="message-preview">{{ campaign()?.templateData?.content }}</div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Стоимость (если есть) -->
+          @if (campaign()?.totalCost && +campaign()?.totalCost > 0) {
+            <div class="details-section">
+              <h3 class="section-title">
+                <mat-icon>attach_money</mat-icon>
+                Стоимость
+              </h3>
+              <div class="details-grid">
+                <div class="detail-item">
+                  <div class="detail-icon">
+                    <mat-icon>payments</mat-icon>
+                  </div>
+                  <div class="detail-content">
+                    <span class="detail-label">Общая стоимость</span>
+                    <span class="detail-value cost-value">{{ campaign()?.totalCost }} ₽</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
+</app-page-layout>

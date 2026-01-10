@@ -8,6 +8,7 @@ import { NameResolverService } from './services/name-resolver.service';
 import { Queue } from '../calls/entities/queue.entity';
 import { QueueMember } from '../calls/entities/queue-member.entity';
 import { Cdr } from '../calls/entities/cdr.entity';
+import { QueueLog } from '../calls/entities/queuelog.entity';
 import { User } from '../user/user.entity';
 import { AgentStatus } from './entities/agent-status.entity';
 import { AgentStatusHistory } from './entities/agent-status-history.entity';
@@ -16,7 +17,7 @@ import { AmiModule } from '../ami/ami.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Queue, QueueMember, Cdr, User, AgentStatus, AgentStatusHistory, Contact]),
+    TypeOrmModule.forFeature([Queue, QueueMember, Cdr, QueueLog, User, AgentStatus, AgentStatusHistory, Contact]),
     AmiModule,
   ],
   controllers: [ContactCenterController],

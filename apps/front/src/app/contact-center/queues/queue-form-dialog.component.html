@@ -1,0 +1,140 @@
+<h2 mat-dialog-title>
+  {{ data.mode === 'edit' ? 'Редактировать очередь' : 'Создать очередь' }}
+</h2>
+
+<form [formGroup]="form" (ngSubmit)="onSubmit()">
+  <mat-dialog-content class="dialog-content">
+    <div class="form-section">
+      <h3 class="section-title">Основная информация</h3>
+      
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Название очереди</mat-label>
+        <input matInput formControlName="name" required placeholder="Введите уникальное имя" />
+        <mat-icon matSuffix>label</mat-icon>
+        <mat-hint>Обязательное поле. Должно быть уникальным</mat-hint>
+        <mat-error *ngIf="form.get('name')?.hasError('required')">
+          Название обязательно
+        </mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Описание</mat-label>
+        <input matInput formControlName="description" placeholder="Краткое описание очереди" />
+        <mat-icon matSuffix>description</mat-icon>
+        <mat-hint>Необязательное поле</mat-hint>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Context</mat-label>
+        <input matInput formControlName="context" placeholder="from-internal" />
+        <mat-icon matSuffix>settings</mat-icon>
+        <mat-hint>Контекст диалплана Asterisk</mat-hint>
+      </mat-form-field>
+    </div>
+
+    <div class="form-section">
+      <h3 class="section-title">Настройки маршрутизации</h3>
+      
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Стратегия распределения</mat-label>
+        <mat-select formControlName="strategy">
+          <mat-option *ngFor="let s of strategies" [value]="s.value">
+            <div class="strategy-option">
+              <span class="strategy-label">{{ s.label }}</span>
+            </div>
+          </mat-option>
+        </mat-select>
+        <mat-icon matSuffix>route</mat-icon>
+        <mat-hint class="strategy-hint">{{ getStrategyHint() }}</mat-hint>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Класс музыки ожидания</mat-label>
+        <input matInput formControlName="musicclass" placeholder="default" />
+        <mat-icon matSuffix>music_note</mat-icon>
+        <mat-hint>Music on hold класс из musiconhold.conf</mat-hint>
+      </mat-form-field>
+    </div>
+
+    <div class="form-section">
+      <h3 class="section-title">Параметры очереди</h3>
+      
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Максимальная длина</mat-label>
+          <input matInput type="number" formControlName="maxlen" min="0" />
+          <mat-icon matSuffix>format_list_numbered</mat-icon>
+          <mat-hint>0 = без ограничений</mat-hint>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Таймаут (сек)</mat-label>
+          <input matInput type="number" formControlName="timeout" min="0" />
+          <mat-icon matSuffix>timer</mat-icon>
+          <mat-hint>Время звонка агенту</mat-hint>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Повтор (сек)</mat-label>
+          <input matInput type="number" formControlName="retry" min="0" />
+          <mat-icon matSuffix>replay</mat-icon>
+          <mat-hint>Пауза перед повтором</mat-hint>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Wrap-up время (сек)</mat-label>
+          <input matInput type="number" formControlName="wrapuptime" min="0" />
+          <mat-icon matSuffix>hourglass_empty</mat-icon>
+          <mat-hint>Время после звонка</mat-hint>
+        </mat-form-field>
+      </div>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Частота объявлений (сек)</mat-label>
+        <input matInput type="number" formControlName="announce_frequency" min="0" />
+        <mat-icon matSuffix>campaign</mat-icon>
+        <mat-hint>Как часто проигрывать объявления абоненту в очереди (0 = отключено)</mat-hint>
+      </mat-form-field>
+    </div>
+
+    <div class="form-section">
+      <h3 class="section-title">Дополнительные параметры</h3>
+      
+      <div class="toggle-group">
+        <mat-slide-toggle formControlName="ringinuse" color="primary">
+          <div class="toggle-content">
+            <span class="toggle-label">Ring in use</span>
+            <span class="toggle-description">Звонить агентам, уже находящимся на линии</span>
+          </div>
+        </mat-slide-toggle>
+
+        <mat-slide-toggle formControlName="joinempty" color="primary">
+          <div class="toggle-content">
+            <span class="toggle-label">Входить в пустую очередь</span>
+            <span class="toggle-description">Разрешить абонентам входить, если нет агентов</span>
+          </div>
+        </mat-slide-toggle>
+
+        <mat-slide-toggle formControlName="leavewhenempty" color="primary">
+          <div class="toggle-content">
+            <span class="toggle-label">Покидать при опустошении</span>
+            <span class="toggle-description">Выбрасывать абонентов, если все агенты вышли</span>
+          </div>
+        </mat-slide-toggle>
+      </div>
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end" class="dialog-actions">
+    <button mat-button type="button" (click)="onCancel()">
+      <mat-icon>close</mat-icon>
+      Отмена
+    </button>
+    <button mat-raised-button color="primary" type="submit" [disabled]="!form.valid">
+      <mat-icon>{{ data.mode === 'edit' ? 'save' : 'add' }}</mat-icon>
+      {{ data.mode === 'edit' ? 'Сохранить' : 'Создать' }}
+    </button>
+  </mat-dialog-actions>
+</form>

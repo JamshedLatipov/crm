@@ -32,12 +32,9 @@ import { TaskCalendarPageComponent } from './tasks/task-calendar/task-calendar-p
 import { PromoCompaniesComponent } from './promo-companies/promo-companies.component';
 import { ContactCenterCallsComponent } from './contact-center/calls/calls-list.component';
 import { QueuesPageComponent } from './contact-center/queues/queues.component';
-import { SourcesReportComponent } from './contact-center/reports/sources-report/sources-report.component';
-import { OperatorsReportComponent } from './contact-center/reports/operators-report/operators-report.component';
-import { QueuesReportComponent } from './contact-center/reports/queues-report/queues-report.component';
 import { IntegrationsComponent } from './pages/integrations/integrations.component';
 import { ClientInfoPageComponent } from './pages/client-info/client-info.component';
-import { NOTIFICATION_ROUTES } from './notifications/notifications.routes';
+import { MESSAGE_ROUTES } from './messages/messages.routes';
 
 export const appRoutes: Route[] = [
     { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
@@ -67,16 +64,15 @@ export const appRoutes: Route[] = [
             { path: 'ivr', component: IvrAdminComponent },
             { path: 'scripts', component: CallScriptsManagerComponent },
             { path: 'scripts/categories', component: CallScriptCategoriesListPageComponent },
-            { path: 'scripts/view/:id', component: CallScriptPreviewPageComponent }
-            // contact-center specific routes (monitoring, calls, ivr, scripts)
+            { path: 'scripts/view/:id', component: CallScriptPreviewPageComponent },
+            {
+                path: 'analytics',
+                loadChildren: () => import('./contact-center/analytics/analytics.routes').then(m => m.analyticsRoutes)
+            }
         ]
     },
     { path: 'calls', redirectTo: 'softphone' }, // Redirect calls to softphone
     { path: 'reports', component: DashboardComponent, canActivate: [authGuard] }, // Temporary redirect
-    { path: 'reports/dashboard', loadComponent: () => import('./pages/reports/reports-dashboard.component').then(m => m.ReportsDashboardComponent), canActivate: [authGuard] },
-    { path: 'reports/contact-center/sources', component: SourcesReportComponent, canActivate: [authGuard] },
-    { path: 'reports/contact-center/operators', component: OperatorsReportComponent, canActivate: [authGuard] },
-    { path: 'reports/contact-center/queues', component: QueuesReportComponent, canActivate: [authGuard] },
     { path: 'help', component: DashboardComponent, canActivate: [authGuard] }, // Temporary redirect
     { path: 'pipeline', component: PipelineComponent, canActivate: [authGuard] },
     { path: 'pipeline/create-stage', component: CreateStageComponent, canActivate: [authGuard] },
@@ -118,11 +114,11 @@ export const appRoutes: Route[] = [
     { path: 'promo-companies', component: PromoCompaniesComponent, canActivate: [authGuard] },
     { path: 'integrations', component: IntegrationsComponent, canActivate: [authGuard] },
     { path: 'client-info', component: ClientInfoPageComponent, canActivate: [authGuard] },
-    // Analytics routes
-    {
-        path: 'analytics',
-        canActivate: [authGuard],
-        loadChildren: () => import('./analytics/analytics.routes').then(m => m.analyticsRoutes)
+    // Settings page
+    { 
+        path: 'settings', 
+        loadComponent: () => import('./pages/settings/settings.component').then(m => m.SettingsComponent),
+        canActivate: [authGuard] 
     },
     // Forecasting routes
     {
@@ -130,6 +126,6 @@ export const appRoutes: Route[] = [
         canActivate: [authGuard],
         loadChildren: () => import('./forecasting/forecasting.routes').then(m => m.FORECASTING_ROUTES)
     },
-    // Notification Center routes
-    ...NOTIFICATION_ROUTES
+    // Messages Hub routes (SMS, Email, WhatsApp, Telegram, Campaigns)
+    ...MESSAGE_ROUTES
 ];

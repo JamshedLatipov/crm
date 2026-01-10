@@ -7,6 +7,8 @@ services:
       POSTGRES_DB: crm
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+      TZ: Asia/Tashkent
+      PGTZ: Asia/Tashkent
     ports:
       - "5432:5432"
     volumes:
@@ -56,6 +58,8 @@ services:
     restart: always
     depends_on:
       - turn
+    environment:
+      TZ: Asia/Tashkent
     logging:
       driver: json-file
       options:
@@ -127,6 +131,7 @@ services:
       AMI_USER: admin
       AMI_PASSWORD: amp111
       RECORDINGS_PATH: /var/lib/asterisk/recordings
+      TZ: Asia/Tashkent
     ports:
       - "3000:3000"
     volumes:

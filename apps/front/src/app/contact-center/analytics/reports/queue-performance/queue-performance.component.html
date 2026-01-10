@@ -1,0 +1,125 @@
+<div class="queue-performance-report">
+  <app-report-filters (filtersChange)="onFiltersChange($event)" />
+
+  <div *ngIf="loading()" class="loading-container">
+    <mat-spinner></mat-spinner>
+  </div>
+
+  <div *ngIf="error()" class="error-message">
+    {{ error() }}
+  </div>
+
+  <div *ngIf="!loading() && !error() && hasData()" class="report-content">
+    <!-- Summary KPIs -->
+    <div class="kpi-cards">
+      <mat-card class="kpi-card">
+        <mat-card-header>
+          <mat-card-title>Всего звонков</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="kpi-value">{{ data()?.totalCalls || 0 }}</div>
+          <div class="kpi-subtitle">во всех очередях</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="kpi-card" [ngClass]="getAnswerRateClass(data()?.overallAnswerRate || 0)">
+        <mat-card-header>
+          <mat-card-title>Общий процент ответов</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="kpi-value">{{ (data()?.overallAnswerRate || 0).toFixed(1) }}%</div>
+          <div class="kpi-subtitle">целевой показатель &gt; 85%</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="kpi-card">
+        <mat-card-header>
+          <mat-card-title>Среднее время ожидания</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="kpi-value">{{ formatTime(data()?.overallAvgWaitTime || 0) }}</div>
+          <div class="kpi-subtitle">все очереди</div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Hourly Chart -->
+    <mat-card class="chart-card">
+      <mat-card-header>
+        <mat-card-title>Распределение звонков по часам</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="chart-container">
+          <canvas
+            baseChart
+            [data]="hourlyChartData()"
+            [options]="hourlyChartOptions"
+            type="bar"
+          ></canvas>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Queue Statistics Table -->
+    <mat-card class="table-card">
+      <mat-card-header>
+        <mat-card-title>Статистика по очередям</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <crm-table
+          [columns]="columnsQueue"
+          [data]="data()?.queueStats || []"
+          [pageSize]="10"
+          [showPaginator]="true"
+        >
+          <ng-template crmColumnTemplate="answerRateTemplate" let-row>
+            <span [ngClass]="getAnswerRateClass(row.answerRate)">
+              {{ row.answerRate.toFixed(1) }}%
+            </span>
+          </ng-template>
+
+          <ng-template crmColumnTemplate="avgWaitTimeTemplate" let-row>
+            {{ formatTime(row.avgWaitTime) }}
+          </ng-template>
+
+          <ng-template crmColumnTemplate="maxWaitTimeTemplate" let-row>
+            {{ formatTime(row.maxWaitTime) }}
+          </ng-template>
+
+          <ng-template crmColumnTemplate="avgTalkTimeTemplate" let-row>
+            {{ formatTime(row.avgTalkTime) }}
+          </ng-template>
+
+          <ng-template crmColumnTemplate="slaTemplate" let-row>
+            <span [ngClass]="getSlaClass(row.serviceLevelCompliance)">
+              {{ row.serviceLevelCompliance.toFixed(1) }}%
+            </span>
+          </ng-template>
+        </crm-table>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Top Agents Table -->
+    <mat-card class="table-card">
+      <mat-card-header>
+        <mat-card-title>Топ операторов по очередям</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <crm-table
+          [columns]="columnsAgents"
+          [data]="data()?.topAgents || []"
+          [pageSize]="10"
+          [showPaginator]="true"
+        >
+          <ng-template crmColumnTemplate="avgHandleTimeTemplate" let-row>
+            {{ formatTime(row.avgHandleTime) }}
+          </ng-template>
+        </crm-table>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <div *ngIf="!loading() && !error() && !hasData()" class="no-data">
+    Нет данных за выбранный период
+  </div>
+</div>

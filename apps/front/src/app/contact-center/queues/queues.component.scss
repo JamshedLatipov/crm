@@ -1,7 +1,157 @@
+// ==================================================================================
+// Queues Component Styles
+// Следует дизайну проекта: #4285f4, 20px radius, 0.04 shadow opacity
+// ==================================================================================
+
 .queues-page {
   display: block;
 }
 
+// ==================================================================================
+// Table Wrapper (для существующей таблицы)
+// ==================================================================================
 crm-table {
-  margin-top: 12px;
+  margin-top: 24px;
+  display: block;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  background: #ffffff;
+  transition: box-shadow 0.18s ease;
+  
+  &:hover {
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+  }
+}
+
+// ==================================================================================
+// Actions Bar
+// ==================================================================================
+.actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  
+  button {
+    transition: all 0.18s ease;
+    border-radius: 12px;
+    font-weight: 500;
+    
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(66, 133, 244, 0.24);
+    }
+  }
+}
+
+// ==================================================================================
+// Menu Styles
+// ==================================================================================
+::ng-deep {
+  .mat-mdc-menu-panel {
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
+  
+  .mat-mdc-menu-item {
+    transition: background 0.18s ease;
+    
+    mat-icon {
+      color: #6b7280;
+      transition: color 0.18s ease;
+    }
+    
+    &:hover {
+      background: rgba(66, 133, 244, 0.04);
+      
+      mat-icon {
+        color: #4285f4;
+      }
+      
+      mat-icon[color="warn"] {
+        color: #ef4444;
+      }
+    }
+  }
+}
+
+// ==================================================================================
+// Empty State (если нет очередей)
+// ==================================================================================
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 24px;
+  text-align: center;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  margin-top: 24px;
+  
+  mat-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    color: #cbd5e1;
+    margin-bottom: 24px;
+  }
+  
+  h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0 0 12px 0;
+  }
+  
+  p {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0 0 24px 0;
+    max-width: 400px;
+  }
+  
+  button {
+    border-radius: 12px;
+    font-weight: 500;
+  }
+}
+
+// ==================================================================================
+// Animation Enhancements
+// ==================================================================================
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+crm-table,
+.actions,
+.empty-state {
+  animation: fadeIn 0.3s ease-out;
+}
+
+// ==================================================================================
+// Responsive Design
+// ==================================================================================
+@media (max-width: 768px) {
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+    
+    button {
+      width: 100%;
+    }
+  }
+  
+  crm-table {
+    border-radius: 16px;
+  }
 }

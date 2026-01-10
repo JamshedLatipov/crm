@@ -1,3 +1,10 @@
+
+::ng-deep {
+  .mat-mdc-paginator {
+    background: white !important;
+  }
+}
+
 .app-layout {
   display: flex;
   height: 100vh;

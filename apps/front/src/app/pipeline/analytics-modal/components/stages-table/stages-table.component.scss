@@ -1,11 +1,108 @@
-.table-container { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(16,24,40,0.06); overflow: hidden; border: 2px solid #e5e7eb; }
-.analytics-table { width: 100%; }
-.stage-info { display:flex; align-items:center; gap:12px }
-.stage-color { width:12px; height:12px; border-radius:50%; flex-shrink:0 }
-.count-badge { display:inline-flex; align-items:center; justify-content:center; min-width:36px; height:28px; padding:0 10px; background:#e3f2fd; color:#1976d2; border-radius:14px; font-weight:600 }
-.amount-cell { text-align:right; color:#2e7d32; font-weight:600 }
-.conversion-badge { padding:6px 14px; border-radius:16px; color:white; font-weight:600 }
-.conversion-badge.high { background:#34a853 }
-.conversion-badge.medium-high { background:#fbbc04 }
-.conversion-badge.medium { background:#ff9800 }
-.conversion-badge.low { background:#ea4335 }
+.table-container {
+  background: white;
+  border-radius: 20px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.table-container:hover {
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+.analytics-table {
+  width: 100%;
+}
+
+.analytics-table ::ng-deep .mat-mdc-header-row {
+  background: #f8f9fa;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.analytics-table ::ng-deep .mat-mdc-header-cell {
+  font-size: 12px;
+  font-weight: 700;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 16px;
+}
+
+.analytics-table ::ng-deep .mat-mdc-cell {
+  padding: 16px;
+  border-bottom: 1px solid #f1f3f4;
+  font-size: 14px;
+  color: #212529;
+}
+
+.analytics-table ::ng-deep .mat-mdc-row {
+  transition: background 0.18s ease;
+}
+
+.analytics-table ::ng-deep .mat-mdc-row:hover {
+  background: #f8f9fa;
+}
+
+.stage-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stage-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.stage-name {
+  font-weight: 600;
+  color: #212529;
+}
+
+.count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 28px;
+  padding: 0 12px;
+  background: #e3f2fd;
+  color: #1976d2;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.amount-cell {
+  text-align: right;
+  color: var(--success-color, #10b981);
+  font-weight: 700;
+}
+
+.conversion-badge {
+  padding: 6px 14px;
+  border-radius: 16px;
+  color: white;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.conversion-badge.high {
+  background: var(--success-color, #10b981);
+}
+
+.conversion-badge.medium-high {
+  background: var(--warning-color, #f59e0b);
+}
+
+.conversion-badge.medium {
+  background: #ff9800;
+}
+
+.conversion-badge.low {
+  background: var(--error-color, #ef4444);
+}

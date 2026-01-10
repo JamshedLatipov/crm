@@ -1,4 +1,4 @@
-import { Component, Input, AfterViewInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
+import { Component, Input, AfterViewInit, ViewChild, ElementRef, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -8,6 +8,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { FormsModule } from '@angular/forms';
 import { StageAnalytics } from '../../../dtos';
 import { Chart, registerables, ChartConfiguration } from 'chart.js';
+import { CurrencyService } from '../../../../services/currency.service';
 
 Chart.register(...registerables);
 
@@ -30,6 +31,7 @@ export class TrendsChartComponent implements AfterViewInit, OnDestroy {
   @Input() stages: StageAnalytics[] | null = null;
   @ViewChild('trendsCanvas', { static: false }) trendsCanvas!: ElementRef<HTMLCanvasElement>;
 
+  private currencyService = inject(CurrencyService);
   private trendsChart: Chart | null = null;
   selectedMetric: 'count' | 'amount' | 'conversion' | 'time' = 'count';
   selectedPeriod: '7d' | '30d' | '90d' | '1y' = '30d';
@@ -67,8 +69,16 @@ export class TrendsChartComponent implements AfterViewInit, OnDestroy {
   private renderChart() {
     if (!this.stages || !this.trendsCanvas?.nativeElement) return;
 
-    const ctx = this.trendsCanvas.nativeElement.getContext('2d');
+    const canvas = this.trendsCanvas.nativeElement;
+    const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
+    // Устанавливаем фиксированные размеры canvas для предотвращения перерисовки
+    const container = canvas.parentElement;
+    if (container) {
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientHeight;
+    }
 
     // Генерируем демо-данные трендов (в реальности данные должны приходить с сервера)
     const trendData = this.generateTrendData();
@@ -82,6 +92,9 @@ export class TrendsChartComponent implements AfterViewInit, OnDestroy {
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: {
+          duration: 0 // Отключаем анимацию при первой отрисовке
+        },
         interaction: {
           mode: 'index',
           intersect: false,
@@ -92,29 +105,28 @@ export class TrendsChartComponent implements AfterViewInit, OnDestroy {
             position: 'top',
             labels: {
               font: {
-                size: 14,
-                weight: 'bold'
+                size: 12
               },
-              padding: 20,
-              usePointStyle: true
+              padding: 16,
+              usePointStyle: true,
+              color: '#6b7280'
             }
           },
           tooltip: {
-            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-            titleColor: '#333',
-            bodyColor: '#666',
-            borderColor: '#e0e0e0',
+            backgroundColor: 'rgba(255, 255, 255, 0.98)',
+            titleColor: '#111827',
+            bodyColor: '#6b7280',
+            borderColor: '#e5e7eb',
             borderWidth: 1,
-            cornerRadius: 8,
+            cornerRadius: 12,
             displayColors: true,
             padding: 12,
             titleFont: {
-              size: 16,
+              size: 13,
               weight: 'bold'
             },
             bodyFont: {
-              size: 15,
-              weight: 'bold'
+              size: 12
             },
             callbacks: {
               title: (context) => {
@@ -148,21 +160,23 @@ export class TrendsChartComponent implements AfterViewInit, OnDestroy {
               display: true,
               text: 'Период',
               font: {
-                size: 16,
+                size: 12,
                 weight: 'bold'
               },
-              padding: { top: 10 }
+              color: '#6b7280',
+              padding: { top: 8 }
             },
             ticks: {
               font: {
-                size: 12
+                size: 11
               },
+              color: '#6b7280',
               maxRotation: 45,
               minRotation: 0
             },
             grid: {
               display: true,
-              color: 'rgba(0, 0, 0, 0.1)'
+              color: 'rgba(0, 0, 0, 0.06)'
             }
           },
           y: {
@@ -171,17 +185,18 @@ export class TrendsChartComponent implements AfterViewInit, OnDestroy {
               display: true,
               text: this.getYAxisLabel(),
               font: {
-                size: 16,
+                size: 12,
                 weight: 'bold'
               },
-              padding: { bottom: 10 }
+              color: '#6b7280',
+              padding: { bottom: 8 }
             },
             beginAtZero: true,
             ticks: {
               font: {
-                size: 14,
-                weight: 'bold'
+                size: 11
               },
+              color: '#6b7280',
               callback: (value) => {
                 if (this.selectedMetric === 'amount') {
                   return this.formatCurrency(Number(value), true);
@@ -196,7 +211,7 @@ export class TrendsChartComponent implements AfterViewInit, OnDestroy {
             },
             grid: {
               display: true,
-              color: 'rgba(0, 0, 0, 0.1)'
+              color: 'rgba(0, 0, 0, 0.06)'
             }
           }
         },
@@ -326,17 +341,14 @@ export class TrendsChartComponent implements AfterViewInit, OnDestroy {
   }
 
   formatCurrency(value: number, compact: boolean = false): string {
+    const currencySymbol = this.currencyService.currencySymbol();
+    
     if (compact && value >= 1000000) {
-      return Math.round(value / 1000000) + 'M SM';
+      return Math.round(value / 1000000) + 'M ' + currencySymbol;
     } else if (compact && value >= 1000) {
-      return Math.round(value / 1000) + 'K SM';
+      return Math.round(value / 1000) + 'K ' + currencySymbol;
     } else {
-      return new Intl.NumberFormat('ru-RU', {
-        style: 'currency',
-        currency: 'TJS',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-      }).format(value);
+      return this.currencyService.formatAmount(value);
     }
   }
 

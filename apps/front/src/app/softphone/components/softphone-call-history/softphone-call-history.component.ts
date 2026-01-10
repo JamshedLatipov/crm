@@ -1,4 +1,4 @@
-import { Component, signal, computed, inject, OnInit, Input, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, effect, input, output, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -8,6 +8,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatPaginatorModule, MatPaginator } from '@angular/material/paginator';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { SoftphoneCallHistoryService } from '../../services/softphone-call-history.service';
 import { SoftphoneLoggerService } from '../../softphone-logger.service';
 import { CdrRecord, CdrQuery, CdrResponse } from '../../types/cdr.types';
@@ -26,19 +27,25 @@ import { endOfToday, startOfToday } from 'date-fns';
     MatInputModule,
     MatTooltipModule,
     MatProgressSpinnerModule,
-    MatPaginatorModule
+    MatPaginatorModule,
+    MatSnackBarModule
   ],
   templateUrl: './softphone-call-history.component.html',
   styleUrls: ['./softphone-call-history.component.scss']
 })
-export class SoftphoneCallHistoryComponent implements OnInit, OnChanges {
-  private historyService = inject(SoftphoneCallHistoryService);
+export class SoftphoneCallHistoryComponent implements OnInit {
+  private readonly historyService = inject(SoftphoneCallHistoryService);
   private readonly logger = inject(SoftphoneLoggerService);
+  private readonly snackBar = inject(MatSnackBar);
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
 
-  // Input properties
-  @Input() operatorId: string | null = null;
+  // Input properties using new API
+  operatorId = input<string | null>(null);
+  
+  // Output events
+  callRequested = output<string>();
+  callDetailsRequested = output<CdrRecord>();
 
   // State signals
   calls = signal<CdrRecord[]>([]);
@@ -53,16 +60,19 @@ export class SoftphoneCallHistoryComponent implements OnInit, OnChanges {
   // Date filters
   startDate: Date | null = null;
   endDate: Date | null = null;
-  today = new Date();
 
   // API base URL
-  apiBase = signal(environment.apiBase || '/api');
+  private readonly apiBase = environment.apiBase || '/api';
 
   // Computed properties
   stats = computed(() => {
     const callList = this.calls();
     const totalAnswered = callList.filter(call => call.disposition === 'ANSWERED').length;
-    const totalMissed = callList.filter(call => call.disposition === 'NO ANSWER' || call.disposition === 'BUSY').length;
+    const totalMissed = callList.filter(call => 
+      call.disposition === 'NO ANSWER' || 
+      call.disposition === 'BUSY' || 
+      call.disposition === 'FAILED'
+    ).length;
     const totalCalls = callList.length;
 
     return {
@@ -72,29 +82,25 @@ export class SoftphoneCallHistoryComponent implements OnInit, OnChanges {
     };
   });
 
-  filteredCalls = computed(() => {
-    let filtered = this.calls();
-
-    // Apply search filter
-    if (this.searchQuery()) {
-      const query = this.searchQuery().toLowerCase();
-      filtered = filtered.filter(call =>
-        (call.src || '').toLowerCase().includes(query) ||
-        (call.dst || '').toLowerCase().includes(query)
-      );
-    }
-
-    return filtered;
-  });
-
   queryParams = computed((): CdrQuery => ({
     page: this.currentPage(),
     limit: this.pageSize(),
     fromDate: this.startDate?.toISOString(),
     toDate: this.endDate?.toISOString(),
     search: this.searchQuery() || undefined,
-    operatorId: this.operatorId || undefined
+    operatorId: this.operatorId() || undefined
   }));
+
+  constructor() {
+    // Watch for operatorId changes
+    effect(() => {
+      const opId = this.operatorId();
+      if (opId !== null) {
+        this.currentPage.set(1);
+        this.loadCallHistory();
+      }
+    }, { allowSignalWrites: true });
+  }
 
   ngOnInit(): void {
     this.startDate = startOfToday();
@@ -102,19 +108,12 @@ export class SoftphoneCallHistoryComponent implements OnInit, OnChanges {
     this.loadCallHistory();
   }
 
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['operatorId'] && !changes['operatorId'].firstChange) {
-      this.currentPage.set(1);
-      this.loadCallHistory();
-    }
-  }
-
   async loadCallHistory(): Promise<void> {
     try {
       this.isLoading.set(true);
       this.error.set(null);
 
-      const response = await this.historyService.list(this.apiBase(), this.queryParams()).toPromise();
+      const response = await this.historyService.list(this.apiBase, this.queryParams()).toPromise();
       if (response) {
         this.calls.set(response.data);
         this.totalRecords.set(response.total);
@@ -127,8 +126,10 @@ export class SoftphoneCallHistoryComponent implements OnInit, OnChanges {
         }
       }
     } catch (err) {
-      this.error.set(err instanceof Error ? err.message : 'Не удалось загрузить историю звонков');
+      const errorMessage = err instanceof Error ? err.message : 'Не удалось загрузить историю звонков';
+      this.error.set(errorMessage);
       this.logger.error('Error loading call history:', err);
+      this.snackBar.open(errorMessage, 'Закрыть', { duration: 5000 });
     } finally {
       this.isLoading.set(false);
     }
@@ -152,11 +153,13 @@ export class SoftphoneCallHistoryComponent implements OnInit, OnChanges {
 
   clearAllFilters(): void {
     this.searchQuery.set('');
+    this.startDate = startOfToday();
+    this.endDate = endOfToday();
     this.currentPage.set(1);
     this.loadCallHistory();
   }
 
-  onPageChange(event: any): void {
+  onPageChange(event: { pageIndex: number; pageSize: number }): void {
     this.currentPage.set(event.pageIndex + 1); // Convert from 0-based to 1-based
     this.pageSize.set(event.pageSize);
     this.loadCallHistory();
@@ -165,7 +168,7 @@ export class SoftphoneCallHistoryComponent implements OnInit, OnChanges {
   getPaginationInfo(): string {
     const start = (this.currentPage() - 1) * this.pageSize() + 1;
     const end = Math.min(this.currentPage() * this.pageSize(), this.totalRecords());
-    return `${start}-${end} of ${this.totalRecords()}`;
+    return `${start}-${end} из ${this.totalRecords()}`;
   }
 
   trackByCallId(index: number, call: CdrRecord): string {
@@ -214,19 +217,55 @@ export class SoftphoneCallHistoryComponent implements OnInit, OnChanges {
   }
 
   getDirectionClass(call: CdrRecord): string {
-    // Simple heuristic: if src is shorter or contains numbers, it's likely an incoming call
-    const isIncoming = (call.src?.length || 0) < (call.dst?.length || 0) || /^\d+$/.test(call.src || '');
+    const isIncoming = this.isIncomingCall(call);
     return isIncoming ? 'direction-indicator direction-incoming' : 'direction-indicator direction-outgoing';
   }
 
   getDirectionIcon(call: CdrRecord): string {
-    const isIncoming = (call.src?.length || 0) < (call.dst?.length || 0) || /^\d+$/.test(call.src || '');
-    return isIncoming ? 'call_received' : 'call_made';
+    const isIncoming = this.isIncomingCall(call);
+    
+    // Check if call was answered
+    if (call.disposition === 'ANSWERED') {
+      return isIncoming ? 'call_received' : 'call_made';
+    } else {
+      return isIncoming ? 'call_missed' : 'call_missed_outgoing';
+    }
   }
 
   getDirectionLabel(call: CdrRecord): string {
-    const isIncoming = (call.src?.length || 0) < (call.dst?.length || 0) || /^\d+$/.test(call.src || '');
+    const isIncoming = this.isIncomingCall(call);
     return isIncoming ? 'Входящий' : 'Исходящий';
+  }
+
+  /**
+   * Determine if the call is incoming based on CDR fields
+   * In Asterisk CDR:
+   * - src: source number (caller)
+   * - dst: destination number (callee)
+   * For incoming calls to the operator: src is external, dst is internal extension
+   * For outgoing calls from operator: src is internal extension, dst is external
+   */
+  private isIncomingCall(call: CdrRecord): boolean {
+    // Check if source looks like external number (longer, contains +, or starts with common patterns)
+    const src = call.src || '';
+    const dst = call.dst || '';
+    
+    // If dst is shorter and numeric (likely internal extension), it's incoming
+    if (dst.length <= 4 && /^\d+$/.test(dst) && src.length > 4) {
+      return true;
+    }
+    
+    // If src starts with + or 00 (international format), it's likely incoming
+    if (src.startsWith('+') || src.startsWith('00')) {
+      return true;
+    }
+    
+    // If src is longer than dst, assume incoming
+    if (src.length > dst.length) {
+      return true;
+    }
+    
+    return false;
   }
 
   getDispositionClass(call: CdrRecord): string {
@@ -291,32 +330,12 @@ export class SoftphoneCallHistoryComponent implements OnInit, OnChanges {
   }
 
   callNumber(number: string): void {
-    // Emit event to parent component to initiate call
-    this.logger.info('Calling number:', number);
-    // TODO: Implement call functionality - emit event to softphone
-    // For now, just log the action
-    alert(`Звонок на номер ${number}...`);
+    this.logger.info('Requesting call to number:', number);
+    this.callRequested.emit(number);
   }
 
   showCallDetails(call: CdrRecord): void {
-    // Show detailed call information in a modal or expanded view
-    this.logger.info('Call details:', call);
-
-    const details = `
-Детали звонка:
-- Дата/Время: ${new Date(call.calldate).toLocaleString('ru-RU')}
-- Направление: ${this.getDirectionLabel(call)}
-- Номер: ${call.src || call.dst}
-- Статус: ${this.getDispositionLabel(call)}
-- Длительность: ${this.formatDuration(call.duration)}
-- Оплачено: ${call.billsec} сек.
-- Канал: ${call.channel}
-- Канал назначения: ${call.dstchannel}
-- Контекст: ${call.dcontext}
-- Уникальный ID: ${call.uniqueid}
-${call.userfield ? `- Заметки: ${call.userfield}` : ''}
-    `.trim();
-
-    alert(details);
+    this.logger.info('Requesting call details:', call);
+    this.callDetailsRequested.emit(call);
   }
 }

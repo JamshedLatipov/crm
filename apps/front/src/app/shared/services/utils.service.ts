@@ -1,11 +1,13 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { FilterOptions, SortOptions } from '../types/common.types';
+import { CurrencyService } from '../../services/currency.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class UtilsService {
+  private currencyService = inject(CurrencyService);
 
   /**
    * Форматирует числа для отображения
@@ -19,14 +21,22 @@ export class UtilsService {
   }
 
   /**
-   * Форматирует валюту
+   * Форматирует валюту (используя динамические настройки)
+   * @deprecated Используйте CurrencyFormatPipe вместо этого метода
    */
-  formatCurrency(value: number, currency = 'TJS'): string {
-    if (isNaN(value)) return '0 ₽';
-    return new Intl.NumberFormat('ru-RU', {
-      style: 'currency',
-      currency: currency
-    }).format(value);
+  formatCurrency(value: number, currency?: string): string {
+    if (isNaN(value)) return `0 ${this.currencyService.getSymbol()}`;
+    
+    // Если передана конкретная валюта, используем Intl
+    if (currency) {
+      return new Intl.NumberFormat('ru-RU', {
+        style: 'currency',
+        currency: currency
+      }).format(value);
+    }
+    
+    // Иначе используем настройки из CurrencyService
+    return this.currencyService.formatAmount(value);
   }
 
   /**

@@ -1,0 +1,393 @@
+<app-page-layout
+  [title]="campaignId() ? 'Редактировать кампанию' : 'Новая кампания'"
+  [subtitle]="campaignId() ? 'Изменение настроек кампании' : 'Создание новой кампании уведомлений'"
+>
+  <div page-actions>
+    <button mat-stroked-button (click)="cancel()" [disabled]="loading()">
+      <mat-icon>close</mat-icon>
+      Отменить
+    </button>
+    <button mat-raised-button color="primary" (click)="save()" [disabled]="form.invalid || loading()">
+      @if (loading()) {
+        <mat-spinner diameter="20"></mat-spinner>
+      } @else {
+        <mat-icon>save</mat-icon>
+      }
+      Сохранить
+    </button>
+  </div>
+
+  @if (loading() && !form.value.name) {
+    <div class="loading-container">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
+  } @else {
+    <div class="form-container">
+      <div class="form-layout">
+        <!-- Main Form Card -->
+        <mat-card class="form-card">
+          <form [formGroup]="form">
+            <!-- Basic Info Section -->
+            <div class="form-section">
+              <h3 class="section-title">
+                <mat-icon>info</mat-icon>
+                Основная информация
+              </h3>
+              
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Название кампании</mat-label>
+                <input matInput formControlName="name" placeholder="Например: Летняя распродажа 2025">
+                <mat-icon matPrefix>campaign</mat-icon>
+                @if (form.get('name')?.hasError('required')) {
+                  <mat-error>Название обязательно</mat-error>
+                }
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Описание</mat-label>
+                <textarea matInput formControlName="description" rows="3" placeholder="Опишите цель кампании и целевую аудиторию"></textarea>
+                <mat-icon matPrefix>description</mat-icon>
+                <mat-hint>Это поможет вам и вашей команде понять назначение кампании</mat-hint>
+              </mat-form-field>
+            </div>
+
+            <mat-divider></mat-divider>
+
+            <!-- Channel & Template Section -->
+            <div class="form-section">
+              <h3 class="section-title">
+                <mat-icon>send</mat-icon>
+                Канал и шаблон
+              </h3>
+              
+              <div class="form-grid">
+                <mat-form-field appearance="outline">
+                  <mat-label>Канал отправки</mat-label>
+                  <mat-select formControlName="channel" (selectionChange)="onChannelChange()">
+                    <mat-select-trigger>
+                      {{ getChannelDisplayName(form.get('channel')?.value) }}
+                    </mat-select-trigger>
+                    <mat-option value="sms">
+                      <div class="channel-option">
+                        <mat-icon fontIcon="sms"></mat-icon>
+                        <span>SMS</span>
+                      </div>
+                    </mat-option>
+                    <mat-option value="email">
+                      <div class="channel-option">
+                        <mat-icon fontIcon="email"></mat-icon>
+                        <span>Email</span>
+                      </div>
+                    </mat-option>
+                    <mat-option value="whatsapp">
+                      <div class="channel-option">
+                        <mat-icon fontIcon="chat"></mat-icon>
+                        <span>WhatsApp</span>
+                      </div>
+                    </mat-option>
+                    <mat-option value="telegram">
+                      <div class="channel-option">
+                        <mat-icon fontIcon="send"></mat-icon>
+                        <span>Telegram</span>
+                      </div>
+                    </mat-option>
+                    <mat-option value="multi">
+                      <div class="channel-option">
+                        <mat-icon fontIcon="layers"></mat-icon>
+                        <span>Мультиканальная</span>
+                      </div>
+                    </mat-option>
+                  </mat-select>
+                  <mat-icon matPrefix>send</mat-icon>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Шаблон</mat-label>
+                  <mat-select formControlName="templateId" (selectionChange)="onTemplateChange($event)">
+                    @if (currentTemplates().length === 0) {
+                      <mat-option disabled>Загрузка...</mat-option>
+                    }
+                    @for (template of currentTemplates(); track template.id) {
+                      <mat-option [value]="template.id">
+                        {{ template.name }}
+                      </mat-option>
+                    }
+                  </mat-select>
+                  <mat-icon matPrefix>description</mat-icon>
+                  @if (form.get('templateId')?.hasError('required')) {
+                    <mat-error>Выберите шаблон</mat-error>
+                  }
+                  <mat-hint>Выберите шаблон сообщения для отправки</mat-hint>
+                </mat-form-field>
+              </div>
+
+              @if (selectedTemplate()) {
+                <div class="template-preview">
+                  <div class="preview-header">
+                    <mat-icon>visibility</mat-icon>
+                    <span>Предпросмотр шаблона</span>
+                  </div>
+                  <div class="preview-content">
+                    {{ selectedTemplate()?.content }}
+                  </div>
+                  @if (selectedTemplate()?.variables && selectedTemplate()!.variables.length > 0) {
+                    <div class="preview-variables">
+                      <span class="variables-label">Переменные:</span>
+                      @for (variable of selectedTemplate()!.variables; track variable) {
+                        <span class="variable-chip">{{ variable }}</span>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+
+              <!-- Media Upload Section (только для WhatsApp и Telegram) -->
+              @if (showMediaUpload()) {
+                <div class="media-upload-section">
+                  <h4 class="section-subtitle">
+                    <mat-icon>attach_file</mat-icon>
+                    Медиафайл (опционально)
+                  </h4>
+                  
+                  @if (!selectedMediaFile()) {
+                    <div class="upload-area">
+                      <input 
+                        type="file" 
+                        #fileInput 
+                        (change)="onMediaFileSelected($event)" 
+                        accept="image/*,video/mp4,application/pdf"
+                        style="display: none"
+                      />
+                      <button 
+                        mat-stroked-button 
+                        type="button"
+                        (click)="fileInput.click()"
+                        class="upload-button"
+                      >
+                        <mat-icon>cloud_upload</mat-icon>
+                        Загрузить файл
+                      </button>
+                      <p class="upload-hint">
+                        Поддерживаются: JPG, PNG, GIF, MP4, PDF (макс. 10MB)
+                      </p>
+                    </div>
+                  } @else {
+                    <div class="media-preview">
+                      @if (mediaPreviewUrl()) {
+                        <img [src]="mediaPreviewUrl()!" alt="Preview" class="media-preview-image">
+                      }
+                      <div class="media-info">
+                        <span class="file-name">{{ selectedMediaFile()!.name }}</span>
+                        <span class="file-size">{{ (selectedMediaFile()!.size / 1024 / 1024).toFixed(2) }} MB</span>
+                      </div>
+                      <button 
+                        mat-icon-button 
+                        type="button"
+                        color="warn" 
+                        (click)="removeMediaFile()"
+                      >
+                        <mat-icon>delete</mat-icon>
+                      </button>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+
+            <mat-divider></mat-divider>
+
+            <!-- Audience Section -->
+            <div class="form-section">
+              <h3 class="section-title">
+                <mat-icon>people</mat-icon>
+                Целевая аудитория
+              </h3>
+              
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Сегмент получателей</mat-label>
+                <mat-select formControlName="segmentId" (selectionChange)="onSegmentChange($event)">
+                  @if (availableSegments().length === 0) {
+                    <mat-option disabled>Загрузка...</mat-option>
+                  }
+                  @for (segment of availableSegments(); track segment.id) {
+                    <mat-option [value]="segment.id">
+                      {{ segment.name }} ({{ segment.contactsCount || 0 }} контактов)
+                    </mat-option>
+                  }
+                </mat-select>
+                <mat-icon matPrefix>filter_list</mat-icon>
+                @if (form.get('segmentId')?.hasError('required')) {
+                  <mat-error>Выберите сегмент</mat-error>
+                }
+                <mat-hint>Выберите сегмент получателей</mat-hint>
+              </mat-form-field>
+            </div>
+
+            <mat-divider></mat-divider>
+
+            <!-- Schedule Section -->
+            <div class="form-section">
+              <h3 class="section-title">
+                <mat-icon>schedule</mat-icon>
+                Планирование отправки
+              </h3>
+              
+              <div class="schedule-type">
+                <mat-slide-toggle formControlName="isScheduled" (change)="onScheduleToggle()">
+                  {{ form.get('isScheduled')?.value ? 'Отложенная отправка' : 'Немедленная отправка' }}
+                </mat-slide-toggle>
+              </div>
+
+              @if (form.get('isScheduled')?.value) {
+                <div class="form-grid" style="margin-top: 16px;">
+                  <mat-form-field appearance="outline">
+                    <mat-label>Дата отправки</mat-label>
+                    <input matInput [matDatepicker]="picker" formControlName="scheduledAt" [min]="minDate">
+                    <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                    <mat-datepicker #picker></mat-datepicker>
+                    <mat-icon matPrefix>event</mat-icon>
+                    @if (form.get('scheduledAt')?.hasError('required')) {
+                      <mat-error>Выберите дату</mat-error>
+                    }
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline">
+                    <mat-label>Время отправки</mat-label>
+                    <input matInput type="time" formControlName="scheduledTime">
+                    <mat-icon matPrefix>access_time</mat-icon>
+                    @if (form.get('scheduledTime')?.hasError('required')) {
+                      <mat-error>Выберите время</mat-error>
+                    }
+                  </mat-form-field>
+                </div>
+              }
+            </div>
+
+            <mat-divider></mat-divider>
+
+            <!-- Advanced Settings Section -->
+            <div class="form-section">
+              <h3 class="section-title">
+                <mat-icon>tune</mat-icon>
+                Дополнительные настройки
+              </h3>
+              
+              <div class="settings-grid">
+                <mat-form-field appearance="outline">
+                  <mat-label>Скорость отправки (сообщений/мин)</mat-label>
+                  <input matInput type="number" formControlName="sendingSpeed" min="1" max="1000">
+                  <mat-icon matPrefix>speed</mat-icon>
+                  <mat-hint>Рекомендуется: 100-500</mat-hint>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Максимум попыток</mat-label>
+                  <input matInput type="number" formControlName="maxRetries" min="0" max="5">
+                  <mat-icon matPrefix>repeat</mat-icon>
+                  <mat-hint>При ошибке доставки</mat-hint>
+                </mat-form-field>
+              </div>
+
+              <div class="toggle-group">
+                <mat-slide-toggle formControlName="trackDelivery">
+                  <div class="toggle-content">
+                    <span class="toggle-title">Отслеживать доставку</span>
+                    <span class="toggle-hint">Получать статусы доставки сообщений</span>
+                  </div>
+                </mat-slide-toggle>
+
+                <mat-slide-toggle formControlName="retryFailed">
+                  <div class="toggle-content">
+                    <span class="toggle-title">Повторять при ошибке</span>
+                    <span class="toggle-hint">Автоматически повторять неудачные отправки</span>
+                  </div>
+                </mat-slide-toggle>
+              </div>
+            </div>
+          </form>
+        </mat-card>
+
+        <!-- Sidebar Card -->
+        <mat-card class="sidebar-card">
+          <div class="sidebar-section">
+            <h3 class="sidebar-title">
+              <mat-icon>info</mat-icon>
+              Информация
+            </h3>
+            
+            <div class="info-item">
+              <mat-icon>groups</mat-icon>
+              <div class="info-content">
+                <span class="info-label">Получателей</span>
+                <span class="info-value">{{ estimatedRecipients() }}</span>
+              </div>
+            </div>
+            
+            <div class="info-item">
+              <mat-icon>attach_money</mat-icon>
+              <div class="info-content">
+                <span class="info-label">Примерная стоимость</span>
+                <span class="info-value">{{ estimatedCost() | currencyFormat }}</span>
+              </div>
+            </div>
+
+            <div class="info-item">
+              <mat-icon>schedule</mat-icon>
+              <div class="info-content">
+                <span class="info-label">Время отправки</span>
+                <span class="info-value">{{ estimatedDuration() }}</span>
+              </div>
+            </div>
+          </div>
+
+          <mat-divider></mat-divider>
+
+          <div class="sidebar-section">
+            <h3 class="sidebar-title">
+              <mat-icon>tips_and_updates</mat-icon>
+              Советы
+            </h3>
+            
+            <ul class="tips-list">
+              <li>
+                <mat-icon>check_circle</mat-icon>
+                <span>Тестируйте кампанию на небольшой группе перед массовой рассылкой</span>
+              </li>
+              <li>
+                <mat-icon>check_circle</mat-icon>
+                <span>Персонализируйте сообщения с помощью переменных</span>
+              </li>
+              <li>
+                <mat-icon>check_circle</mat-icon>
+                <span>Отправляйте в оптимальное время (10:00-20:00)</span>
+              </li>
+              <li>
+                <mat-icon>check_circle</mat-icon>
+                <span>Соблюдайте баланс между частотой отправок</span>
+              </li>
+            </ul>
+          </div>
+
+          <mat-divider></mat-divider>
+
+          <div class="sidebar-section">
+            <h3 class="sidebar-title">
+              <mat-icon>policy</mat-icon>
+              Рекомендации
+            </h3>
+            
+            <div class="recommendation-box">
+              <mat-icon>lightbulb</mat-icon>
+              <div>
+                <p><strong>Оптимальная скорость:</strong> 100-300 сообщений/мин</p>
+                <p><strong>Лучшее время:</strong> Будние дни, 10:00-19:00</p>
+                <p><strong>Длина SMS:</strong> До 160 символов (1 SMS)</p>
+              </div>
+            </div>
+          </div>
+        </mat-card>
+      </div>
+    </div>
+  }
+</app-page-layout>
+

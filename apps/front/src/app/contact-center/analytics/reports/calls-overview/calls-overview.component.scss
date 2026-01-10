@@ -1,0 +1,5 @@
+@import '../../shared-analytics-styles.scss';
+
+.calls-overview-container {
+  @extend .analytics-container;
+}
