@@ -1,5 +1,5 @@
 # Stage 1: Build
-FROM node:24.12.0-alpine AS builder
+FROM node:24.12.0-slim AS builder
 ARG DUMMY
 WORKDIR /app
 COPY package*.json ./
@@ -7,14 +7,17 @@ COPY package*.json ./
 # Prefer updating the repo's package-lock.json and switching back to `npm ci` later.
 RUN npm install --legacy-peer-deps --loglevel=info
 COPY . .
+# Build backend to produce /app/dist/apps/back
+RUN npm run build:back --loglevel=info
 
 # Stage 2: Production
 FROM node:24.12.0-alpine
 WORKDIR /app
 COPY --from=builder /app/dist/apps/back ./dist
-# Copy the root package.json (and lockfile if present) so production
-# dependencies required at runtime are installed in the final image.
-COPY --from=builder /app/dist/apps/back/package.json ./package.json
+# Copy the backend's package.json (and lockfile if present) from the workspace
+# so runtime dependencies for the backend are installed in the final image.
+COPY --from=builder /app/apps/back/package.json ./package.json
+COPY --from=builder /app/apps/back/package-lock.json ./package-lock.json
 RUN npm install --only=production --legacy-peer-deps
 # Ensure the Nest WebSockets platform driver is present at runtime
 RUN npm install --no-save --legacy-peer-deps @nestjs/platform-socket.io
