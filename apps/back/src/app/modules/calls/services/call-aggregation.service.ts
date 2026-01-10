@@ -131,12 +131,14 @@ export class CallAggregationService {
         const disconnectReason = cdr ? `${cdr.disposition}${cdr.lastapp ? ` (${cdr.lastapp})` : ''}` : null;
         
         // Determine correct status based on queue events and CDR disposition
+        // IMPORTANT: Check abandonTime BEFORE s.answered because s.answered can be incorrectly set
         let callStatus = 'NO ANSWER';
-        if (s.answered) {
-          callStatus = 'ANSWERED';
-        } else if (abandonTime && abandonTime > 0) {
-          // Call was abandoned in queue
+        if (abandonTime && abandonTime > 0) {
+          // Call was abandoned in queue - highest priority
           callStatus = 'ABANDON';
+        } else if (s.answered || (answeredAt && talkTime && talkTime > 0)) {
+          // Call was actually answered by agent
+          callStatus = 'ANSWERED';
         } else if (cdr) {
           // Use CDR disposition as fallback
           const disposition = cdr.disposition?.toUpperCase();
