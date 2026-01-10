@@ -3,7 +3,9 @@ FROM node:24.12.0-alpine AS builder
 ARG DUMMY
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --legacy-peer-deps --loglevel=info
+# Use `npm install` here to tolerate an out-of-sync lockfile during image build.
+# Prefer updating the repo's package-lock.json and switching back to `npm ci` later.
+RUN npm install --legacy-peer-deps --loglevel=info
 COPY . .
 
 # Stage 2: Production
