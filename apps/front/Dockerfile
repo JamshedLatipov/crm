@@ -1,6 +1,6 @@
 # Multi-stage build for the frontend (Angular + Vite)
 # Build stage
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 WORKDIR /workspace
 ENV NODE_ENV=production
 
@@ -16,8 +16,9 @@ RUN npm install --silent --no-audit --prefer-offline --legacy-peer-deps
 
 # Copy repository into the image and run the front build inside apps/front
 COPY . .
-WORKDIR /workspace/apps/front
-RUN npm run build:front --loglevel=info
+WORKDIR /workspace
+# Run the Nx build using the locally installed binary via npx
+RUN npx --yes nx build front --loglevel=info
 
 # Production stage
 FROM nginx:stable-alpine AS runner
