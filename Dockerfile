@@ -3,7 +3,7 @@ FROM node:20 AS builder
 ARG DUMMY
 WORKDIR /app
 COPY package*.json ./
-RUN npm install --legacy-peer-deps
+RUN npm ci --legacy-peer-deps --loglevel=info
 COPY . .
 
 # Stage 2: Production
