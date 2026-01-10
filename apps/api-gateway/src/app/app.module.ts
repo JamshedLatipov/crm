@@ -19,6 +19,8 @@ import { CampaignsModule } from './campaigns/campaigns.module';
 import { AuditModule } from './audit/audit.module';
 import { ProxyModule } from './proxy/proxy.module';
 import { MetricsModule } from './metrics/metrics.module';
+import { PipelineModule } from './pipeline/pipeline.module';
+import { CommentsModule } from './comments/comments.module';
 
 @Module({
   imports: [
@@ -136,6 +138,7 @@ import { MetricsModule } from './metrics/metrics.module';
     ContactsModule,
     LeadsModule,
     DealsModule,
+    PipelineModule,
     TasksModule,
     NotificationsModule,
     TelephonyModule,
@@ -144,6 +147,7 @@ import { MetricsModule } from './metrics/metrics.module';
     AuditModule,
     ProxyModule,
     MetricsModule,
+    CommentsModule,
   ],
   exports: [ClientsModule],
 })

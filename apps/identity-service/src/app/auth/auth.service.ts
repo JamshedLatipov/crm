@@ -102,6 +102,21 @@ export class AuthService {
     };
   }
 
+  async logout(userId: number): Promise<{ message: string }> {
+    // In a stateless JWT system, logout is typically handled client-side
+    // by removing the token. However, we can update lastActiveAt or
+    // implement a token blacklist if needed.
+    
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (user) {
+      user.lastActiveAt = new Date();
+      await this.userRepo.save(user);
+    }
+    
+    this.logger.debug(`User ${userId} logged out`);
+    return { message: 'Logged out successfully' };
+  }
+
   async validateToken(dto: ValidateTokenDto): Promise<TokenPayloadDto | null> {
     try {
       const payload = this.jwtService.verify<TokenPayloadDto>(dto.token);

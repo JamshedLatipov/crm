@@ -1,0 +1,286 @@
+# Endpoint Synchronization Report
+# Date: 2026-01-06 (Updated - Session 4)
+
+## Summary
+Successfully synchronized endpoints between API Gateway and Microservices.
+Session 4: Added full HTTP endpoint coverage for identity-service and segments module for campaign-service.
+
+## Changes Made (Session 4 - January 6, 2026):
+
+### 1. Identity Service - Added All Missing HTTP Endpoints
+**user.controller.ts:**
+- GET /managers/stats - getManagersStats
+- POST /managers/auto-assign - getAutoAssignRecommendation
+- GET /managers/:id - getManagerById
+- PUT /managers/:id/lead-count - updateLeadCount
+- POST /seed-managers - seedManagers
+- POST /:id/reset-password - resetPassword
+- GET /export - exportUsers
+- POST /bulk-delete - bulkDelete
+
+**auth.controller.ts:**
+- POST /logout - logout
+
+### 2. Campaign Service - Added Segments Module
+Created new segment module with full functionality:
+- apps/campaign-service/src/app/segment/segment.entity.ts
+- apps/campaign-service/src/app/segment/segment.service.ts
+- apps/campaign-service/src/app/segment/segment.controller.ts
+- apps/campaign-service/src/app/segment/segment.module.ts
+
+**Segment HTTP Endpoints:**
+- GET /segments - findAll with filters
+- GET /segments/:id - findOne
+- POST /segments - create
+- PUT /segments/:id - update
+- DELETE /segments/:id - delete
+- GET /segments/:id/contacts - getContacts with pagination
+- GET /segments/:id/phone-numbers - getPhoneNumbers
+- POST /segments/:id/recalculate - recalculate
+- POST /segments/preview - preview
+
+**Segment RabbitMQ Patterns:**
+- SEGMENT_GET_ALL, SEGMENT_GET_ONE, SEGMENT_CREATE
+- SEGMENT_UPDATE, SEGMENT_DELETE, SEGMENT_GET_CONTACTS
+- SEGMENT_RECALCULATE
+
+### 3. Contracts Updates (libs/contracts/src/patterns.ts)
+Added new CAMPAIGN_PATTERNS:
+- SEGMENT_GET_ALL: 'campaign.segment.getAll'
+- SEGMENT_GET_ONE: 'campaign.segment.getOne'
+- SEGMENT_CREATE: 'campaign.segment.create'
+- SEGMENT_UPDATE: 'campaign.segment.update'
+- SEGMENT_DELETE: 'campaign.segment.delete'
+- SEGMENT_GET_CONTACTS: 'campaign.segment.getContacts'
+- SEGMENT_RECALCULATE: 'campaign.segment.recalculate'
+- TEMPLATE_GET_ALL: 'campaign.template.getAll'
+- TEMPLATE_GET_ONE: 'campaign.template.getOne'
+- TEMPLATE_CREATE: 'campaign.template.create'
+- TEMPLATE_UPDATE: 'campaign.template.update'
+- TEMPLATE_DELETE: 'campaign.template.delete'
+- TEMPLATE_PREVIEW: 'campaign.template.preview'
+- TEMPLATE_DUPLICATE: 'campaign.template.duplicate'
+
+### 4. Build Verification
+All modified services compiled successfully:
+✅ identity-service
+✅ deal-service
+✅ notification-service
+✅ campaign-service
+✅ @crm/contracts
+
+## Changes Made (Session 3 - January 6, 2026):
+
+### 1. Identity Service - Added Timezones Endpoint
+- GET /users/timezones - Returns list of available timezones
+- Added IDENTITY_PATTERNS.GET_TIMEZONES to contracts
+- Added MessagePattern handler for GET_TIMEZONES
+- Added getTimezones() method returning 19 timezone options
+
+### 2. Notification Service - Added Missing Endpoints
+- PATCH /:id/delivered - Mark notification as delivered
+- PATCH /:id/failed - Mark notification as failed with reason
+- DELETE /expired - Delete expired notifications
+- Added patterns: MARK_DELIVERED, MARK_FAILED, DELETE_EXPIRED
+- Added MessagePattern handlers for all new patterns
+- Added service methods: markDelivered(), markFailed(), deleteExpired()
+
+### 3. Deal Service - Added User Activity Endpoint
+- GET /history/user-activity - Get user activity statistics for deals
+- Added DEAL_PATTERNS.GET_USER_ACTIVITY to contracts
+- Added MessagePattern handler for GET_USER_ACTIVITY
+- Added getUserActivity() method returning:
+  - userId
+  - totalActions
+  - uniqueDeals (count of unique deals modified)
+
+### 4. Build Verification
+All modified services compiled successfully:
+✅ identity-service
+✅ notification-service  
+✅ deal-service
+
+## Changes Made (Session 2):
+
+### 1. Created Pipeline Module in API Gateway
+- Created apps/api-gateway/src/app/pipeline/pipeline.controller.ts
+- Created apps/api-gateway/src/app/pipeline/pipeline.module.ts
+- Registered PipelineModule in app.module.ts
+
+Pipeline endpoints now exposed via Gateway:
+- GET /pipeline/stages
+- GET /pipeline/stages/:id
+- POST /pipeline/stages
+- PUT /pipeline/stages/:id
+- DELETE /pipeline/stages/:id
+- POST /pipeline/stages/reorder
+
+### 2. Extended Identity Patterns (libs/contracts/src/patterns.ts)
+Added new patterns:
+- IDENTITY_PATTERNS.BULK_DELETE_USERS
+- IDENTITY_PATTERNS.RESET_PASSWORD
+- IDENTITY_PATTERNS.EXPORT_USERS
+- IDENTITY_PATTERNS.GET_MANAGER
+- IDENTITY_PATTERNS.GET_MANAGERS_STATS
+- IDENTITY_PATTERNS.UPDATE_LEAD_COUNT
+- IDENTITY_PATTERNS.SEED_MANAGERS
+
+### 3. Extended Users Controller (API Gateway)
+Added endpoints:
+- GET /users/managers/stats
+- POST /users/managers/auto-assign
+- GET /users/managers/:id
+- PUT /users/managers/:id/lead-count
+- POST /users/seed-managers
+- GET /users/export
+- POST /users/:id/reset-password
+- POST /users/bulk-delete
+
+### 4. Added Logout Endpoint (API Gateway)
+- POST /auth/logout
+
+### 5. Extended Identity Service
+Added MessagePattern handlers in user.controller.ts:
+- BULK_DELETE_USERS
+- RESET_PASSWORD
+- EXPORT_USERS
+- GET_MANAGER
+- GET_MANAGERS_STATS
+- UPDATE_LEAD_COUNT
+- SEED_MANAGERS
+
+Added handler in auth.controller.ts:
+- LOGOUT
+
+Added methods in user.service.ts:
+- bulkDelete()
+- resetPassword()
+- exportUsers()
+- getManagersStatistics()
+- updateLeadCount()
+- seedTestManagers()
+
+Added method in auth.service.ts:
+- logout()
+
+### 6. Added New DTO (libs/contracts/src/dto/user.dto.ts)
+- ManagersAggregateStatsDto interface
+
+## Previous Changes (Session 1):
+
+### libs/contracts/src/patterns.ts
+- NOTIFICATION_PATTERNS.GET_NOTIFICATION
+- NOTIFICATION_PATTERNS.MARK_ALL_READ  
+- NOTIFICATION_PATTERNS.DELETE
+- TASK_PATTERNS.GET_STATS
+- TASK_PATTERNS.GET_TYPES
+- TASK_PATTERNS.GET_OVERDUE
+- TASK_PATTERNS.GET_BY_ASSIGNEE
+- LEAD_PATTERNS.UPDATE_LAST_CONTACT
+- LEAD_PATTERNS.ADD_TAGS
+- LEAD_PATTERNS.REMOVE_TAGS
+- LEAD_PATTERNS.SCHEDULE_FOLLOW_UP
+
+### apps/api-gateway controllers
+- tasks: stats, types, overdue, assignee/:id
+- notifications: GET :id, mark-all-read, DELETE :id
+- leads: PATCH contact, tags, follow-up
+
+### Microservices controllers
+- task-service: GET_STATS, GET_TYPES, GET_OVERDUE, GET_BY_ASSIGNEE handlers
+- lead-service: UPDATE_LAST_CONTACT, ADD_TAGS, REMOVE_TAGS, SCHEDULE_FOLLOW_UP handlers
+- notification-service: GET_NOTIFICATION, MARK_ALL_READ, DELETE handlers
+
+## Build Verification
+All services compiled successfully:
+✅ api-gateway
+✅ identity-service
+✅ task-service
+✅ lead-service
+✅ deal-service
+✅ notification-service
+
+## Current Endpoint Coverage
+
+### Identity/Users Service - 100%
+| Gateway Endpoint | MessagePattern | Status |
+|-----------------|----------------|--------|
+| GET /users | GET_USERS | ✅ |
+| GET /users/:id | GET_USER | ✅ |
+| POST /users | CREATE_USER | ✅ |
+| PUT /users/:id | UPDATE_USER | ✅ |
+| DELETE /users/:id | DELETE_USER | ✅ |
+| POST /users/bulk-delete | BULK_DELETE_USERS | ✅ |
+| POST /users/:id/reset-password | RESET_PASSWORD | ✅ |
+| GET /users/export | EXPORT_USERS | ✅ |
+| GET /users/managers | GET_MANAGERS | ✅ |
+| GET /users/managers/:id | GET_MANAGER | ✅ |
+| GET /users/managers/stats | GET_MANAGERS_STATS | ✅ |
+| POST /users/managers/auto-assign | GET_OPTIMAL_MANAGER | ✅ |
+| PUT /users/managers/:id/lead-count | UPDATE_LEAD_COUNT | ✅ |
+| POST /users/seed-managers | SEED_MANAGERS | ✅ |
+| POST /auth/login | LOGIN | ✅ |
+| POST /auth/register | REGISTER | ✅ |
+| POST /auth/logout | LOGOUT | ✅ |
+| POST /auth/validate | VALIDATE_TOKEN | ✅ |
+
+### Pipeline Service (via deal-service) - 100%
+| Gateway Endpoint | MessagePattern | Status |
+|-----------------|----------------|--------|
+| GET /pipeline/stages | FIND_ALL_STAGES | ✅ |
+| GET /pipeline/stages/:id | FIND_ONE_STAGE | ✅ |
+| POST /pipeline/stages | CREATE_STAGE | ✅ |
+| PUT /pipeline/stages/:id | UPDATE_STAGE | ✅ |
+| DELETE /pipeline/stages/:id | REMOVE_STAGE | ✅ |
+| POST /pipeline/stages/reorder | REORDER_STAGES | ✅ |
+
+### Tasks Service - 100%
+| Gateway Endpoint | MessagePattern | Status |
+|-----------------|----------------|--------|
+| GET /tasks | GET_TASKS | ✅ |
+| GET /tasks/stats | GET_STATS | ✅ |
+| GET /tasks/types | GET_TYPES | ✅ |
+| GET /tasks/overdue | GET_OVERDUE | ✅ |
+| GET /tasks/assignee/:id | GET_BY_ASSIGNEE | ✅ |
+| GET /tasks/:id | GET_TASK | ✅ |
+| POST /tasks | CREATE_TASK | ✅ |
+| PATCH /tasks/:id | UPDATE_TASK | ✅ |
+| DELETE /tasks/:id | DELETE_TASK | ✅ |
+| PATCH /tasks/:id/assign | ASSIGN_TASK | ✅ |
+| PATCH /tasks/:id/complete | COMPLETE_TASK | ✅ |
+
+### Lead Service - 100%
+| Gateway Endpoint | MessagePattern | Status |
+|-----------------|----------------|--------|
+| GET /leads | GET_LEADS | ✅ |
+| GET /leads/:id | GET_LEAD | ✅ |
+| POST /leads | CREATE_LEAD | ✅ |
+| PUT /leads/:id | UPDATE_LEAD | ✅ |
+| DELETE /leads/:id | DELETE_LEAD | ✅ |
+| PATCH /leads/:id/status | UPDATE_STATUS | ✅ |
+| POST /leads/:id/convert | CONVERT | ✅ |
+| PATCH /leads/:id/contact | UPDATE_LAST_CONTACT | ✅ |
+| POST /leads/:id/tags | ADD_TAGS | ✅ |
+| DELETE /leads/:id/tags | REMOVE_TAGS | ✅ |
+| POST /leads/:id/follow-up | SCHEDULE_FOLLOW_UP | ✅ |
+
+### Notification Service - 100%
+| Gateway Endpoint | MessagePattern | Status |
+|-----------------|----------------|--------|
+| GET /notifications | GET_NOTIFICATIONS | ✅ |
+| GET /notifications/:id | GET_NOTIFICATION | ✅ |
+| POST /notifications | SEND | ✅ |
+| POST /notifications/bulk | SEND_BULK | ✅ |
+| POST /notifications/mark-read | MARK_READ | ✅ |
+| POST /notifications/mark-all-read/:id | MARK_ALL_READ | ✅ |
+| GET /notifications/unread/:id | GET_UNREAD_COUNT | ✅ |
+| DELETE /notifications/:id | DELETE | ✅ |
+
+## Remaining Items (Advanced Features - Future Sprints)
+- Companies: 14 endpoints (full CRUD with relations)
+- Telephony/CDR: 20+ endpoints (call recordings, CDR reports)
+- Lead Scoring: 9 endpoints (scoring rules and calculations)
+- Lead Distribution: 5 endpoints (auto-assignment rules)
+- Pipeline Automation: 7 endpoints (automation rules)
+- Comments: 8 endpoints (entity comments)
+- SMS/Email Campaigns: multiple endpoints

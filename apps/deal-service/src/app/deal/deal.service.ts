@@ -148,7 +148,7 @@ export class DealService {
     await this.dealRepository.remove(deal);
   }
 
-  async winDeal(id: string, userId?: string): Promise<DealResponseDto> {
+  async winDeal(id: string, amount?: number, userId?: string): Promise<DealResponseDto> {
     const deal = await this.dealRepository.findOne({ where: { id } });
     if (!deal) {
       throw new NotFoundException(`Deal ${id} not found`);
@@ -157,6 +157,9 @@ export class DealService {
     deal.status = DealStatus.WON;
     deal.actualCloseDate = new Date();
     deal.probability = 100;
+    if (amount !== undefined) {
+      deal.amount = amount;
+    }
 
     const saved = await this.dealRepository.save(deal);
 
@@ -294,11 +297,205 @@ export class DealService {
     return deals.map(this.toResponseDto);
   }
 
-  async getHistory(dealId: string): Promise<DealHistory[]> {
+  async search(query: string): Promise<DealResponseDto[]> {
+    const deals = await this.dealRepository.find({
+      where: { title: ILike(`%${query}%`) },
+      order: { createdAt: 'DESC' },
+      take: 50,
+    });
+    return deals.map(this.toResponseDto);
+  }
+
+  async getOverdue(): Promise<DealResponseDto[]> {
+    const now = new Date();
+    const deals = await this.dealRepository
+      .createQueryBuilder('deal')
+      .where('deal.status = :status', { status: DealStatus.OPEN })
+      .andWhere('deal.expectedCloseDate < :now', { now })
+      .orderBy('deal.expectedCloseDate', 'ASC')
+      .getMany();
+    return deals.map(this.toResponseDto);
+  }
+
+  async getByCompany(companyId: string): Promise<DealResponseDto[]> {
+    const deals = await this.dealRepository.find({
+      where: { companyId },
+      order: { createdAt: 'DESC' },
+    });
+    return deals.map(this.toResponseDto);
+  }
+
+  async getByContact(contactId: string): Promise<DealResponseDto[]> {
+    const deals = await this.dealRepository.find({
+      where: { contactId },
+      order: { createdAt: 'DESC' },
+    });
+    return deals.map(this.toResponseDto);
+  }
+
+  async getByLead(leadId: string): Promise<DealResponseDto[]> {
+    const deals = await this.dealRepository.find({
+      where: { leadId },
+      order: { createdAt: 'DESC' },
+    });
+    return deals.map(this.toResponseDto);
+  }
+
+  async getByManager(managerId: string): Promise<DealResponseDto[]> {
+    const deals = await this.dealRepository.find({
+      where: { ownerId: managerId },
+      order: { createdAt: 'DESC' },
+    });
+    return deals.map(this.toResponseDto);
+  }
+
+  async getAssignments(id: string): Promise<{ dealId: string; assignees: string[] }> {
+    const deal = await this.dealRepository.findOne({ where: { id } });
+    if (!deal) {
+      throw new NotFoundException(`Deal ${id} not found`);
+    }
+    return {
+      dealId: id,
+      assignees: deal.ownerId ? [deal.ownerId] : [],
+    };
+  }
+
+  async updateProbability(id: string, probability: number, userId?: string): Promise<DealResponseDto> {
+    const deal = await this.dealRepository.findOne({ where: { id } });
+    if (!deal) {
+      throw new NotFoundException(`Deal ${id} not found`);
+    }
+
+    const oldProbability = deal.probability;
+    deal.probability = probability;
+    const saved = await this.dealRepository.save(deal);
+
+    await this.recordHistory(id, DealChangeType.UPDATED, userId, {
+      fieldName: 'probability',
+      oldValue: String(oldProbability),
+      newValue: String(probability),
+      description: `Probability changed from ${oldProbability}% to ${probability}%`,
+    });
+
+    return this.toResponseDto(saved);
+  }
+
+  async getHistory(dealId: string, page?: number, limit?: number): Promise<DealHistory[]> {
+    const take = limit || 50;
+    const skip = page ? (page - 1) * take : 0;
+    
     return this.historyRepository.find({
       where: { dealId },
       order: { createdAt: 'DESC' },
+      take,
+      skip,
     });
+  }
+
+  async getHistoryStats(dealId: string, dateFrom?: Date, dateTo?: Date): Promise<any> {
+    const queryBuilder = this.historyRepository
+      .createQueryBuilder('history')
+      .where('history.dealId = :dealId', { dealId });
+
+    if (dateFrom) {
+      queryBuilder.andWhere('history.createdAt >= :dateFrom', { dateFrom });
+    }
+    if (dateTo) {
+      queryBuilder.andWhere('history.createdAt <= :dateTo', { dateTo });
+    }
+
+    const totalChanges = await queryBuilder.getCount();
+
+    const changesByType = await this.historyRepository
+      .createQueryBuilder('history')
+      .select('history.changeType', 'type')
+      .addSelect('COUNT(*)', 'count')
+      .where('history.dealId = :dealId', { dealId })
+      .groupBy('history.changeType')
+      .getRawMany();
+
+    return {
+      dealId,
+      totalChanges,
+      changesByType,
+      period: { from: dateFrom, to: dateTo },
+    };
+  }
+
+  async getStageMovementStats(dateFrom?: Date, dateTo?: Date): Promise<any> {
+    const queryBuilder = this.historyRepository
+      .createQueryBuilder('history')
+      .where('history.changeType = :type', { type: DealChangeType.STAGE_MOVED });
+
+    if (dateFrom) {
+      queryBuilder.andWhere('history.createdAt >= :dateFrom', { dateFrom });
+    }
+    if (dateTo) {
+      queryBuilder.andWhere('history.createdAt <= :dateTo', { dateTo });
+    }
+
+    const movements = await queryBuilder
+      .select('history.oldValue', 'fromStage')
+      .addSelect('history.newValue', 'toStage')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('history.oldValue')
+      .addGroupBy('history.newValue')
+      .getRawMany();
+
+    return {
+      movements,
+      period: { from: dateFrom, to: dateTo },
+    };
+  }
+
+  async getMostActiveDeals(limit: number, dateFrom?: Date, dateTo?: Date): Promise<any[]> {
+    const queryBuilder = this.historyRepository
+      .createQueryBuilder('history')
+      .select('history.dealId', 'dealId')
+      .addSelect('COUNT(*)', 'changesCount');
+
+    if (dateFrom) {
+      queryBuilder.andWhere('history.createdAt >= :dateFrom', { dateFrom });
+    }
+    if (dateTo) {
+      queryBuilder.andWhere('history.createdAt <= :dateTo', { dateTo });
+    }
+
+    const activeDeals = await queryBuilder
+      .groupBy('history.dealId')
+      .orderBy('changesCount', 'DESC')
+      .limit(limit)
+      .getRawMany();
+
+    return activeDeals;
+  }
+
+  async getUserActivity(dateFrom?: Date, dateTo?: Date, limit: number = 10): Promise<any[]> {
+    const queryBuilder = this.historyRepository
+      .createQueryBuilder('history')
+      .select('history.userId', 'userId')
+      .addSelect('COUNT(*)', 'totalActions')
+      .addSelect('COUNT(DISTINCT history.dealId)', 'uniqueDeals')
+      .where('history.userId IS NOT NULL');
+
+    if (dateFrom) {
+      queryBuilder.andWhere('history.createdAt >= :dateFrom', { dateFrom });
+    }
+    if (dateTo) {
+      queryBuilder.andWhere('history.createdAt <= :dateTo', { dateTo });
+    }
+
+    const userActivity = await queryBuilder
+      .groupBy('history.userId')
+      .orderBy('totalActions', 'DESC')
+      .limit(limit)
+      .getRawMany();
+
+    return userActivity.map(item => ({
+      userId: item.userId,
+      totalActions: parseInt(item.totalActions, 10),
+      uniqueDeals: parseInt(item.uniqueDeals, 10),
+    }));
   }
 
   async linkContact(id: string, contactId: string, userId?: string): Promise<DealResponseDto> {

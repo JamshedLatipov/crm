@@ -231,5 +231,36 @@ services:
       retries: 3
       start_period: 40s
 
+  comment-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.microservice
+      args:
+        SERVICE_NAME: comment-service
+    depends_on:
+      - postgres
+      - rabbitmq
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_DATABASE: crm
+      DB_SYNC: "false"
+      DB_LOGGING: "false"
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      PORT: 3014
+    ports:
+      - "3014:3014"
+    command: ["node", "dist/apps/comment-service/main.js"]
+    mem_limit: "256m"
+    mem_reservation: "128m"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3014/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
 volumes:
   pgdata:

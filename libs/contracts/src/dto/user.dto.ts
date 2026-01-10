@@ -110,3 +110,11 @@ export interface ManagerStatsDto {
   totalRevenue: number;
   workloadPercentage: number;
 }
+
+export interface ManagersAggregateStatsDto {
+  totalManagers: number;
+  availableManagers: number;
+  totalCapacity: number;
+  currentWorkload: number;
+  utilizationRate: number;
+}

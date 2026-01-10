@@ -56,6 +56,18 @@ export class CallController {
     return this.callService.hangup(dto.channelId);
   }
 
+  @Post('transfer')
+  transfer(
+    @Body() body: { channelId: string; target: string; type?: 'blind' | 'attended' },
+  ) {
+    return this.callService.transfer(body.channelId, body.target, body.type);
+  }
+
+  @Get('trace/:id')
+  getTrace(@Param('id') id: string) {
+    return this.callService.getCallTrace(id);
+  }
+
   // ============ RabbitMQ Message Handlers ============
 
   @MessagePattern(TELEPHONY_PATTERNS.GET_CALL_LOGS)
@@ -76,6 +88,16 @@ export class CallController {
   @MessagePattern(TELEPHONY_PATTERNS.HANGUP_CALL)
   handleHangup(@Payload() data: { channelId: string }) {
     return this.callService.hangup(data.channelId);
+  }
+
+  @MessagePattern(TELEPHONY_PATTERNS.TRANSFER_CALL)
+  handleTransfer(@Payload() data: { channelId: string; target: string; type?: 'blind' | 'attended' }) {
+    return this.callService.transfer(data.channelId, data.target, data.type);
+  }
+
+  @MessagePattern(TELEPHONY_PATTERNS.GET_CALL_TRACE)
+  handleGetCallTrace(@Payload() data: { id: string }) {
+    return this.callService.getCallTrace(data.id);
   }
 
   @MessagePattern(TELEPHONY_PATTERNS.HEALTH_CHECK)

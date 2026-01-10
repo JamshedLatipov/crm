@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Delete,
+  Patch,
   Body,
   Param,
   Query,
@@ -68,6 +69,84 @@ export class NotificationController {
     return this.notificationService.remove(id);
   }
 
+  @Get('pending')
+  getPending() {
+    return this.notificationService.getPending();
+  }
+
+  @Get('scheduled')
+  getScheduled() {
+    return this.notificationService.getScheduled();
+  }
+
+  @Get('failed')
+  getFailed() {
+    return this.notificationService.getFailed();
+  }
+
+  @Post('lead')
+  sendLeadNotification(@Body() body: {
+    type: string;
+    title: string;
+    message: string;
+    leadData: any;
+    recipientId: string;
+    channels?: string[];
+    priority?: string;
+  }) {
+    return this.notificationService.sendLeadNotification(body);
+  }
+
+  @Post('deal')
+  sendDealNotification(@Body() body: {
+    type: string;
+    title: string;
+    message: string;
+    dealData: any;
+    recipientId: string;
+    channels?: string[];
+    priority?: string;
+  }) {
+    return this.notificationService.sendDealNotification(body);
+  }
+
+  @Post('system')
+  sendSystemNotification(@Body() body: {
+    type: string;
+    title: string;
+    message: string;
+    recipientId: string;
+    channels?: string[];
+    priority?: string;
+  }) {
+    return this.notificationService.sendSystemNotification(body);
+  }
+
+  @Patch(':id/sent')
+  markSent(@Param('id', ParseIntPipe) id: number) {
+    return this.notificationService.markSent(id);
+  }
+
+  @Patch(':id/delivered')
+  markDelivered(@Param('id', ParseIntPipe) id: number, @Body() metadata?: any) {
+    return this.notificationService.markDelivered(id, metadata);
+  }
+
+  @Patch(':id/failed')
+  markFailed(@Param('id', ParseIntPipe) id: number, @Body() body: { reason: string; metadata?: any }) {
+    return this.notificationService.markFailed(id, body.reason, body.metadata);
+  }
+
+  @Delete('expired')
+  deleteExpired() {
+    return this.notificationService.deleteExpired();
+  }
+
+  @Delete('all/:recipientId')
+  deleteAll(@Param('recipientId') recipientId: string) {
+    return this.notificationService.deleteAll(recipientId);
+  }
+
   // ============ RabbitMQ Message Handlers ============
 
   @MessagePattern(NOTIFICATION_PATTERNS.SEND)
@@ -85,14 +164,84 @@ export class NotificationController {
     return this.notificationService.markRead(dto);
   }
 
+  @MessagePattern(NOTIFICATION_PATTERNS.MARK_ALL_READ)
+  handleMarkAllRead(@Payload() data: { recipientId: string }) {
+    return this.notificationService.markAllRead(data.recipientId);
+  }
+
   @MessagePattern(NOTIFICATION_PATTERNS.GET_NOTIFICATIONS)
   handleGetNotifications(@Payload() filter: NotificationFilterDto) {
     return this.notificationService.findAll(filter);
   }
 
+  @MessagePattern(NOTIFICATION_PATTERNS.GET_NOTIFICATION)
+  handleGetNotification(@Payload() data: { id: number }) {
+    return this.notificationService.findOne(data.id);
+  }
+
   @MessagePattern(NOTIFICATION_PATTERNS.GET_UNREAD_COUNT)
   handleGetUnreadCount(@Payload() data: { recipientId: string }) {
     return this.notificationService.getUnreadCount(data.recipientId);
+  }
+
+  @MessagePattern(NOTIFICATION_PATTERNS.DELETE)
+  handleDelete(@Payload() data: { id: number }) {
+    return this.notificationService.remove(data.id);
+  }
+
+  @MessagePattern(NOTIFICATION_PATTERNS.GET_PENDING)
+  handleGetPending() {
+    return this.notificationService.getPending();
+  }
+
+  @MessagePattern(NOTIFICATION_PATTERNS.GET_SCHEDULED)
+  handleGetScheduled() {
+    return this.notificationService.getScheduled();
+  }
+
+  @MessagePattern(NOTIFICATION_PATTERNS.GET_FAILED)
+  handleGetFailed() {
+    return this.notificationService.getFailed();
+  }
+
+  @MessagePattern(NOTIFICATION_PATTERNS.SEND_LEAD_NOTIFICATION)
+  handleSendLeadNotification(@Payload() data: any) {
+    return this.notificationService.sendLeadNotification(data);
+  }
+
+  @MessagePattern(NOTIFICATION_PATTERNS.SEND_DEAL_NOTIFICATION)
+  handleSendDealNotification(@Payload() data: any) {
+    return this.notificationService.sendDealNotification(data);
+  }
+
+  @MessagePattern(NOTIFICATION_PATTERNS.SEND_SYSTEM_NOTIFICATION)
+  handleSendSystemNotification(@Payload() data: any) {
+    return this.notificationService.sendSystemNotification(data);
+  }
+
+  @MessagePattern(NOTIFICATION_PATTERNS.MARK_SENT)
+  handleMarkSent(@Payload() data: { id: number }) {
+    return this.notificationService.markSent(data.id);
+  }
+
+  @MessagePattern(NOTIFICATION_PATTERNS.DELETE_ALL)
+  handleDeleteAll(@Payload() data: { recipientId: string }) {
+    return this.notificationService.deleteAll(data.recipientId);
+  }
+
+  @MessagePattern(NOTIFICATION_PATTERNS.MARK_DELIVERED)
+  handleMarkDelivered(@Payload() data: { id: number; metadata?: any }) {
+    return this.notificationService.markDelivered(data.id, data.metadata);
+  }
+
+  @MessagePattern(NOTIFICATION_PATTERNS.MARK_FAILED)
+  handleMarkFailed(@Payload() data: { id: number; reason: string; metadata?: any }) {
+    return this.notificationService.markFailed(data.id, data.reason, data.metadata);
+  }
+
+  @MessagePattern(NOTIFICATION_PATTERNS.DELETE_EXPIRED)
+  handleDeleteExpired() {
+    return this.notificationService.deleteExpired();
   }
 
   @MessagePattern(NOTIFICATION_PATTERNS.HEALTH_CHECK)

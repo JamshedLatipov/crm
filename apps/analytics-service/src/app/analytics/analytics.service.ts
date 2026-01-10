@@ -321,4 +321,176 @@ export class AnalyticsService {
       avgResponseTime: 0,
     }));
   }
+
+  // ============ Call-specific Analytics Methods (from monolith) ============
+
+  async getCallsAgentPerformance(fromDate: Date, toDate: Date) {
+    const agentStats = await this.dataSource.query(`
+      SELECT 
+        "createdBy" as agent,
+        COUNT(*) as total_calls,
+        COUNT(*) FILTER (WHERE disposition = 'ANSWERED') as answered_calls,
+        COALESCE(AVG(duration), 0) as avg_duration,
+        COALESCE(SUM(duration), 0) as total_duration
+      FROM call_logs
+      WHERE "createdAt" BETWEEN $1 AND $2
+      GROUP BY "createdBy"
+      ORDER BY total_calls DESC
+    `, [fromDate, toDate]);
+
+    return {
+      agents: agentStats.map((a: { agent: string; total_calls: string; answered_calls: string; avg_duration: string; total_duration: string }) => ({
+        agent: a.agent,
+        totalCalls: parseInt(a.total_calls) || 0,
+        answeredCalls: parseInt(a.answered_calls) || 0,
+        avgDuration: Math.round(parseFloat(a.avg_duration) || 0),
+        totalDuration: parseInt(a.total_duration) || 0,
+        answerRate: parseInt(a.total_calls) > 0 
+          ? Math.round((parseInt(a.answered_calls) / parseInt(a.total_calls)) * 100) 
+          : 0,
+      })),
+      period: { from: fromDate.toISOString(), to: toDate.toISOString() },
+    };
+  }
+
+  async getCallsOverview(fromDate: Date, toDate: Date) {
+    const stats = await this.dataSource.query(`
+      SELECT 
+        COUNT(*) as total_calls,
+        COUNT(*) FILTER (WHERE disposition = 'ANSWERED') as answered_calls,
+        COUNT(*) FILTER (WHERE disposition IN ('NO ANSWER', 'BUSY', 'FAILED', 'CONGESTION')) as missed_calls,
+        COUNT(*) FILTER (WHERE "callType" = 'inbound') as inbound_calls,
+        COUNT(*) FILTER (WHERE "callType" = 'outbound') as outbound_calls,
+        COALESCE(AVG(duration) FILTER (WHERE disposition = 'ANSWERED'), 0) as avg_duration
+      FROM call_logs
+      WHERE "createdAt" BETWEEN $1 AND $2
+    `, [fromDate, toDate]);
+
+    return {
+      totalCalls: parseInt(stats[0].total_calls) || 0,
+      answeredCalls: parseInt(stats[0].answered_calls) || 0,
+      missedCalls: parseInt(stats[0].missed_calls) || 0,
+      inboundCalls: parseInt(stats[0].inbound_calls) || 0,
+      outboundCalls: parseInt(stats[0].outbound_calls) || 0,
+      avgDuration: Math.round(parseFloat(stats[0].avg_duration) || 0),
+      answerRate: parseInt(stats[0].total_calls) > 0 
+        ? Math.round((parseInt(stats[0].answered_calls) / parseInt(stats[0].total_calls)) * 100) 
+        : 0,
+      period: { from: fromDate.toISOString(), to: toDate.toISOString() },
+    };
+  }
+
+  async getCallsSla(fromDate: Date, toDate: Date) {
+    // SLA metrics - calls answered within threshold (e.g., 20 seconds)
+    const slaThreshold = 20; // seconds
+    
+    const stats = await this.dataSource.query(`
+      SELECT 
+        COUNT(*) as total_calls,
+        COUNT(*) FILTER (WHERE disposition = 'ANSWERED' AND COALESCE("waitTime", 0) <= $3) as within_sla,
+        COUNT(*) FILTER (WHERE disposition = 'ANSWERED' AND COALESCE("waitTime", 0) > $3) as outside_sla,
+        COALESCE(AVG("waitTime"), 0) as avg_wait_time
+      FROM call_logs
+      WHERE "createdAt" BETWEEN $1 AND $2 AND "callType" = 'inbound'
+    `, [fromDate, toDate, slaThreshold]);
+
+    return {
+      totalCalls: parseInt(stats[0].total_calls) || 0,
+      withinSla: parseInt(stats[0].within_sla) || 0,
+      outsideSla: parseInt(stats[0].outside_sla) || 0,
+      avgWaitTime: Math.round(parseFloat(stats[0].avg_wait_time) || 0),
+      slaThreshold,
+      slaRate: parseInt(stats[0].total_calls) > 0 
+        ? Math.round((parseInt(stats[0].within_sla) / parseInt(stats[0].total_calls)) * 100) 
+        : 0,
+      period: { from: fromDate.toISOString(), to: toDate.toISOString() },
+    };
+  }
+
+  async getCallsAbandoned(fromDate: Date, toDate: Date) {
+    const stats = await this.dataSource.query(`
+      SELECT 
+        COUNT(*) as total_inbound,
+        COUNT(*) FILTER (WHERE disposition IN ('NO ANSWER', 'CANCEL', 'CONGESTION')) as abandoned
+      FROM call_logs
+      WHERE "createdAt" BETWEEN $1 AND $2 AND "callType" = 'inbound'
+    `, [fromDate, toDate]);
+
+    const abandonedCalls = await this.dataSource.query(`
+      SELECT id, "asteriskUniqueId" as unique_id, "createdBy" as caller, disposition, "createdAt"
+      FROM call_logs
+      WHERE "createdAt" BETWEEN $1 AND $2 
+        AND "callType" = 'inbound'
+        AND disposition IN ('NO ANSWER', 'CANCEL', 'CONGESTION')
+      ORDER BY "createdAt" DESC
+      LIMIT 100
+    `, [fromDate, toDate]);
+
+    return {
+      totalInbound: parseInt(stats[0].total_inbound) || 0,
+      abandonedCount: parseInt(stats[0].abandoned) || 0,
+      abandonRate: parseInt(stats[0].total_inbound) > 0 
+        ? Math.round((parseInt(stats[0].abandoned) / parseInt(stats[0].total_inbound)) * 100) 
+        : 0,
+      abandonedCalls: abandonedCalls.map((c: { id: string; unique_id: string; caller: string; disposition: string; createdAt: Date }) => ({
+        id: c.id,
+        uniqueId: c.unique_id,
+        caller: c.caller,
+        disposition: c.disposition,
+        createdAt: c.createdAt,
+      })),
+      period: { from: fromDate.toISOString(), to: toDate.toISOString() },
+    };
+  }
+
+  async getCallsQueuePerformance(fromDate: Date, toDate: Date) {
+    // Queue performance - placeholder if queue data is not in call_logs
+    // This would typically come from Asterisk queue_log table
+    return {
+      queues: [],
+      period: { from: fromDate.toISOString(), to: toDate.toISOString() },
+    };
+  }
+
+  async getCallsIvrAnalysis(fromDate: Date, toDate: Date) {
+    // IVR analysis - placeholder
+    return {
+      ivrNodes: [],
+      period: { from: fromDate.toISOString(), to: toDate.toISOString() },
+    };
+  }
+
+  async getCallsConversion(fromDate: Date, toDate: Date) {
+    // Call to deal conversion (ROI)
+    const conversionStats = await this.dataSource.query(`
+      WITH call_deals AS (
+        SELECT DISTINCT c.id as call_id, d.id as deal_id, d.amount
+        FROM call_logs c
+        JOIN leads l ON c."clientCallId" = l.phone
+        JOIN deals d ON d."leadId" = l.id
+        WHERE c."createdAt" BETWEEN $1 AND $2 
+          AND d.status = 'won'
+      )
+      SELECT 
+        COUNT(DISTINCT call_id) as calls_with_deals,
+        COUNT(DISTINCT deal_id) as deals_from_calls,
+        COALESCE(SUM(amount), 0) as revenue_from_calls
+      FROM call_deals
+    `, [fromDate, toDate]);
+
+    const totalCalls = await this.dataSource.query(`
+      SELECT COUNT(*) as total FROM call_logs WHERE "createdAt" BETWEEN $1 AND $2
+    `, [fromDate, toDate]);
+
+    return {
+      totalCalls: parseInt(totalCalls[0].total) || 0,
+      callsWithDeals: parseInt(conversionStats[0].calls_with_deals) || 0,
+      dealsFromCalls: parseInt(conversionStats[0].deals_from_calls) || 0,
+      revenueFromCalls: parseFloat(conversionStats[0].revenue_from_calls) || 0,
+      conversionRate: parseInt(totalCalls[0].total) > 0 
+        ? Math.round((parseInt(conversionStats[0].calls_with_deals) / parseInt(totalCalls[0].total)) * 100) 
+        : 0,
+      period: { from: fromDate.toISOString(), to: toDate.toISOString() },
+    };
+  }
 }

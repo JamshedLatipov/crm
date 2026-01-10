@@ -7,8 +7,10 @@ import {
   HttpStatus,
   UnauthorizedException,
   Logger,
+  UseGuards,
+  Req,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom, timeout, catchError } from 'rxjs';
 import {
@@ -25,6 +27,7 @@ import {
   ValidateTokenRequestDto,
   ValidateTokenResponseDto,
 } from '../dto';
+import { AuthGuard } from './auth.guard';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -85,6 +88,30 @@ export class AuthController {
       return result;
     } catch (error) {
       this.logger.error('Register error:', error);
+      throw error;
+    }
+  }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Logout', description: 'Invalidate user session' })
+  @ApiResponse({ status: 200, description: 'Logged out successfully' })
+  async logout(@Req() req: any) {
+    try {
+      const userId = req.user?.id || req.user?.sub;
+      return await firstValueFrom(
+        this.identityClient.send(IDENTITY_PATTERNS.LOGOUT, { userId }).pipe(
+          timeout(3000),
+          catchError(err => {
+            this.logger.error('Logout error:', err);
+            throw err;
+          })
+        )
+      );
+    } catch (error) {
+      this.logger.error('Logout error:', error);
       throw error;
     }
   }

@@ -151,6 +151,48 @@ export class CallService {
     }
   }
 
+  async transfer(
+    channelId: string,
+    target: string,
+    type: 'blind' | 'attended' = 'blind',
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const result = await this.asteriskService.transfer(channelId, target, type);
+      if (result.success) {
+        this.emitEvent(CALL_EVENTS.TRANSFERRED, {
+          channelId,
+          target,
+          type,
+        });
+      }
+      return result;
+    } catch (err) {
+      const error = err as Error;
+      this.logger.error(`Failed to transfer call: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async getCallTrace(id: string): Promise<any> {
+    const call = await this.callLogRepository.findOne({ where: { id } });
+    if (!call) {
+      throw new NotFoundException(`Call log with ID ${id} not found`);
+    }
+    
+    // Return a trace object with call lifecycle data
+    return {
+      id: call.id,
+      uniqueId: call.asteriskUniqueId,
+      callType: call.callType,
+      status: call.status,
+      disposition: call.disposition,
+      duration: call.duration,
+      createdAt: call.createdAt,
+      updatedAt: call.updatedAt,
+      events: [], // TODO: Integrate with CDR/CEL for actual events
+    };
+  }
+
   async getStats(fromDate?: Date, toDate?: Date): Promise<CallStatsDto> {
     const now = new Date();
     const startOfDay = new Date(now);

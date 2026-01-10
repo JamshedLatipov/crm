@@ -39,6 +39,12 @@ export class Deal {
   @Column({ nullable: true })
   leadId?: string;
 
+  @Column({ nullable: true })
+  ownerId?: string;
+
+  @Column({ nullable: true })
+  assignedToId?: string;
+
   @Column('decimal', { precision: 15, scale: 2 })
   amount!: number;
 

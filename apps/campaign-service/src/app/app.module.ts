@@ -4,6 +4,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { SERVICES } from '@crm/contracts';
 import { CampaignModule } from './campaign/campaign.module';
 import { TemplateModule } from './template/template.module';
+import { SegmentModule } from './segment/segment.module';
 import { HealthModule } from './health/health.module';
 
 @Module({
@@ -49,6 +50,7 @@ import { HealthModule } from './health/health.module';
     ]),
     CampaignModule,
     TemplateModule,
+    SegmentModule,
     HealthModule,
   ],
 })

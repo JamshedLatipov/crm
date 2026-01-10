@@ -10,7 +10,7 @@ import {
   UpdateUserDto,
   UpdateWorkloadDto,
   AutoAssignCriteriaDto,
-  ManagerStatsDto,
+  ManagersAggregateStatsDto,
   createPaginatedResponse,
   PaginationQueryDto,
 } from '@crm/contracts';
@@ -276,6 +276,136 @@ export class UserService {
     });
 
     return this.toDto(saved);
+  }
+
+  async bulkDelete(userIds: number[]): Promise<{ message: string }> {
+    const users = await this.userRepository.findBy({ id: In(userIds) });
+    if (users.length === 0) {
+      throw new NotFoundException('No users found for bulk delete');
+    }
+    
+    const now = new Date();
+    for (const user of users) {
+      user.deletedAt = now;
+      user.isActive = false;
+    }
+    await this.userRepository.save(users);
+    
+    return { message: `${users.length} users deleted successfully` };
+  }
+
+  async resetPassword(id: number): Promise<{ temporaryPassword: string }> {
+    const user = await this.userRepository.findOne({ where: { id, deletedAt: IsNull() } });
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
+    // Generate temporary password
+    const tempPassword = Math.random().toString(36).slice(-8) + 'A1!';
+    user.password = await bcrypt.hash(tempPassword, 10);
+    await this.userRepository.save(user);
+
+    return { temporaryPassword: tempPassword };
+  }
+
+  async exportUsers(format: 'csv' | 'excel'): Promise<any> {
+    const users = await this.userRepository.find({ where: { deletedAt: IsNull() } });
+    const data = users.map(u => this.toDto(u));
+
+    if (format === 'csv') {
+      const headers = Object.keys(data[0] || {}).join(',');
+      const rows = data.map(row => Object.values(row).join(','));
+      return { format: 'csv', content: [headers, ...rows].join('\n') };
+    }
+
+    // For excel, return JSON that can be converted on the client
+    return { format: 'excel', data };
+  }
+
+  async getManagersStatistics(): Promise<ManagersAggregateStatsDto> {
+    const managers = await this.userRepository.find({
+      where: { deletedAt: IsNull() },
+    });
+    
+    const managerList = managers.filter(u => 
+      u.roles?.includes('manager') || u.roles?.includes('admin')
+    );
+
+    const totalManagers = managerList.length;
+    const availableManagers = managerList.filter(m => m.isAvailableForAssignment).length;
+    const totalCapacity = managerList.reduce((sum, m) => sum + (m.maxLeadsCapacity || 0), 0);
+    const currentWorkload = managerList.reduce((sum, m) => sum + (m.currentLeadsCount || 0), 0);
+
+    return {
+      totalManagers,
+      availableManagers,
+      totalCapacity,
+      currentWorkload,
+      utilizationRate: totalCapacity > 0 ? (currentWorkload / totalCapacity) * 100 : 0,
+    };
+  }
+
+  async updateLeadCount(id: number, increment: number): Promise<{ message: string }> {
+    const user = await this.userRepository.findOne({ where: { id, deletedAt: IsNull() } });
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
+    user.currentLeadsCount = Math.max(0, (user.currentLeadsCount || 0) + increment);
+    await this.userRepository.save(user);
+
+    return { message: 'Lead count updated successfully' };
+  }
+
+  async seedTestManagers(): Promise<{ message: string }> {
+    const testManagers = [
+      { username: 'manager1', firstName: 'Test', lastName: 'Manager1', email: 'manager1@test.com', roles: ['manager'] },
+      { username: 'manager2', firstName: 'Test', lastName: 'Manager2', email: 'manager2@test.com', roles: ['manager'] },
+      { username: 'manager3', firstName: 'Test', lastName: 'Manager3', email: 'manager3@test.com', roles: ['manager'] },
+    ];
+
+    for (const mgr of testManagers) {
+      const exists = await this.userRepository.findOne({ where: { username: mgr.username } });
+      if (!exists) {
+        const user = this.userRepository.create({
+          ...mgr,
+          password: await bcrypt.hash('test123', 10),
+          isActive: true,
+          isAvailableForAssignment: true,
+          maxLeadsCapacity: 50,
+          maxDealsCapacity: 20,
+          maxTasksCapacity: 30,
+        });
+        await this.userRepository.save(user);
+      }
+    }
+
+    return { message: 'Test managers seeded successfully' };
+  }
+
+  async getTimezones(): Promise<{ timezones: { value: string; label: string; offset: string }[] }> {
+    const timezones = [
+      { value: 'Europe/Moscow', label: 'Москва (MSK)', offset: '+03:00' },
+      { value: 'Europe/Kaliningrad', label: 'Калининград', offset: '+02:00' },
+      { value: 'Europe/Samara', label: 'Самара', offset: '+04:00' },
+      { value: 'Asia/Yekaterinburg', label: 'Екатеринбург', offset: '+05:00' },
+      { value: 'Asia/Omsk', label: 'Омск', offset: '+06:00' },
+      { value: 'Asia/Krasnoyarsk', label: 'Красноярск', offset: '+07:00' },
+      { value: 'Asia/Irkutsk', label: 'Иркутск', offset: '+08:00' },
+      { value: 'Asia/Yakutsk', label: 'Якутск', offset: '+09:00' },
+      { value: 'Asia/Vladivostok', label: 'Владивосток', offset: '+10:00' },
+      { value: 'Asia/Magadan', label: 'Магадан', offset: '+11:00' },
+      { value: 'Asia/Kamchatka', label: 'Камчатка', offset: '+12:00' },
+      { value: 'UTC', label: 'UTC', offset: '+00:00' },
+      { value: 'Europe/London', label: 'London (GMT)', offset: '+00:00' },
+      { value: 'Europe/Paris', label: 'Paris (CET)', offset: '+01:00' },
+      { value: 'America/New_York', label: 'New York (EST)', offset: '-05:00' },
+      { value: 'America/Los_Angeles', label: 'Los Angeles (PST)', offset: '-08:00' },
+      { value: 'Asia/Dubai', label: 'Dubai (GST)', offset: '+04:00' },
+      { value: 'Asia/Singapore', label: 'Singapore (SGT)', offset: '+08:00' },
+      { value: 'Asia/Tokyo', label: 'Tokyo (JST)', offset: '+09:00' },
+    ];
+    return { timezones };
   }
 
   private emitEvent(eventType: string, payload: Record<string, unknown>) {

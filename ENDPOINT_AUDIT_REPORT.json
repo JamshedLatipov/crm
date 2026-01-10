@@ -1,0 +1,1272 @@
+{
+  "audit_date": "2026-01-01",
+  "summary": {
+    "total_monolith_endpoints": 295,
+    "total_microservice_endpoints": 125,
+    "total_gateway_endpoints": 115,
+    "coverage_microservices": "42%",
+    "coverage_gateway": "92%"
+  },
+  "modules": {
+    "auth": {
+      "monolith_base_path": "/auth",
+      "microservice_base_path": "/auth (identity-service)",
+      "gateway_base_path": "/auth",
+      "monolith_endpoints": [
+        "POST /auth/login",
+        "POST /auth/register",
+        "POST /auth/logout"
+      ],
+      "microservice_endpoints": [
+        "POST /auth/login",
+        "POST /auth/register",
+        "POST /auth/validate-token"
+      ],
+      "gateway_endpoints": [
+        "POST /auth/login",
+        "POST /auth/register",
+        "POST /auth/validate"
+      ],
+      "missing_in_microservice": [
+        "POST /auth/logout"
+      ],
+      "missing_in_gateway": [],
+      "coverage": "67%"
+    },
+    "users": {
+      "monolith_base_path": "/users",
+      "microservice_base_path": "/users (identity-service)",
+      "gateway_base_path": "/users",
+      "monolith_endpoints": [
+        "GET /users",
+        "POST /users",
+        "GET /users/managers",
+        "GET /users/managers/stats",
+        "POST /users/managers/auto-assign",
+        "GET /users/managers/:id",
+        "PUT /users/managers/:id/lead-count",
+        "POST /users/seed-managers",
+        "POST /users/:id/reset-password",
+        "PUT /users/:id",
+        "GET /users/:id",
+        "GET /users/export",
+        "POST /users/bulk-delete",
+        "DELETE /users/:id"
+      ],
+      "microservice_endpoints": [
+        "GET /users",
+        "GET /users/managers",
+        "GET /users/:id",
+        "POST /users",
+        "PUT /users/:id",
+        "DELETE /users/:id"
+      ],
+      "gateway_endpoints": [
+        "GET /users",
+        "GET /users/managers",
+        "GET /users/:id",
+        "POST /users",
+        "PUT /users/:id",
+        "DELETE /users/:id"
+      ],
+      "missing_in_microservice": [
+        "GET /users/managers/stats",
+        "POST /users/managers/auto-assign",
+        "GET /users/managers/:id",
+        "PUT /users/managers/:id/lead-count",
+        "POST /users/seed-managers",
+        "POST /users/:id/reset-password",
+        "GET /users/export",
+        "POST /users/bulk-delete"
+      ],
+      "missing_in_gateway": [],
+      "coverage": "43%"
+    },
+    "leads": {
+      "monolith_base_path": "/leads",
+      "microservice_base_path": "/leads (lead-service)",
+      "gateway_base_path": "/leads",
+      "monolith_endpoints": [
+        "POST /leads",
+        "GET /leads",
+        "GET /leads/statistics",
+        "GET /leads/search",
+        "GET /leads/high-value",
+        "PATCH /leads/bulk-assign",
+        "GET /leads/stale",
+        "GET /leads/manager/:managerId",
+        "GET /leads/:id",
+        "GET /leads/:id/activities",
+        "GET /leads/:id/assignments",
+        "PATCH /leads/:id",
+        "PATCH /leads/:id/assign",
+        "POST /leads/:id/auto-assign",
+        "PATCH /leads/:id/score",
+        "PATCH /leads/:id/status",
+        "PATCH /leads/:id/qualify",
+        "POST /leads/:id/notes",
+        "POST /leads/:id/tags",
+        "DELETE /leads/:id/tags",
+        "PATCH /leads/:id/contact",
+        "POST /leads/:id/follow-up",
+        "DELETE /leads/:id",
+        "POST /leads/:id/convert-to-deal",
+        "PATCH /leads/:id/promo-company",
+        "DELETE /leads/:id/promo-company",
+        "GET /leads/:id/history",
+        "GET /leads/:id/history/stats",
+        "GET /leads/history/recent",
+        "GET /leads/history/stats",
+        "GET /leads/history/user-activity"
+      ],
+      "microservice_endpoints": [
+        "GET /leads",
+        "GET /leads/stats",
+        "GET /leads/search",
+        "GET /leads/high-value",
+        "GET /leads/stale",
+        "PATCH /leads/bulk-assign",
+        "GET /leads/:id",
+        "POST /leads",
+        "PATCH /leads/:id",
+        "DELETE /leads/:id",
+        "PATCH /leads/:id/assign",
+        "PATCH /leads/:id/score",
+        "PATCH /leads/:id/status",
+        "PATCH /leads/:id/qualify",
+        "PATCH /leads/:id/contact",
+        "POST /leads/:id/tags",
+        "DELETE /leads/:id/tags",
+        "POST /leads/:id/follow-up"
+      ],
+      "gateway_endpoints": [
+        "GET /leads",
+        "GET /leads/stats",
+        "GET /leads/search",
+        "GET /leads/high-value",
+        "GET /leads/stale",
+        "GET /leads/:id",
+        "POST /leads",
+        "PATCH /leads/:id",
+        "DELETE /leads/:id",
+        "PATCH /leads/:id/assign",
+        "PATCH /leads/:id/score",
+        "PATCH /leads/:id/status",
+        "PATCH /leads/:id/qualify",
+        "PATCH /leads/:id/contact",
+        "POST /leads/:id/tags",
+        "DELETE /leads/:id/tags"
+      ],
+      "missing_in_microservice": [
+        "GET /leads/statistics",
+        "GET /leads/manager/:managerId",
+        "GET /leads/:id/activities",
+        "GET /leads/:id/assignments",
+        "POST /leads/:id/auto-assign",
+        "POST /leads/:id/notes",
+        "POST /leads/:id/convert-to-deal",
+        "PATCH /leads/:id/promo-company",
+        "DELETE /leads/:id/promo-company",
+        "GET /leads/:id/history",
+        "GET /leads/:id/history/stats",
+        "GET /leads/history/recent",
+        "GET /leads/history/stats",
+        "GET /leads/history/user-activity"
+      ],
+      "missing_in_gateway": [
+        "PATCH /leads/bulk-assign",
+        "POST /leads/:id/follow-up"
+      ],
+      "coverage": "58%"
+    },
+    "lead_capture": {
+      "monolith_base_path": "/lead-capture",
+      "microservice_base_path": "NOT IMPLEMENTED",
+      "gateway_base_path": "NOT IMPLEMENTED",
+      "monolith_endpoints": [
+        "POST /lead-capture/website",
+        "POST /lead-capture/social-media",
+        "POST /lead-capture/email-activity",
+        "POST /lead-capture/cold-call",
+        "POST /lead-capture/webhook/:source",
+        "POST /lead-capture/google-analytics"
+      ],
+      "microservice_endpoints": [],
+      "gateway_endpoints": [],
+      "missing_in_microservice": [
+        "POST /lead-capture/website",
+        "POST /lead-capture/social-media",
+        "POST /lead-capture/email-activity",
+        "POST /lead-capture/cold-call",
+        "POST /lead-capture/webhook/:source",
+        "POST /lead-capture/google-analytics"
+      ],
+      "missing_in_gateway": [
+        "ALL ENDPOINTS"
+      ],
+      "coverage": "0%"
+    },
+    "lead_distribution": {
+      "monolith_base_path": "/lead-distribution",
+      "microservice_base_path": "NOT IMPLEMENTED",
+      "gateway_base_path": "NOT IMPLEMENTED",
+      "monolith_endpoints": [
+        "GET /lead-distribution/rules",
+        "GET /lead-distribution/rules/default",
+        "POST /lead-distribution/rules",
+        "GET /lead-distribution/rules/:id",
+        "PATCH /lead-distribution/rules/:id",
+        "DELETE /lead-distribution/rules/:id",
+        "POST /lead-distribution/rules/:id/toggle",
+        "POST /lead-distribution/leads/:id/reassign"
+      ],
+      "microservice_endpoints": [],
+      "gateway_endpoints": [],
+      "missing_in_microservice": [
+        "ALL ENDPOINTS"
+      ],
+      "missing_in_gateway": [
+        "ALL ENDPOINTS"
+      ],
+      "coverage": "0%"
+    },
+    "lead_scoring": {
+      "monolith_base_path": "/lead-scoring",
+      "microservice_base_path": "NOT IMPLEMENTED",
+      "gateway_base_path": "NOT IMPLEMENTED",
+      "monolith_endpoints": [
+        "GET /lead-scoring/rules",
+        "GET /lead-scoring/rules/default",
+        "POST /lead-scoring/rules",
+        "GET /lead-scoring/rules/:id",
+        "PATCH /lead-scoring/rules/:id",
+        "DELETE /lead-scoring/rules/:id",
+        "POST /lead-scoring/rules/:id/toggle",
+        "POST /lead-scoring/leads/:leadId/calculate",
+        "GET /lead-scoring/leads/high-score",
+        "POST /lead-scoring/leads/:leadId/calculate-advanced",
+        "POST /lead-scoring/bulk-calculate",
+        "GET /lead-scoring/scores/:leadId"
+      ],
+      "microservice_endpoints": [],
+      "gateway_endpoints": [],
+      "missing_in_microservice": [
+        "ALL ENDPOINTS"
+      ],
+      "missing_in_gateway": [
+        "ALL ENDPOINTS"
+      ],
+      "coverage": "0%"
+    },
+    "deals": {
+      "monolith_base_path": "/deals",
+      "microservice_base_path": "/deals (deal-service)",
+      "gateway_base_path": "/deals",
+      "monolith_endpoints": [
+        "GET /deals",
+        "GET /deals/overdue",
+        "GET /deals/search",
+        "GET /deals/forecast",
+        "GET /deals/:id",
+        "GET /deals/:id/assignments",
+        "POST /deals",
+        "PATCH /deals/:id",
+        "DELETE /deals/:id",
+        "PATCH /deals/:id/move-stage",
+        "PATCH /deals/:id/win",
+        "PATCH /deals/:id/lose",
+        "PATCH /deals/:id/probability",
+        "PATCH /deals/:id/link-company",
+        "PATCH /deals/:id/link-contact",
+        "PATCH /deals/:id/link-lead",
+        "GET /deals/by-company/:companyId",
+        "GET /deals/by-contact/:contactId",
+        "GET /deals/by-lead/:leadId",
+        "GET /deals/:id/history",
+        "GET /deals/:id/history/stats",
+        "GET /deals/history/stage-movement-stats",
+        "GET /deals/history/most-active"
+      ],
+      "microservice_endpoints": [
+        "GET /deals",
+        "GET /deals/stats",
+        "GET /deals/forecast",
+        "GET /deals/by-stage/:stageId",
+        "GET /deals/:id",
+        "GET /deals/:id/history",
+        "POST /deals",
+        "PUT /deals/:id",
+        "DELETE /deals/:id",
+        "POST /deals/:id/win",
+        "POST /deals/:id/lose",
+        "POST /deals/:id/reopen",
+        "POST /deals/:id/move-to-stage",
+        "POST /deals/:id/link-contact",
+        "POST /deals/:id/link-company",
+        "POST /deals/:id/link-lead"
+      ],
+      "gateway_endpoints": [
+        "GET /deals",
+        "GET /deals/stats",
+        "GET /deals/forecast",
+        "GET /deals/by-stage/:stageId",
+        "GET /deals/:id",
+        "GET /deals/:id/history",
+        "POST /deals",
+        "PUT /deals/:id",
+        "DELETE /deals/:id",
+        "POST /deals/:id/win",
+        "POST /deals/:id/lose",
+        "POST /deals/:id/reopen",
+        "POST /deals/:id/move-to-stage",
+        "POST /deals/:id/link-contact",
+        "POST /deals/:id/link-company",
+        "POST /deals/:id/link-lead"
+      ],
+      "missing_in_microservice": [
+        "GET /deals/overdue",
+        "GET /deals/search",
+        "GET /deals/:id/assignments",
+        "PATCH /deals/:id/probability",
+        "GET /deals/by-company/:companyId",
+        "GET /deals/by-contact/:contactId",
+        "GET /deals/by-lead/:leadId",
+        "GET /deals/:id/history/stats",
+        "GET /deals/history/stage-movement-stats",
+        "GET /deals/history/most-active"
+      ],
+      "missing_in_gateway": [],
+      "coverage": "70%"
+    },
+    "contacts": {
+      "monolith_base_path": "/contacts",
+      "microservice_base_path": "/contacts (contact-service)",
+      "gateway_base_path": "/contacts",
+      "monolith_endpoints": [
+        "GET /contacts",
+        "GET /contacts/recent",
+        "GET /contacts/inactive",
+        "GET /contacts/search",
+        "GET /contacts/stats",
+        "GET /contacts/duplicates",
+        "GET /contacts/:id",
+        "POST /contacts",
+        "PATCH /contacts/:id",
+        "DELETE /contacts/:id",
+        "PATCH /contacts/:id/blacklist",
+        "PATCH /contacts/:id/unblacklist",
+        "PATCH /contacts/:id/assign",
+        "PATCH /contacts/:id/touch",
+        "GET /contacts/:id/activity",
+        "POST /contacts/:id/activity"
+      ],
+      "microservice_endpoints": [
+        "GET /contacts",
+        "GET /contacts/recent",
+        "GET /contacts/inactive",
+        "GET /contacts/search",
+        "GET /contacts/stats",
+        "GET /contacts/duplicates",
+        "GET /contacts/:id",
+        "POST /contacts",
+        "PATCH /contacts/:id",
+        "DELETE /contacts/:id",
+        "PATCH /contacts/:id/blacklist",
+        "PATCH /contacts/:id/unblacklist",
+        "PATCH /contacts/:id/assign",
+        "PATCH /contacts/:id/touch",
+        "GET /contacts/:id/activity",
+        "POST /contacts/:id/activity"
+      ],
+      "gateway_endpoints": [
+        "GET /contacts",
+        "GET /contacts/stats",
+        "GET /contacts/search",
+        "GET /contacts/recent",
+        "GET /contacts/inactive",
+        "GET /contacts/duplicates",
+        "GET /contacts/by-phone/:phone",
+        "GET /contacts/by-manager/:managerId",
+        "GET /contacts/:id",
+        "GET /contacts/:id/activity",
+        "POST /contacts",
+        "POST /contacts/:id/activity",
+        "PUT /contacts/:id",
+        "PATCH /contacts/:id/assign",
+        "POST /contacts/:id/blacklist",
+        "POST /contacts/:id/unblacklist",
+        "POST /contacts/:id/touch",
+        "DELETE /contacts/:id"
+      ],
+      "missing_in_microservice": [],
+      "missing_in_gateway": [],
+      "coverage": "100%"
+    },
+    "companies": {
+      "monolith_base_path": "/companies",
+      "microservice_base_path": "/companies (contact-service)",
+      "gateway_base_path": "/companies",
+      "monolith_endpoints": [
+        "POST /companies",
+        "GET /companies",
+        "GET /companies/inactive",
+        "GET /companies/search",
+        "GET /companies/stats",
+        "GET /companies/duplicates",
+        "GET /companies/by-inn/:inn",
+        "GET /companies/by-industry/:industry",
+        "GET /companies/by-size/:size",
+        "GET /companies/:id",
+        "PATCH /companies/:id",
+        "DELETE /companies/:id",
+        "PATCH /companies/:id/blacklist",
+        "PATCH /companies/:id/unblacklist",
+        "PATCH /companies/:id/assign",
+        "PATCH /companies/:id/touch",
+        "PATCH /companies/:id/rating",
+        "POST /companies/:id/tags",
+        "DELETE /companies/:id/tags"
+      ],
+      "microservice_endpoints": [
+        "GET /companies",
+        "GET /companies/:id",
+        "POST /companies",
+        "PATCH /companies/:id",
+        "DELETE /companies/:id"
+      ],
+      "gateway_endpoints": [
+        "GET /companies",
+        "GET /companies/:id",
+        "POST /companies",
+        "PUT /companies/:id",
+        "DELETE /companies/:id"
+      ],
+      "missing_in_microservice": [
+        "GET /companies/inactive",
+        "GET /companies/search",
+        "GET /companies/stats",
+        "GET /companies/duplicates",
+        "GET /companies/by-inn/:inn",
+        "GET /companies/by-industry/:industry",
+        "GET /companies/by-size/:size",
+        "PATCH /companies/:id/blacklist",
+        "PATCH /companies/:id/unblacklist",
+        "PATCH /companies/:id/assign",
+        "PATCH /companies/:id/touch",
+        "PATCH /companies/:id/rating",
+        "POST /companies/:id/tags",
+        "DELETE /companies/:id/tags"
+      ],
+      "missing_in_gateway": [],
+      "coverage": "26%"
+    },
+    "tasks": {
+      "monolith_base_path": "/tasks",
+      "microservice_base_path": "/tasks (task-service)",
+      "gateway_base_path": "/tasks",
+      "monolith_endpoints": [
+        "POST /tasks",
+        "GET /tasks",
+        "GET /tasks/:id",
+        "PATCH /tasks/:id",
+        "DELETE /tasks/:id",
+        "POST /tasks/:id/comment",
+        "GET /tasks/:id/comments",
+        "GET /tasks/:id/history"
+      ],
+      "microservice_endpoints": [
+        "GET /tasks",
+        "GET /tasks/stats",
+        "GET /tasks/types",
+        "GET /tasks/overdue",
+        "GET /tasks/assignee/:assigneeId",
+        "GET /tasks/:id",
+        "POST /tasks",
+        "PATCH /tasks/:id",
+        "DELETE /tasks/:id",
+        "PATCH /tasks/:id/assign",
+        "PATCH /tasks/:id/complete"
+      ],
+      "gateway_endpoints": [
+        "GET /tasks",
+        "GET /tasks/stats",
+        "GET /tasks/types",
+        "GET /tasks/overdue",
+        "GET /tasks/assignee/:assigneeId",
+        "GET /tasks/:id",
+        "POST /tasks",
+        "PATCH /tasks/:id",
+        "DELETE /tasks/:id",
+        "PATCH /tasks/:id/assign",
+        "PATCH /tasks/:id/complete"
+      ],
+      "missing_in_microservice": [
+        "POST /tasks/:id/comment",
+        "GET /tasks/:id/comments",
+        "GET /tasks/:id/history"
+      ],
+      "missing_in_gateway": [],
+      "notes": "Microservice has additional endpoints not in monolith (stats, types, overdue, assignee)",
+      "coverage": "63%"
+    },
+    "task_types": {
+      "monolith_base_path": "/task-types",
+      "microservice_base_path": "NOT IMPLEMENTED",
+      "gateway_base_path": "NOT IMPLEMENTED",
+      "monolith_endpoints": [
+        "POST /task-types",
+        "GET /task-types",
+        "GET /task-types/:id",
+        "PUT /task-types/:id",
+        "DELETE /task-types/:id",
+        "DELETE /task-types/:id/force",
+        "POST /task-types/reorder",
+        "POST /task-types/:id/calculate-due-date",
+        "POST /task-types/:id/validate-timeframe"
+      ],
+      "microservice_endpoints": [],
+      "gateway_endpoints": [],
+      "missing_in_microservice": [
+        "ALL ENDPOINTS"
+      ],
+      "missing_in_gateway": [
+        "ALL ENDPOINTS"
+      ],
+      "coverage": "0%"
+    },
+    "notifications": {
+      "monolith_base_path": "/notifications",
+      "microservice_base_path": "/notifications (notification-service)",
+      "gateway_base_path": "/notifications",
+      "monolith_endpoints": [
+        "GET /notifications",
+        "GET /notifications/unread-count",
+        "GET /notifications/pending",
+        "GET /notifications/scheduled",
+        "GET /notifications/failed",
+        "GET /notifications/:id",
+        "POST /notifications",
+        "POST /notifications/bulk",
+        "POST /notifications/lead",
+        "POST /notifications/deal",
+        "POST /notifications/system",
+        "PATCH /notifications/:id/read",
+        "PATCH /notifications/mark-all-read",
+        "PATCH /notifications/:id/sent"
+      ],
+      "microservice_endpoints": [
+        "GET /notifications",
+        "GET /notifications/unread-count/:recipientId",
+        "GET /notifications/:id",
+        "POST /notifications",
+        "POST /notifications/bulk",
+        "POST /notifications/mark-read",
+        "POST /notifications/mark-all-read/:recipientId",
+        "DELETE /notifications/:id"
+      ],
+      "gateway_endpoints": [
+        "GET /notifications",
+        "GET /notifications/unread-count/:recipientId",
+        "GET /notifications/:id",
+        "POST /notifications",
+        "POST /notifications/bulk",
+        "POST /notifications/mark-read",
+        "POST /notifications/mark-all-read/:recipientId",
+        "DELETE /notifications/:id"
+      ],
+      "missing_in_microservice": [
+        "GET /notifications/pending",
+        "GET /notifications/scheduled",
+        "GET /notifications/failed",
+        "POST /notifications/lead",
+        "POST /notifications/deal",
+        "POST /notifications/system",
+        "PATCH /notifications/:id/sent"
+      ],
+      "missing_in_gateway": [],
+      "coverage": "57%"
+    },
+    "notification_rules": {
+      "monolith_base_path": "/notification-rules",
+      "microservice_base_path": "NOT IMPLEMENTED",
+      "gateway_base_path": "NOT IMPLEMENTED",
+      "monolith_endpoints": [
+        "GET /notification-rules",
+        "GET /notification-rules/active",
+        "GET /notification-rules/type/:type",
+        "GET /notification-rules/:id",
+        "POST /notification-rules",
+        "POST /notification-rules/default",
+        "POST /notification-rules/evaluate",
+        "PUT /notification-rules/:id",
+        "PATCH /notification-rules/:id/toggle",
+        "DELETE /notification-rules/:id",
+        "POST /notification-rules/test/lead-score-change",
+        "POST /notification-rules/test/deal-created",
+        "GET /notification-rules/types/available",
+        "GET /notification-rules/templates/available"
+      ],
+      "microservice_endpoints": [],
+      "gateway_endpoints": [],
+      "missing_in_microservice": [
+        "ALL ENDPOINTS"
+      ],
+      "missing_in_gateway": [
+        "ALL ENDPOINTS"
+      ],
+      "coverage": "0%"
+    },
+    "telephony_calls": {
+      "monolith_base_path": "/calls, /cdr",
+      "microservice_base_path": "/calls (telephony-service)",
+      "gateway_base_path": "/telephony/calls",
+      "monolith_endpoints": [
+        "POST /calls/transfer",
+        "GET /cdr",
+        "GET /cdr/by-src/:src",
+        "GET /cdr/by-dst/:dst",
+        "GET /cdr/by-disposition/:disp",
+        "GET /cdr/unique/:id",
+        "GET /cdr/channel-uniqueid",
+        "POST /cdr/log",
+        "GET /cdr/logs",
+        "GET /cdr/logs/:id",
+        "GET /calls/recordings/:uniqueId",
+        "GET /calls/recordings/exists/:uniqueId"
+      ],
+      "microservice_endpoints": [
+        "GET /calls",
+        "GET /calls/stats",
+        "GET /calls/:id",
+        "PATCH /calls/:id",
+        "POST /calls/originate",
+        "POST /calls/hangup"
+      ],
+      "gateway_endpoints": [
+        "GET /telephony/calls",
+        "GET /telephony/calls/:id",
+        "POST /telephony/calls/originate",
+        "POST /telephony/calls/hangup"
+      ],
+      "missing_in_microservice": [
+        "POST /calls/transfer",
+        "GET /cdr/by-src/:src",
+        "GET /cdr/by-dst/:dst",
+        "GET /cdr/by-disposition/:disp",
+        "GET /cdr/unique/:id",
+        "GET /cdr/channel-uniqueid",
+        "POST /cdr/log",
+        "GET /cdr/logs",
+        "GET /cdr/logs/:id",
+        "GET /calls/recordings/:uniqueId",
+        "GET /calls/recordings/exists/:uniqueId"
+      ],
+      "missing_in_gateway": [
+        "GET /telephony/calls/stats",
+        "PATCH /telephony/calls/:id"
+      ],
+      "coverage": "33%"
+    },
+    "telephony_queues": {
+      "monolith_base_path": "/queues",
+      "microservice_base_path": "/queues (telephony-service)",
+      "gateway_base_path": "/telephony/queues",
+      "monolith_endpoints": [
+        "GET /queues",
+        "GET /queues/:id",
+        "POST /queues",
+        "PUT /queues/:id",
+        "DELETE /queues/:id"
+      ],
+      "microservice_endpoints": [
+        "GET /queues",
+        "GET /queues/:name",
+        "POST /queues/add-member",
+        "POST /queues/remove-member",
+        "POST /queues/pause-member"
+      ],
+      "gateway_endpoints": [
+        "GET /telephony/queues",
+        "GET /telephony/queues/:name",
+        "POST /telephony/queues/add-member",
+        "POST /telephony/queues/remove-member",
+        "POST /telephony/queues/pause-member"
+      ],
+      "missing_in_microservice": [
+        "POST /queues",
+        "PUT /queues/:id",
+        "DELETE /queues/:id"
+      ],
+      "missing_in_gateway": [],
+      "notes": "Different queue management models - monolith has CRUD, microservice has member management",
+      "coverage": "40%"
+    },
+    "ivr": {
+      "monolith_base_path": "/ivr",
+      "microservice_base_path": "NOT IMPLEMENTED",
+      "gateway_base_path": "NOT IMPLEMENTED",
+      "monolith_endpoints": [
+        "POST /ivr/nodes",
+        "GET /ivr/nodes/root",
+        "GET /ivr/nodes/:id",
+        "GET /ivr/nodes/:id/children",
+        "PUT /ivr/nodes/:id",
+        "DELETE /ivr/nodes/:id",
+        "GET /ivr/runtime/stats"
+      ],
+      "microservice_endpoints": [],
+      "gateway_endpoints": [],
+      "missing_in_microservice": [
+        "ALL ENDPOINTS"
+      ],
+      "missing_in_gateway": [
+        "ALL ENDPOINTS"
+      ],
+      "coverage": "0%"
+    },
+    "ari": {
+      "monolith_base_path": "/ari",
+      "microservice_base_path": "NOT IMPLEMENTED",
+      "gateway_base_path": "NOT IMPLEMENTED",
+      "monolith_endpoints": [
+        "GET /ari/health"
+      ],
+      "microservice_endpoints": [],
+      "gateway_endpoints": [],
+      "missing_in_microservice": [
+        "ALL ENDPOINTS"
+      ],
+      "missing_in_gateway": [
+        "ALL ENDPOINTS"
+      ],
+      "coverage": "0%"
+    },
+    "pipeline": {
+      "monolith_base_path": "/pipeline",
+      "microservice_base_path": "/pipeline (deal-service)",
+      "gateway_base_path": "NOT EXPOSED SEPARATELY",
+      "monolith_endpoints": [
+        "POST /pipeline/stages",
+        "POST /pipeline/stages/reorder",
+        "POST /pipeline/leads/:id/create-contact",
+        "GET /pipeline/stages",
+        "PATCH /pipeline/stages/:id",
+        "POST /pipeline/leads",
+        "GET /pipeline/leads",
+        "PATCH /pipeline/leads/:id",
+        "POST /pipeline/automation/run",
+        "GET /pipeline/analytics"
+      ],
+      "microservice_endpoints": [
+        "GET /pipeline/stages",
+        "GET /pipeline/stages/:id",
+        "POST /pipeline/stages",
+        "PUT /pipeline/stages/:id",
+        "DELETE /pipeline/stages/:id",
+        "POST /pipeline/stages/reorder"
+      ],
+      "gateway_endpoints": [],
+      "missing_in_microservice": [
+        "POST /pipeline/leads/:id/create-contact",
+        "POST /pipeline/leads",
+        "GET /pipeline/leads",
+        "PATCH /pipeline/leads/:id",
+        "POST /pipeline/automation/run",
+        "GET /pipeline/analytics"
+      ],
+      "missing_in_gateway": [
+        "ALL PIPELINE ENDPOINTS"
+      ],
+      "notes": "Pipeline stages exist in deal-service but not exposed via gateway. Pipeline leads management not in microservice.",
+      "coverage": "40%"
+    },
+    "analytics": {
+      "monolith_base_path": "/analytics/calls, /reports",
+      "microservice_base_path": "/analytics, /dashboard, /reports (analytics-service)",
+      "gateway_base_path": "/analytics",
+      "monolith_endpoints": [
+        "GET /analytics/calls/agent-performance",
+        "GET /analytics/calls/overview",
+        "GET /analytics/calls/sla",
+        "GET /analytics/calls/abandoned",
+        "GET /analytics/calls/queue-performance",
+        "GET /analytics/calls/ivr-analysis",
+        "GET /analytics/calls/conversion",
+        "GET /reports/leads/overview",
+        "GET /reports/funnel",
+        "GET /reports/forecast",
+        "GET /reports/tasks"
+      ],
+      "microservice_endpoints": [
+        "GET /analytics/sales",
+        "GET /analytics/leads",
+        "GET /analytics/calls",
+        "GET /analytics/users",
+        "GET /dashboard",
+        "GET /dashboard/manager",
+        "GET /reports/sales",
+        "GET /reports/leads",
+        "GET /reports/calls",
+        "GET /reports/performance",
+        "GET /reports/sales/export",
+        "POST /reports/generate"
+      ],
+      "gateway_endpoints": [
+        "GET /analytics/dashboard",
+        "GET /analytics/calls",
+        "GET /analytics/leads",
+        "GET /analytics/deals",
+        "GET /analytics/performance"
+      ],
+      "missing_in_microservice": [
+        "GET /analytics/calls/agent-performance",
+        "GET /analytics/calls/overview",
+        "GET /analytics/calls/sla",
+        "GET /analytics/calls/abandoned",
+        "GET /analytics/calls/queue-performance",
+        "GET /analytics/calls/ivr-analysis",
+        "GET /analytics/calls/conversion",
+        "GET /reports/funnel",
+        "GET /reports/tasks"
+      ],
+      "missing_in_gateway": [
+        "GET /analytics/sales",
+        "GET /analytics/users",
+        "GET /dashboard",
+        "GET /dashboard/manager",
+        "GET /reports/sales",
+        "GET /reports/leads",
+        "GET /reports/calls",
+        "GET /reports/performance",
+        "GET /reports/sales/export",
+        "POST /reports/generate"
+      ],
+      "notes": "Significant differences in analytics structure. Monolith has advanced call analytics, microservice has general reports.",
+      "coverage": "36%"
+    },
+    "campaigns": {
+      "monolith_base_path": "/sms/campaigns",
+      "microservice_base_path": "/campaigns (campaign-service)",
+      "gateway_base_path": "/campaigns",
+      "monolith_endpoints": [
+        "POST /sms/campaigns",
+        "GET /sms/campaigns",
+        "GET /sms/campaigns/:id",
+        "PATCH /sms/campaigns/:id",
+        "DELETE /sms/campaigns/:id",
+        "POST /sms/campaigns/:id/send",
+        "POST /sms/campaigns/:id/cancel"
+      ],
+      "microservice_endpoints": [
+        "GET /campaigns",
+        "GET /campaigns/:id",
+        "GET /campaigns/:id/stats",
+        "POST /campaigns",
+        "PUT /campaigns/:id",
+        "DELETE /campaigns/:id",
+        "POST /campaigns/:id/schedule",
+        "POST /campaigns/:id/start",
+        "POST /campaigns/:id/pause",
+        "POST /campaigns/:id/resume",
+        "POST /campaigns/:id/cancel"
+      ],
+      "gateway_endpoints": [
+        "GET /campaigns",
+        "GET /campaigns/:id",
+        "POST /campaigns",
+        "PUT /campaigns/:id",
+        "DELETE /campaigns/:id",
+        "POST /campaigns/:id/start",
+        "POST /campaigns/:id/pause",
+        "POST /campaigns/:id/stop",
+        "GET /campaigns/:id/stats"
+      ],
+      "missing_in_microservice": [
+        "POST /sms/campaigns/:id/send"
+      ],
+      "missing_in_gateway": [
+        "POST /campaigns/:id/schedule",
+        "POST /campaigns/:id/resume"
+      ],
+      "notes": "Microservice has richer campaign lifecycle management",
+      "coverage": "86%"
+    },
+    "audit": {
+      "monolith_base_path": "NOT IMPLEMENTED IN MONOLITH",
+      "microservice_base_path": "/audit (audit-service)",
+      "gateway_base_path": "/audit",
+      "monolith_endpoints": [],
+      "microservice_endpoints": [
+        "GET /audit",
+        "GET /audit/stats",
+        "GET /audit/security",
+        "GET /audit/errors",
+        "GET /audit/search",
+        "GET /audit/entity/:entityType/:entityId",
+        "GET /audit/entity/:entityType/:entityId/timeline",
+        "GET /audit/user/:userId",
+        "GET /audit/:id",
+        "POST /audit"
+      ],
+      "gateway_endpoints": [
+        "GET /audit",
+        "GET /audit/stats",
+        "GET /audit/security",
+        "GET /audit/errors",
+        "GET /audit/search",
+        "GET /audit/entity/:entityType/:entityId",
+        "GET /audit/entity/:entityType/:entityId/timeline",
+        "GET /audit/user/:userId",
+        "GET /audit/:id"
+      ],
+      "missing_in_microservice": [],
+      "missing_in_gateway": [
+        "POST /audit"
+      ],
+      "notes": "Audit is microservice-only feature, not in monolith",
+      "coverage": "N/A (microservice-only)"
+    },
+    "sms_templates": {
+      "monolith_base_path": "/sms/templates",
+      "microservice_base_path": "NOT IMPLEMENTED",
+      "gateway_base_path": "NOT IMPLEMENTED",
+      "monolith_endpoints": [
+        "POST /sms/templates",
+        "GET /sms/templates",
+        "GET /sms/templates/:id",
+        "PATCH /sms/templates/:id",
+        "DELETE /sms/templates/:id"
+      ],
+      "microservice_endpoints": [],
+      "gateway_endpoints": [],
+      "missing_in_microservice": [
+        "ALL ENDPOINTS"
+      ],
+      "missing_in_gateway": [
+        "ALL ENDPOINTS"
+      ],
+      "coverage": "0%"
+    },
+    "sms_segments": {
+      "monolith_base_path": "/sms/segments",
+      "microservice_base_path": "NOT IMPLEMENTED",
+      "gateway_base_path": "NOT IMPLEMENTED",
+      "monolith_endpoints": [
+        "POST /sms/segments",
+        "GET /sms/segments",
+        "GET /sms/segments/:id",
+        "GET /sms/segments/:id/leads",
+        "PATCH /sms/segments/:id",
+        "DELETE /sms/segments/:id"
+      ],
+      "microservice_endpoints": [],
+      "gateway_endpoints": [],
+      "missing_in_microservice": [
+        "ALL ENDPOINTS"
+      ],
+      "missing_in_gateway": [
+        "ALL ENDPOINTS"
+      ],
+      "coverage": "0%"
+    },
+    "sms_analytics": {
+      "monolith_base_path": "/sms/analytics",
+      "microservice_base_path": "NOT IMPLEMENTED",
+      "gateway_base_path": "NOT IMPLEMENTED",
+      "monolith_endpoints": [
+        "GET /sms/analytics/overview",
+        "GET /sms/analytics/campaigns/:id",
+        "GET /sms/analytics/time-series"
+      ],
+      "microservice_endpoints": [],
+      "gateway_endpoints": [],
+      "missing_in_microservice": [
+        "ALL ENDPOINTS"
+      ],
+      "missing_in_gateway": [
+        "ALL ENDPOINTS"
+      ],
+      "coverage": "0%"
+    },
+    "email_templates": {
+      "monolith_base_path": "/email-templates",
+      "microservice_base_path": "NOT IMPLEMENTED",
+      "gateway_base_path": "NOT IMPLEMENTED",
+      "monolith_endpoints": [
+        "POST /email-templates",
+        "GET /email-templates",
+        "GET /email-templates/:id",
+        "PATCH /email-templates/:id",
+        "DELETE /email-templates/:id"
+      ],
+      "microservice_endpoints": [],
+      "gateway_endpoints": [],
+      "missing_in_microservice": [
+        "ALL ENDPOINTS"
+      ],
+      "missing_in_gateway": [
+        "ALL ENDPOINTS"
+      ],
+      "coverage": "0%"
+    },
+    "comments": {
+      "monolith_base_path": "/comments",
+      "microservice_base_path": "NOT IMPLEMENTED",
+      "gateway_base_path": "NOT IMPLEMENTED",
+      "monolith_endpoints": [
+        "POST /comments",
+        "GET /comments",
+        "GET /comments/entity/:entityType/:entityId",
+        "GET /comments/entity/:entityType/:entityId/count",
+        "GET /comments/search",
+        "GET /comments/user/recent",
+        "GET /comments/:id",
+        "PATCH /comments/:id",
+        "DELETE /comments/:id"
+      ],
+      "microservice_endpoints": [],
+      "gateway_endpoints": [],
+      "missing_in_microservice": [
+        "ALL ENDPOINTS"
+      ],
+      "missing_in_gateway": [
+        "ALL ENDPOINTS"
+      ],
+      "coverage": "0%"
+    },
+    "forecasting": {
+      "monolith_base_path": "/forecasting",
+      "microservice_base_path": "NOT IMPLEMENTED",
+      "gateway_base_path": "NOT IMPLEMENTED",
+      "monolith_endpoints": [
+        "POST /forecasting",
+        "GET /forecasting",
+        "GET /forecasting/:id",
+        "PUT /forecasting/:id",
+        "DELETE /forecasting/:id",
+        "POST /forecasting/:id/calculate",
+        "GET /forecasting/:id/periods",
+        "PUT /forecasting/periods/:periodId/actual",
+        "GET /forecasting/:id/comparison"
+      ],
+      "microservice_endpoints": [],
+      "gateway_endpoints": [],
+      "missing_in_microservice": [
+        "ALL ENDPOINTS"
+      ],
+      "missing_in_gateway": [
+        "ALL ENDPOINTS"
+      ],
+      "coverage": "0%"
+    },
+    "integrations": {
+      "monolith_base_path": "/integrations",
+      "microservice_base_path": "NOT IMPLEMENTED",
+      "gateway_base_path": "NOT IMPLEMENTED",
+      "monolith_endpoints": [
+        "GET /integrations/call-info/:phone",
+        "POST /integrations/config",
+        "GET /integrations/config"
+      ],
+      "microservice_endpoints": [],
+      "gateway_endpoints": [],
+      "missing_in_microservice": [
+        "ALL ENDPOINTS"
+      ],
+      "missing_in_gateway": [
+        "ALL ENDPOINTS"
+      ],
+      "coverage": "0%"
+    },
+    "user_activities": {
+      "monolith_base_path": "/user-activities",
+      "microservice_base_path": "NOT IMPLEMENTED",
+      "gateway_base_path": "NOT IMPLEMENTED",
+      "monolith_endpoints": [
+        "POST /user-activities",
+        "GET /user-activities/user/:userId",
+        "GET /user-activities/user/:userId/recent"
+      ],
+      "microservice_endpoints": [],
+      "gateway_endpoints": [],
+      "missing_in_microservice": [
+        "ALL ENDPOINTS"
+      ],
+      "missing_in_gateway": [
+        "ALL ENDPOINTS"
+      ],
+      "coverage": "0%"
+    },
+    "assignments": {
+      "monolith_base_path": "/assignments",
+      "microservice_base_path": "NOT IMPLEMENTED",
+      "gateway_base_path": "NOT IMPLEMENTED",
+      "monolith_endpoints": [
+        "POST /assignments",
+        "GET /assignments",
+        "GET /assignments/entity/:entityType/:entityId",
+        "GET /assignments/user/:userId",
+        "DELETE /assignments/:id"
+      ],
+      "microservice_endpoints": [],
+      "gateway_endpoints": [],
+      "missing_in_microservice": [
+        "ALL ENDPOINTS"
+      ],
+      "missing_in_gateway": [
+        "ALL ENDPOINTS"
+      ],
+      "coverage": "0%"
+    },
+    "ps_endpoints": {
+      "monolith_base_path": "/ps-endpoints",
+      "microservice_base_path": "NOT IMPLEMENTED",
+      "gateway_base_path": "NOT IMPLEMENTED",
+      "monolith_endpoints": [
+        "GET /ps-endpoints",
+        "GET /ps-endpoints/free",
+        "GET /ps-endpoints/:id",
+        "POST /ps-endpoints",
+        "PUT /ps-endpoints/:id",
+        "DELETE /ps-endpoints/:id"
+      ],
+      "microservice_endpoints": [],
+      "gateway_endpoints": [],
+      "missing_in_microservice": [
+        "ALL ENDPOINTS"
+      ],
+      "missing_in_gateway": [
+        "ALL ENDPOINTS"
+      ],
+      "coverage": "0%"
+    },
+    "recordings": {
+      "monolith_base_path": "/recordings",
+      "microservice_base_path": "NOT IMPLEMENTED",
+      "gateway_base_path": "NOT IMPLEMENTED",
+      "monolith_endpoints": [
+        "GET /recordings",
+        "GET /recordings/:uniqueId",
+        "GET /recordings/download/:uniqueId"
+      ],
+      "microservice_endpoints": [],
+      "gateway_endpoints": [],
+      "missing_in_microservice": [
+        "ALL ENDPOINTS"
+      ],
+      "missing_in_gateway": [
+        "ALL ENDPOINTS"
+      ],
+      "coverage": "0%"
+    }
+  },
+  "priority_migration_list": {
+    "high_priority": [
+      {
+        "module": "lead_capture",
+        "reason": "Critical for lead acquisition from multiple channels",
+        "endpoints_count": 6
+      },
+      {
+        "module": "lead_scoring",
+        "reason": "Important for lead qualification and prioritization",
+        "endpoints_count": 12
+      },
+      {
+        "module": "lead_distribution",
+        "reason": "Automated lead assignment rules",
+        "endpoints_count": 8
+      },
+      {
+        "module": "pipeline",
+        "reason": "Deal pipeline management needed in gateway",
+        "endpoints_count": 10
+      },
+      {
+        "module": "comments",
+        "reason": "Cross-entity commenting system",
+        "endpoints_count": 9
+      }
+    ],
+    "medium_priority": [
+      {
+        "module": "companies (extended)",
+        "reason": "Many monolith features not in microservice",
+        "endpoints_count": 14
+      },
+      {
+        "module": "task_types",
+        "reason": "Task type management",
+        "endpoints_count": 9
+      },
+      {
+        "module": "notification_rules",
+        "reason": "Automated notification triggers",
+        "endpoints_count": 14
+      },
+      {
+        "module": "forecasting",
+        "reason": "Sales forecasting functionality",
+        "endpoints_count": 9
+      },
+      {
+        "module": "analytics (advanced calls)",
+        "reason": "Advanced call center analytics",
+        "endpoints_count": 7
+      }
+    ],
+    "low_priority": [
+      {
+        "module": "sms_templates",
+        "reason": "Template management for campaigns",
+        "endpoints_count": 5
+      },
+      {
+        "module": "sms_segments",
+        "reason": "Lead segmentation for campaigns",
+        "endpoints_count": 6
+      },
+      {
+        "module": "email_templates",
+        "reason": "Email template management",
+        "endpoints_count": 5
+      },
+      {
+        "module": "ivr",
+        "reason": "IVR system management",
+        "endpoints_count": 7
+      },
+      {
+        "module": "user_activities",
+        "reason": "User activity tracking",
+        "endpoints_count": 3
+      }
+    ]
+  },
+  "gateway_gaps": [
+    {
+      "microservice": "deal-service",
+      "endpoint": "Pipeline stages CRUD",
+      "reason": "Pipeline endpoints exist in deal-service but not exposed via gateway"
+    },
+    {
+      "microservice": "analytics-service",
+      "endpoint": "Dashboard endpoints",
+      "reason": "Dashboard and reports exist but routing differs from gateway"
+    },
+    {
+      "microservice": "telephony-service",
+      "endpoint": "Call stats",
+      "reason": "Stats endpoint exists but not exposed"
+    }
+  ],
+  "recommendations": [
+    "1. Add pipeline stage endpoints to API Gateway from deal-service",
+    "2. Implement lead-capture microservice for unified lead acquisition",
+    "3. Add lead scoring/distribution to lead-service or create dedicated microservice",
+    "4. Create comments microservice for cross-entity commenting",
+    "5. Extend companies endpoints in contact-service",
+    "6. Add advanced call analytics to analytics-service",
+    "7. Expose dashboard/reports endpoints through gateway"
+  ]
+}

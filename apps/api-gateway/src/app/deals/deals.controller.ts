@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Delete,
   Body,
   Param,
@@ -64,6 +65,25 @@ export class DealsController {
     );
   }
 
+  @Get('overdue')
+  @ApiOperation({ summary: 'Get overdue deals', description: 'Retrieve deals past their expected close date' })
+  @ApiResponse({ status: 200, description: 'Overdue deals', type: [DealResponseDto] })
+  async getOverdue() {
+    return firstValueFrom(
+      this.dealClient.send(DEAL_PATTERNS.GET_OVERDUE, {}).pipe(timeout(5000)),
+    );
+  }
+
+  @Get('search')
+  @ApiOperation({ summary: 'Search deals', description: 'Search deals by title' })
+  @ApiQuery({ name: 'q', description: 'Search query', required: true })
+  @ApiResponse({ status: 200, description: 'Search results', type: [DealResponseDto] })
+  async search(@Query('q') query: string) {
+    return firstValueFrom(
+      this.dealClient.send(DEAL_PATTERNS.SEARCH, { query }).pipe(timeout(5000)),
+    );
+  }
+
   @Get('by-stage/:stageId')
   @ApiOperation({ summary: 'Get deals by stage', description: 'Retrieve deals in a specific pipeline stage' })
   @ApiParam({ name: 'stageId', description: 'Stage ID' })
@@ -71,6 +91,66 @@ export class DealsController {
   async getByStage(@Param('stageId') stageId: string) {
     return firstValueFrom(
       this.dealClient.send(DEAL_PATTERNS.GET_BY_STAGE, { stageId }).pipe(timeout(5000)),
+    );
+  }
+
+  @Get('by-company/:companyId')
+  @ApiOperation({ summary: 'Get deals by company', description: 'Retrieve deals associated with a company' })
+  @ApiParam({ name: 'companyId', description: 'Company ID' })
+  @ApiResponse({ status: 200, description: 'Company deals', type: [DealResponseDto] })
+  async getByCompany(@Param('companyId') companyId: string) {
+    return firstValueFrom(
+      this.dealClient.send(DEAL_PATTERNS.GET_BY_COMPANY, { companyId }).pipe(timeout(5000)),
+    );
+  }
+
+  @Get('by-contact/:contactId')
+  @ApiOperation({ summary: 'Get deals by contact', description: 'Retrieve deals associated with a contact' })
+  @ApiParam({ name: 'contactId', description: 'Contact ID' })
+  @ApiResponse({ status: 200, description: 'Contact deals', type: [DealResponseDto] })
+  async getByContact(@Param('contactId') contactId: string) {
+    return firstValueFrom(
+      this.dealClient.send(DEAL_PATTERNS.GET_BY_CONTACT, { contactId }).pipe(timeout(5000)),
+    );
+  }
+
+  @Get('by-lead/:leadId')
+  @ApiOperation({ summary: 'Get deals by lead', description: 'Retrieve deals associated with a lead' })
+  @ApiParam({ name: 'leadId', description: 'Lead ID' })
+  @ApiResponse({ status: 200, description: 'Lead deals', type: [DealResponseDto] })
+  async getByLead(@Param('leadId') leadId: string) {
+    return firstValueFrom(
+      this.dealClient.send(DEAL_PATTERNS.GET_BY_LEAD, { leadId }).pipe(timeout(5000)),
+    );
+  }
+
+  @Get('history/stage-movement-stats')
+  @ApiOperation({ summary: 'Get stage movement statistics', description: 'Get statistics about deal stage movements' })
+  @ApiQuery({ name: 'dateFrom', description: 'Start date', required: false })
+  @ApiQuery({ name: 'dateTo', description: 'End date', required: false })
+  @ApiResponse({ status: 200, description: 'Stage movement stats' })
+  async getStageMovementStats(
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+  ) {
+    return firstValueFrom(
+      this.dealClient.send(DEAL_PATTERNS.GET_STAGE_MOVEMENT_STATS, { dateFrom, dateTo }).pipe(timeout(5000)),
+    );
+  }
+
+  @Get('history/most-active')
+  @ApiOperation({ summary: 'Get most active deals', description: 'Get deals with most activity/changes' })
+  @ApiQuery({ name: 'limit', description: 'Max number of results', required: false })
+  @ApiQuery({ name: 'dateFrom', description: 'Start date', required: false })
+  @ApiQuery({ name: 'dateTo', description: 'End date', required: false })
+  @ApiResponse({ status: 200, description: 'Most active deals' })
+  async getMostActive(
+    @Query('limit') limit?: number,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+  ) {
+    return firstValueFrom(
+      this.dealClient.send(DEAL_PATTERNS.GET_MOST_ACTIVE, { limit, dateFrom, dateTo }).pipe(timeout(5000)),
     );
   }
 
@@ -88,10 +168,42 @@ export class DealsController {
   @Get(':id/history')
   @ApiOperation({ summary: 'Get deal history', description: 'Retrieve deal change history' })
   @ApiParam({ name: 'id', description: 'Deal ID' })
+  @ApiQuery({ name: 'page', description: 'Page number', required: false })
+  @ApiQuery({ name: 'limit', description: 'Items per page', required: false })
   @ApiResponse({ status: 200, description: 'Deal history' })
-  async getHistory(@Param('id') id: string) {
+  async getHistory(
+    @Param('id') id: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
     return firstValueFrom(
-      this.dealClient.send(DEAL_PATTERNS.GET_HISTORY, { dealId: id }).pipe(timeout(5000)),
+      this.dealClient.send(DEAL_PATTERNS.GET_HISTORY, { dealId: id, page, limit }).pipe(timeout(5000)),
+    );
+  }
+
+  @Get(':id/history/stats')
+  @ApiOperation({ summary: 'Get deal history statistics', description: 'Get statistics about deal changes' })
+  @ApiParam({ name: 'id', description: 'Deal ID' })
+  @ApiQuery({ name: 'dateFrom', description: 'Start date', required: false })
+  @ApiQuery({ name: 'dateTo', description: 'End date', required: false })
+  @ApiResponse({ status: 200, description: 'History statistics' })
+  async getHistoryStats(
+    @Param('id') id: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+  ) {
+    return firstValueFrom(
+      this.dealClient.send(DEAL_PATTERNS.GET_HISTORY_STATS, { id, dateFrom, dateTo }).pipe(timeout(5000)),
+    );
+  }
+
+  @Get(':id/assignments')
+  @ApiOperation({ summary: 'Get deal assignments', description: 'Get current assignments for a deal' })
+  @ApiParam({ name: 'id', description: 'Deal ID' })
+  @ApiResponse({ status: 200, description: 'Deal assignments' })
+  async getAssignments(@Param('id') id: string) {
+    return firstValueFrom(
+      this.dealClient.send(DEAL_PATTERNS.GET_ASSIGNMENTS, { id }).pipe(timeout(5000)),
     );
   }
 
@@ -129,16 +241,18 @@ export class DealsController {
   }
 
   @Post(':id/win')
+  @Patch(':id/win')
   @ApiOperation({ summary: 'Win deal', description: 'Mark deal as won' })
   @ApiParam({ name: 'id', description: 'Deal ID' })
   @ApiResponse({ status: 200, description: 'Deal marked as won', type: DealResponseDto })
-  async winDeal(@Param('id') id: string) {
+  async winDeal(@Param('id') id: string, @Body('amount') amount?: number) {
     return firstValueFrom(
-      this.dealClient.send(DEAL_PATTERNS.WIN, { id }).pipe(timeout(5000)),
+      this.dealClient.send(DEAL_PATTERNS.WIN, { id, amount }).pipe(timeout(5000)),
     );
   }
 
   @Post(':id/lose')
+  @Patch(':id/lose')
   @ApiOperation({ summary: 'Lose deal', description: 'Mark deal as lost' })
   @ApiParam({ name: 'id', description: 'Deal ID' })
   @ApiResponse({ status: 200, description: 'Deal marked as lost', type: DealResponseDto })
@@ -159,6 +273,7 @@ export class DealsController {
   }
 
   @Post(':id/move-to-stage')
+  @Patch(':id/move-stage')
   @ApiOperation({ summary: 'Move deal to stage', description: 'Move deal to a different pipeline stage' })
   @ApiParam({ name: 'id', description: 'Deal ID' })
   @ApiResponse({ status: 200, description: 'Deal moved', type: DealResponseDto })
@@ -168,7 +283,18 @@ export class DealsController {
     );
   }
 
+  @Patch(':id/probability')
+  @ApiOperation({ summary: 'Update deal probability', description: 'Update the win probability for a deal' })
+  @ApiParam({ name: 'id', description: 'Deal ID' })
+  @ApiResponse({ status: 200, description: 'Probability updated', type: DealResponseDto })
+  async updateProbability(@Param('id') id: string, @Body('probability') probability: number) {
+    return firstValueFrom(
+      this.dealClient.send(DEAL_PATTERNS.UPDATE_PROBABILITY, { id, probability }).pipe(timeout(5000)),
+    );
+  }
+
   @Post(':id/link-contact')
+  @Patch(':id/link-contact')
   @ApiOperation({ summary: 'Link contact to deal', description: 'Associate a contact with the deal' })
   @ApiParam({ name: 'id', description: 'Deal ID' })
   @ApiResponse({ status: 200, description: 'Contact linked' })
@@ -179,6 +305,7 @@ export class DealsController {
   }
 
   @Post(':id/link-company')
+  @Patch(':id/link-company')
   @ApiOperation({ summary: 'Link company to deal', description: 'Associate a company with the deal' })
   @ApiParam({ name: 'id', description: 'Deal ID' })
   @ApiResponse({ status: 200, description: 'Company linked' })
@@ -189,6 +316,7 @@ export class DealsController {
   }
 
   @Post(':id/link-lead')
+  @Patch(':id/link-lead')
   @ApiOperation({ summary: 'Link lead to deal', description: 'Associate a lead with the deal' })
   @ApiParam({ name: 'id', description: 'Deal ID' })
   @ApiResponse({ status: 200, description: 'Lead linked' })

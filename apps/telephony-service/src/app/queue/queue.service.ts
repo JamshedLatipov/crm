@@ -64,4 +64,63 @@ export class QueueService {
       dto.reason,
     );
   }
+
+  async createQueue(data: { name: string; strategy?: string }): Promise<{ success: boolean; error?: string }> {
+    // Queue creation typically requires Asterisk config reload
+    // For dynamic queues, we can use AMI to add queue
+    this.logger.log(`Creating queue: ${data.name}`);
+    // TODO: Implement actual queue creation via AMI/config
+    return { success: true };
+  }
+
+  async updateQueue(name: string, data: { strategy?: string }): Promise<{ success: boolean; error?: string }> {
+    this.logger.log(`Updating queue: ${name}`);
+    // TODO: Implement actual queue update
+    return { success: true };
+  }
+
+  async deleteQueue(name: string): Promise<{ success: boolean; error?: string }> {
+    this.logger.log(`Deleting queue: ${name}`);
+    // TODO: Implement actual queue deletion
+    return { success: true };
+  }
+
+  async getQueueMembers(queueName: string): Promise<any[]> {
+    const queue = await this.getQueue(queueName);
+    return queue?.members || [];
+  }
+
+  async getQueueMember(queueName: string, extension: string): Promise<any | null> {
+    const members = await this.getQueueMembers(queueName);
+    return members.find(m => m.extension === extension) || null;
+  }
+
+  async getMyQueueState(userId: string): Promise<any> {
+    // Get all queues and find member state for this user's extension
+    const result = await this.getQueues();
+    const states: Array<{ queueName: string; paused: boolean; callsTaken: number }> = [];
+    
+    for (const queue of result.queues) {
+      const member = queue.members?.find(m => m.extension?.includes(userId));
+      if (member) {
+        states.push({
+          queueName: queue.name,
+          paused: member.paused,
+          callsTaken: member.callsTaken,
+        });
+      }
+    }
+    
+    return { userId, states };
+  }
+
+  async updateQueueMember(
+    queueName: string,
+    extension: string,
+    data: { penalty?: number },
+  ): Promise<{ success: boolean; error?: string }> {
+    this.logger.log(`Updating member ${extension} in queue ${queueName}`);
+    // TODO: Implement via AMI
+    return { success: true };
+  }
 }

@@ -188,6 +188,159 @@ export class NotificationService {
     await this.notificationRepository.remove(notification);
   }
 
+  // Methods to match monolith endpoints
+  async getPending(): Promise<NotificationResponseDto[]> {
+    const notifications = await this.notificationRepository.find({
+      where: { status: NotificationStatus.PENDING },
+      order: { createdAt: 'DESC' },
+      take: 100,
+    });
+    return notifications.map(n => this.toResponseDto(n));
+  }
+
+  async getScheduled(): Promise<NotificationResponseDto[]> {
+    const now = new Date();
+    const notifications = await this.notificationRepository
+      .createQueryBuilder('notification')
+      .where('notification.scheduledAt > :now', { now })
+      .andWhere('notification.status = :status', { status: NotificationStatus.PENDING })
+      .orderBy('notification.scheduledAt', 'ASC')
+      .take(100)
+      .getMany();
+    return notifications.map(n => this.toResponseDto(n));
+  }
+
+  async getFailed(): Promise<NotificationResponseDto[]> {
+    const notifications = await this.notificationRepository.find({
+      where: { status: NotificationStatus.FAILED },
+      order: { failedAt: 'DESC' },
+      take: 100,
+    });
+    return notifications.map(n => this.toResponseDto(n));
+  }
+
+  async sendLeadNotification(data: {
+    type: string;
+    title: string;
+    message: string;
+    leadData: any;
+    recipientId: string;
+    channels?: string[];
+    priority?: string;
+  }): Promise<NotificationResponseDto> {
+    return this.send({
+      type: data.type as any,
+      title: data.title,
+      message: data.message,
+      channel: (data.channels?.[0] || 'in_app') as any,
+      priority: (data.priority || 'medium') as any,
+      recipientId: data.recipientId,
+      data: { lead: data.leadData },
+    });
+  }
+
+  async sendDealNotification(data: {
+    type: string;
+    title: string;
+    message: string;
+    dealData: any;
+    recipientId: string;
+    channels?: string[];
+    priority?: string;
+  }): Promise<NotificationResponseDto> {
+    return this.send({
+      type: data.type as any,
+      title: data.title,
+      message: data.message,
+      channel: (data.channels?.[0] || 'in_app') as any,
+      priority: (data.priority || 'medium') as any,
+      recipientId: data.recipientId,
+      data: { deal: data.dealData },
+    });
+  }
+
+  async sendSystemNotification(data: {
+    type: string;
+    title: string;
+    message: string;
+    recipientId: string;
+    channels?: string[];
+    priority?: string;
+  }): Promise<NotificationResponseDto> {
+    return this.send({
+      type: (data.type || 'system') as any,
+      title: data.title,
+      message: data.message,
+      channel: (data.channels?.[0] || 'in_app') as any,
+      priority: (data.priority || 'medium') as any,
+      recipientId: data.recipientId,
+      data: { systemNotification: true },
+    });
+  }
+
+  async markSent(id: number): Promise<NotificationResponseDto> {
+    const notification = await this.notificationRepository.findOne({ where: { id } });
+    if (!notification) {
+      throw new NotFoundException(`Notification with ID ${id} not found`);
+    }
+    notification.status = NotificationStatus.SENT;
+    notification.sentAt = new Date();
+    const saved = await this.notificationRepository.save(notification);
+    return this.toResponseDto(saved);
+  }
+
+  async deleteAll(recipientId: string): Promise<{ deleted: number }> {
+    const result = await this.notificationRepository.delete({ recipientId });
+    return { deleted: result.affected || 0 };
+  }
+
+  async markDelivered(id: number, metadata?: any): Promise<NotificationResponseDto> {
+    const notification = await this.notificationRepository.findOne({ where: { id } });
+    if (!notification) {
+      throw new NotFoundException(`Notification with ID ${id} not found`);
+    }
+    notification.status = NotificationStatus.DELIVERED;
+    notification.deliveredAt = new Date();
+    if (metadata) {
+      notification.metadata = { ...notification.metadata, ...metadata };
+    }
+    const saved = await this.notificationRepository.save(notification);
+    return this.toResponseDto(saved);
+  }
+
+  async markFailed(id: number, reason: string, metadata?: any): Promise<NotificationResponseDto> {
+    const notification = await this.notificationRepository.findOne({ where: { id } });
+    if (!notification) {
+      throw new NotFoundException(`Notification with ID ${id} not found`);
+    }
+    notification.status = NotificationStatus.FAILED;
+    notification.failedAt = new Date();
+    notification.failureReason = reason;
+    if (metadata) {
+      notification.metadata = { ...notification.metadata, ...metadata };
+    }
+    const saved = await this.notificationRepository.save(notification);
+    return this.toResponseDto(saved);
+  }
+
+  async deleteExpired(): Promise<{ deletedCount: number }> {
+    // Delete notifications older than 30 days that are read or failed
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const result = await this.notificationRepository
+      .createQueryBuilder()
+      .delete()
+      .from(Notification)
+      .where('createdAt < :date', { date: thirtyDaysAgo })
+      .andWhere('status IN (:...statuses)', { 
+        statuses: [NotificationStatus.READ, NotificationStatus.FAILED] 
+      })
+      .execute();
+
+    return { deletedCount: result.affected || 0 };
+  }
+
   private async processNotification(notification: Notification): Promise<void> {
     try {
       switch (notification.channel) {

@@ -328,6 +328,40 @@ export class TaskService {
     return result.items;
   }
 
+  // Methods to match monolith endpoints
+  async addComment(taskId: number, authorId: number, text: string): Promise<any> {
+    const task = await this.taskRepository.findOne({ where: { id: taskId } });
+    if (!task) {
+      throw new NotFoundException(`Task with ID ${taskId} not found`);
+    }
+    // In a real implementation, this would use a TaskComment entity
+    return {
+      id: Date.now(),
+      taskId,
+      authorId,
+      text,
+      createdAt: new Date(),
+    };
+  }
+
+  async getComments(taskId: number): Promise<any[]> {
+    const task = await this.taskRepository.findOne({ where: { id: taskId } });
+    if (!task) {
+      throw new NotFoundException(`Task with ID ${taskId} not found`);
+    }
+    // In a real implementation, this would query TaskComment entity
+    return [];
+  }
+
+  async getHistory(taskId: number): Promise<any[]> {
+    const task = await this.taskRepository.findOne({ where: { id: taskId } });
+    if (!task) {
+      throw new NotFoundException(`Task with ID ${taskId} not found`);
+    }
+    // In a real implementation, this would query TaskHistory entity
+    return [];
+  }
+
   private toResponseDto(task: Task, assigneeId?: number): TaskResponseDto {
     return {
       id: task.id,

@@ -15,6 +15,7 @@ export const SERVICES = {
   ANALYTICS: 'ANALYTICS_SERVICE',
   AUDIT: 'AUDIT_SERVICE',
   CAMPAIGN: 'CAMPAIGN_SERVICE',
+  COMMENT: 'COMMENT_SERVICE',
 } as const;
 
 // Shorthand exports for service names
@@ -28,6 +29,7 @@ export const TASK_SERVICE = SERVICES.TASK;
 export const ANALYTICS_SERVICE = SERVICES.ANALYTICS;
 export const AUDIT_SERVICE = SERVICES.AUDIT;
 export const CAMPAIGN_SERVICE = SERVICES.CAMPAIGN;
+export const COMMENT_SERVICE = SERVICES.COMMENT;
 
 // RabbitMQ Queue names
 export const QUEUES = {
@@ -42,6 +44,7 @@ export const QUEUES = {
   ANALYTICS_QUEUE: 'crm_analytics_queue',
   AUDIT_QUEUE: 'crm_audit_queue',
   CAMPAIGN_QUEUE: 'crm_campaign_queue',
+  COMMENT_QUEUE: 'crm_comment_queue',
   
   // Event queues (pub/sub)
   EVENTS_EXCHANGE: 'crm_events',

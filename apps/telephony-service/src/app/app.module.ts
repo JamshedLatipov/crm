@@ -5,6 +5,13 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { CallModule } from './call/call.module';
 import { QueueModule } from './queue/queue.module';
 import { HealthModule } from './health/health.module';
+import { AmiModule } from './ami/ami.module';
+import { AriModule } from './ari/ari.module';
+import { RecordingsModule } from './recordings/recordings.module';
+import { IvrModule } from './ivr/ivr.module';
+import { CallScriptsModule } from './call-scripts/call-scripts.module';
+import { CdrModule } from './cdr/cdr.module';
+import { CallAnalyticsModule } from './call-analytics/call-analytics.module';
 import { SERVICES, QUEUES } from '@crm/contracts';
 
 @Module({
@@ -41,6 +48,13 @@ import { SERVICES, QUEUES } from '@crm/contracts';
     CallModule,
     QueueModule,
     HealthModule,
+    AmiModule,
+    AriModule,
+    RecordingsModule,
+    IvrModule,
+    CallScriptsModule,
+    CdrModule,
+    CallAnalyticsModule,
   ],
 })
 export class AppModule {}

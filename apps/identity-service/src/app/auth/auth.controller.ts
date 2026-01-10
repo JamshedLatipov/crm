@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Logger, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, Logger, HttpCode, HttpStatus, Param, ParseIntPipe } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { AuthService } from './auth.service';
 import {
@@ -28,6 +28,12 @@ export class AuthController {
     return this.authService.register(dto);
   }
 
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  async logout(@Body('userId') userId: number) {
+    return this.authService.logout(userId);
+  }
+
   @Post('validate-token')
   @HttpCode(HttpStatus.OK)
   async validateToken(@Body() dto: ValidateTokenDto) {
@@ -50,6 +56,12 @@ export class AuthController {
   async handleLogin(@Payload() dto: LoginDto) {
     this.logger.debug(`RPC: LOGIN username=${dto.username}`);
     return this.authService.login(dto);
+  }
+
+  @MessagePattern(IDENTITY_PATTERNS.LOGOUT)
+  async handleLogout(@Payload() data: { userId: number }) {
+    this.logger.debug(`RPC: LOGOUT userId=${data.userId}`);
+    return this.authService.logout(data.userId);
   }
 
   @MessagePattern(IDENTITY_PATTERNS.REGISTER)

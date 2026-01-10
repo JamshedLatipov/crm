@@ -81,6 +81,24 @@ export class TaskController {
     return this.taskService.complete(id, dto);
   }
 
+  @Post(':id/comment')
+  addComment(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { authorId: number; text: string },
+  ) {
+    return this.taskService.addComment(id, body.authorId, body.text);
+  }
+
+  @Get(':id/comments')
+  getComments(@Param('id', ParseIntPipe) id: number) {
+    return this.taskService.getComments(id);
+  }
+
+  @Get(':id/history')
+  getHistory(@Param('id', ParseIntPipe) id: number) {
+    return this.taskService.getHistory(id);
+  }
+
   // ============ RabbitMQ Message Handlers ============
 
   @MessagePattern(TASK_PATTERNS.GET_TASKS)
@@ -116,6 +134,41 @@ export class TaskController {
   @MessagePattern(TASK_PATTERNS.COMPLETE_TASK)
   handleComplete(@Payload() data: { id: number; dto: CompleteTaskDto; completedBy?: number }) {
     return this.taskService.complete(data.id, data.dto, data.completedBy);
+  }
+
+  @MessagePattern(TASK_PATTERNS.GET_STATS)
+  handleGetStats() {
+    return this.taskService.getStats();
+  }
+
+  @MessagePattern(TASK_PATTERNS.GET_TYPES)
+  handleGetTypes() {
+    return this.taskService.getTaskTypes();
+  }
+
+  @MessagePattern(TASK_PATTERNS.GET_OVERDUE)
+  handleGetOverdue() {
+    return this.taskService.getOverdue();
+  }
+
+  @MessagePattern(TASK_PATTERNS.GET_BY_ASSIGNEE)
+  handleGetByAssignee(@Payload() data: { assigneeId: number }) {
+    return this.taskService.getByAssignee(data.assigneeId);
+  }
+
+  @MessagePattern(TASK_PATTERNS.ADD_COMMENT)
+  handleAddComment(@Payload() data: { id: number; authorId: number; text: string }) {
+    return this.taskService.addComment(data.id, data.authorId, data.text);
+  }
+
+  @MessagePattern(TASK_PATTERNS.GET_COMMENTS)
+  handleGetComments(@Payload() data: { id: number }) {
+    return this.taskService.getComments(data.id);
+  }
+
+  @MessagePattern(TASK_PATTERNS.GET_HISTORY)
+  handleGetHistory(@Payload() data: { id: number }) {
+    return this.taskService.getHistory(data.id);
   }
 
   @MessagePattern(TASK_PATTERNS.HEALTH_CHECK)

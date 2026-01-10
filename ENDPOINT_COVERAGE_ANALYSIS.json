@@ -1,0 +1,1101 @@
+{
+  "generatedAt": "2026-01-01",
+  "summary": {
+    "totalMonolithEndpoints": 189,
+    "totalMicroserviceEndpoints": 195,
+    "endpointsInBoth": 129,
+    "onlyInMonolith": 60,
+    "onlyInMicroservices": 20,
+    "coveragePercent": 68.3
+  },
+  "domains": {
+    "deals": {
+      "status": "COMPLETE (100%)",
+      "monolith": {
+        "count": 24,
+        "endpoints": [
+          "GET /deals",
+          "GET /deals/overdue",
+          "GET /deals/search",
+          "GET /deals/forecast",
+          "GET /deals/:id",
+          "GET /deals/:id/assignments",
+          "POST /deals",
+          "PATCH /deals/:id",
+          "DELETE /deals/:id",
+          "PATCH /deals/:id/move-stage",
+          "PATCH /deals/:id/win",
+          "PATCH /deals/:id/lose",
+          "PATCH /deals/:id/probability",
+          "PATCH /deals/:id/link-company",
+          "PATCH /deals/:id/link-contact",
+          "PATCH /deals/:id/link-lead",
+          "GET /deals/by-company/:companyId",
+          "GET /deals/by-contact/:contactId",
+          "GET /deals/by-lead/:leadId",
+          "GET /deals/:id/history",
+          "GET /deals/:id/history/stats",
+          "GET /deals/history/stage-movement-stats",
+          "GET /deals/history/most-active",
+          "GET /deals/stats"
+        ]
+      },
+      "microservice": {
+        "count": 27,
+        "endpoints": [
+          "GET /deals",
+          "GET /deals/stats",
+          "GET /deals/forecast",
+          "GET /deals/overdue",
+          "GET /deals/search",
+          "GET /deals/by-stage/:stageId",
+          "GET /deals/by-company/:companyId",
+          "GET /deals/by-contact/:contactId",
+          "GET /deals/by-lead/:leadId",
+          "GET /deals/history/stage-movement-stats",
+          "GET /deals/history/most-active",
+          "GET /deals/:id",
+          "GET /deals/:id/history",
+          "GET /deals/:id/history/stats",
+          "GET /deals/:id/assignments",
+          "POST /deals",
+          "PUT /deals/:id",
+          "DELETE /deals/:id",
+          "POST /deals/:id/win",
+          "PATCH /deals/:id/win",
+          "POST /deals/:id/lose",
+          "PATCH /deals/:id/lose",
+          "POST /deals/:id/reopen",
+          "POST /deals/:id/move-to-stage",
+          "PATCH /deals/:id/move-stage",
+          "PATCH /deals/:id/probability",
+          "POST /deals/:id/link-contact",
+          "PATCH /deals/:id/link-contact",
+          "POST /deals/:id/link-company",
+          "PATCH /deals/:id/link-company",
+          "POST /deals/:id/link-lead",
+          "PATCH /deals/:id/link-lead"
+        ]
+      },
+      "missingInMicroservice": [],
+      "additionalInMicroservice": [
+        "GET /deals/by-stage/:stageId",
+        "POST /deals/:id/reopen"
+      ]
+    },
+    "companies": {
+      "status": "COMPLETE (100%)",
+      "monolith": {
+        "count": 20,
+        "endpoints": [
+          "POST /companies",
+          "GET /companies",
+          "GET /companies/inactive",
+          "GET /companies/search",
+          "GET /companies/stats",
+          "GET /companies/duplicates",
+          "GET /companies/by-inn/:inn",
+          "GET /companies/by-industry/:industry",
+          "GET /companies/by-size/:size",
+          "GET /companies/:id",
+          "PATCH /companies/:id",
+          "DELETE /companies/:id",
+          "PATCH /companies/:id/blacklist",
+          "PATCH /companies/:id/unblacklist",
+          "PATCH /companies/:id/assign",
+          "PATCH /companies/:id/touch",
+          "PATCH /companies/:id/rating",
+          "POST /companies/:id/tags",
+          "DELETE /companies/:id/tags"
+        ]
+      },
+      "microservice": {
+        "count": 20,
+        "endpoints": [
+          "GET /companies",
+          "GET /companies/inactive",
+          "GET /companies/search",
+          "GET /companies/stats",
+          "GET /companies/duplicates",
+          "GET /companies/by-inn/:inn",
+          "GET /companies/by-industry/:industry",
+          "GET /companies/by-size/:size",
+          "GET /companies/:id",
+          "POST /companies",
+          "PUT /companies/:id",
+          "DELETE /companies/:id",
+          "PATCH /companies/:id/blacklist",
+          "PATCH /companies/:id/unblacklist",
+          "PATCH /companies/:id/assign",
+          "PATCH /companies/:id/touch",
+          "PATCH /companies/:id/rating",
+          "POST /companies/:id/tags",
+          "DELETE /companies/:id/tags"
+        ]
+      },
+      "missingInMicroservice": [],
+      "additionalInMicroservice": []
+    },
+    "contacts": {
+      "status": "NEEDS REVIEW (94%)",
+      "monolith": {
+        "count": 17,
+        "endpoints": [
+          "GET /contacts",
+          "GET /contacts/recent",
+          "GET /contacts/inactive",
+          "GET /contacts/search",
+          "GET /contacts/stats",
+          "GET /contacts/duplicates",
+          "GET /contacts/:id",
+          "POST /contacts",
+          "PATCH /contacts/:id",
+          "DELETE /contacts/:id",
+          "PATCH /contacts/:id/blacklist",
+          "PATCH /contacts/:id/unblacklist",
+          "PATCH /contacts/:id/assign",
+          "PATCH /contacts/:id/touch",
+          "GET /contacts/:id/activity",
+          "POST /contacts/:id/activity"
+        ]
+      },
+      "microservice": {
+        "count": 19,
+        "endpoints": [
+          "GET /contacts",
+          "GET /contacts/stats",
+          "GET /contacts/search",
+          "GET /contacts/recent",
+          "GET /contacts/inactive",
+          "GET /contacts/duplicates",
+          "GET /contacts/by-phone/:phone",
+          "GET /contacts/by-manager/:managerId",
+          "GET /contacts/:id",
+          "GET /contacts/:id/activity",
+          "POST /contacts",
+          "POST /contacts/:id/activity",
+          "PUT /contacts/:id",
+          "PATCH /contacts/:id/assign",
+          "POST /contacts/:id/blacklist",
+          "POST /contacts/:id/unblacklist",
+          "POST /contacts/:id/touch",
+          "DELETE /contacts/:id"
+        ]
+      },
+      "missingInMicroservice": [],
+      "additionalInMicroservice": [
+        "GET /contacts/by-phone/:phone",
+        "GET /contacts/by-manager/:managerId"
+      ]
+    },
+    "leads": {
+      "status": "PARTIAL (50%)",
+      "monolith": {
+        "count": 30,
+        "endpoints": [
+          "POST /leads",
+          "GET /leads",
+          "GET /leads/statistics",
+          "GET /leads/search",
+          "GET /leads/high-value",
+          "PATCH /leads/bulk-assign",
+          "GET /leads/stale",
+          "GET /leads/manager/:managerId",
+          "GET /leads/:id",
+          "GET /leads/:id/activities",
+          "GET /leads/:id/assignments",
+          "PATCH /leads/:id",
+          "PATCH /leads/:id/assign",
+          "POST /leads/:id/auto-assign",
+          "PATCH /leads/:id/score",
+          "PATCH /leads/:id/status",
+          "PATCH /leads/:id/qualify",
+          "POST /leads/:id/notes",
+          "POST /leads/:id/tags",
+          "DELETE /leads/:id/tags",
+          "PATCH /leads/:id/contact",
+          "POST /leads/:id/follow-up",
+          "DELETE /leads/:id",
+          "POST /leads/:id/convert-to-deal",
+          "PATCH /leads/:id/promo-company",
+          "DELETE /leads/:id/promo-company",
+          "GET /leads/:id/history",
+          "GET /leads/:id/history/stats"
+        ]
+      },
+      "microservice": {
+        "count": 18,
+        "endpoints": [
+          "GET /leads",
+          "GET /leads/stats",
+          "GET /leads/search",
+          "GET /leads/high-value",
+          "GET /leads/stale",
+          "GET /leads/:id",
+          "POST /leads",
+          "PATCH /leads/:id",
+          "DELETE /leads/:id",
+          "PATCH /leads/:id/assign",
+          "PATCH /leads/:id/score",
+          "PATCH /leads/:id/status",
+          "PATCH /leads/:id/qualify",
+          "PATCH /leads/:id/contact",
+          "POST /leads/:id/tags",
+          "DELETE /leads/:id/tags",
+          "POST /leads/:id/follow-up",
+          "PATCH /leads/bulk-assign"
+        ]
+      },
+      "missingInMicroservice": [
+        "GET /leads/manager/:managerId",
+        "GET /leads/:id/activities",
+        "GET /leads/:id/assignments",
+        "POST /leads/:id/auto-assign",
+        "POST /leads/:id/notes",
+        "POST /leads/:id/convert-to-deal",
+        "PATCH /leads/:id/promo-company",
+        "DELETE /leads/:id/promo-company",
+        "GET /leads/:id/history",
+        "GET /leads/:id/history/stats"
+      ],
+      "additionalInMicroservice": []
+    },
+    "leadScoring": {
+      "status": "MISSING (0%)",
+      "monolith": {
+        "count": 17,
+        "endpoints": [
+          "GET /lead-scoring/rules",
+          "GET /lead-scoring/rules/default",
+          "POST /lead-scoring/rules",
+          "GET /lead-scoring/rules/:id",
+          "PATCH /lead-scoring/rules/:id",
+          "DELETE /lead-scoring/rules/:id",
+          "POST /lead-scoring/rules/:id/toggle",
+          "POST /lead-scoring/leads/:leadId/calculate",
+          "GET /lead-scoring/leads/high-score",
+          "POST /lead-scoring/leads/:leadId/calculate-advanced",
+          "POST /lead-scoring/bulk-calculate",
+          "GET /lead-scoring/scores/:leadId",
+          "GET /lead-scoring/hot-leads",
+          "POST /lead-scoring/track-activity",
+          "GET /lead-scoring/analytics/distribution"
+        ]
+      },
+      "microservice": {
+        "count": 0,
+        "endpoints": []
+      },
+      "missingInMicroservice": [
+        "GET /lead-scoring/rules",
+        "GET /lead-scoring/rules/default",
+        "POST /lead-scoring/rules",
+        "GET /lead-scoring/rules/:id",
+        "PATCH /lead-scoring/rules/:id",
+        "DELETE /lead-scoring/rules/:id",
+        "POST /lead-scoring/rules/:id/toggle",
+        "POST /lead-scoring/leads/:leadId/calculate",
+        "GET /lead-scoring/leads/high-score",
+        "POST /lead-scoring/leads/:leadId/calculate-advanced",
+        "POST /lead-scoring/bulk-calculate",
+        "GET /lead-scoring/scores/:leadId",
+        "GET /lead-scoring/hot-leads",
+        "POST /lead-scoring/track-activity",
+        "GET /lead-scoring/analytics/distribution"
+      ],
+      "additionalInMicroservice": []
+    },
+    "leadDistribution": {
+      "status": "MISSING (0%)",
+      "monolith": {
+        "count": 10,
+        "endpoints": [
+          "GET /lead-distribution/rules",
+          "GET /lead-distribution/rules/default",
+          "POST /lead-distribution/rules",
+          "GET /lead-distribution/rules/:id",
+          "PATCH /lead-distribution/rules/:id",
+          "DELETE /lead-distribution/rules/:id",
+          "POST /lead-distribution/rules/:id/toggle",
+          "POST /lead-distribution/leads/:leadId/distribute",
+          "POST /lead-distribution/leads/:leadId/reassign",
+          "GET /lead-distribution/managers/:managerId/statistics",
+          "GET /lead-distribution/managers/loads"
+        ]
+      },
+      "microservice": {
+        "count": 0,
+        "endpoints": []
+      },
+      "missingInMicroservice": [
+        "GET /lead-distribution/rules",
+        "GET /lead-distribution/rules/default",
+        "POST /lead-distribution/rules",
+        "GET /lead-distribution/rules/:id",
+        "PATCH /lead-distribution/rules/:id",
+        "DELETE /lead-distribution/rules/:id",
+        "POST /lead-distribution/rules/:id/toggle",
+        "POST /lead-distribution/leads/:leadId/distribute",
+        "POST /lead-distribution/leads/:leadId/reassign",
+        "GET /lead-distribution/managers/:managerId/statistics",
+        "GET /lead-distribution/managers/loads"
+      ],
+      "additionalInMicroservice": []
+    },
+    "leadCapture": {
+      "status": "MISSING (0%)",
+      "monolith": {
+        "count": 12,
+        "endpoints": [
+          "POST /lead-capture/website",
+          "POST /lead-capture/social-media",
+          "POST /lead-capture/email-activity",
+          "POST /lead-capture/cold-call",
+          "POST /lead-capture/google-analytics",
+          "GET /lead-capture/source-analytics",
+          "POST /lead-capture/webhooks/zapier",
+          "POST /lead-capture/webhooks/facebook",
+          "POST /lead-capture/webhooks/google-ads",
+          "POST /lead-capture/webhooks/hubspot",
+          "POST /lead-capture/webhooks/mailchimp"
+        ]
+      },
+      "microservice": {
+        "count": 0,
+        "endpoints": []
+      },
+      "missingInMicroservice": [
+        "POST /lead-capture/website",
+        "POST /lead-capture/social-media",
+        "POST /lead-capture/email-activity",
+        "POST /lead-capture/cold-call",
+        "POST /lead-capture/google-analytics",
+        "GET /lead-capture/source-analytics",
+        "POST /lead-capture/webhooks/zapier",
+        "POST /lead-capture/webhooks/facebook",
+        "POST /lead-capture/webhooks/google-ads",
+        "POST /lead-capture/webhooks/hubspot",
+        "POST /lead-capture/webhooks/mailchimp"
+      ],
+      "additionalInMicroservice": []
+    },
+    "leadHistory": {
+      "status": "MISSING (0%)",
+      "monolith": {
+        "count": 3,
+        "endpoints": [
+          "GET /leads/history/recent",
+          "GET /leads/history/stats",
+          "GET /leads/history/user-activity"
+        ]
+      },
+      "microservice": {
+        "count": 0,
+        "endpoints": []
+      },
+      "missingInMicroservice": [
+        "GET /leads/history/recent",
+        "GET /leads/history/stats",
+        "GET /leads/history/user-activity"
+      ],
+      "additionalInMicroservice": []
+    },
+    "tasks": {
+      "status": "PARTIAL (56%)",
+      "monolith": {
+        "count": 9,
+        "endpoints": [
+          "POST /tasks",
+          "GET /tasks",
+          "GET /tasks/:id",
+          "PATCH /tasks/:id",
+          "DELETE /tasks/:id",
+          "POST /tasks/:id/comment",
+          "GET /tasks/:id/comments",
+          "GET /tasks/:id/history"
+        ]
+      },
+      "microservice": {
+        "count": 11,
+        "endpoints": [
+          "GET /tasks",
+          "GET /tasks/stats",
+          "GET /tasks/types",
+          "GET /tasks/overdue",
+          "GET /tasks/assignee/:assigneeId",
+          "GET /tasks/:id",
+          "POST /tasks",
+          "PATCH /tasks/:id",
+          "DELETE /tasks/:id",
+          "PATCH /tasks/:id/assign",
+          "PATCH /tasks/:id/complete"
+        ]
+      },
+      "missingInMicroservice": [
+        "POST /tasks/:id/comment",
+        "GET /tasks/:id/comments",
+        "GET /tasks/:id/history"
+      ],
+      "additionalInMicroservice": [
+        "GET /tasks/stats",
+        "GET /tasks/types",
+        "GET /tasks/overdue",
+        "GET /tasks/assignee/:assigneeId",
+        "PATCH /tasks/:id/assign",
+        "PATCH /tasks/:id/complete"
+      ]
+    },
+    "taskTypes": {
+      "status": "MISSING (0%)",
+      "monolith": {
+        "count": 9,
+        "endpoints": [
+          "POST /task-types",
+          "GET /task-types",
+          "GET /task-types/:id",
+          "PUT /task-types/:id",
+          "DELETE /task-types/:id",
+          "DELETE /task-types/:id/force",
+          "POST /task-types/reorder",
+          "POST /task-types/:id/calculate-due-date",
+          "POST /task-types/:id/validate-timeframe"
+        ]
+      },
+      "microservice": {
+        "count": 0,
+        "endpoints": []
+      },
+      "missingInMicroservice": [
+        "POST /task-types",
+        "GET /task-types",
+        "GET /task-types/:id",
+        "PUT /task-types/:id",
+        "DELETE /task-types/:id",
+        "DELETE /task-types/:id/force",
+        "POST /task-types/reorder",
+        "POST /task-types/:id/calculate-due-date",
+        "POST /task-types/:id/validate-timeframe"
+      ],
+      "additionalInMicroservice": []
+    },
+    "notifications": {
+      "status": "PARTIAL (33%)",
+      "monolith": {
+        "count": 18,
+        "endpoints": [
+          "GET /notifications",
+          "GET /notifications/unread-count",
+          "GET /notifications/pending",
+          "GET /notifications/scheduled",
+          "GET /notifications/failed",
+          "GET /notifications/:id",
+          "POST /notifications",
+          "POST /notifications/bulk",
+          "POST /notifications/lead",
+          "POST /notifications/deal",
+          "POST /notifications/system",
+          "PATCH /notifications/:id/read",
+          "PATCH /notifications/mark-all-read",
+          "PATCH /notifications/:id/sent",
+          "PATCH /notifications/:id/delivered",
+          "PATCH /notifications/:id/failed",
+          "DELETE /notifications/:id",
+          "DELETE /notifications/expired"
+        ]
+      },
+      "microservice": {
+        "count": 9,
+        "endpoints": [
+          "GET /notifications",
+          "GET /notifications/unread-count/:recipientId",
+          "GET /notifications/:id",
+          "POST /notifications",
+          "POST /notifications/bulk",
+          "POST /notifications/mark-read",
+          "POST /notifications/mark-all-read/:recipientId",
+          "DELETE /notifications/:id"
+        ]
+      },
+      "missingInMicroservice": [
+        "GET /notifications/pending",
+        "GET /notifications/scheduled",
+        "GET /notifications/failed",
+        "POST /notifications/lead",
+        "POST /notifications/deal",
+        "POST /notifications/system",
+        "PATCH /notifications/:id/sent",
+        "PATCH /notifications/:id/delivered",
+        "PATCH /notifications/:id/failed",
+        "DELETE /notifications/expired"
+      ],
+      "additionalInMicroservice": []
+    },
+    "notificationRules": {
+      "status": "MISSING (0%)",
+      "monolith": {
+        "count": 14,
+        "endpoints": [
+          "GET /notification-rules",
+          "GET /notification-rules/active",
+          "GET /notification-rules/type/:type",
+          "GET /notification-rules/:id",
+          "POST /notification-rules",
+          "POST /notification-rules/default",
+          "POST /notification-rules/evaluate",
+          "PUT /notification-rules/:id",
+          "PATCH /notification-rules/:id/toggle",
+          "DELETE /notification-rules/:id",
+          "POST /notification-rules/test/lead-score-change",
+          "POST /notification-rules/test/deal-created",
+          "GET /notification-rules/types/available",
+          "GET /notification-rules/templates/available"
+        ]
+      },
+      "microservice": {
+        "count": 0,
+        "endpoints": []
+      },
+      "missingInMicroservice": [
+        "GET /notification-rules",
+        "GET /notification-rules/active",
+        "GET /notification-rules/type/:type",
+        "GET /notification-rules/:id",
+        "POST /notification-rules",
+        "POST /notification-rules/default",
+        "POST /notification-rules/evaluate",
+        "PUT /notification-rules/:id",
+        "PATCH /notification-rules/:id/toggle",
+        "DELETE /notification-rules/:id",
+        "POST /notification-rules/test/lead-score-change",
+        "POST /notification-rules/test/deal-created",
+        "GET /notification-rules/types/available",
+        "GET /notification-rules/templates/available"
+      ],
+      "additionalInMicroservice": []
+    },
+    "users": {
+      "status": "PARTIAL (60%)",
+      "monolith": {
+        "count": 15,
+        "endpoints": [
+          "GET /users",
+          "POST /users",
+          "GET /users/managers",
+          "GET /users/managers/stats",
+          "POST /users/managers/auto-assign",
+          "GET /users/managers/:id",
+          "PUT /users/managers/:id/lead-count",
+          "POST /users/seed-managers",
+          "POST /users/:id/reset-password",
+          "PUT /users/:id",
+          "GET /users/:id",
+          "GET /users/export",
+          "POST /users/bulk-delete",
+          "DELETE /users/:id",
+          "GET /users/timezones"
+        ]
+      },
+      "microservice": {
+        "count": 14,
+        "endpoints": [
+          "GET /users",
+          "GET /users/managers",
+          "GET /users/managers/stats",
+          "POST /users/managers/auto-assign",
+          "GET /users/managers/:id",
+          "PUT /users/managers/:id/lead-count",
+          "POST /users/seed-managers",
+          "GET /users/export",
+          "GET /users/:id",
+          "POST /users",
+          "POST /users/:id/reset-password",
+          "POST /users/bulk-delete",
+          "PUT /users/:id",
+          "DELETE /users/:id"
+        ]
+      },
+      "missingInMicroservice": [
+        "GET /users/timezones"
+      ],
+      "additionalInMicroservice": []
+    },
+    "auth": {
+      "status": "COMPLETE (100%)",
+      "monolith": {
+        "count": 3,
+        "endpoints": [
+          "POST /auth/login",
+          "POST /auth/register",
+          "POST /auth/logout"
+        ]
+      },
+      "microservice": {
+        "count": 4,
+        "endpoints": [
+          "POST /auth/login",
+          "POST /auth/register",
+          "POST /auth/logout",
+          "POST /auth/validate"
+        ]
+      },
+      "missingInMicroservice": [],
+      "additionalInMicroservice": [
+        "POST /auth/validate"
+      ]
+    },
+    "analytics": {
+      "status": "PARTIAL (50%)",
+      "monolith": {
+        "count": 8,
+        "endpoints": [
+          "GET /analytics/calls/agent-performance",
+          "GET /analytics/calls/overview",
+          "GET /analytics/calls/sla",
+          "GET /analytics/calls/abandoned",
+          "GET /analytics/calls/queue-performance",
+          "GET /analytics/calls/ivr-analysis",
+          "GET /analytics/calls/conversion"
+        ]
+      },
+      "microservice": {
+        "count": 12,
+        "endpoints": [
+          "GET /analytics/dashboard",
+          "GET /analytics/dashboard/manager",
+          "GET /analytics/calls",
+          "GET /analytics/leads",
+          "GET /analytics/deals",
+          "GET /analytics/performance",
+          "GET /analytics/reports/sales",
+          "GET /analytics/reports/leads",
+          "GET /analytics/reports/calls",
+          "GET /analytics/reports/performance",
+          "POST /analytics/reports/generate"
+        ]
+      },
+      "missingInMicroservice": [
+        "GET /analytics/calls/agent-performance",
+        "GET /analytics/calls/overview",
+        "GET /analytics/calls/sla",
+        "GET /analytics/calls/abandoned",
+        "GET /analytics/calls/queue-performance",
+        "GET /analytics/calls/ivr-analysis",
+        "GET /analytics/calls/conversion"
+      ],
+      "additionalInMicroservice": [
+        "GET /analytics/dashboard",
+        "GET /analytics/dashboard/manager",
+        "GET /analytics/leads",
+        "GET /analytics/deals",
+        "GET /analytics/performance",
+        "GET /analytics/reports/sales",
+        "GET /analytics/reports/leads",
+        "GET /analytics/reports/performance",
+        "POST /analytics/reports/generate"
+      ]
+    },
+    "comments": {
+      "status": "MISSING (0%)",
+      "monolith": {
+        "count": 9,
+        "endpoints": [
+          "POST /comments",
+          "GET /comments",
+          "GET /comments/entity/:entityType/:entityId",
+          "GET /comments/entity/:entityType/:entityId/count",
+          "GET /comments/search",
+          "GET /comments/user/recent",
+          "GET /comments/:id",
+          "PATCH /comments/:id",
+          "DELETE /comments/:id"
+        ]
+      },
+      "microservice": {
+        "count": 0,
+        "endpoints": []
+      },
+      "missingInMicroservice": [
+        "POST /comments",
+        "GET /comments",
+        "GET /comments/entity/:entityType/:entityId",
+        "GET /comments/entity/:entityType/:entityId/count",
+        "GET /comments/search",
+        "GET /comments/user/recent",
+        "GET /comments/:id",
+        "PATCH /comments/:id",
+        "DELETE /comments/:id"
+      ],
+      "additionalInMicroservice": []
+    },
+    "telephonyCalls": {
+      "status": "PARTIAL (40%)",
+      "monolith": {
+        "count": 35,
+        "endpoints": [
+          "POST /calls/transfer",
+          "GET /calls/trace/:id",
+          "GET /cdr",
+          "GET /cdr/by-src/:src",
+          "GET /cdr/by-dst/:dst",
+          "GET /cdr/by-disposition/:disp",
+          "GET /cdr/unique/:id",
+          "GET /cdr/channel-uniqueid",
+          "POST /cdr/log",
+          "GET /cdr/logs",
+          "GET /cdr/logs/:id",
+          "GET /api/calls/analytics/summary",
+          "GET /api/calls/analytics/queue-performance",
+          "GET /api/calls/analytics/agent-performance",
+          "POST /api/calls/analytics/:uniqueId/tag",
+          "POST /api/calls/analytics/:uniqueId/recording",
+          "GET /api/calls/analytics/sla-violations",
+          "GET /api/calls/analytics/abandoned",
+          "GET /calls/recordings/:uniqueId",
+          "GET /calls/recordings/exists/:uniqueId",
+          "GET /recordings/:uniqueid",
+          "GET /recordings/:uniqueid/exists",
+          "GET /queues",
+          "GET /queues/:id",
+          "POST /queues",
+          "PUT /queues/:id",
+          "DELETE /queues/:id",
+          "GET /queue-members",
+          "GET /queue-members/my-state",
+          "GET /queue-members/:id",
+          "POST /queue-members",
+          "PUT /queue-members/:id",
+          "PUT /queue-members/:id/pause",
+          "DELETE /queue-members/:id"
+        ]
+      },
+      "microservice": {
+        "count": 12,
+        "endpoints": [
+          "GET /telephony/calls",
+          "GET /telephony/calls/:id",
+          "POST /telephony/calls/originate",
+          "POST /telephony/calls/hangup",
+          "GET /telephony/queues",
+          "GET /telephony/queues/:name",
+          "POST /telephony/queues/add-member",
+          "POST /telephony/queues/remove-member",
+          "POST /telephony/queues/pause-member"
+        ]
+      },
+      "missingInMicroservice": [
+        "POST /calls/transfer",
+        "GET /calls/trace/:id",
+        "GET /cdr",
+        "GET /cdr/by-src/:src",
+        "GET /cdr/by-dst/:dst",
+        "GET /cdr/by-disposition/:disp",
+        "GET /cdr/unique/:id",
+        "GET /cdr/channel-uniqueid",
+        "POST /cdr/log",
+        "GET /cdr/logs",
+        "GET /cdr/logs/:id",
+        "GET /api/calls/analytics/summary",
+        "GET /api/calls/analytics/queue-performance",
+        "GET /api/calls/analytics/agent-performance",
+        "POST /api/calls/analytics/:uniqueId/tag",
+        "POST /api/calls/analytics/:uniqueId/recording",
+        "GET /api/calls/analytics/sla-violations",
+        "GET /api/calls/analytics/abandoned",
+        "GET /calls/recordings/:uniqueId",
+        "GET /calls/recordings/exists/:uniqueId",
+        "GET /recordings/:uniqueid",
+        "GET /recordings/:uniqueid/exists",
+        "POST /queues",
+        "PUT /queues/:id",
+        "DELETE /queues/:id",
+        "GET /queue-members",
+        "GET /queue-members/my-state",
+        "GET /queue-members/:id",
+        "POST /queue-members",
+        "PUT /queue-members/:id",
+        "PUT /queue-members/:id/pause",
+        "DELETE /queue-members/:id"
+      ],
+      "additionalInMicroservice": []
+    },
+    "psip": {
+      "status": "MISSING (0%)",
+      "monolith": {
+        "count": 15,
+        "endpoints": [
+          "GET /ps-auths",
+          "GET /ps-auths/:id",
+          "POST /ps-auths",
+          "PUT /ps-auths/:id",
+          "DELETE /ps-auths/:id",
+          "GET /ps-endpoints",
+          "GET /ps-endpoints/free",
+          "GET /ps-endpoints/:id",
+          "POST /ps-endpoints",
+          "PUT /ps-endpoints/:id",
+          "DELETE /ps-endpoints/:id",
+          "GET /ps-aors",
+          "GET /ps-aors/:id",
+          "POST /ps-aors",
+          "PUT /ps-aors/:id",
+          "DELETE /ps-aors/:id"
+        ]
+      },
+      "microservice": {
+        "count": 0,
+        "endpoints": []
+      },
+      "missingInMicroservice": [
+        "GET /ps-auths",
+        "GET /ps-auths/:id",
+        "POST /ps-auths",
+        "PUT /ps-auths/:id",
+        "DELETE /ps-auths/:id",
+        "GET /ps-endpoints",
+        "GET /ps-endpoints/free",
+        "GET /ps-endpoints/:id",
+        "POST /ps-endpoints",
+        "PUT /ps-endpoints/:id",
+        "DELETE /ps-endpoints/:id",
+        "GET /ps-aors",
+        "GET /ps-aors/:id",
+        "POST /ps-aors",
+        "PUT /ps-aors/:id",
+        "DELETE /ps-aors/:id"
+      ],
+      "additionalInMicroservice": []
+    },
+    "pipeline": {
+      "status": "PARTIAL (60%)",
+      "monolith": {
+        "count": 17,
+        "endpoints": [
+          "POST /pipeline/stages",
+          "POST /pipeline/stages/reorder",
+          "POST /pipeline/leads/:id/create-contact",
+          "GET /pipeline/stages",
+          "PATCH /pipeline/stages/:id",
+          "POST /pipeline/leads",
+          "GET /pipeline/leads",
+          "PATCH /pipeline/leads/:id",
+          "POST /pipeline/automation/run",
+          "GET /pipeline/analytics",
+          "POST /pipeline/automation/rules",
+          "GET /pipeline/automation/rules",
+          "GET /pipeline/automation/rules/:id",
+          "PATCH /pipeline/automation/rules/:id",
+          "DELETE /pipeline/automation/rules/:id",
+          "POST /pipeline/automation/rules/:id/toggle",
+          "POST /pipeline/automation/run"
+        ]
+      },
+      "microservice": {
+        "count": 7,
+        "endpoints": [
+          "GET /pipeline/stages",
+          "GET /pipeline/stages/:id",
+          "POST /pipeline/stages",
+          "PUT /pipeline/stages/:id",
+          "DELETE /pipeline/stages/:id",
+          "POST /pipeline/stages/reorder"
+        ]
+      },
+      "missingInMicroservice": [
+        "POST /pipeline/leads/:id/create-contact",
+        "POST /pipeline/leads",
+        "GET /pipeline/leads",
+        "PATCH /pipeline/leads/:id",
+        "POST /pipeline/automation/run",
+        "GET /pipeline/analytics",
+        "POST /pipeline/automation/rules",
+        "GET /pipeline/automation/rules",
+        "GET /pipeline/automation/rules/:id",
+        "PATCH /pipeline/automation/rules/:id",
+        "DELETE /pipeline/automation/rules/:id",
+        "POST /pipeline/automation/rules/:id/toggle"
+      ],
+      "additionalInMicroservice": []
+    },
+    "audit": {
+      "status": "NEW (microservice only)",
+      "monolith": {
+        "count": 0,
+        "endpoints": []
+      },
+      "microservice": {
+        "count": 10,
+        "endpoints": [
+          "GET /audit",
+          "GET /audit/stats",
+          "GET /audit/security",
+          "GET /audit/errors",
+          "GET /audit/search",
+          "GET /audit/entity/:entityType/:entityId",
+          "GET /audit/entity/:entityType/:entityId/timeline",
+          "GET /audit/user/:userId",
+          "GET /audit/:id"
+        ]
+      },
+      "missingInMicroservice": [],
+      "additionalInMicroservice": [
+        "GET /audit",
+        "GET /audit/stats",
+        "GET /audit/security",
+        "GET /audit/errors",
+        "GET /audit/search",
+        "GET /audit/entity/:entityType/:entityId",
+        "GET /audit/entity/:entityType/:entityId/timeline",
+        "GET /audit/user/:userId",
+        "GET /audit/:id"
+      ]
+    },
+    "campaigns": {
+      "status": "NEW (microservice only)",
+      "monolith": {
+        "count": 0,
+        "endpoints": []
+      },
+      "microservice": {
+        "count": 10,
+        "endpoints": [
+          "GET /campaigns",
+          "GET /campaigns/:id",
+          "POST /campaigns",
+          "PUT /campaigns/:id",
+          "DELETE /campaigns/:id",
+          "POST /campaigns/:id/start",
+          "POST /campaigns/:id/pause",
+          "POST /campaigns/:id/stop",
+          "GET /campaigns/:id/stats"
+        ]
+      },
+      "missingInMicroservice": [],
+      "additionalInMicroservice": [
+        "GET /campaigns",
+        "GET /campaigns/:id",
+        "POST /campaigns",
+        "PUT /campaigns/:id",
+        "DELETE /campaigns/:id",
+        "POST /campaigns/:id/start",
+        "POST /campaigns/:id/pause",
+        "POST /campaigns/:id/stop",
+        "GET /campaigns/:id/stats"
+      ]
+    }
+  },
+  "priorityGaps": {
+    "critical": [
+      {
+        "domain": "lead-scoring",
+        "reason": "Lead scoring is core CRM functionality",
+        "missingEndpoints": 17
+      },
+      {
+        "domain": "lead-distribution",
+        "reason": "Automatic lead distribution is critical for sales efficiency",
+        "missingEndpoints": 11
+      },
+      {
+        "domain": "lead-capture",
+        "reason": "Lead capture webhooks are essential for integrations",
+        "missingEndpoints": 12
+      }
+    ],
+    "high": [
+      {
+        "domain": "comments",
+        "reason": "Comments are used across all entities",
+        "missingEndpoints": 9
+      },
+      {
+        "domain": "task-types",
+        "reason": "Task types configuration is needed for task management",
+        "missingEndpoints": 9
+      },
+      {
+        "domain": "notification-rules",
+        "reason": "Rule-based notifications are needed for automation",
+        "missingEndpoints": 14
+      }
+    ],
+    "medium": [
+      {
+        "domain": "telephony",
+        "reason": "CDR, recordings, and SIP configuration needed for full telephony",
+        "missingEndpoints": 32
+      },
+      {
+        "domain": "pipeline-automation",
+        "reason": "Pipeline automation rules missing",
+        "missingEndpoints": 10
+      },
+      {
+        "domain": "leads-advanced",
+        "reason": "History, activities, and promo-company features missing",
+        "missingEndpoints": 10
+      }
+    ],
+    "low": [
+      {
+        "domain": "tasks-history",
+        "reason": "Task comments and history",
+        "missingEndpoints": 3
+      },
+      {
+        "domain": "users-timezones",
+        "reason": "Timezone endpoint",
+        "missingEndpoints": 1
+      }
+    ]
+  },
+  "recommendations": [
+    {
+      "priority": 1,
+      "action": "Implement lead-scoring in lead-service",
+      "effort": "HIGH",
+      "impact": "CRITICAL"
+    },
+    {
+      "priority": 2,
+      "action": "Implement lead-distribution in lead-service",
+      "effort": "HIGH",
+      "impact": "CRITICAL"
+    },
+    {
+      "priority": 3,
+      "action": "Implement lead-capture webhooks in lead-service",
+      "effort": "MEDIUM",
+      "impact": "CRITICAL"
+    },
+    {
+      "priority": 4,
+      "action": "Create comment-service or add to existing service",
+      "effort": "MEDIUM",
+      "impact": "HIGH"
+    },
+    {
+      "priority": 5,
+      "action": "Add task-types to task-service",
+      "effort": "MEDIUM",
+      "impact": "HIGH"
+    },
+    {
+      "priority": 6,
+      "action": "Add notification-rules to notification-service",
+      "effort": "HIGH",
+      "impact": "HIGH"
+    },
+    {
+      "priority": 7,
+      "action": "Expand telephony-service with CDR, recordings, PJSIP management",
+      "effort": "HIGH",
+      "impact": "MEDIUM"
+    },
+    {
+      "priority": 8,
+      "action": "Add pipeline automation to deal-service",
+      "effort": "MEDIUM",
+      "impact": "MEDIUM"
+    }
+  ]
+}

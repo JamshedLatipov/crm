@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike } from 'typeorm';
+import { Repository, ILike, LessThan } from 'typeorm';
 import { Company } from './entities/company.entity';
 
 export interface CreateCompanyDto {
@@ -16,6 +16,10 @@ export interface CreateCompanyDto {
   annualRevenue?: number;
   description?: string;
   customFields?: Record<string, unknown>;
+  inn?: string;
+  size?: string;
+  ownerId?: string;
+  tags?: string[];
 }
 
 export interface UpdateCompanyDto extends Partial<CreateCompanyDto> {
@@ -28,6 +32,7 @@ export interface CompanyFilterDto {
   search?: string;
   industry?: string;
   isActive?: boolean;
+  size?: string;
 }
 
 @Injectable()
@@ -113,5 +118,113 @@ export class CompanyService {
     }
 
     await this.companyRepository.remove(company);
+  }
+
+  async findInactive(days = 90): Promise<Company[]> {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+
+    return this.companyRepository.find({
+      where: {
+        lastActivityAt: LessThan(cutoffDate),
+        isActive: true,
+      },
+      order: { lastActivityAt: 'ASC' },
+    });
+  }
+
+  async search(query: string): Promise<Company[]> {
+    return this.companyRepository.find({
+      where: [
+        { name: ILike(`%${query}%`) },
+        { description: ILike(`%${query}%`) },
+        { address: ILike(`%${query}%`) },
+      ],
+      take: 50,
+    });
+  }
+
+  async getStats() {
+    const total = await this.companyRepository.count();
+    const active = await this.companyRepository.count({ where: { isActive: true } });
+    const blacklisted = await this.companyRepository.count({ where: { isBlacklisted: true } });
+
+    const byIndustry = await this.companyRepository
+      .createQueryBuilder('company')
+      .select('company.industry', 'industry')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('company.industry')
+      .getRawMany();
+
+    return { total, active, blacklisted, byIndustry };
+  }
+
+  async findDuplicates() {
+    const duplicates = await this.companyRepository
+      .createQueryBuilder('company')
+      .select('company.name', 'name')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('company.name')
+      .having('COUNT(*) > 1')
+      .getRawMany();
+
+    return duplicates;
+  }
+
+  async findByInn(inn: string): Promise<Company[]> {
+    return this.companyRepository.find({ where: { inn } });
+  }
+
+  async findByIndustry(industry: string): Promise<Company[]> {
+    return this.companyRepository.find({ where: { industry } });
+  }
+
+  async findBySize(size: string): Promise<Company[]> {
+    return this.companyRepository.find({ where: { size } });
+  }
+
+  async addToBlacklist(id: string, reason: string): Promise<Company> {
+    const company = await this.findOne(id);
+    company.isBlacklisted = true;
+    company.blacklistReason = reason;
+    return this.companyRepository.save(company);
+  }
+
+  async removeFromBlacklist(id: string): Promise<Company> {
+    const company = await this.findOne(id);
+    company.isBlacklisted = false;
+    company.blacklistReason = undefined;
+    return this.companyRepository.save(company);
+  }
+
+  async assignOwner(id: string, ownerId: string): Promise<Company> {
+    const company = await this.findOne(id);
+    company.ownerId = ownerId;
+    return this.companyRepository.save(company);
+  }
+
+  async touchActivity(id: string): Promise<Company> {
+    const company = await this.findOne(id);
+    company.lastActivityAt = new Date();
+    return this.companyRepository.save(company);
+  }
+
+  async updateRating(id: string, rating: number): Promise<Company> {
+    const company = await this.findOne(id);
+    company.rating = rating;
+    return this.companyRepository.save(company);
+  }
+
+  async addTags(id: string, tags: string[]): Promise<Company> {
+    const company = await this.findOne(id);
+    const currentTags = company.tags || [];
+    company.tags = [...new Set([...currentTags, ...tags])];
+    return this.companyRepository.save(company);
+  }
+
+  async removeTags(id: string, tags: string[]): Promise<Company> {
+    const company = await this.findOne(id);
+    company.tags = (company.tags || []).filter(t => !tags.includes(t));
+    return this.companyRepository.save(company);
   }
 }

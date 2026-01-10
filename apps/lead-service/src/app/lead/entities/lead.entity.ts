@@ -165,6 +165,9 @@ export class Lead {
   @Column({ type: 'uuid', nullable: true })
   companyId?: string;
 
+  @Column({ nullable: true })
+  assignedTo?: number;
+
   @CreateDateColumn()
   createdAt!: Date;
 

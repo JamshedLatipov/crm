@@ -95,6 +95,18 @@ export class Company {
   @Column({ name: 'lastContactDate', nullable: true })
   lastContactDate?: Date;
 
+  @Column({ name: 'lastActivityAt', nullable: true })
+  lastActivityAt?: Date;
+
+  @Column({ type: 'int', nullable: true })
+  rating?: number;
+
+  @Column({ type: 'simple-array', nullable: true })
+  tags?: string[];
+
+  @Column({ type: 'jsonb', nullable: true })
+  customFields?: Record<string, unknown>;
+
   @OneToMany(() => Contact, (contact) => contact.company)
   contacts?: Contact[];
 }

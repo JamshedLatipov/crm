@@ -169,12 +169,258 @@ export class LeadsController {
     );
   }
 
+  @Patch(':id/contact')
+  @ApiOperation({ summary: 'Update last contact', description: 'Update the last contact timestamp for a lead' })
+  @ApiParam({ name: 'id', description: 'Lead ID' })
+  @ApiResponse({ status: 200, description: 'Last contact updated', type: LeadResponseDto })
+  async updateLastContact(@Param('id') id: string) {
+    return firstValueFrom(
+      this.leadClient.send(LEAD_PATTERNS.UPDATE_LAST_CONTACT, { id: parseInt(id, 10) }).pipe(timeout(5000)),
+    );
+  }
+
+  @Post(':id/tags')
+  @ApiOperation({ summary: 'Add tags to lead', description: 'Add one or more tags to a lead' })
+  @ApiParam({ name: 'id', description: 'Lead ID' })
+  @ApiResponse({ status: 200, description: 'Tags added', type: LeadResponseDto })
+  async addTags(@Param('id') id: string, @Body('tags') tags: string[]) {
+    return firstValueFrom(
+      this.leadClient.send(LEAD_PATTERNS.ADD_TAGS, { id: parseInt(id, 10), tags }).pipe(timeout(5000)),
+    );
+  }
+
+  @Delete(':id/tags')
+  @ApiOperation({ summary: 'Remove tags from lead', description: 'Remove one or more tags from a lead' })
+  @ApiParam({ name: 'id', description: 'Lead ID' })
+  @ApiResponse({ status: 200, description: 'Tags removed', type: LeadResponseDto })
+  async removeTags(@Param('id') id: string, @Body('tags') tags: string[]) {
+    return firstValueFrom(
+      this.leadClient.send(LEAD_PATTERNS.REMOVE_TAGS, { id: parseInt(id, 10), tags }).pipe(timeout(5000)),
+    );
+  }
+
+  @Post(':id/follow-up')
+  @ApiOperation({ summary: 'Schedule follow-up', description: 'Schedule a follow-up date for a lead' })
+  @ApiParam({ name: 'id', description: 'Lead ID' })
+  @ApiResponse({ status: 200, description: 'Follow-up scheduled', type: LeadResponseDto })
+  async scheduleFollowUp(@Param('id') id: string, @Body('followUpDate') followUpDate: Date) {
+    return firstValueFrom(
+      this.leadClient.send(LEAD_PATTERNS.SCHEDULE_FOLLOW_UP, { id: parseInt(id, 10), followUpDate }).pipe(timeout(5000)),
+    );
+  }
+
   @Patch('bulk-assign')
   @ApiOperation({ summary: 'Bulk assign leads', description: 'Assign multiple leads to a user' })
   @ApiResponse({ status: 200, description: 'Leads assigned' })
   async bulkAssign(@Body() body: { leadIds: number[]; assigneeId: number }) {
     return firstValueFrom(
       this.leadClient.send(LEAD_PATTERNS.BULK_ASSIGN, body).pipe(timeout(10000)),
+    );
+  }
+
+  // ========== Lead Scoring Endpoints ==========
+
+  @Get('scoring/rules')
+  @ApiOperation({ summary: 'Get scoring rules' })
+  async getScoringRules() {
+    return firstValueFrom(
+      this.leadClient.send(LEAD_PATTERNS.SCORING_GET_RULES, {}).pipe(timeout(5000)),
+    );
+  }
+
+  @Get('scoring/rules/:id')
+  @ApiOperation({ summary: 'Get scoring rule by ID' })
+  async getScoringRule(@Param('id') id: string) {
+    return firstValueFrom(
+      this.leadClient.send(LEAD_PATTERNS.SCORING_GET_RULE, { id: parseInt(id, 10) }).pipe(timeout(5000)),
+    );
+  }
+
+  @Post('scoring/rules')
+  @ApiOperation({ summary: 'Create scoring rule' })
+  async createScoringRule(@Body() dto: any) {
+    return firstValueFrom(
+      this.leadClient.send(LEAD_PATTERNS.SCORING_CREATE_RULE, dto).pipe(timeout(5000)),
+    );
+  }
+
+  @Put('scoring/rules/:id')
+  @ApiOperation({ summary: 'Update scoring rule' })
+  async updateScoringRule(@Param('id') id: string, @Body() dto: any) {
+    return firstValueFrom(
+      this.leadClient.send(LEAD_PATTERNS.SCORING_UPDATE_RULE, { id: parseInt(id, 10), dto }).pipe(timeout(5000)),
+    );
+  }
+
+  @Delete('scoring/rules/:id')
+  @ApiOperation({ summary: 'Delete scoring rule' })
+  async deleteScoringRule(@Param('id') id: string) {
+    return firstValueFrom(
+      this.leadClient.send(LEAD_PATTERNS.SCORING_DELETE_RULE, { id: parseInt(id, 10) }).pipe(timeout(5000)),
+    );
+  }
+
+  @Post('scoring/calculate/:leadId')
+  @ApiOperation({ summary: 'Calculate score for a lead' })
+  async calculateScore(@Param('leadId') leadId: string) {
+    return firstValueFrom(
+      this.leadClient.send(LEAD_PATTERNS.SCORING_CALCULATE, { leadId: parseInt(leadId, 10) }).pipe(timeout(5000)),
+    );
+  }
+
+  @Post('scoring/bulk-calculate')
+  @ApiOperation({ summary: 'Bulk calculate lead scores' })
+  async bulkCalculateScores(@Body() dto: { leadIds?: number[]; forceRecalculate?: boolean }) {
+    return firstValueFrom(
+      this.leadClient.send(LEAD_PATTERNS.SCORING_BULK_CALCULATE, dto).pipe(timeout(30000)),
+    );
+  }
+
+  @Get('scoring/hot-leads')
+  @ApiOperation({ summary: 'Get hot leads' })
+  async getHotLeads(@Query('limit') limit = 50) {
+    return firstValueFrom(
+      this.leadClient.send(LEAD_PATTERNS.SCORING_GET_HOT_LEADS, { limit }).pipe(timeout(5000)),
+    );
+  }
+
+  // ========== Lead Distribution Endpoints ==========
+
+  @Get('distribution/rules')
+  @ApiOperation({ summary: 'Get distribution rules' })
+  async getDistributionRules() {
+    return firstValueFrom(
+      this.leadClient.send(LEAD_PATTERNS.DISTRIBUTION_GET_RULES, {}).pipe(timeout(5000)),
+    );
+  }
+
+  @Post('distribution/rules')
+  @ApiOperation({ summary: 'Create distribution rule' })
+  async createDistributionRule(@Body() dto: any) {
+    return firstValueFrom(
+      this.leadClient.send(LEAD_PATTERNS.DISTRIBUTION_CREATE_RULE, dto).pipe(timeout(5000)),
+    );
+  }
+
+  @Put('distribution/rules/:id')
+  @ApiOperation({ summary: 'Update distribution rule' })
+  async updateDistributionRule(@Param('id') id: string, @Body() dto: any) {
+    return firstValueFrom(
+      this.leadClient.send(LEAD_PATTERNS.DISTRIBUTION_UPDATE_RULE, { id: parseInt(id, 10), dto }).pipe(timeout(5000)),
+    );
+  }
+
+  @Delete('distribution/rules/:id')
+  @ApiOperation({ summary: 'Delete distribution rule' })
+  async deleteDistributionRule(@Param('id') id: string) {
+    return firstValueFrom(
+      this.leadClient.send(LEAD_PATTERNS.DISTRIBUTION_DELETE_RULE, { id: parseInt(id, 10) }).pipe(timeout(5000)),
+    );
+  }
+
+  @Post('distribution/auto-assign')
+  @ApiOperation({ summary: 'Auto-assign lead based on rules' })
+  async autoAssign(@Body() dto: { leadId: number }) {
+    return firstValueFrom(
+      this.leadClient.send(LEAD_PATTERNS.DISTRIBUTION_AUTO_ASSIGN, dto).pipe(timeout(5000)),
+    );
+  }
+
+  @Post('distribution/reassign')
+  @ApiOperation({ summary: 'Reassign lead to different user' })
+  async reassign(@Body() dto: { leadId: number; userId: number; reason?: string }) {
+    return firstValueFrom(
+      this.leadClient.send(LEAD_PATTERNS.DISTRIBUTION_REASSIGN, dto).pipe(timeout(5000)),
+    );
+  }
+
+  @Get('distribution/workload')
+  @ApiOperation({ summary: 'Get workload distribution' })
+  async getWorkload() {
+    return firstValueFrom(
+      this.leadClient.send(LEAD_PATTERNS.DISTRIBUTION_GET_WORKLOAD, {}).pipe(timeout(5000)),
+    );
+  }
+
+  // ========== Lead Capture Endpoints ==========
+
+  @Post('capture/website-form')
+  @ApiOperation({ summary: 'Capture lead from website form' })
+  async captureWebsiteForm(@Body() dto: any) {
+    return firstValueFrom(
+      this.leadClient.send(LEAD_PATTERNS.CAPTURE_WEBSITE_FORM, { dto }).pipe(timeout(5000)),
+    );
+  }
+
+  @Post('capture/social-media/:platform')
+  @ApiOperation({ summary: 'Capture lead from social media' })
+  async captureSocialMedia(@Param('platform') platform: string, @Body() dto: any) {
+    return firstValueFrom(
+      this.leadClient.send(LEAD_PATTERNS.CAPTURE_SOCIAL_MEDIA, { platform, dto }).pipe(timeout(5000)),
+    );
+  }
+
+  @Post('capture/webhook/:source')
+  @ApiOperation({ summary: 'Generic webhook for lead capture' })
+  async captureWebhook(@Param('source') source: string, @Body() dto: any) {
+    return firstValueFrom(
+      this.leadClient.send(LEAD_PATTERNS.CAPTURE_WEBHOOK, { source, dto }).pipe(timeout(5000)),
+    );
+  }
+
+  @Post('capture/zapier')
+  @ApiOperation({ summary: 'Capture from Zapier' })
+  async captureZapier(@Body() dto: any) {
+    return firstValueFrom(
+      this.leadClient.send(LEAD_PATTERNS.CAPTURE_ZAPIER, dto).pipe(timeout(5000)),
+    );
+  }
+
+  @Post('capture/facebook')
+  @ApiOperation({ summary: 'Capture from Facebook Lead Ads' })
+  async captureFacebook(@Body() dto: any) {
+    return firstValueFrom(
+      this.leadClient.send(LEAD_PATTERNS.CAPTURE_FACEBOOK, dto).pipe(timeout(5000)),
+    );
+  }
+
+  @Post('capture/google-ads')
+  @ApiOperation({ summary: 'Capture from Google Ads' })
+  async captureGoogleAds(@Body() dto: any) {
+    return firstValueFrom(
+      this.leadClient.send(LEAD_PATTERNS.CAPTURE_GOOGLE_ADS, dto).pipe(timeout(5000)),
+    );
+  }
+
+  @Get('capture/configs')
+  @ApiOperation({ summary: 'Get capture configurations' })
+  async getCaptureConfigs() {
+    return firstValueFrom(
+      this.leadClient.send(LEAD_PATTERNS.CAPTURE_GET_CONFIGS, {}).pipe(timeout(5000)),
+    );
+  }
+
+  @Post('capture/configs')
+  @ApiOperation({ summary: 'Create capture configuration' })
+  async createCaptureConfig(@Body() dto: any) {
+    return firstValueFrom(
+      this.leadClient.send(LEAD_PATTERNS.CAPTURE_CREATE_CONFIG, dto).pipe(timeout(5000)),
+    );
+  }
+
+  @Get('capture/history')
+  @ApiOperation({ summary: 'Get capture history' })
+  async getCaptureHistory(@Query('limit') limit?: number, @Query('source') source?: string) {
+    return firstValueFrom(
+      this.leadClient.send(LEAD_PATTERNS.CAPTURE_GET_HISTORY, { limit, source }).pipe(timeout(5000)),
+    );
+  }
+
+  @Get('capture/stats')
+  @ApiOperation({ summary: 'Get capture statistics' })
+  async getCaptureStats() {
+    return firstValueFrom(
+      this.leadClient.send(LEAD_PATTERNS.CAPTURE_GET_STATS, {}).pipe(timeout(5000)),
     );
   }
 }

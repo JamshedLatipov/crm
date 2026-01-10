@@ -149,6 +149,69 @@ export class LeadController {
     return this.leadService.scheduleFollowUp(id, dto.followUpDate);
   }
 
+  @Get('manager/:managerId')
+  getByManager(@Param('managerId') managerId: string) {
+    return this.leadService.getByManager(managerId);
+  }
+
+  @Get(':id/activities')
+  getActivities(@Param('id', ParseIntPipe) id: number) {
+    return this.leadService.getActivities(id);
+  }
+
+  @Get(':id/assignments')
+  getAssignments(@Param('id', ParseIntPipe) id: number) {
+    return this.leadService.getAssignments(id);
+  }
+
+  @Post(':id/notes')
+  addNote(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { text: string },
+  ) {
+    return this.leadService.addNote(id, body.text);
+  }
+
+  @Post(':id/convert-to-deal')
+  convertToDeal(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dealData?: any,
+  ) {
+    return this.leadService.convertToDeal(id, dealData);
+  }
+
+  @Post(':id/auto-assign')
+  autoAssign(@Param('id', ParseIntPipe) id: number) {
+    return this.leadService.autoAssign(id);
+  }
+
+  @Get(':id/history')
+  getHistory(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('page') page = 1,
+    @Query('limit') limit = 20,
+  ) {
+    return this.leadService.getHistory(id, page, limit);
+  }
+
+  @Get(':id/history/stats')
+  getHistoryStats(@Param('id', ParseIntPipe) id: number) {
+    return this.leadService.getHistoryStats(id);
+  }
+
+  @Patch(':id/promo-company')
+  setPromoCompany(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { companyId: number },
+  ) {
+    return this.leadService.setPromoCompany(id, body.companyId);
+  }
+
+  @Delete(':id/promo-company')
+  removePromoCompany(@Param('id', ParseIntPipe) id: number) {
+    return this.leadService.removePromoCompany(id);
+  }
+
   // ============ RabbitMQ Message Handlers ============
 
   @MessagePattern(LEAD_PATTERNS.GET_LEADS)
@@ -219,6 +282,66 @@ export class LeadController {
   @MessagePattern(LEAD_PATTERNS.QUALIFY)
   handleQualify(@Payload() data: { id: number; qualified: boolean }) {
     return this.leadService.qualify(data.id, data.qualified);
+  }
+
+  @MessagePattern(LEAD_PATTERNS.UPDATE_LAST_CONTACT)
+  handleUpdateLastContact(@Payload() data: { id: number }) {
+    return this.leadService.updateLastContact(data.id);
+  }
+
+  @MessagePattern(LEAD_PATTERNS.ADD_TAGS)
+  handleAddTags(@Payload() data: { id: number; tags: string[] }) {
+    return this.leadService.addTags(data.id, data.tags);
+  }
+
+  @MessagePattern(LEAD_PATTERNS.REMOVE_TAGS)
+  handleRemoveTags(@Payload() data: { id: number; tags: string[] }) {
+    return this.leadService.removeTags(data.id, data.tags);
+  }
+
+  @MessagePattern(LEAD_PATTERNS.SCHEDULE_FOLLOW_UP)
+  handleScheduleFollowUp(@Payload() data: { id: number; followUpDate: Date }) {
+    return this.leadService.scheduleFollowUp(data.id, data.followUpDate);
+  }
+
+  @MessagePattern(LEAD_PATTERNS.GET_BY_MANAGER)
+  handleGetByManager(@Payload() data: { managerId: string }) {
+    return this.leadService.getByManager(data.managerId);
+  }
+
+  @MessagePattern(LEAD_PATTERNS.GET_ACTIVITIES)
+  handleGetActivities(@Payload() data: { id: number }) {
+    return this.leadService.getActivities(data.id);
+  }
+
+  @MessagePattern(LEAD_PATTERNS.GET_ASSIGNMENTS)
+  handleGetAssignments(@Payload() data: { id: number }) {
+    return this.leadService.getAssignments(data.id);
+  }
+
+  @MessagePattern(LEAD_PATTERNS.ADD_NOTE)
+  handleAddNote(@Payload() data: { id: number; text: string; userId?: number }) {
+    return this.leadService.addNote(data.id, data.text, data.userId);
+  }
+
+  @MessagePattern(LEAD_PATTERNS.CONVERT_TO_DEAL)
+  handleConvertToDeal(@Payload() data: { id: number; dealData?: any }) {
+    return this.leadService.convertToDeal(data.id, data.dealData);
+  }
+
+  @MessagePattern(LEAD_PATTERNS.GET_HISTORY)
+  handleGetHistory(@Payload() data: { id: number; page?: number; limit?: number }) {
+    return this.leadService.getHistory(data.id, data.page, data.limit);
+  }
+
+  @MessagePattern(LEAD_PATTERNS.GET_HISTORY_STATS)
+  handleGetHistoryStats(@Payload() data: { id: number }) {
+    return this.leadService.getHistoryStats(data.id);
+  }
+
+  @MessagePattern(LEAD_PATTERNS.AUTO_ASSIGN)
+  handleAutoAssign(@Payload() data: { id: number }) {
+    return this.leadService.autoAssign(data.id);
   }
 
   @MessagePattern(LEAD_PATTERNS.HEALTH_CHECK)

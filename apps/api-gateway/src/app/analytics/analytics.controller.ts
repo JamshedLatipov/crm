@@ -1,6 +1,8 @@
 import {
   Controller,
   Get,
+  Post,
+  Body,
   Query,
   Inject,
   UseGuards,
@@ -27,6 +29,16 @@ export class AnalyticsController {
   async getDashboard(@Query('period') period = 'week') {
     return firstValueFrom(
       this.analyticsClient.send(ANALYTICS_PATTERNS.GET_DASHBOARD, { period }).pipe(timeout(10000)),
+    );
+  }
+
+  @Get('dashboard/manager')
+  @ApiOperation({ summary: 'Get manager dashboard', description: 'Retrieve manager-specific dashboard metrics' })
+  @ApiQuery({ name: 'userId', description: 'Manager user ID', required: true })
+  @ApiResponse({ status: 200, description: 'Manager dashboard data' })
+  async getManagerDashboard(@Query('userId') userId: string) {
+    return firstValueFrom(
+      this.analyticsClient.send(ANALYTICS_PATTERNS.GET_MANAGER_DASHBOARD, { userId: parseInt(userId) }).pipe(timeout(10000)),
     );
   }
 
@@ -85,6 +97,92 @@ export class AnalyticsController {
   ) {
     return firstValueFrom(
       this.analyticsClient.send(ANALYTICS_PATTERNS.GET_USER_PERFORMANCE, { userId, from, to }).pipe(timeout(10000)),
+    );
+  }
+
+  // Reports endpoints
+  @Get('reports/sales')
+  @ApiOperation({ summary: 'Get sales report', description: 'Generate sales report for date range' })
+  @ApiQuery({ name: 'fromDate', description: 'Start date', required: false })
+  @ApiQuery({ name: 'toDate', description: 'End date', required: false })
+  @ApiQuery({ name: 'groupBy', description: 'Group by (day, week, month)', required: false })
+  async getSalesReport(
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
+    @Query('groupBy') groupBy?: string,
+  ) {
+    return firstValueFrom(
+      this.analyticsClient.send(ANALYTICS_PATTERNS.GENERATE_REPORT, {
+        type: 'sales',
+        fromDate,
+        toDate,
+        groupBy,
+      }).pipe(timeout(30000)),
+    );
+  }
+
+  @Get('reports/leads')
+  @ApiOperation({ summary: 'Get leads report', description: 'Generate leads report for date range' })
+  @ApiQuery({ name: 'fromDate', description: 'Start date', required: false })
+  @ApiQuery({ name: 'toDate', description: 'End date', required: false })
+  @ApiQuery({ name: 'groupBy', description: 'Group by (day, week, month)', required: false })
+  async getLeadsReport(
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
+    @Query('groupBy') groupBy?: string,
+  ) {
+    return firstValueFrom(
+      this.analyticsClient.send(ANALYTICS_PATTERNS.GENERATE_REPORT, {
+        type: 'leads',
+        fromDate,
+        toDate,
+        groupBy,
+      }).pipe(timeout(30000)),
+    );
+  }
+
+  @Get('reports/calls')
+  @ApiOperation({ summary: 'Get calls report', description: 'Generate calls report for date range' })
+  @ApiQuery({ name: 'fromDate', description: 'Start date', required: false })
+  @ApiQuery({ name: 'toDate', description: 'End date', required: false })
+  @ApiQuery({ name: 'groupBy', description: 'Group by (day, week, month)', required: false })
+  async getCallsReport(
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
+    @Query('groupBy') groupBy?: string,
+  ) {
+    return firstValueFrom(
+      this.analyticsClient.send(ANALYTICS_PATTERNS.GENERATE_REPORT, {
+        type: 'calls',
+        fromDate,
+        toDate,
+        groupBy,
+      }).pipe(timeout(30000)),
+    );
+  }
+
+  @Get('reports/performance')
+  @ApiOperation({ summary: 'Get performance report', description: 'Generate user performance report' })
+  @ApiQuery({ name: 'fromDate', description: 'Start date', required: false })
+  @ApiQuery({ name: 'toDate', description: 'End date', required: false })
+  async getPerformanceReport(
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
+  ) {
+    return firstValueFrom(
+      this.analyticsClient.send(ANALYTICS_PATTERNS.GENERATE_REPORT, {
+        type: 'performance',
+        fromDate,
+        toDate,
+      }).pipe(timeout(30000)),
+    );
+  }
+
+  @Post('reports/generate')
+  @ApiOperation({ summary: 'Generate custom report', description: 'Generate a custom report based on configuration' })
+  async generateCustomReport(@Body() config: any) {
+    return firstValueFrom(
+      this.analyticsClient.send(ANALYTICS_PATTERNS.GENERATE_REPORT, config).pipe(timeout(30000)),
     );
   }
 }

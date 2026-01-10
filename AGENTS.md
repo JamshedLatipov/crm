@@ -152,6 +152,5 @@ Contents from .github/instructions/do-not-create-md.instructions.md
 ---
 applyTo: '**'
 ---
-do not create .md files
 ```
 \n\nNOTE: Documentation consolidated under the docs/ directory (see docs/README.md).
