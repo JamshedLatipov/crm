@@ -13,7 +13,7 @@ COPY . .
 # Install all dependencies from the root (including devDependencies for the build)
 # Use `npm install` since this repo doesn't have a package-lock.json at the root.
 # Don't set NODE_ENV=production here as we need devDependencies (nx, @angular/cli, etc.)
-RUN npm install --silent --no-audit --legacy-peer-deps
+RUN npm install --legacy-peer-deps
 
 # Run the Nx build using the locally installed binary
 RUN npx nx build front

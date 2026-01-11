@@ -1,0 +1,54 @@
+# Node
+node_modules
+npm-debug.log
+package-lock.json
+
+# Build outputs
+dist
+.nx
+.angular
+build
+out
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Environment
+.env
+.env.*
+
+# Testing
+coverage
+.nyc_output
+
+# Logs
+*.log
+logs
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Data directories
+data/
+certs/
+
+# Config
+asterisk-config/
+turnserver/
+
+# Documentation
+*.md
+*.txt
