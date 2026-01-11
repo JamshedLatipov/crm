@@ -2,7 +2,6 @@
 # Build stage
 FROM node:24-alpine AS builder
 WORKDIR /workspace
-ENV NODE_ENV=production
 
 # NOTE: This Dockerfile expects the build context to be the repository root.
 # Build command (from repo root):
@@ -11,9 +10,9 @@ ENV NODE_ENV=production
 # Copy repository into the image first
 COPY . .
 
-# Install all dependencies from the root
+# Install all dependencies from the root (including devDependencies for the build)
 # Use `npm install` since this repo doesn't have a package-lock.json at the root.
-# Remove --prefer-offline flag to ensure packages are downloaded in Docker build
+# Don't set NODE_ENV=production here as we need devDependencies (nx, @angular/cli, etc.)
 RUN npm install --silent --no-audit --legacy-peer-deps
 
 # Run the Nx build using the locally installed binary
