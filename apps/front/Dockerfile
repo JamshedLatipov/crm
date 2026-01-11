@@ -16,7 +16,7 @@ COPY . .
 RUN npm install --silent --no-audit --legacy-peer-deps
 
 # Run the Nx build using the locally installed binary
-RUN npx nx build front --loglevel=info
+RUN npx nx build front
 
 # Production stage
 FROM nginx:stable-alpine AS runner
