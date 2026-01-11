@@ -98,8 +98,8 @@ services:
       - ./data/asterisk/sounds/custom:/var/lib/asterisk/sounds/custom:rw
       - ./data/asterisk/recordings:/var/lib/asterisk/recordings:rw
       # - ./asterisk-config/logger.conf:/etc/asterisk/logger.conf:ro
-    mem_limit: "512m"
-    mem_reservation: "256m"
+    mem_limit: "1g"
+    mem_reservation: "512m"
 
   back:
     build:
@@ -139,6 +139,17 @@ services:
     command: ["node", "dist/main.js"]
     mem_limit: "512m"
     mem_reservation: "256m"
+
+  front:
+    build:
+      context: .
+      dockerfile: apps/front/Dockerfile
+    depends_on:
+      - back
+    ports:
+      - "80:80"
+    mem_limit: "64m"
+    mem_reservation: "32m"
 
 volumes:
   pgdata:
