@@ -8,17 +8,16 @@ ENV NODE_ENV=production
 # Build command (from repo root):
 # docker build -f apps/front/Dockerfile -t front .
 
-# Install root dependencies (copies package.json / package-lock.json from repo root)
-COPY package*.json ./
-# Use `npm install` since this repo doesn't have a package-lock.json at the root.
-# `npm ci` requires a lockfile and fails when it's missing.
-RUN npm install --silent --no-audit --prefer-offline --legacy-peer-deps
-
-# Copy repository into the image and run the front build inside apps/front
+# Copy repository into the image first
 COPY . .
-WORKDIR /workspace
-# Run the Nx build using the locally installed binary via npx
-RUN npx --yes nx build front --loglevel=info
+
+# Install all dependencies from the root
+# Use `npm install` since this repo doesn't have a package-lock.json at the root.
+# Remove --prefer-offline flag to ensure packages are downloaded in Docker build
+RUN npm install --silent --no-audit --legacy-peer-deps
+
+# Run the Nx build using the locally installed binary
+RUN npx nx build front --loglevel=info
 
 # Production stage
 FROM nginx:stable-alpine AS runner
