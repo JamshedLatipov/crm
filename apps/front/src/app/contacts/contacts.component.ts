@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -12,6 +12,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { FormsModule } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
@@ -20,8 +21,10 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { ContactsService } from './contacts.service';
 import { StatusTabsComponent } from '../shared/components/status-tabs/status-tabs.component';
 import { Router } from '@angular/router';
-import { Contact, ContactsStats } from './contact.interfaces';
+import { Contact, ContactsStats, CustomFieldFilter } from './contact.interfaces';
 import { PageLayoutComponent } from '../shared/page-layout/page-layout.component';
+import { CustomFieldsService } from '../services/custom-fields.service';
+import { CustomFieldDefinition, FieldType } from '../models/custom-field.model';
 
 @Component({
   selector: 'app-contacts',
@@ -41,6 +44,7 @@ import { PageLayoutComponent } from '../shared/page-layout/page-layout.component
     MatPaginatorModule,
     MatMenuModule,
     MatDividerModule,
+    MatExpansionModule,
     FormsModule,
     MatDialogModule,
     StatusTabsComponent,
@@ -69,6 +73,11 @@ export class ContactsComponent implements OnInit {
   // selected value for status tabs: null means all, otherwise a string key
   activeFilter: string | null = 'active';
 
+  // Custom field filters
+  customFieldDefinitions = signal<CustomFieldDefinition[]>([]);
+  customFieldFilters: CustomFieldFilter[] = [];
+  showCustomFieldFilters = false;
+
   // Tabs config for StatusTabsComponent
   contactTabs = [
     { label: 'Все контакты', value: null },
@@ -85,52 +94,79 @@ export class ContactsComponent implements OnInit {
   totalResults = 0;
 
   private readonly contactsService = inject(ContactsService);
+  private readonly customFieldsService = inject(CustomFieldsService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly router = inject(Router);
   private readonly dialog = inject(MatDialog);
 
   ngOnInit(): void {
+    this.loadCustomFieldDefinitions();
     this.loadData();
+  }
+
+  loadCustomFieldDefinitions(): void {
+    this.customFieldsService.findByEntity('contact').subscribe({
+      next: (defs) => this.customFieldDefinitions.set(defs),
+      error: (err) => console.error('Failed to load custom field definitions:', err)
+    });
   }
 
   loadData(): void {
     this.loading = true;
-    // Загружаем контакты и статистику параллельно
-    const listPromise = this.contactsService
-      .listContacts({
-        search: this.searchQuery || undefined,
-        isActive:
-          this.activeFilter === 'all'
-            ? undefined
-            : this.activeFilter === 'active',
-        page: this.currentPage,
-        pageSize: this.pageSize,
-      })
-      .toPromise();
 
-    Promise.all([
-      listPromise,
-      this.contactsService.getContactsStats().toPromise(),
-    ])
-      .then(([response, stats]) => {
-        // Handle { data, total } response
-        const contactsData = (response as any).data || response || [];
-        this.contacts = contactsData;
-        this.stats = stats || null;
-
-        this.totalResults = (response as any).total !== undefined
-          ? (response as any).total
-          : contactsData.length;
-
-        this.loading = false;
-      })
-      .catch((error) => {
-        console.error('Error loading contacts:', error);
-        this.snackBar.open('Ошибка загрузки контактов', 'Закрыть', {
-          duration: 3000,
+    // Use custom field filters if they exist, otherwise use standard filters
+    if (this.customFieldFilters.length > 0) {
+      this.contactsService.searchContactsByCustomFields(this.customFieldFilters)
+        .subscribe({
+          next: (contacts) => {
+            this.contacts = contacts;
+            this.totalResults = contacts.length;
+            this.loading = false;
+          },
+          error: (error) => {
+            console.error('Error loading contacts with custom filters:', error);
+            this.snackBar.open('Ошибка загрузки контактов', 'Закрыть', { duration: 3000 });
+            this.loading = false;
+          }
         });
-        this.loading = false;
-      });
+    } else {
+      // Standard filtering
+      const listPromise = this.contactsService
+        .listContacts({
+          search: this.searchQuery || undefined,
+          isActive:
+            this.activeFilter === 'all'
+              ? undefined
+              : this.activeFilter === 'active',
+          page: this.currentPage,
+          pageSize: this.pageSize,
+        })
+        .toPromise();
+
+      Promise.all([
+        listPromise,
+        this.contactsService.getContactsStats().toPromise(),
+      ])
+        .then(([response, stats]) => {
+          // Handle { data, total } response
+          const contactsData = (response as any).data || response || [];
+          this.contacts = contactsData;
+          this.stats = stats || null;
+
+          this.totalResults = (response as any).total !== undefined
+            ? (response as any).total
+            : contactsData.length;
+
+          this.loading = false;
+        })
+        .catch((error) => {
+          console.error('Error loading contacts:', error);
+          this.snackBar.open('Ошибка загрузки контактов', 'Закрыть', {
+            duration: 3000,
+          });
+          this.loading = false;
+        });
+    }
   }
 
   onPageChange(event: PageEvent): void {
@@ -346,4 +382,94 @@ export class ContactsComponent implements OnInit {
     // navigate to contact detail page
     this.router.navigate(['/contacts/view', contact.id]);
   }
-}
+
+  // Custom field filter methods
+  addCustomFieldFilter(): void {
+    const definitions = this.customFieldDefinitions();
+    if (definitions.length === 0) {
+      this.snackBar.open('Нет доступных дополнительных полей', 'Закрыть', { duration: 3000 });
+      return;
+    }
+
+    this.customFieldFilters.push({
+      fieldName: definitions[0].name,
+      operator: 'equals',
+      value: ''
+    });
+  }
+
+  removeCustomFieldFilter(index: number): void {
+    this.customFieldFilters.splice(index, 1);
+    this.loadData();
+  }
+
+  applyCustomFieldFilters(): void {
+    this.loadData();
+  }
+
+  clearCustomFieldFilters(): void {
+    this.customFieldFilters = [];
+    this.loadData();
+  }
+
+  getFieldDefinition(fieldName: string): CustomFieldDefinition | undefined {
+    return this.customFieldDefinitions().find(def => def.name === fieldName);
+  }
+
+  getOperatorsForFieldType(fieldType: FieldType): Array<{value: string, label: string}> {
+    const commonOperators = [
+      { value: 'equals', label: 'Равно' },
+      { value: 'not_equals', label: 'Не равно' },
+      { value: 'exists', label: 'Заполнено' }
+    ];
+
+    switch (fieldType) {
+      case 'text':
+      case 'textarea':
+      case 'email':
+      case 'phone':
+      case 'url':
+        return [
+          ...commonOperators,
+          { value: 'contains', label: 'Содержит' },
+          { value: 'not_contains', label: 'Не содержит' },
+          { value: 'starts_with', label: 'Начинается с' },
+          { value: 'ends_with', label: 'Заканчивается на' }
+        ];
+      case 'number':
+      case 'date':
+        return [
+          ...commonOperators,
+          { value: 'greater', label: 'Больше' },
+          { value: 'less', label: 'Меньше' },
+          { value: 'between', label: 'Между' }
+        ];
+      case 'select':
+      case 'multiselect':
+        return [
+          ...commonOperators,
+          { value: 'in', label: 'Один из' },
+          { value: 'not_in', label: 'Не один из' }
+        ];
+      case 'boolean':
+        return commonOperators.slice(0, 2); // Only equals and not_equals
+      default:
+        return commonOperators;
+    }
+  }
+
+  getFieldTypeLabel(type: FieldType): string {
+    const labels: Record<FieldType, string> = {
+      text: 'Текст',
+      number: 'Число',
+      date: 'Дата',
+      boolean: 'Да/Нет',
+      select: 'Выбор',
+      multiselect: 'Множественный выбор',
+      email: 'Email',
+      phone: 'Телефон',
+      url: 'URL',
+      textarea: 'Текстовая область'
+    };
+    return labels[type] || type;
+  }}

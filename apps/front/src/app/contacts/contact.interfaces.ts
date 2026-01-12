@@ -14,6 +14,12 @@ export enum ContactSource {
   OTHER = 'other',
 }
 
+export interface CustomFieldFilter {
+  fieldName: string;
+  operator: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'starts_with' | 'ends_with' | 'greater' | 'less' | 'between' | 'in' | 'not_in' | 'exists';
+  value?: any;
+}
+
 export interface ContactAddress {
   country?: string;
   region?: string;

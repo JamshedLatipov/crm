@@ -85,10 +85,77 @@
   margin-bottom: 24px;
 }
 
+.search-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .tabs {
   display: flex;
   gap: 0;
   border-bottom: 1px solid #e1e4e8;
+}
+
+/* Custom field filters panel */
+.custom-filters-panel {
+  margin-bottom: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  
+  ::ng-deep .mat-expansion-panel-header {
+    padding: 12px 16px;
+    
+    mat-panel-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+      
+      .filter-count {
+        color: var(--primary-color, #2f78ff);
+        font-size: 0.9em;
+      }
+    }
+  }
+  
+  .filters-content {
+    padding: 16px;
+  }
+  
+  .filter-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    
+    .field-select {
+      flex: 1;
+      min-width: 200px;
+    }
+    
+    .operator-select {
+      flex: 0 0 180px;
+    }
+    
+    .value-input {
+      flex: 1;
+      min-width: 200px;
+    }
+  }
+  
+  .filter-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #e1e4e8;
+    
+    .spacer {
+      flex: 1;
+    }
+  }
 }
 
 .tab {

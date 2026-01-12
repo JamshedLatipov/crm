@@ -52,8 +52,93 @@
         />
         <mat-icon matSuffix>search</mat-icon>
       </mat-form-field>
+      
+      <button 
+        mat-icon-button 
+        (click)="showCustomFieldFilters = !showCustomFieldFilters"
+        [color]="customFieldFilters.length > 0 ? 'accent' : undefined"
+        matTooltip="Фильтры по дополнительным полям"
+      >
+        <mat-icon>{{ showCustomFieldFilters ? 'filter_list_off' : 'filter_list' }}</mat-icon>
+      </button>
     </div>
   </div>
+
+  <!-- Custom field filters panel -->
+  <mat-expansion-panel 
+    [(expanded)]="showCustomFieldFilters" 
+    *ngIf="customFieldDefinitions().length > 0"
+    class="custom-filters-panel"
+  >
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        <mat-icon>tune</mat-icon>
+        <span>Фильтры по дополнительным полям</span>
+        <span *ngIf="customFieldFilters.length > 0" class="filter-count">
+          ({{ customFieldFilters.length }})
+        </span>
+      </mat-panel-title>
+    </mat-expansion-panel-header>
+
+    <div class="filters-content">
+      <div *ngFor="let filter of customFieldFilters; let i = index" class="filter-row">
+        <mat-form-field appearance="outline" class="field-select">
+          <mat-label>Поле</mat-label>
+          <mat-select [(ngModel)]="filter.fieldName">
+            @for (def of customFieldDefinitions(); track def.id) {
+              <mat-option [value]="def.name">
+                {{ def.label }} ({{ getFieldTypeLabel(def.fieldType) }})
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="operator-select">
+          <mat-label>Условие</mat-label>
+          <mat-select [(ngModel)]="filter.operator">
+            @for (op of getOperatorsForFieldType(getFieldDefinition(filter.fieldName)?.fieldType || 'text'); track op.value) {
+              <mat-option [value]="op.value">{{ op.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field 
+          appearance="outline" 
+          class="value-input"
+          *ngIf="filter.operator !== 'exists'"
+        >
+          <mat-label>Значение</mat-label>
+          <input 
+            matInput 
+            [(ngModel)]="filter.value"
+            [type]="getFieldDefinition(filter.fieldName)?.fieldType === 'number' ? 'number' : 
+                    getFieldDefinition(filter.fieldName)?.fieldType === 'date' ? 'date' : 'text'"
+          />
+        </mat-form-field>
+
+        <button mat-icon-button color="warn" (click)="removeCustomFieldFilter(i)" matTooltip="Удалить фильтр">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <div class="filter-actions">
+        <button mat-stroked-button (click)="addCustomFieldFilter()">
+          <mat-icon>add</mat-icon>
+          Добавить фильтр
+        </button>
+        
+        <div class="spacer"></div>
+        
+        <button mat-button (click)="clearCustomFieldFilters()" *ngIf="customFieldFilters.length > 0">
+          Очистить всё
+        </button>
+        
+        <button mat-raised-button color="primary" (click)="applyCustomFieldFilters()" *ngIf="customFieldFilters.length > 0">
+          Применить
+        </button>
+      </div>
+    </div>
+  </mat-expansion-panel>
 
   <!-- Contacts table -->
   <div *ngIf="!loading; else loadingTemplate">
