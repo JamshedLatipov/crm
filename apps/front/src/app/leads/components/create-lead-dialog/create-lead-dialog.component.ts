@@ -21,11 +21,14 @@ import { Contact } from '../../../contacts/contact.interfaces';
 import { PromoCompaniesService } from '../../../promo-companies/services/promo-companies.service';
 import { PromoCompany } from '../../../promo-companies/models/promo-company.model';
 import { UserManagementService, User } from '../../../services/user-management.service';
+import { CustomFieldsService } from '../../../services/custom-fields.service';
+import { CustomFieldDefinition } from '../../../models/custom-field.model';
+import { DynamicFieldComponent } from '../../../shared/components/dynamic-field/dynamic-field.component';
 
 @Component({
   selector: 'app-create-lead-dialog',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatChipsModule, MatIconModule, MatProgressSpinnerModule, MatOptionModule, MatAutocompleteModule, CompanySelectorComponent, ContactSelectorComponent, UserSelectorComponent],
+  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatChipsModule, MatIconModule, MatProgressSpinnerModule, MatOptionModule, MatAutocompleteModule, CompanySelectorComponent, ContactSelectorComponent, UserSelectorComponent, DynamicFieldComponent],
   templateUrl: './create-lead-dialog.component.html',
   styleUrls: ['./create-lead-dialog.component.scss']
 })
@@ -34,12 +37,15 @@ export class CreateLeadDialogComponent {
   private readonly leadService = inject(LeadService);
   private readonly promoCompaniesService = inject(PromoCompaniesService);
   private readonly userManagementService = inject(UserManagementService);
+  private readonly customFieldsService = inject(CustomFieldsService);
   private readonly dialogRef = inject(MatDialogRef<CreateLeadDialogComponent>);
 
   leadForm: FormGroup;
   saving = false;
   promoCompanies: PromoCompany[] = [];
   users: User[] = [];
+  customFieldDefinitions: CustomFieldDefinition[] = [];
+  customFieldValues: Record<string, any> = {};
 
   // Used by mat-select to display selected user nicely (avoids icon ligature text)
   displayAssignedUser = (id: string | number | null): string | null => {
@@ -79,6 +85,9 @@ export class CreateLeadDialogComponent {
 
   // Загружаем список пользователей (для назначения ответственного)
   this.loadUsers();
+
+    // Загружаем кастомные поля
+    this.loadCustomFields();
 
     // company autocomplete is provided by CompanyAutocompleteComponent
     
@@ -127,6 +136,21 @@ export class CreateLeadDialogComponent {
     });
   }
 
+  loadCustomFields(): void {
+    this.customFieldsService.findByEntity('lead').subscribe({
+      next: (fields) => {
+        this.customFieldDefinitions = fields;
+      },
+      error: (err) => {
+        console.error('Error loading custom fields:', err);
+      },
+    });
+  }
+
+  onCustomFieldChange(fieldName: string, value: any): void {
+    this.customFieldValues[fieldName] = value;
+  }
+
   save(): void {
     if (this.leadForm.invalid) return;
     this.saving = true;
@@ -161,6 +185,8 @@ export class CreateLeadDialogComponent {
       tags: tags.length > 0 ? tags : undefined,
       // Назначаем ответственное лицо, если выбрано
       assignedTo: formValue.assignedTo || undefined,
+      // Добавляем кастомные поля
+      customFields: this.customFieldValues,
     };
 
     this.leadService.createLead(createRequest).subscribe({

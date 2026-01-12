@@ -129,4 +129,7 @@ export class CreateCompanyDto {
   @IsOptional()
   @IsString()
   ownerId?: string;
+
+  @IsOptional()
+  customFields?: Record<string, unknown>;
 }

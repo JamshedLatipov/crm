@@ -13,6 +13,7 @@ import { UserModule } from '../user/user.module';
 import { SharedModule } from '../shared/shared.module';
 import { PipelineModule } from '../pipeline/pipeline.module';
 import { NotificationModule } from '../notifications/notification.module';
+import { CustomFieldsModule } from '../custom-fields/custom-fields.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { NotificationModule } from '../notifications/notification.module';
     PassportModule,
     UserModule,
     SharedModule,
+    CustomFieldsModule,
     forwardRef(() => PipelineModule),
     NotificationModule,
   ],

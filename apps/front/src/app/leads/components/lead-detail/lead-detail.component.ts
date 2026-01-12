@@ -38,6 +38,9 @@ import { PromoCompaniesService } from '../../../promo-companies/services/promo-c
 import { CreatePromoCompanyDialogComponent } from '../../../promo-companies/components/create-promo-company-dialog/create-promo-company-dialog.component';
 import { AssignPromoCompanyDialogComponent } from '../../../promo-companies/components/assign-promo-company-dialog/assign-promo-company-dialog.component';
 import { ConfirmActionDialogComponent } from '../../../shared/dialogs/confirm-action-dialog.component';
+import { CustomFieldsService } from '../../../services/custom-fields.service';
+import { CustomFieldDefinition } from '../../../models/custom-field.model';
+import { DynamicFieldComponent } from '../../../shared/components/dynamic-field/dynamic-field.component';
 
 interface HistoryEntry {
   field: string;
@@ -71,6 +74,7 @@ interface HistoryEntry {
     LeadActionsComponent,
     LeadStatusComponent,
     TaskListWidgetComponent,
+    DynamicFieldComponent,
   ],
   templateUrl: './lead-detail.component.html',
   styleUrls: ['./lead-detail.component.scss'],
@@ -84,6 +88,7 @@ export class LeadDetailComponent implements OnInit {
   private readonly snackBar = inject(MatSnackBar);
   private readonly promoCompaniesService = inject(PromoCompaniesService);
   private readonly assignmentService = inject(AssignmentService);
+  private readonly customFieldsService = inject(CustomFieldsService);
 
   lead: Lead = {} as Lead;
   activities: LeadActivity[] = [];
@@ -94,6 +99,8 @@ export class LeadDetailComponent implements OnInit {
   managers: Manager[] = [];
   currentAssignments: Assignment[] = [];
   promoCompanies: any[] = [];
+  customFieldDefinitions: CustomFieldDefinition[] = [];
+  customFieldsLoading = false;
   // Для компонента комментариев
   readonly CommentEntityType = CommentEntityType;
 
@@ -164,6 +171,7 @@ export class LeadDetailComponent implements OnInit {
           typeof lead.id
         );
         this.loadActivities();
+        this.loadCustomFields();
         // Use assignment info from returned lead model instead of calling centralized assignment API
         this.setAssignmentsFromLead();
       },
@@ -171,6 +179,20 @@ export class LeadDetailComponent implements OnInit {
         console.error('Error loading lead:', err);
         this.router.navigate(['/leads/list']);
       },
+    });
+  }
+
+  private loadCustomFields(): void {
+    this.customFieldsLoading = true;
+    this.customFieldsService.findByEntity('lead').subscribe({
+      next: (defs) => {
+        this.customFieldDefinitions = defs;
+        this.customFieldsLoading = false;
+      },
+      error: (err) => {
+        console.error('Failed to load custom field definitions:', err);
+        this.customFieldsLoading = false;
+      }
     });
   }
 

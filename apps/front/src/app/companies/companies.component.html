@@ -1,0 +1,254 @@
+<app-page-layout
+  title="Компании"
+  subtitle="Управление всеми компаниями"
+>
+  <div page-actions>
+    <button mat-raised-button color="primary" (click)="createCompany()">
+      <mat-icon>add</mat-icon>
+      Создать компанию
+    </button>
+  </div>
+
+  <!-- Статистика -->
+  <div class="stats-section">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">
+          <mat-icon>business</mat-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.total }}</div>
+          <div class="stat-label">Всего компаний</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon success">
+          <mat-icon>check_circle</mat-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.active }}</div>
+          <div class="stat-label">Активные</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon warning">
+          <mat-icon>hourglass_empty</mat-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.inactive }}</div>
+          <div class="stat-label">Неактивные</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon error">
+          <mat-icon>block</mat-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.blacklisted }}</div>
+          <div class="stat-label">Черный список</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Список компаний -->
+  <div class="companies-section">
+    <!-- Загрузка -->
+    <div *ngIf="isLoading" class="loading-container">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>Загрузка компаний...</p>
+    </div>
+
+    <!-- Пустое состояние -->
+    <div
+      *ngIf="!isLoading && filteredCompanies.length === 0"
+      class="empty-state"
+    >
+      <mat-icon class="empty-icon">business</mat-icon>
+      <h3>{{ searchQuery ? 'Компании не найдены' : 'Нет компаний' }}</h3>
+      <p>
+        {{
+          searchQuery
+            ? 'Попробуйте изменить параметры поиска'
+            : 'Создайте первую компанию для начала работы'
+        }}
+      </p>
+      <ng-container *ngIf="!searchQuery">
+        <button
+          mat-raised-button
+          color="primary"
+          (click)="createCompany()"
+        >
+          <mat-icon>add</mat-icon>
+          Создать компанию
+        </button>
+      </ng-container>
+    </div>
+
+    <!-- Фильтры: табы статусов + кнопка фильтров -->
+    <div class="filters-section">
+      <div class="filters-card">
+        <div class="filters-grid">
+          <app-status-tabs
+            [tabs]="companyTabs"
+            [selected]="activeTab"
+            (selectedChange)="setActiveTab($event)"
+          ></app-status-tabs>
+
+          <button 
+            mat-icon-button
+            color="primary"
+            (click)="openFiltersDialog()"
+            class="filter-button"
+            matTooltip="Фильтры и поиск"
+            [matBadge]="getTotalActiveFilters() > 0 ? getTotalActiveFilters() : null"
+            matBadgeColor="accent"
+            matBadgeSize="small">
+            <mat-icon>tune</mat-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Filters Display -->
+    <app-active-filters 
+      [search]="filterState().search || ''"
+      [filters]="filterState().filters"
+      (filterRemoved)="removeFilter($event)"
+      (clearAllFilters)="clearAllFilters()">
+    </app-active-filters>
+
+    <!-- Таблица компаний -->
+    <div
+      *ngIf="!isLoading && filteredCompanies.length > 0"
+      class="table-container"
+    >
+      <table
+        mat-table
+        [dataSource]="paginatedCompanies"
+        class="mat-elevation-z1 companies-table"
+      >
+        <!-- Name Column -->
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>Название</th>
+          <td mat-cell *matCellDef="let company">
+            <div class="name-cell">
+              <div class="company-icon">
+                {{ company.name ? (company.name.charAt(0) | uppercase) : '?' }}
+              </div>
+              <div class="name-meta">
+                <a class="name-link" (click)="viewCompany(company)">{{
+                  company.name || 'Без названия'
+                }}</a>
+                <div *ngIf="company.legalName" class="legal-name">
+                  {{ company.legalName }}
+                </div>
+              </div>
+            </div>
+          </td>
+        </ng-container>
+
+        <!-- Type Column -->
+        <ng-container matColumnDef="type">
+          <th mat-header-cell *matHeaderCellDef>Тип</th>
+          <td mat-cell *matCellDef="let company">
+            <span class="type-badge" [class]="'type-' + company.type">
+              {{ getTypeLabel(company.type) }}
+            </span>
+          </td>
+        </ng-container>
+
+        <!-- Industry Column -->
+        <ng-container matColumnDef="industry">
+          <th mat-header-cell *matHeaderCellDef>Отрасль</th>
+          <td mat-cell *matCellDef="let company">
+            {{ getIndustryLabel(company.industry) }}
+          </td>
+        </ng-container>
+
+        <!-- Size Column -->
+        <ng-container matColumnDef="size">
+          <th mat-header-cell *matHeaderCellDef>Размер</th>
+          <td mat-cell *matCellDef="let company">
+            {{ getSizeLabel(company.size) }}
+          </td>
+        </ng-container>
+
+        <!-- City Column -->
+        <ng-container matColumnDef="city">
+          <th mat-header-cell *matHeaderCellDef>Город</th>
+          <td mat-cell *matCellDef="let company">
+            <ng-container *ngIf="company.city; else noCity">
+              {{ company.city }}
+            </ng-container>
+            <ng-template #noCity>
+              <span class="muted">—</span>
+            </ng-template>
+          </td>
+        </ng-container>
+
+        <!-- Phone Column -->
+        <ng-container matColumnDef="phone">
+          <th mat-header-cell *matHeaderCellDef>Телефон</th>
+          <td mat-cell *matCellDef="let company">
+            <ng-container *ngIf="company.phone; else noPhone">
+              {{ company.phone }}
+            </ng-container>
+            <ng-template #noPhone>
+              <span class="muted">—</span>
+            </ng-template>
+          </td>
+        </ng-container>
+
+        <!-- Actions Column -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef></th>
+          <td mat-cell *matCellDef="let company" class="actions-cell">
+            <button
+              mat-icon-button
+              matTooltip="Просмотр"
+              (click)="viewCompany(company)"
+            >
+              <mat-icon>visibility</mat-icon>
+            </button>
+            <button
+              mat-icon-button
+              matTooltip="Редактировать"
+              (click)="editCompany(company)"
+            >
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button
+              mat-icon-button
+              matTooltip="Удалить"
+              (click)="deleteCompany(company)"
+            >
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr
+          mat-row
+          *matRowDef="let row; columns: displayedColumns"
+          class="table-row"
+        ></tr>
+      </table>
+      <div class="table-footer">
+        <div class="footer-info"></div>
+        <mat-paginator
+          [length]="totalResults || filteredCompanies.length"
+          [pageSize]="pageSize"
+          [pageIndex]="currentPage"
+          [pageSizeOptions]="[10, 25, 50, 100]"
+          (page)="onPageChange($event)"
+          showFirstLastButtons
+        ></mat-paginator>
+      </div>
+    </div>
+  </div>
+</app-page-layout>

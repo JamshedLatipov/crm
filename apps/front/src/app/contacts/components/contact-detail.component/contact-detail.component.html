@@ -201,19 +201,24 @@
                         </div>
                       </div>
 
-                      <div class="contact-item" *ngIf="contact.customFields">
-                        <div class="contact-icon">
-                          <mat-icon>tune</mat-icon>
-                        </div>
-                        <div class="contact-details">
-                          <span class="contact-label">Дополнительно</span>
-                          <div class="contact-value">
-                            <div *ngFor="let k of (contact.customFields | keyvalue)">
-                              <strong>{{ k.key }}:</strong> {{ k.value }}
-                            </div>
+                      <!-- Custom Fields Section -->
+                      @if (contact.customFields && customFieldDefinitions().length > 0) {
+                        <div class="contact-section">
+                          <div class="section-header">
+                            <mat-icon class="section-icon">tune</mat-icon>
+                            <h3 class="section-title">Дополнительные поля</h3>
                           </div>
+                          @for (field of customFieldDefinitions(); track field.id) {
+                            @if (contact.customFields![field.name] !== undefined && contact.customFields![field.name] !== null) {
+                              <app-dynamic-field
+                                [fieldDef]="field"
+                                [value]="contact.customFields![field.name]"
+                                [readonly]="true"
+                              ></app-dynamic-field>
+                            }
+                          }
                         </div>
-                      </div>
+                      }
                     </div>
                   </mat-card-content>
                 </mat-card>

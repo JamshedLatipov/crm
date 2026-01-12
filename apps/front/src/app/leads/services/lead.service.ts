@@ -354,4 +354,23 @@ export class LeadService {
     const params = new HttpParams().set('promoCompanyId', promoCompanyId.toString());
     return this.http.get<Lead[]>(this.apiUrl, { params });
   }
+
+  // Advanced search with universal filters
+  advancedSearch(request: {
+    search?: string;
+    filters: Array<{
+      fieldType: 'static' | 'custom';
+      fieldName: string;
+      fieldLabel: string;
+      operator: string;
+      value?: string | number | boolean | string[] | number[];
+    }>;
+    page?: number;
+    pageSize?: number;
+  }): Observable<{ data: Lead[]; total: number }> {
+    return this.http.post<{ data: Lead[]; total: number }>(
+      `${this.apiUrl}/advanced-search`,
+      request
+    );
+  }
 }

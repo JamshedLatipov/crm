@@ -20,6 +20,9 @@ import { Deal, CreateDealDto, UpdateDealDto, Stage, StageType } from '../../../p
 import { Contact } from '../../../contacts/contact.interfaces';
 import { UserSelectorComponent } from '../../../shared/components/user-selector/user-selector.component';
 import { CurrencyService } from '../../../services/currency.service';
+import { CustomFieldsService } from '../../../services/custom-fields.service';
+import { CustomFieldDefinition } from '../../../models/custom-field.model';
+import { DynamicFieldComponent } from '../../../shared/components/dynamic-field/dynamic-field.component';
 
 export interface DealFormData {
   deal?: Deal;
@@ -45,7 +48,8 @@ export interface DealFormData {
     MatProgressSpinnerModule,
     MatSliderModule,
     MatAutocompleteModule,
-    UserSelectorComponent
+    UserSelectorComponent,
+    DynamicFieldComponent
   ],
   templateUrl: `./deal-form.component.html`,
   styleUrls: [`./deal-form.component.scss`]
@@ -58,6 +62,7 @@ export class DealFormComponent implements OnInit {
   private readonly contactsService = inject(ContactsService);
   private readonly pipelineService = inject(PipelineService);
   private readonly currencyService = inject(CurrencyService);
+  private readonly customFieldsService = inject(CustomFieldsService);
 
   @Input() deal?: Deal;
   @Input() mode: 'create' | 'edit' = 'create';
@@ -69,6 +74,8 @@ export class DealFormComponent implements OnInit {
   selectedContact: Contact | null = null;
   filteredContacts!: Observable<Contact[]>;
   isLoading = false;
+  customFieldDefinitions: CustomFieldDefinition[] = [];
+  customFieldValues: Record<string, any> = {};
 
   get probabilityControl() {
     return this.dealForm.get('probability') as FormControl;
@@ -86,6 +93,7 @@ export class DealFormComponent implements OnInit {
     this.initializeForm();
     this.loadStages();
     this.setupContactSearch();
+    this.loadCustomFields();
     
     if (this.currentDeal) {
       this.populateForm();
@@ -178,6 +186,9 @@ export class DealFormComponent implements OnInit {
       notes: deal.notes
     });
 
+    // Загружаем значения кастомных полей
+    this.customFieldValues = deal.customFields || {};
+
     if (deal.contact) {
       // Преобразуем DealContact в Contact для совместимости
       this.selectedContact = {
@@ -225,7 +236,8 @@ export class DealFormComponent implements OnInit {
         status: formValue.status,
         assignedTo: formValue.assignedTo || undefined,
         notes: formValue.notes || undefined,
-        contactId: this.selectedContact?.id || undefined
+        contactId: this.selectedContact?.id || undefined,
+        customFields: this.customFieldValues
       };
 
       this.dealsService.updateDeal(this.currentDeal.id, updateDto).subscribe({
@@ -252,7 +264,8 @@ export class DealFormComponent implements OnInit {
         stageId: formValue.stageId,
         assignedTo: formValue.assignedTo,
         notes: formValue.notes || undefined,
-        contactId: this.selectedContact?.id || undefined
+        contactId: this.selectedContact?.id || undefined,
+        customFields: this.customFieldValues
       };
 
       this.dealsService.createDeal(createDto).subscribe({
@@ -269,6 +282,21 @@ export class DealFormComponent implements OnInit {
         }
       });
     }
+  }
+
+  loadCustomFields() {
+    this.customFieldsService.findByEntity('deal').subscribe({
+      next: (fields) => {
+        this.customFieldDefinitions = fields;
+      },
+      error: (err) => {
+        console.error('Error loading custom fields:', err);
+      },
+    });
+  }
+
+  onCustomFieldChange(fieldName: string, value: any): void {
+    this.customFieldValues[fieldName] = value;
   }
 
   onCancel() {

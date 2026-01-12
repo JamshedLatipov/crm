@@ -1,0 +1,253 @@
+<div class="filters-dialog">
+  <div class="dialog-header">
+    <h2 mat-dialog-title>
+      <mat-icon>filter_alt</mat-icon>
+      {{ data.title || 'Фильтры' }}
+    </h2>
+    <button mat-icon-button (click)="cancel()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <mat-dialog-content>
+    <!-- Search and Status Section -->
+    @if (data.showSearch !== false) {
+      <div class="search-status-section">
+        <mat-form-field appearance="outline" class="search-field-full">
+          <mat-label>Поиск</mat-label>
+          <input
+            matInput
+            [(ngModel)]="search"
+            placeholder="Имя, email, телефон..."
+          />
+          <mat-icon matPrefix>search</mat-icon>
+        </mat-form-field>
+
+        <!-- Status Tabs as Select (Optional) -->
+        @if (data.statusTabs && data.statusTabs.length > 0) {
+          <mat-form-field appearance="outline" class="status-field">
+            <mat-label>Статус</mat-label>
+            <mat-select [(ngModel)]="selectedStatusTab" (ngModelChange)="selectStatusTab($event)">
+              @for (tab of data.statusTabs; track tab.value) {
+                <mat-option [value]="tab.value">
+                  {{ tab.label }}
+                  @if (tab.count !== undefined) {
+                    <span class="count">({{ tab.count }})</span>
+                  }
+                </mat-option>
+              }
+            </mat-select>
+            <mat-icon matPrefix>filter_list</mat-icon>
+          </mat-form-field>
+        }
+      </div>
+
+      <mat-divider></mat-divider>
+    }
+
+    <!-- Filters Section with Tabs -->
+    <div class="filters-section">
+      <h3 class="section-title">
+        <mat-icon>tune</mat-icon>
+        Дополнительные фильтры
+        @if (getTotalFilters() > 0) {
+          <span class="filter-count">({{ getTotalFilters() }})</span>
+        }
+      </h3>
+
+      <mat-tab-group class="filters-tabs" animationDuration="200ms">
+        <!-- Static Fields Tab -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon>business</mat-icon>
+            Стандартные поля
+          </ng-template>
+
+          <div class="tab-content">
+            <div class="filters-list">
+              @for (filter of staticFilters(); track $index) {
+                <div class="filter-row">
+                  <div class="filter-fields">
+                    <mat-form-field appearance="outline" class="field-select">
+                      <mat-label>Поле</mat-label>
+                      <mat-select
+                        [(ngModel)]="filter.fieldName"
+                        (ngModelChange)="onFieldChange(filter, $event)"
+                      >
+                        @for (field of data.staticFields; track field.name) {
+                          <mat-option [value]="field.name">
+                            {{ field.label }}
+                          </mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" class="operator-select">
+                      <mat-label>Условие</mat-label>
+                      <mat-select [(ngModel)]="filter.operator">
+                        @for (op of getOperatorsForFilter(filter); track op.value) {
+                          <mat-option [value]="op.value">{{ op.label }}</mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+
+                    @if (requiresValue(filter.operator)) {
+                      @if (isSelectField(filter)) {
+                        <mat-form-field appearance="outline" class="value-input">
+                          <mat-label>Значение</mat-label>
+                          <mat-select [(ngModel)]="filter.value">
+                            @for (option of getSelectOptions(filter); track option.value) {
+                              <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                            }
+                          </mat-select>
+                        </mat-form-field>
+                      } @else {
+                        <mat-form-field appearance="outline" class="value-input">
+                          <mat-label>Значение</mat-label>
+                          <input
+                            matInput
+                            [(ngModel)]="filter.value"
+                            [type]="getInputType(filter)"
+                          />
+                        </mat-form-field>
+                      }
+                    }
+                  </div>
+
+                  <button
+                    mat-icon-button
+                    color="warn"
+                    (click)="removeFilter($index, 'static')"
+                    class="remove-btn"
+                  >
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+              }
+
+              @if (staticFilters().length === 0) {
+                <div class="empty-state-small">
+                  <mat-icon>filter_alt_off</mat-icon>
+                  <p>Фильтры по стандартным полям не добавлены</p>
+                </div>
+              }
+            </div>
+
+            <button mat-stroked-button (click)="addStaticFilter()" class="add-filter-btn">
+              <mat-icon>add</mat-icon>
+              Добавить фильтр по стандартному полю
+            </button>
+          </div>
+        </mat-tab>
+
+        <!-- Custom Fields Tab -->
+        <mat-tab [disabled]="data.customFields.length === 0">
+          <ng-template mat-tab-label>
+            <mat-icon>extension</mat-icon>
+            Доп. поля
+            @if (data.customFields.length === 0) {
+              <span class="disabled-hint">(нет)</span>
+            }
+          </ng-template>
+
+          <div class="tab-content">
+            <div class="filters-list">
+              @for (filter of customFilters(); track $index) {
+                <div class="filter-row">
+                  <div class="filter-fields">
+                    <mat-form-field appearance="outline" class="field-select">
+                      <mat-label>Поле</mat-label>
+                      <mat-select
+                        [(ngModel)]="filter.fieldName"
+                        (ngModelChange)="onFieldChange(filter, $event)"
+                      >
+                        @for (field of data.customFields; track field.name) {
+                          <mat-option [value]="field.name">
+                            {{ field.label }}
+                          </mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline" class="operator-select">
+                      <mat-label>Условие</mat-label>
+                      <mat-select [(ngModel)]="filter.operator">
+                        @for (op of getOperatorsForFilter(filter); track op.value) {
+                          <mat-option [value]="op.value">{{ op.label }}</mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+
+                    @if (requiresValue(filter.operator)) {
+                      @if (isSelectField(filter)) {
+                        <mat-form-field appearance="outline" class="value-input">
+                          <mat-label>Значение</mat-label>
+                          <mat-select [(ngModel)]="filter.value">
+                            @for (option of getSelectOptions(filter); track option.value) {
+                              <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                            }
+                          </mat-select>
+                        </mat-form-field>
+                      } @else {
+                        <mat-form-field appearance="outline" class="value-input">
+                          <mat-label>Значение</mat-label>
+                          <input
+                            matInput
+                            [(ngModel)]="filter.value"
+                            [type]="getInputType(filter)"
+                          />
+                        </mat-form-field>
+                      }
+                    }
+                  </div>
+
+                  <button
+                    mat-icon-button
+                    color="warn"
+                    (click)="removeFilter($index, 'custom')"
+                    class="remove-btn"
+                  >
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+              }
+
+              @if (customFilters().length === 0) {
+                <div class="empty-state-small">
+                  <mat-icon>filter_alt_off</mat-icon>
+                  <p>Фильтры по дополнительным полям не добавлены</p>
+                </div>
+              }
+            </div>
+
+            <button
+              mat-stroked-button
+              (click)="addCustomFilter()"
+              class="add-filter-btn"
+              [disabled]="data.customFields.length === 0"
+            >
+              <mat-icon>add</mat-icon>
+              Добавить фильтр по дополнительному полю
+            </button>
+          </div>
+        </mat-tab>
+      </mat-tab-group>
+    </div>
+  </mat-dialog-content>
+
+  <mat-divider></mat-divider>
+
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="cancel()">
+      Отмена
+    </button>
+    <button mat-button color="warn" (click)="reset()" *ngIf="hasAnyActiveFilters()">
+      <mat-icon>clear_all</mat-icon>
+      Очистить всё
+    </button>
+    <button mat-raised-button color="primary" (click)="apply()">
+      <mat-icon>check</mat-icon>
+      Применить
+    </button>
+  </mat-dialog-actions>
+</div>

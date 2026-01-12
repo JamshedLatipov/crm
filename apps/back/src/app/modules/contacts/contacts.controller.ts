@@ -12,6 +12,7 @@ import { ContactsService } from './contacts.service';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
 import { CreateActivityDto } from './dto/create-activity.dto';
+import { AdvancedSearchDto } from './dto/advanced-search.dto';
 import { ContactType, ContactSource } from './contact.entity';
 
 @Controller('contacts')
@@ -76,6 +77,11 @@ export class ContactsController {
   @Get('search')
   async searchContacts(@Query('q') query: string) {
     return this.contactsService.searchContacts(query);
+  }
+
+  @Post('advanced-search')
+  async advancedSearch(@Body() dto: AdvancedSearchDto) {
+    return this.contactsService.searchContactsWithFilters(dto);
   }
 
   @Get('stats')

@@ -14,6 +14,14 @@ export enum ContactSource {
   OTHER = 'other',
 }
 
+import { UniversalFilter } from '../shared/interfaces/universal-filter.interface';
+
+export interface ContactsFilterState {
+  search?: string;
+  isActive?: boolean | null;
+  filters: UniversalFilter[];
+}
+
 export interface ContactAddress {
   country?: string;
   region?: string;

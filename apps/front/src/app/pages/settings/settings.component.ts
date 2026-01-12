@@ -13,6 +13,7 @@ import { PageLayoutComponent } from '../../shared/page-layout/page-layout.compon
 import { SettingService } from '../../messages/services/setting.service';
 import { CurrencyService } from '../../services/currency.service';
 import { CurrencySymbolPipe } from '../../shared/pipes/currency-symbol.pipe';
+import { CustomFieldsComponent } from './custom-fields/custom-fields.component';
 import { forkJoin } from 'rxjs';
 
 @Component({
@@ -31,6 +32,7 @@ import { forkJoin } from 'rxjs';
     ReactiveFormsModule,
     PageLayoutComponent,
     CurrencySymbolPipe,
+    CustomFieldsComponent,
   ],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',

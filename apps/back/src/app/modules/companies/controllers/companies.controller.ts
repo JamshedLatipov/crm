@@ -5,6 +5,7 @@ import { CreateCompanyDto } from '../dto/create-company.dto';
 import { UpdateCompanyDto } from '../dto/update-company.dto';
 import { CompanyFilters } from '../services/companies.service';
 import { Company, CompanyType, CompanySize, Industry } from '../entities/company.entity';
+import { SearchCompaniesAdvancedDto } from '../dto/search-companies-advanced.dto';
 
 @ApiTags('companies')
 @Controller('companies')
@@ -33,6 +34,17 @@ export class CompaniesController {
   @ApiQuery({ name: 'ownerId', required: false })
   findAll(@Query() filters: CompanyFilters): Promise<Company[]> {
     return this.companiesService.findAll(filters);
+  }
+
+  @Post('search/advanced')
+  @ApiOperation({ summary: 'Advanced search with universal filters' })
+  @ApiResponse({ status: 200, description: 'Paginated search results with total count' })
+  async searchAdvanced(
+    @Body() dto: SearchCompaniesAdvancedDto,
+    @Query('page') page = 1,
+    @Query('pageSize') pageSize = 25,
+  ): Promise<{ data: Company[]; total: number }> {
+    return this.companiesService.searchCompaniesWithFilters(dto, +page, +pageSize);
   }
 
   @Get('inactive')

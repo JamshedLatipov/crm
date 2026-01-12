@@ -6,10 +6,11 @@ import { Lead } from '../leads/lead.entity';
 import { Deal } from '../deals/deal.entity';
 import { Task } from '../tasks/task.entity';
 import { PipelineStage } from '../pipeline/pipeline.entity';
+import { Contact } from '../contacts/contact.entity';
 import { SharedModule } from '../shared/shared.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Lead, Deal, Task, PipelineStage]), SharedModule],
+  imports: [TypeOrmModule.forFeature([Lead, Deal, Task, PipelineStage, Contact]), SharedModule],
   controllers: [ReportsController],
   providers: [ReportsService],
   exports: [ReportsService],

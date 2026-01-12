@@ -82,6 +82,25 @@ export class ContactsService {
     return this.http.get<Contact[][]>(`${this.apiUrl}/duplicates`);
   }
 
+  // Универсальный поиск с фильтрами
+  searchContactsWithFilters(filterState: {
+    search?: string;
+    isActive?: boolean | null;
+    filters: Array<{
+      fieldType: 'static' | 'custom';
+      fieldName: string;
+      operator: string;
+      value?: any;
+    }>;
+    page?: number;
+    pageSize?: number;
+  }): Observable<{ data: Contact[], total: number }> {
+    return this.http.post<{ data: Contact[], total: number }>(
+      `${this.apiUrl}/advanced-search`, 
+      filterState
+    );
+  }
+
   // === Специальные операции ===
   blacklistContact(id: string, reason: string): Observable<Contact> {
     return this.http.patch<Contact>(`${this.apiUrl}/${id}/blacklist`, { reason });

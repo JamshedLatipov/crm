@@ -1,0 +1,264 @@
+.filters-dialog {
+  min-width: 700px;
+  max-width: 900px;
+  
+  @media (max-width: 768px) {
+    min-width: auto;
+    width: 100%;
+  }
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e1e4e8;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  
+  h2 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+    color: #1f2937;
+    
+    mat-icon {
+      color: #2f78ff;
+      font-size: 28px;
+      width: 28px;
+      height: 28px;
+    }
+  }
+}
+
+mat-dialog-content {
+  padding: 0;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.search-status-section {
+  padding: 24px;
+  background: #ffffff;
+  display: flex;
+  gap: 16px;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+  
+  .search-field-full {
+    flex: 1;
+    
+    ::ng-deep .mat-mdc-form-field-flex {
+      background: #f9fafb;
+    }
+  }
+  
+  .status-field {
+    flex: 0 0 240px;
+    
+    @media (max-width: 768px) {
+      flex: 1;
+    }
+    
+    ::ng-deep .mat-mdc-form-field-flex {
+      background: #f9fafb;
+    }
+    
+    // Style for count in select options
+    ::ng-deep .mat-mdc-option .count {
+      margin-left: 4px;
+      font-size: 12px;
+      color: #6c757d;
+      font-weight: 400;
+    }
+  }
+}
+
+.filters-section {
+  padding: 24px;
+  background: #fafbfc;
+  
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 20px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #374151;
+    
+    mat-icon {
+      color: #6366f1;
+    }
+    
+    .filter-count {
+      color: #6366f1;
+      font-size: 14px;
+      font-weight: 500;
+    }
+  }
+}
+
+.filters-tabs {
+  ::ng-deep {
+    .mat-mdc-tab-labels {
+      background: white;
+      border-radius: 8px 8px 0 0;
+      border: 1px solid #e5e7eb;
+      border-bottom: none;
+    }
+    
+    .mat-mdc-tab-label {
+      height: 56px;
+      
+      .mdc-tab__text-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+      }
+      
+      mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+      
+      .disabled-hint {
+        font-size: 12px;
+        color: #9ca3af;
+        margin-left: 4px;
+      }
+    }
+    
+    .mat-mdc-tab-body-wrapper {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+    }
+  }
+}
+
+.tab-content {
+  padding: 20px;
+}
+
+.filters-list {
+  margin-bottom: 20px;
+}
+
+.filter-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: #ffffff;
+    border-color: #c7d2fe;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
+  }
+  
+  .filter-fields {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    flex: 1;
+    flex-wrap: wrap;
+    
+    mat-form-field {
+      margin-bottom: 0;
+    }
+    
+    .field-select {
+      flex: 1;
+      min-width: 180px;
+    }
+    
+    .operator-select {
+      flex: 0 0 160px;
+      min-width: 160px;
+    }
+    
+    .value-input {
+      flex: 1;
+      min-width: 180px;
+    }
+  }
+  
+  .remove-btn {
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+}
+
+.empty-state-small {
+  text-align: center;
+  padding: 32px 16px;
+  color: #9ca3af;
+  
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: #d1d5db;
+    margin-bottom: 12px;
+  }
+  
+  p {
+    margin: 0;
+    font-size: 14px;
+  }
+}
+
+.add-filter-btn {
+  width: 100%;
+  height: 48px;
+  border: 2px dashed #d1d5db;
+  color: #6b7280;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  
+  &:hover:not(:disabled) {
+    border-color: #6366f1;
+    color: #6366f1;
+    background: #eef2ff;
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  mat-icon {
+    margin-right: 8px;
+  }
+}
+
+mat-dialog-actions {
+  padding: 16px 24px;
+  gap: 8px;
+  background: #f8fafc;
+  
+  button {
+    margin: 0;
+    
+    mat-icon {
+      margin-right: 4px;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+  }
+}

@@ -1,5 +1,13 @@
 <div class="dialog-header">
-  <h2 mat-dialog-title>Создать контакт</h2>
+  <div class="header-content">
+    <div class="header-icon">
+      <mat-icon>person_add</mat-icon>
+    </div>
+    <div class="header-text">
+      <h2>Создать контакт</h2>
+      <p class="header-subtitle">Добавьте новый контакт в вашу систему</p>
+    </div>
+  </div>
   <button mat-icon-button (click)="cancel()" class="close-button">
     <mat-icon>close</mat-icon>
   </button>
@@ -14,11 +22,32 @@
         <h3>Основная информация</h3>
       </div>
         <div class="form-field-container">
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field required-field">
+            <mat-label>Имя (First)</mat-label>
+            <input matInput formControlName="firstName" />
+            <mat-icon matSuffix>person</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Фамилия (Last)</mat-label>
+            <input matInput formControlName="lastName" />
+            <mat-icon matSuffix>badge</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Отчество</mat-label>
+            <input matInput formControlName="middleName" />
+            <mat-icon matSuffix>badge</mat-icon>
+          </mat-form-field>
+        </div>
+
         <mat-form-field appearance="outline" class="full-width required-field">
-          <mat-label>Имя</mat-label>
+          <mat-label>Полное имя</mat-label>
           <input matInput formControlName="name" />
           <mat-icon matSuffix>person</mat-icon>
           <mat-error *ngIf="form.get('name')?.hasError('required')">Имя обязательно</mat-error>
+          <mat-hint>Будет сформировано автоматически из имени и фамилии, или введите вручную</mat-hint>
         </mat-form-field>
 
         <div class="form-row">
@@ -54,206 +83,189 @@
       </div>
     </div>
 
-    <!-- Optional fields collapsed by default: each group is its own expansion panel -->
+    <!-- Custom Fields -->
     <div class="form-section">
       <div class="section-header">
-        <mat-icon class="section-icon">badge</mat-icon>
-        <h3>Дополнительная информация</h3>
+        <mat-icon class="section-icon">tune</mat-icon>
+        <h3>Дополнительные поля</h3>
+        <span class="field-count">{{ customFieldDefinitions().length }}</span>
       </div>
       <div class="form-field-container">
-        <mat-accordion multi>
+        @if (customFieldDefinitions().length === 0) {
+          <p class="no-fields-message">Кастомные поля не настроены. Перейдите в Настройки → Кастомные поля для добавления.</p>
+        } @else {
+          @for (field of customFieldDefinitions(); track field.id) {
+            <app-dynamic-field
+              [fieldDef]="field"
+              [value]="customFieldValues[field.name]"
+              (valueChange)="onCustomFieldChange(field.name, $event)"
+            ></app-dynamic-field>
+          }
+        }
+      </div>
+    </div>
 
-      <mat-expansion-panel hideToggle="false" [expanded]="false">
-        <mat-expansion-panel-header>
-          <mat-panel-title>
-            <mat-icon class="panel-header-icon">badge</mat-icon>
-            Имена
-          </mat-panel-title>
-          <mat-panel-description class="panel-desc">Имя / Фамилия / Отчество</mat-panel-description>
-          <span class="filled-badge" *ngIf="hasValues('firstName','lastName','middleName')">Заполнено</span>
-        </mat-expansion-panel-header>
-        <div class="optional-group">
-          <div class="form-row">
-            <mat-form-field appearance="outline" class="form-field">
-              <mat-label>Имя (First)</mat-label>
-              <input matInput formControlName="firstName" />
-            </mat-form-field>
+    <!-- Телефоны / Веб -->
+    <div class="form-section">
+      <div class="section-header">
+        <mat-icon class="section-icon">phone</mat-icon>
+        <h3>Телефоны / Веб</h3>
+      </div>
+      <div class="form-field-container">
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Мобильный</mat-label>
+            <input matInput formControlName="mobilePhone" />
+            <mat-icon matSuffix>smartphone</mat-icon>
+          </mat-form-field>
 
-            <mat-form-field appearance="outline" class="form-field">
-              <mat-label>Фамилия (Last)</mat-label>
-              <input matInput formControlName="lastName" />
-            </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Рабочий</mat-label>
+            <input matInput formControlName="workPhone" />
+            <mat-icon matSuffix>phone_in_talk</mat-icon>
+          </mat-form-field>
 
-            <mat-form-field appearance="outline" class="form-field">
-              <mat-label>Отчество</mat-label>
-              <input matInput formControlName="middleName" />
-            </mat-form-field>
-          </div>
-        </div>
-      </mat-expansion-panel>
-
-      <mat-expansion-panel hideToggle="false" [expanded]="false">
-        <mat-expansion-panel-header>
-          <mat-panel-title>
-            <mat-icon class="panel-header-icon">phone</mat-icon>
-            Телефоны / Веб
-          </mat-panel-title>
-          <mat-panel-description class="panel-desc">Мобильный, рабочий, сайт</mat-panel-description>
-          <span class="filled-badge" *ngIf="hasValues('mobilePhone','workPhone','website')">Заполнено</span>
-        </mat-expansion-panel-header>
-        <div class="optional-group">
-          <div class="form-row">
-            <mat-form-field appearance="outline" class="form-field">
-              <mat-label>Мобильный</mat-label>
-              <input matInput formControlName="mobilePhone" />
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="form-field">
-              <mat-label>Рабочий</mat-label>
-              <input matInput formControlName="workPhone" />
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="form-field">
-              <mat-label>Веб-сайт</mat-label>
-              <input matInput formControlName="website" />
-            </mat-form-field>
-          </div>
-        </div>
-      </mat-expansion-panel>
-
-      <mat-expansion-panel hideToggle="false" [expanded]="false">
-        <mat-expansion-panel-header>
-          <mat-panel-title>
-            <mat-icon class="panel-header-icon">place</mat-icon>
-            Адрес
-          </mat-panel-title>
-          <mat-panel-description class="panel-desc">Страна, город, улица</mat-panel-description>
-          <span class="filled-badge" *ngIf="hasValues('address')">Заполнено</span>
-        </mat-expansion-panel-header>
-        <div class="optional-group" formGroupName="address">
-          <div class="form-row">
-            <mat-form-field appearance="outline" class="form-field">
-              <mat-label>Страна</mat-label>
-              <input matInput formControlName="country" />
-            </mat-form-field>
-            <mat-form-field appearance="outline" class="form-field">
-              <mat-label>Регион</mat-label>
-              <input matInput formControlName="region" />
-            </mat-form-field>
-          </div>
-          <div class="form-row">
-            <mat-form-field appearance="outline" class="form-field full-width">
-              <mat-label>Город</mat-label>
-              <input matInput formControlName="city" />
-            </mat-form-field>
-          </div>
-          <div class="form-row">
-            <mat-form-field appearance="outline" class="form-field">
-              <mat-label>Улица</mat-label>
-              <input matInput formControlName="street" />
-            </mat-form-field>
-            <mat-form-field appearance="outline" class="form-field">
-              <mat-label>Дом</mat-label>
-              <input matInput formControlName="building" />
-            </mat-form-field>
-            <mat-form-field appearance="outline" class="form-field">
-              <mat-label>Квартира</mat-label>
-              <input matInput formControlName="apartment" />
-            </mat-form-field>
-          </div>
-        </div>
-      </mat-expansion-panel>
-
-      <mat-expansion-panel hideToggle="false" [expanded]="false">
-        <mat-expansion-panel-header>
-          <mat-panel-title>
-            <mat-icon class="panel-header-icon">share</mat-icon>
-            Социальные сети
-          </mat-panel-title>
-          <mat-panel-description class="panel-desc">Telegram, WhatsApp, LinkedIn</mat-panel-description>
-          <span class="filled-badge" *ngIf="hasValues('socialMedia')">Заполнено</span>
-        </mat-expansion-panel-header>
-        <div class="optional-group" formGroupName="socialMedia">
-          <div class="form-row">
-            <mat-form-field appearance="outline" class="form-field">
-              <mat-label>Telegram</mat-label>
-              <input matInput formControlName="telegram" />
-            </mat-form-field>
-            <mat-form-field appearance="outline" class="form-field">
-              <mat-label>WhatsApp</mat-label>
-              <input matInput formControlName="whatsapp" />
-            </mat-form-field>
-            <mat-form-field appearance="outline" class="form-field">
-              <mat-label>LinkedIn</mat-label>
-              <input matInput formControlName="linkedin" />
-            </mat-form-field>
-          </div>
-          <div class="form-row">
-            <mat-form-field appearance="outline" class="form-field">
-              <mat-label>Facebook</mat-label>
-              <input matInput formControlName="facebook" />
-            </mat-form-field>
-            <mat-form-field appearance="outline" class="form-field">
-              <mat-label>Instagram</mat-label>
-              <input matInput formControlName="instagram" />
-            </mat-form-field>
-            <mat-form-field appearance="outline" class="form-field">
-              <mat-label>VK</mat-label>
-              <input matInput formControlName="vk" />
-            </mat-form-field>
-          </div>
-        </div>
-      </mat-expansion-panel>
-
-      <mat-expansion-panel hideToggle="false" [expanded]="false">
-        <mat-expansion-panel-header>
-          <mat-panel-title>
-            <mat-icon class="panel-header-icon">more_horiz</mat-icon>
-            Прочее
-          </mat-panel-title>
-          <mat-panel-description class="panel-desc">Источник, назначен, custom fields, теги</mat-panel-description>
-          <span class="filled-badge" *ngIf="hasValues('source','assignedTo','customFieldsInput','tagsInput')">Заполнено</span>
-        </mat-expansion-panel-header>
-        <div class="optional-group">
-          <div class="form-row">
-            <mat-form-field appearance="outline" class="form-field">
-              <mat-label>Источник</mat-label>
-              <mat-select formControlName="source">
-                <mat-option [value]="null">Не указан</mat-option>
-                <mat-option value="website">Веб-сайт</mat-option>
-                <mat-option value="phone">Телефон</mat-option>
-                <mat-option value="email">Электронная почта</mat-option>
-                <mat-option value="referral">Рекомендация</mat-option>
-                <mat-option value="social_media">Социальные сети</mat-option>
-                <mat-option value="advertising">Реклама</mat-option>
-                <mat-option value="import">Импорт</mat-option>
-                <mat-option value="other">Другое</mat-option>
-              </mat-select>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="form-field">
-              <mat-label>Назначен (assignedTo)</mat-label>
-              <input matInput formControlName="assignedTo" placeholder="ID пользователя" />
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="form-field full-width">
-              <mat-label>Custom fields (JSON или k=v,k2=v2)</mat-label>
-              <input matInput formControlName="customFieldsInput" />
-            </mat-form-field>
-          </div>
-
-          <mat-divider></mat-divider>
-
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Теги</mat-label>
-            <input matInput formControlName="tagsInput" placeholder="Введите теги через запятую">
-            <mat-icon matSuffix>label</mat-icon>
-            <mat-hint>Разделяйте теги запятыми</mat-hint>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Веб-сайт</mat-label>
+            <input matInput formControlName="website" />
+            <mat-icon matSuffix>language</mat-icon>
           </mat-form-field>
         </div>
-      </mat-expansion-panel>
+      </div>
+    </div>
 
-        </mat-accordion>
+    <!-- Адрес -->
+    <div class="form-section">
+      <div class="section-header">
+        <mat-icon class="section-icon">place</mat-icon>
+        <h3>Адрес</h3>
+      </div>
+      <div class="form-field-container" formGroupName="address">
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Страна</mat-label>
+            <input matInput formControlName="country" />
+            <mat-icon matSuffix>public</mat-icon>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Регион</mat-label>
+            <input matInput formControlName="region" />
+            <mat-icon matSuffix>map</mat-icon>
+          </mat-form-field>
+        </div>
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Город</mat-label>
+            <input matInput formControlName="city" />
+            <mat-icon matSuffix>location_city</mat-icon>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Улица</mat-label>
+            <input matInput formControlName="street" />
+            <mat-icon matSuffix>signpost</mat-icon>
+          </mat-form-field>
+        </div>
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Дом</mat-label>
+            <input matInput formControlName="building" />
+            <mat-icon matSuffix>home</mat-icon>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Квартира</mat-label>
+            <input matInput formControlName="apartment" />
+            <mat-icon matSuffix>door_front</mat-icon>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Почтовый индекс</mat-label>
+            <input matInput formControlName="postalCode" />
+            <mat-icon matSuffix>markunread_mailbox</mat-icon>
+          </mat-form-field>
+        </div>
+      </div>
+    </div>
+
+    <!-- Социальные сети -->
+    <div class="form-section">
+      <div class="section-header">
+        <mat-icon class="section-icon">share</mat-icon>
+        <h3>Социальные сети</h3>
+      </div>
+      <div class="form-field-container" formGroupName="socialMedia">
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Telegram</mat-label>
+            <input matInput formControlName="telegram" placeholder="@username" />
+            <mat-icon matSuffix>telegram</mat-icon>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>WhatsApp</mat-label>
+            <input matInput formControlName="whatsapp" placeholder="+7 999 123-45-67" />
+            <mat-icon matSuffix>phone</mat-icon>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>LinkedIn</mat-label>
+            <input matInput formControlName="linkedin" placeholder="linkedin.com/in/username" />
+            <mat-icon matSuffix>business</mat-icon>
+          </mat-form-field>
+        </div>
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Facebook</mat-label>
+            <input matInput formControlName="facebook" placeholder="facebook.com/username" />
+            <mat-icon matSuffix>facebook</mat-icon>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Instagram</mat-label>
+            <input matInput formControlName="instagram" placeholder="@username" />
+            <mat-icon matSuffix>camera_alt</mat-icon>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>VK</mat-label>
+            <input matInput formControlName="vk" placeholder="vk.com/username" />
+            <mat-icon matSuffix>group</mat-icon>
+          </mat-form-field>
+        </div>
+      </div>
+    </div>
+
+    <!-- Прочее -->
+    <div class="form-section">
+      <div class="section-header">
+        <mat-icon class="section-icon">more_horiz</mat-icon>
+        <h3>Прочее</h3>
+      </div>
+      <div class="form-field-container">
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Источник</mat-label>
+            <mat-select formControlName="source">
+              <mat-option [value]="null">Не указан</mat-option>
+              <mat-option value="website">Веб-сайт</mat-option>
+              <mat-option value="phone">Телефон</mat-option>
+              <mat-option value="email">Электронная почта</mat-option>
+              <mat-option value="referral">Рекомендация</mat-option>
+              <mat-option value="social_media">Социальные сети</mat-option>
+              <mat-option value="advertising">Реклама</mat-option>
+              <mat-option value="import">Импорт</mat-option>
+              <mat-option value="other">Другое</mat-option>
+            </mat-select>
+            <mat-icon matSuffix>source</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Назначен</mat-label>
+            <input matInput formControlName="assignedTo" placeholder="ID пользователя" />
+            <mat-icon matSuffix>person_outline</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Теги</mat-label>
+          <input matInput formControlName="tagsInput" placeholder="Введите теги через запятую">
+          <mat-icon matSuffix>label</mat-icon>
+          <mat-hint>Разделяйте теги запятыми</mat-hint>
+        </mat-form-field>
       </div>
     </div>
   </form>

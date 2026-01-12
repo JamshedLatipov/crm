@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -16,6 +16,9 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ConfirmActionDialogComponent } from '../../../shared/dialogs/confirm-action-dialog.component';
 import { ContactsService } from '../../contacts.service';
 import { Contact, ContactType, ContactSource, ContactActivity, ActivityType, Deal } from '../../contact.interfaces';
+import { CustomFieldsService } from '../../../services/custom-fields.service';
+import { CustomFieldDefinition } from '../../../models/custom-field.model';
+import { DynamicFieldComponent } from '../../../shared/components/dynamic-field/dynamic-field.component';
 
 @Component({
   selector: 'app-contact-detail',
@@ -35,6 +38,7 @@ import { Contact, ContactType, ContactSource, ContactActivity, ActivityType, Dea
     MatDividerModule
     ,
     MatDialogModule,
+    DynamicFieldComponent,
   ],
   templateUrl: './contact-detail.component.html',
   styleUrls: ['./contact-detail.component.scss']
@@ -44,6 +48,9 @@ export class ContactDetailComponent implements OnInit {
   loading = true;
   selectedTabIndex = 0;
   placeholderAvatar = 'https://via.placeholder.com/150';
+  
+  customFieldDefinitions = signal<CustomFieldDefinition[]>([]);
+  customFieldsLoading = false;
   
   // Activity data
   activities: ContactActivity[] = [];
@@ -66,6 +73,7 @@ export class ContactDetailComponent implements OnInit {
   private readonly snackBar = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
   readonly contactsService = inject(ContactsService);
+  private readonly customFieldsService = inject(CustomFieldsService);
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
@@ -84,8 +92,7 @@ export class ContactDetailComponent implements OnInit {
         this.contact = contact; 
         this.loading = false;
         this.loadActivity(id);
-        this.loadDeals(id);
-      },
+        this.loadDeals(id);        this.loadCustomFields();      },
       error: (error) => { 
         console.error('Error loading contact:', error);
         this.loading = false; 
@@ -148,6 +155,20 @@ export class ContactDetailComponent implements OnInit {
         this.deals = [];
         this.dealsLoading = false;
       }
+    });
+  }
+
+  private loadCustomFields(): void {
+    this.customFieldsLoading = true;
+    this.customFieldsService.findByEntity('contact').subscribe({
+      next: (fields) => {
+        this.customFieldDefinitions.set(fields);
+        this.customFieldsLoading = false;
+      },
+      error: (err) => {
+        console.error('Error loading custom fields:', err);
+        this.customFieldsLoading = false;
+      },
     });
   }
 

@@ -11,6 +11,7 @@ import {
   Industry 
 } from '../pipeline/dtos';
 import { environment } from '../../environments/environment';
+import { CompaniesFilterState } from '../companies/companies-filter-state.interface';
 
 export interface CompanyFilters {
   search?: string;
@@ -236,5 +237,19 @@ export class CompaniesService {
       [Industry.OTHER]: 'Другое'
     };
     return labels[industry] || industry;
+  }
+
+  /**
+   * Advanced search with universal filters
+   */
+  searchCompaniesAdvanced(
+    filterState: CompaniesFilterState,
+    page = 1,
+    pageSize = 25
+  ): Observable<{ data: Company[]; total: number }> {
+    return this.http.post<{ data: Company[]; total: number }>(
+      `${this.apiUrl}/search/advanced?page=${page}&pageSize=${pageSize}`,
+      filterState
+    );
   }
 }

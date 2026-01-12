@@ -129,8 +129,9 @@ export class ContactSelectorComponent implements ControlValueAccessor, OnInit {
     const name = this.searchControl.value || '';
     
     const dialogRef = this.dialog.open(CreateContactDialogComponent, {
-      width: '800px',
-      maxWidth: '90vw',
+      width: '700px',
+      maxWidth: '95vw',
+      panelClass: 'modern-dialog',
       data: { 
         initialData: { name } 
       }

@@ -104,7 +104,7 @@ export class CreateLeadDto {
 
   @ApiProperty({ required: false })
   @IsOptional()
-  customFields?: Record<string, string | number | boolean>;
+  customFields?: Record<string, unknown>;
 
   @ApiProperty({ required: false })
   @IsOptional()
@@ -215,7 +215,7 @@ export class UpdateLeadDto {
 
   @ApiProperty({ required: false })
   @IsOptional()
-  customFields?: Record<string, string | number | boolean>;
+  customFields?: Record<string, unknown>;
 
   @ApiProperty({ required: false })
   @IsOptional()

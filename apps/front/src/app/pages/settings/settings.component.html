@@ -1,25 +1,21 @@
-<app-page-layout>
-  <div class="settings-container">
-    <div class="settings-header">
-      <div>
-        <h1 class="page-title">
-          <mat-icon>settings</mat-icon>
-          Настройки системы
-        </h1>
-        <p class="page-description">Управление основными параметрами системы</p>
-      </div>
-      <button
-        mat-raised-button
-        color="accent"
-        (click)="initializeDefaults()"
-        [disabled]="loading()"
-        matTooltip="Инициализировать настройки из .env файла"
-      >
-        <mat-icon>settings_backup_restore</mat-icon>
-        Инициализировать из .env
-      </button>
-    </div>
+<app-page-layout 
+  title="Настройки системы" 
+  subtitle="Управление основными параметрами системы">
+  
+  <div page-actions>
+    <button
+      mat-raised-button
+      color="primary"
+      (click)="initializeDefaults()"
+      [disabled]="loading()"
+      matTooltip="Инициализировать настройки из .env файла"
+    >
+      <mat-icon>settings_backup_restore</mat-icon>
+      Инициализировать из .env
+    </button>
+  </div>
 
+  <div class="settings-container">
     <mat-tab-group class="settings-tabs" animationDuration="300ms">
       <!-- Вкладка: Цены кампаний -->
       <mat-tab>
@@ -236,6 +232,18 @@
               </form>
             </mat-card-content>
           </mat-card>
+        </div>
+      </mat-tab>
+
+      <!-- Вкладка: Дополнительные поля - Контакты -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon class="tab-icon">tune</mat-icon>
+          Дополнительные поля
+        </ng-template>
+        
+        <div class="tab-content tab-content-no-card">
+          <app-custom-fields></app-custom-fields>
         </div>
       </mat-tab>
 

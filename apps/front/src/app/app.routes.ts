@@ -16,6 +16,8 @@ import { LeadDetailComponent } from './leads/components/lead-detail.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { ContactsComponent } from './contacts/contacts.component';
 import { ContactDetailComponent } from './contacts/components/contact-detail.component/contact-detail.component';
+import { CompaniesComponent } from './companies/companies.component';
+import { CompanyDetailComponent } from './companies/components/company-detail/company-detail.component';
 import { DealsComponent } from './deals/deals.component';
 import { DealDetailComponent } from './deals/components/deal-detail.component/deal-detail.component';
 import { PipelineComponent } from './pipeline/pipeline.component';
@@ -43,6 +45,8 @@ export const appRoutes: Route[] = [
     { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
     { path: 'contacts', component: ContactsComponent, canActivate: [authGuard] },
     { path: 'contacts/view/:id', component: ContactDetailComponent, canActivate: [authGuard] },
+    { path: 'companies', component: CompaniesComponent, canActivate: [authGuard] },
+    { path: 'companies/:id', component: CompanyDetailComponent, canActivate: [authGuard] },
     { 
         path: 'deals', 
         component: DealsComponent, 

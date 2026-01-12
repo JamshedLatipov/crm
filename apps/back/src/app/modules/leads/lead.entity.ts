@@ -140,8 +140,8 @@ export class Lead {
   @Column({ type: 'text', nullable: true })
   notes: string;
 
-  @Column({ type: 'json', nullable: true })
-  customFields: Record<string, string | number | boolean>; // Дополнительные поля
+  @Column({ type: 'jsonb', nullable: true })
+  customFields?: Record<string, unknown>; // Дополнительные поля
 
   @Column({ type: 'json', nullable: true })
   tags: string[]; // Теги для группировки

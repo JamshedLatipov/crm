@@ -1,0 +1,136 @@
+<div class="custom-fields-container">
+  <div class="custom-fields-layout">
+    <!-- Вертикальные табы слева -->
+    <mat-tab-group 
+      class="vertical-tabs" 
+      [(selectedIndex)]="selectedTabIndex"
+      (selectedIndexChange)="onTabChange($event)"
+      [animationDuration]="0">
+      @for (type of entityTypes; track type.value) {
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon>{{ type.icon }}</mat-icon>
+            <span>{{ type.label }}</span>
+          </ng-template>
+        </mat-tab>
+      }
+    </mat-tab-group>
+
+    <!-- Контент справа -->
+    <div class="fields-content">
+      <div class="header-row">
+        <div class="entity-type-info">
+          <h3>Дополнительные поля для {{ getEntityTypeLabel() }}</h3>
+        </div>
+        <button mat-raised-button color="primary" (click)="openCreateDialog()">
+          <mat-icon>add</mat-icon>
+          Добавить поле
+        </button>
+      </div>
+
+      @if (loading()) {
+        <div class="loading-state">
+          <p>Загрузка...</p>
+        </div>
+      } @else if (fields().length === 0) {
+        <div class="empty-state">
+          <mat-icon>tune</mat-icon>
+          <p>Нет настроенных полей для {{ getEntityTypeLabel() }}</p>
+          <button mat-stroked-button (click)="openCreateDialog()">
+            Создать первое поле
+          </button>
+        </div>
+      } @else {
+        <div class="fields-table-container">
+      <table mat-table [dataSource]="fields()" cdkDropList (cdkDropListDropped)="drop($event)" class="fields-table">
+        <!-- Drag Handle Column -->
+        <ng-container matColumnDef="drag">
+          <th mat-header-cell *matHeaderCellDef style="width: 48px;"></th>
+          <td mat-cell *matCellDef="let field">
+            <mat-icon class="drag-handle" cdkDragHandle>drag_indicator</mat-icon>
+          </td>
+        </ng-container>
+
+        <!-- Label Column -->
+        <ng-container matColumnDef="label">
+          <th mat-header-cell *matHeaderCellDef>Название</th>
+          <td mat-cell *matCellDef="let field">
+            <div class="field-info">
+              @if (field.displayConfig?.icon) {
+                <mat-icon>{{ field.displayConfig.icon }}</mat-icon>
+              }
+              <span>{{ field.label }}</span>
+            </div>
+          </td>
+        </ng-container>
+
+        <!-- Name Column -->
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>Ключ</th>
+          <td mat-cell *matCellDef="let field">
+            <code>{{ field.name }}</code>
+          </td>
+        </ng-container>
+
+        <!-- Field Type Column -->
+        <ng-container matColumnDef="fieldType">
+          <th mat-header-cell *matHeaderCellDef>Тип</th>
+          <td mat-cell *matCellDef="let field">
+            <mat-chip>{{ getFieldTypeLabel(field.fieldType) }}</mat-chip>
+          </td>
+        </ng-container>
+
+        <!-- Active Status Column -->
+        <ng-container matColumnDef="isActive">
+          <th mat-header-cell *matHeaderCellDef style="width: 120px;">Активно</th>
+          <td mat-cell *matCellDef="let field">
+            <mat-chip [class.active]="field.isActive" [class.inactive]="!field.isActive">
+              {{ field.isActive ? 'Да' : 'Нет' }}
+            </mat-chip>
+          </td>
+        </ng-container>
+
+        <!-- Actions Column -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef style="width: 160px;">Действия</th>
+          <td mat-cell *matCellDef="let field">
+            <div class="actions">
+              <button
+                mat-icon-button
+                (click)="toggleActive(field); $event.stopPropagation()"
+                [matTooltip]="field.isActive ? 'Деактивировать' : 'Активировать'"
+              >
+                <mat-icon>{{ field.isActive ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+              </button>
+              <button
+                mat-icon-button
+                (click)="openEditDialog(field); $event.stopPropagation()"
+                matTooltip="Редактировать"
+              >
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button
+                mat-icon-button
+                color="warn"
+                (click)="deleteField(field); $event.stopPropagation()"
+                matTooltip="Удалить"
+              >
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr
+          mat-row
+          *matRowDef="let row; columns: displayedColumns"
+          cdkDrag
+          class="draggable-row"
+        ></tr>
+      </table>
+    </div>
+  }
+    </div>
+  </div>
+</div>

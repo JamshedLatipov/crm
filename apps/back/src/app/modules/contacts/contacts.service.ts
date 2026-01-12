@@ -1,24 +1,42 @@
-import { Injectable, NotFoundException, Inject, Optional, forwardRef } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, Optional, forwardRef, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 import { Contact, ContactType, ContactSource } from './contact.entity';
 import { ContactActivity, ActivityType } from './contact-activity.entity';
 import { Company } from '../companies/entities/company.entity';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
 import { CreateActivityDto } from './dto/create-activity.dto';
+import { AdvancedSearchDto } from './dto/advanced-search.dto';
 import { CompaniesService } from '../companies/services/companies.service';
 import { NotificationService } from '../shared/services/notification.service';
 import { NotificationType, NotificationPriority } from '../shared/entities/notification.entity';
 import { NameResolverService } from '../contact-center/services/name-resolver.service';
+import { CustomFieldsService } from '../custom-fields/services/custom-fields.service';
+import { UniversalFilterService } from '../shared/services/universal-filter.service';
 
 @Injectable()
 export class ContactsService {
+  // Map of frontend field names to entity column names for static fields
+  private readonly staticFieldsMap: Record<string, string> = {
+    type: 'contact.type',
+    source: 'contact.source',
+    email: 'contact.email',
+    phone: 'contact.phone',
+    companyName: 'company.name',
+    position: 'contact.position',
+    assignedTo: 'contact.assignedTo',
+    createdAt: 'contact.createdAt',
+    isBlacklisted: 'contact.isBlacklisted',
+  };
+
   constructor(
     @InjectRepository(Contact)
     private readonly contactRepository: Repository<Contact>,
     @InjectRepository(ContactActivity)
     private readonly activityRepository: Repository<ContactActivity>,
+    private readonly customFieldsService: CustomFieldsService,
+    private readonly universalFilterService: UniversalFilterService,
     @Optional() private readonly companiesService?: CompaniesService,
     @Optional() private readonly notificationService?: NotificationService,
     @Optional() @Inject(forwardRef(() => NameResolverService))
@@ -62,6 +80,20 @@ export class ContactsService {
     const safeName = dto.name && dto.name.toString().trim() ? dto.name : 'Unknown';
     const safeType = dto.type || (ContactType.PERSON as ContactType);
     const safeSource = dto.source || (ContactSource.OTHER as ContactSource);
+
+    // Validate custom fields if provided
+    if (dto.customFields) {
+      const validation = await this.customFieldsService.validateCustomFields(
+        'contact',
+        dto.customFields
+      );
+      if (!validation.isValid) {
+        const errorMessages = Object.entries(validation.errors)
+          .map(([field, errors]) => `${field}: ${errors.join(', ')}`)
+          .join('; ');
+        throw new BadRequestException(`Custom fields validation failed: ${errorMessages}`);
+      }
+    }
 
     let resolvedCompany: Company | undefined = undefined;
 
@@ -116,6 +148,20 @@ export class ContactsService {
     const contact = await this.getContactById(id);
     // preserve snapshot for change detection
     const beforeSnapshot = { ...(contact as any) };
+
+    // Validate custom fields if provided
+    if (dto.customFields) {
+      const validation = await this.customFieldsService.validateCustomFields(
+        'contact',
+        dto.customFields
+      );
+      if (!validation.isValid) {
+        const errorMessages = Object.entries(validation.errors)
+          .map(([field, errors]) => `${field}: ${errors.join(', ')}`)
+          .join('; ');
+        throw new BadRequestException(`Custom fields validation failed: ${errorMessages}`);
+      }
+    }
 
     // Prevent assigning removed fields directly. Resolve company if companyId provided.
   const payload = { ...((dto as unknown) as Record<string, unknown>) };
@@ -312,6 +358,55 @@ export class ContactsService {
     return qb.getMany();
   }
 
+  /**
+   * Advanced search with universal filters for both static and custom fields
+   */
+  async searchContactsWithFilters(dto: AdvancedSearchDto): Promise<{ data: Contact[]; total: number }> {
+    const page = dto.page || 1;
+    const pageSize = dto.pageSize || 50;
+    
+    const qb = this.contactRepository
+      .createQueryBuilder('contact')
+      .leftJoinAndSelect('contact.company', 'company');
+
+    // Apply isActive filter
+    if (dto.isActive !== undefined) {
+      qb.andWhere('contact.isActive = :isActive', { isActive: dto.isActive });
+    }
+
+    // Apply search filter (searches name, email, phone, company name)
+    if (dto.search && dto.search.trim()) {
+      const searchPattern = `%${dto.search.trim()}%`;
+      qb.andWhere(
+        '(contact.name ILIKE :search OR contact.email ILIKE :search OR contact.phone ILIKE :search OR company.name ILIKE :search)',
+        { search: searchPattern }
+      );
+    }
+
+    // Apply universal filters using the shared service
+    if (dto.filters && dto.filters.length > 0) {
+      this.universalFilterService.applyFilters(
+        qb,
+        dto.filters,
+        'contact',
+        this.staticFieldsMap,
+        'customFields'
+      );
+    }
+
+    // Get total count before pagination
+    const total = await qb.getCount();
+
+    // Apply pagination and ordering
+    qb.orderBy('contact.createdAt', 'DESC')
+      .skip((page - 1) * pageSize)
+      .take(pageSize);
+
+    const data = await qb.getMany();
+
+    return { data, total };
+  }
+
   async getRecentContacts(limit = 10): Promise<Contact[]> {
     return this.contactRepository.find({
       where: { isActive: true },
@@ -431,6 +526,88 @@ export class ContactsService {
     });
 
     return this.activityRepository.save(activity);
+  }
+
+  /**
+   * Search contacts with custom field filters
+   * @param filters Object with customFields as key-value pairs or operators
+   * Example: { customFields: { customer_type: 'vip', budget: { operator: 'greater', value: 1000 } } }
+   */
+  async searchContactsByCustomFields(
+    filters: Record<string, any>,
+    page = 1,
+    limit = 50
+  ): Promise<{ data: Contact[]; total: number }> {
+    const qb = this.contactRepository
+      .createQueryBuilder('contact')
+      .leftJoinAndSelect('contact.company', 'company')
+      .where('contact.isActive = :isActive', { isActive: true });
+
+    // Apply custom field filters
+    Object.entries(filters).forEach(([field, value], index) => {
+      if (value && typeof value === 'object' && 'operator' in value) {
+        // Complex filter with operator
+        const { operator, value: filterValue } = value;
+        const paramKey = `customField${index}`;
+
+        switch (operator) {
+          case 'equals':
+            qb.andWhere(`contact.customFields->>'${field}' = :${paramKey}`, {
+              [paramKey]: filterValue,
+            });
+            break;
+          case 'contains':
+            qb.andWhere(`contact.customFields->>'${field}' ILIKE :${paramKey}`, {
+              [paramKey]: `%${filterValue}%`,
+            });
+            break;
+          case 'greater':
+            qb.andWhere(`(contact.customFields->>'${field}')::numeric > :${paramKey}`, {
+              [paramKey]: filterValue,
+            });
+            break;
+          case 'less':
+            qb.andWhere(`(contact.customFields->>'${field}')::numeric < :${paramKey}`, {
+              [paramKey]: filterValue,
+            });
+            break;
+          case 'between':
+            if (Array.isArray(filterValue) && filterValue.length === 2) {
+              qb.andWhere(
+                `(contact.customFields->>'${field}')::numeric BETWEEN :${paramKey}Min AND :${paramKey}Max`,
+                {
+                  [`${paramKey}Min`]: filterValue[0],
+                  [`${paramKey}Max`]: filterValue[1],
+                }
+              );
+            }
+            break;
+          case 'in':
+            if (Array.isArray(filterValue)) {
+              qb.andWhere(`contact.customFields->>'${field}' IN (:...${paramKey})`, {
+                [paramKey]: filterValue,
+              });
+            }
+            break;
+          case 'exists':
+            qb.andWhere(`contact.customFields ? '${field}'`);
+            break;
+        }
+      } else {
+        // Simple equality filter
+        const paramKey = `customField${index}`;
+        qb.andWhere(`contact.customFields->>'${field}' = :${paramKey}`, {
+          [paramKey]: value,
+        });
+      }
+    });
+
+    qb.orderBy('contact.createdAt', 'DESC')
+      .take(limit)
+      .skip((page - 1) * limit);
+
+    const [data, total] = await qb.getManyAndCount();
+    return { data, total };
   }
 
   /**

@@ -17,6 +17,7 @@ import { LeadStatistics } from '../leads/models/lead.model';
 import { ActivityService, ActivityItem } from '../services/activity.service';
 import { Router } from '@angular/router';
 import { PageLayoutComponent } from '../shared/page-layout/page-layout.component';
+import { ContactsReportWidgetComponent } from './widgets/contacts-report-widget/contacts-report-widget.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -31,7 +32,8 @@ import { PageLayoutComponent } from '../shared/page-layout/page-layout.component
     MatChipsModule,
     MatTooltipModule,
     MatBadgeModule,
-    PageLayoutComponent
+    PageLayoutComponent,
+    ContactsReportWidgetComponent
   ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
@@ -181,8 +183,9 @@ export class DashboardComponent {
   addNewContact(): void {
     import('../contacts/components/create-contact-dialog/create-contact-dialog.component').then((m) => {
       const dialogRef = this.dialog.open(m.CreateContactDialogComponent, {
-        width: '520px',
-        maxWidth: '90vw',
+        width: '700px',
+        maxWidth: '95vw',
+        panelClass: 'modern-dialog',
       });
 
       dialogRef.afterClosed().subscribe((created) => {

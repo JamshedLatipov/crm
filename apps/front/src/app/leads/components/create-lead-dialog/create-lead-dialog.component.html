@@ -221,6 +221,24 @@
         </mat-form-field>
       </div>
     </div>
+
+    <!-- Custom Fields -->
+    <div class="form-section" *ngIf="customFieldDefinitions.length > 0">
+      <div class="section-header">
+        <mat-icon class="section-icon">tune</mat-icon>
+        <h3>Дополнительные поля</h3>
+        <span class="field-count">{{ customFieldDefinitions.length }}</span>
+      </div>
+      <div class="form-field-container">
+        <div *ngFor="let field of customFieldDefinitions" class="custom-field-item">
+          <app-dynamic-field
+            [fieldDef]="field"
+            [value]="customFieldValues[field.name]"
+            (valueChange)="onCustomFieldChange(field.name, $event)"
+          ></app-dynamic-field>
+        </div>
+      </div>
+    </div>
   </form>
 </mat-dialog-content>
 

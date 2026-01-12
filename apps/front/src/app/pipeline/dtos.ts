@@ -158,6 +158,7 @@ export interface Deal {
   assignedTo: string;
   notes?: string;
   meta?: Record<string, unknown>;
+  customFields?: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -178,6 +179,7 @@ export interface CreateDealDto {
   assignedTo: string;
   notes?: string;
   meta?: Record<string, unknown>;
+  customFields?: Record<string, unknown>;
 }
 
 export interface UpdateDealDto {
@@ -198,6 +200,7 @@ export interface UpdateDealDto {
   assignedTo?: string;
   notes?: string;
   meta?: Record<string, unknown>;
+  customFields?: Record<string, unknown>;
 }
 
 // === ЭТАПЫ ВОРОНКИ (Pipeline Stages) ===
@@ -326,6 +329,7 @@ export interface Company {
   rating: number;
   source?: string;
   ownerId?: string;
+  customFields?: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -356,6 +360,7 @@ export interface CreateCompanyDto {
   foundedDate?: Date;
   source?: string;
   ownerId?: string;
+  customFields?: Record<string, unknown>;
 }
 
 export interface UpdateCompanyDto extends Partial<CreateCompanyDto> {
@@ -365,6 +370,7 @@ export interface UpdateCompanyDto extends Partial<CreateCompanyDto> {
   rating?: number;
   lastContactDate?: Date;
   lastActivityDate?: Date;
+  customFields?: Record<string, unknown>;
 }
 
 // === КОНТАКТЫ (Contacts) ===

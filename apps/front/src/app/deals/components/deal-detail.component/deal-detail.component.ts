@@ -28,6 +28,9 @@ import {
   translateMetadataKey,
 } from '../../../shared/utils';
 import { ConfirmActionDialogComponent } from '../../../shared/dialogs/confirm-action-dialog.component';
+import { CustomFieldsService } from '../../../services/custom-fields.service';
+import { CustomFieldDefinition } from '../../../models/custom-field.model';
+import { DynamicFieldComponent } from '../../../shared/components/dynamic-field/dynamic-field.component';
 
 @Component({
   selector: 'app-deal-detail',
@@ -46,6 +49,7 @@ import { ConfirmActionDialogComponent } from '../../../shared/dialogs/confirm-ac
     DealHistoryStatsComponent,
     CommentsComponent,
     TaskListWidgetComponent,
+    DynamicFieldComponent,
   ],
   templateUrl: `./deal-detail.component.html`,
   styleUrls: [`./deal-detail.component.scss`],
@@ -57,6 +61,8 @@ export class DealDetailComponent implements OnInit {
   assignedUserName = '';
   isLoading = false;
   error: string | null = null;
+  customFieldDefinitions: CustomFieldDefinition[] = [];
+  customFieldsLoading = false;
 
   // Для компонента комментариев
   readonly CommentEntityType = CommentEntityType;
@@ -69,6 +75,7 @@ export class DealDetailComponent implements OnInit {
   private readonly pipelineService = inject(PipelineService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly customFieldsService = inject(CustomFieldsService);
 
   ngOnInit() {
     this.loadUsers();
@@ -138,6 +145,7 @@ export class DealDetailComponent implements OnInit {
           });
         }
         this.updateAssignedUserName();
+        this.loadCustomFields();
         this.isLoading = false;
       },
       error: (error: unknown) => {
@@ -145,6 +153,20 @@ export class DealDetailComponent implements OnInit {
         this.error = 'Не удалось загрузить сделку';
         this.isLoading = false;
       },
+    });
+  }
+
+  loadCustomFields() {
+    this.customFieldsLoading = true;
+    this.customFieldsService.findByEntity('deal').subscribe({
+      next: (defs) => {
+        this.customFieldDefinitions = defs;
+        this.customFieldsLoading = false;
+      },
+      error: (err) => {
+        console.error('Failed to load custom field definitions:', err);
+        this.customFieldsLoading = false;
+      }
     });
   }
 
