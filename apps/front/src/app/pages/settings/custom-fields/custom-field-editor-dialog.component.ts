@@ -15,7 +15,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatStepperModule } from '@angular/material/stepper';
 import { CustomFieldsService } from '../../../services/custom-fields.service';
 import {
@@ -38,7 +38,7 @@ import {
     MatSelectModule,
     MatCheckboxModule,
     MatIconModule,
-    MatChipsModule,
+    MatProgressSpinnerModule,
     MatStepperModule,
   ],
   templateUrl: './custom-field-editor-dialog.component.html',
@@ -199,6 +199,16 @@ export class CustomFieldEditorDialogComponent implements OnInit {
     }
 
     return rules;
+  }
+
+  isFormValid(): boolean {
+    if (!this.basicInfoForm.valid || !this.displayForm.valid) {
+      return false;
+    }
+    if (this.isSelectType && !this.selectOptionsForm.valid) {
+      return false;
+    }
+    return true;
   }
 
   onSubmit(): void {

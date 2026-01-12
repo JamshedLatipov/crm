@@ -102,8 +102,12 @@ export class CustomFieldsComponent implements OnInit {
 
   openCreateDialog(): void {
     const dialogRef = this.dialog.open(CustomFieldEditorDialogComponent, {
-      width: '700px',
+      width: '900px',
+      maxWidth: '95vw',
+      maxHeight: '90vh',
       data: { entityType: this.selectedEntityType() },
+      disableClose: false,
+      autoFocus: true,
     });
 
     dialogRef.afterClosed().subscribe((result) => {
@@ -116,8 +120,12 @@ export class CustomFieldsComponent implements OnInit {
 
   openEditDialog(field: CustomFieldDefinition): void {
     const dialogRef = this.dialog.open(CustomFieldEditorDialogComponent, {
-      width: '700px',
+      width: '900px',
+      maxWidth: '95vw',
+      maxHeight: '90vh',
       data: { field, entityType: this.selectedEntityType() },
+      disableClose: false,
+      autoFocus: true,
     });
 
     dialogRef.afterClosed().subscribe((result) => {

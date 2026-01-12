@@ -1,26 +1,201 @@
-mat-dialog-content {
-  min-height: 400px;
-  padding: 24px;
+/* Dialog Header */
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 24px 0 24px;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 0;
 }
 
-form {
+.dialog-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.close-button {
+  color: #666;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: #1a1a1a;
+  }
+}
+
+/* Dialog Content */
+.dialog-content {
+  padding: 24px !important;
+  max-height: 70vh;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+
+  /* Custom scrollbar styling */
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f5f5f5;
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+    transition: background 0.2s ease;
+
+    &:hover {
+      background: #999;
+    }
+  }
+}
+
+/* Custom Stepper Styling */
+.custom-stepper {
+  ::ng-deep {
+    /* Header styling */
+    .mat-stepper-horizontal,
+    .mat-stepper-vertical {
+      background: transparent;
+    }
+
+    /* Step header */
+    .mat-step-header {
+      padding: 16px 24px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      transition: all 0.3s ease;
+
+      &:hover {
+        background: #f5f5f5;
+      }
+
+      &.cdk-keyboard-focused,
+      &.cdk-program-focused {
+        background: #f5f5f5;
+      }
+    }
+
+    /* Step icon */
+    .mat-step-icon {
+      background-color: #e0e0e0 !important;
+      color: #666 !important;
+      width: 32px;
+      height: 32px;
+      margin-right: 12px;
+      transition: all 0.3s ease;
+    }
+
+    .mat-step-icon-selected {
+      background-color: #4285f4 !important;
+      color: white !important;
+    }
+
+    .mat-step-icon-state-edit {
+      background-color: #34a853 !important;
+      color: white !important;
+    }
+
+    /* Step label */
+    .mat-step-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: #666;
+
+      &.mat-step-label-active {
+        color: #1a1a1a;
+        font-weight: 600;
+      }
+
+      &.mat-step-label-selected {
+        color: #4285f4;
+        font-weight: 600;
+      }
+    }
+
+    /* Line connector */
+    .mat-stepper-horizontal-line {
+      border-top-width: 2px;
+      border-top-color: #e0e0e0;
+      margin: 0 -16px;
+    }
+
+    /* Step content area */
+    .mat-horizontal-content-container,
+    .mat-vertical-content-container {
+      padding: 0;
+    }
+  }
+}
+
+/* Step label with icon */
+.step-label {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* Step content */
+.step-content {
+  padding: 24px;
+  background: #fafafa;
+  border-radius: 8px;
+  margin-top: 16px;
+  min-height: 300px;
+}
+
+/* Form Fields */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 16px;
-  padding: 16px 0;
+  margin-bottom: 16px;
+}
+
+.form-field {
+  width: 100%;
 }
 
 .full-width {
   width: 100%;
+  margin-bottom: 16px;
 }
 
-.half-width {
-  width: calc(50% - 8px);
-  display: inline-block;
+.checkbox-field {
+  margin-bottom: 16px;
+  padding: 12px;
+  background-color: white;
+  border-radius: 8px;
+}
 
-  &:first-of-type {
-    margin-right: 16px;
+.mat-mdc-form-field {
+  .mat-mdc-text-field-wrapper {
+    background-color: white;
+    border-radius: 8px;
+    transition: background-color 0.2s ease;
   }
+
+  &:hover .mat-mdc-text-field-wrapper {
+    background-color: #ffffff;
+  }
+}
+
+.required-field .mat-mdc-form-field-label::after {
+  content: ' *';
+  color: #f44336;
+}
+
+/* Options List */
+.options-list {
+  margin-bottom: 16px;
 }
 
 .option-row {
@@ -28,6 +203,14 @@ form {
   gap: 12px;
   align-items: flex-start;
   margin-bottom: 12px;
+  padding: 12px;
+  background-color: white;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: #f5f5f5;
+  }
 
   .option-field {
     flex: 1;
@@ -38,21 +221,233 @@ form {
   }
 }
 
+.add-option-btn {
+  width: 100%;
+  margin-top: 8px;
+  border-color: #4285f4;
+  color: #4285f4;
+  font-weight: 500;
+  background-color: white;
+
+  mat-icon {
+    margin-right: 8px;
+  }
+
+  &:hover {
+    background-color: #e8f0fe;
+  }
+}
+
+/* Checkboxes */
 .checkboxes {
   display: flex;
   flex-direction: column;
   gap: 12px;
   margin-top: 8px;
+  padding: 16px;
+  background-color: white;
+  border-radius: 8px;
+
+  mat-checkbox {
+    ::ng-deep .mdc-form-field {
+      font-size: 14px;
+    }
+  }
 }
 
-.button-row {
+/* Step Actions */
+.step-actions {
   display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 16px;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #e0e0e0;
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 24px;
+    height: 40px;
+    font-weight: 500;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  button[mat-button] {
+    color: #666;
+
+    &:hover {
+      background-color: #f5f5f5;
+    }
+  }
+
+  button[mat-raised-button] {
+    box-shadow: 0 2px 4px rgba(66, 133, 244, 0.2);
+
+    &:hover {
+      box-shadow: 0 4px 8px rgba(66, 133, 244, 0.3);
+    }
+  }
 }
 
-mat-dialog-actions {
-  padding: 16px 24px;
+/* Dialog Actions */
+.dialog-actions {
+  padding: 16px 24px !important;
   border-top: 1px solid #e0e0e0;
+  gap: 12px;
+  justify-content: flex-end;
 }
+
+.cancel-button {
+  border-color: #e0e0e0;
+  color: #666;
+  font-weight: 500;
+  padding: 0 24px;
+  height: 40px;
+  transition: all 0.2s ease;
+
+  &:hover:not(:disabled) {
+    border-color: #666;
+    color: #1a1a1a;
+    background-color: #f5f5f5;
+  }
+}
+
+.save-button {
+  background-color: #4285f4;
+  color: white;
+  font-weight: 500;
+  padding: 0 24px;
+  height: 40px;
+  box-shadow: 0 2px 4px rgba(66, 133, 244, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background-color: #3367d6;
+    box-shadow: 0 4px 8px rgba(66, 133, 244, 0.3);
+  }
+
+  &:disabled {
+    background-color: #e0e0e0;
+    color: #999;
+    box-shadow: none;
+  }
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  .mr-2 {
+    margin-right: 8px;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .dialog-header {
+    padding: 16px 16px 0 16px;
+  }
+
+  .dialog-content {
+    padding: 16px !important;
+  }
+
+  .step-content {
+    padding: 16px;
+  }
+
+  .dialog-actions {
+    padding: 12px 16px !important;
+    flex-direction: column-reverse;
+
+    button {
+      width: 100%;
+    }
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .option-row {
+    flex-wrap: wrap;
+
+    .option-field,
+    .option-color {
+      flex: 1 1 calc(50% - 6px);
+      min-width: calc(50% - 6px);
+    }
+
+    button {
+      flex: 1 1 100%;
+    }
+  }
+
+  .step-actions {
+    flex-direction: column;
+    gap: 8px;
+
+    button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  .cancel-button,
+  .save-button {
+    height: 44px;
+  }
+
+  .custom-stepper {
+    ::ng-deep {
+      .mat-step-header {
+        padding: 12px 16px;
+      }
+
+      .mat-step-icon {
+        width: 28px;
+        height: 28px;
+      }
+
+      .mat-step-label {
+        font-size: 13px;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .dialog-header h2 {
+    font-size: 20px;
+  }
+
+  .option-row {
+    .option-field,
+    .option-color {
+      flex: 1 1 100%;
+      min-width: 100%;
+    }
+  }
+
+  .step-label span {
+    display: none;
+  }
+
+  .step-label mat-icon {
+    margin: 0;
+  }
+}
+
