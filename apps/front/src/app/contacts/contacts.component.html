@@ -31,7 +31,7 @@
     </mat-menu>
   </div>
 
-  <!-- Tabs like in Leads: statuses on the left, search on the right -->
+  <!-- Tabs like in Leads: statuses on the left, filters button on the right -->
   <div class="tabs-section">
     <div class="tabs">
       <app-status-tabs
@@ -42,103 +42,63 @@
       </app-status-tabs>
     </div>
     <div class="search-section">
-      <mat-form-field appearance="outline" class="search-field">
-        <mat-label>Поиск</mat-label>
-        <input
-          matInput
-          [(ngModel)]="searchQuery"
-          (ngModelChange)="onSearchChange($event)"
-          placeholder="По имени, email, телефон"
-        />
-        <mat-icon matSuffix>search</mat-icon>
-      </mat-form-field>
-      
       <button 
-        mat-icon-button 
-        (click)="showCustomFieldFilters = !showCustomFieldFilters"
-        [color]="customFieldFilters.length > 0 ? 'accent' : undefined"
-        matTooltip="Фильтры по дополнительным полям"
+        mat-raised-button
+        color="primary"
+        (click)="openFiltersDialog()"
+        class="filter-button"
       >
-        <mat-icon>{{ showCustomFieldFilters ? 'filter_list_off' : 'filter_list' }}</mat-icon>
+        <mat-icon>tune</mat-icon>
+        <span>Фильтры и поиск</span>
+        @if (getTotalActiveFilters() > 0) {
+          <span class="filter-badge">
+            {{ getTotalActiveFilters() }}
+          </span>
+        }
       </button>
     </div>
   </div>
 
-  <!-- Custom field filters panel -->
-  <mat-expansion-panel 
-    [(expanded)]="showCustomFieldFilters" 
-    *ngIf="customFieldDefinitions().length > 0"
-    class="custom-filters-panel"
-  >
-    <mat-expansion-panel-header>
-      <mat-panel-title>
-        <mat-icon>tune</mat-icon>
-        <span>Фильтры по дополнительным полям</span>
-        <span *ngIf="customFieldFilters.length > 0" class="filter-count">
-          ({{ customFieldFilters.length }})
-        </span>
-      </mat-panel-title>
-    </mat-expansion-panel-header>
-
-    <div class="filters-content">
-      <div *ngFor="let filter of customFieldFilters; let i = index" class="filter-row">
-        <mat-form-field appearance="outline" class="field-select">
-          <mat-label>Поле</mat-label>
-          <mat-select [(ngModel)]="filter.fieldName">
-            @for (def of customFieldDefinitions(); track def.id) {
-              <mat-option [value]="def.name">
-                {{ def.label }} ({{ getFieldTypeLabel(def.fieldType) }})
-              </mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline" class="operator-select">
-          <mat-label>Условие</mat-label>
-          <mat-select [(ngModel)]="filter.operator">
-            @for (op of getOperatorsForFieldType(getFieldDefinition(filter.fieldName)?.fieldType || 'text'); track op.value) {
-              <mat-option [value]="op.value">{{ op.label }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-
-        <mat-form-field 
-          appearance="outline" 
-          class="value-input"
-          *ngIf="filter.operator !== 'exists'"
-        >
-          <mat-label>Значение</mat-label>
-          <input 
-            matInput 
-            [(ngModel)]="filter.value"
-            [type]="getFieldDefinition(filter.fieldName)?.fieldType === 'number' ? 'number' : 
-                    getFieldDefinition(filter.fieldName)?.fieldType === 'date' ? 'date' : 'text'"
-          />
-        </mat-form-field>
-
-        <button mat-icon-button color="warn" (click)="removeCustomFieldFilter(i)" matTooltip="Удалить фильтр">
-          <mat-icon>close</mat-icon>
-        </button>
+  <!-- Active filters chips -->
+  @if (filterState && (filterState.search || filterState.filters.length > 0)) {
+    <div class="active-filters">
+      <div class="filters-label">
+        <mat-icon>filter_alt</mat-icon>
+        <span>Активные фильтры:</span>
       </div>
-
-      <div class="filter-actions">
-        <button mat-stroked-button (click)="addCustomFieldFilter()">
-          <mat-icon>add</mat-icon>
-          Добавить фильтр
-        </button>
-        
-        <div class="spacer"></div>
-        
-        <button mat-button (click)="clearCustomFieldFilters()" *ngIf="customFieldFilters.length > 0">
+      <div class="filter-chips">
+        <mat-chip-set>
+          @if (filterState.search) {
+            <mat-chip class="filter-chip search-chip">
+              <span class="chip-content">
+                <mat-icon>search</mat-icon>
+                <span class="value">{{ filterState.search }}</span>
+              </span>
+            </mat-chip>
+          }
+          
+          @for (filter of filterState.filters; track $index) {
+            <mat-chip (removed)="removeFilter($index)" class="filter-chip">
+              <span class="chip-content">
+                <strong>{{ getFilterLabel(filter) }}</strong>
+                <span class="operator">{{ getOperatorLabel(filter.operator) }}</span>
+                @if (filter.operator !== 'exists') {
+                  <span class="value">{{ filter.value }}</span>
+                }
+              </span>
+              <button matChipRemove>
+                <mat-icon>cancel</mat-icon>
+              </button>
+            </mat-chip>
+          }
+        </mat-chip-set>
+        <button mat-button class="clear-filters-btn" (click)="clearAllFilters()">
+          <mat-icon>close</mat-icon>
           Очистить всё
-        </button>
-        
-        <button mat-raised-button color="primary" (click)="applyCustomFieldFilters()" *ngIf="customFieldFilters.length > 0">
-          Применить
         </button>
       </div>
     </div>
-  </mat-expansion-panel>
+  }
 
   <!-- Contacts table -->
   <div *ngIf="!loading; else loadingTemplate">

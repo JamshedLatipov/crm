@@ -20,6 +20,23 @@ export interface CustomFieldFilter {
   value?: any;
 }
 
+export type FilterFieldType = 'static' | 'custom';
+
+export interface UniversalFilter {
+  id?: string;
+  fieldType: FilterFieldType;
+  fieldName: string;
+  fieldLabel?: string;
+  operator: CustomFieldFilter['operator'];
+  value?: any;
+}
+
+export interface ContactsFilterState {
+  search?: string;
+  isActive?: boolean | null;
+  filters: UniversalFilter[];
+}
+
 export interface ContactAddress {
   country?: string;
   region?: string;

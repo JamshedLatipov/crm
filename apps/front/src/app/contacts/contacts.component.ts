@@ -12,7 +12,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
-import { MatExpansionModule } from '@angular/material/expansion';
+import { MatChipsModule } from '@angular/material/chips';
 import { FormsModule } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
@@ -21,10 +21,11 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { ContactsService } from './contacts.service';
 import { StatusTabsComponent } from '../shared/components/status-tabs/status-tabs.component';
 import { Router } from '@angular/router';
-import { Contact, ContactsStats, CustomFieldFilter } from './contact.interfaces';
+import { Contact, ContactsStats, ContactsFilterState, UniversalFilter } from './contact.interfaces';
 import { PageLayoutComponent } from '../shared/page-layout/page-layout.component';
 import { CustomFieldsService } from '../services/custom-fields.service';
-import { CustomFieldDefinition, FieldType } from '../models/custom-field.model';
+import { CustomFieldDefinition } from '../models/custom-field.model';
+import { FiltersDialogComponent } from './components/filters-dialog/filters-dialog.component';
 
 @Component({
   selector: 'app-contacts',
@@ -44,7 +45,7 @@ import { CustomFieldDefinition, FieldType } from '../models/custom-field.model';
     MatPaginatorModule,
     MatMenuModule,
     MatDividerModule,
-    MatExpansionModule,
+    MatChipsModule,
     FormsModule,
     MatDialogModule,
     StatusTabsComponent,
@@ -69,14 +70,15 @@ export class ContactsComponent implements OnInit {
   ];
 
   // Filters
-  searchQuery = '';
-  // selected value for status tabs: null means all, otherwise a string key
   activeFilter: string | null = 'active';
+  filterState: ContactsFilterState = {
+    search: undefined,
+    isActive: true,
+    filters: [],
+  };
 
-  // Custom field filters
+  // Custom field definitions
   customFieldDefinitions = signal<CustomFieldDefinition[]>([]);
-  customFieldFilters: CustomFieldFilter[] = [];
-  showCustomFieldFilters = false;
 
   // Tabs config for StatusTabsComponent
   contactTabs = [
@@ -114,59 +116,39 @@ export class ContactsComponent implements OnInit {
   loadData(): void {
     this.loading = true;
 
-    // Use custom field filters if they exist, otherwise use standard filters
-    if (this.customFieldFilters.length > 0) {
-      this.contactsService.searchContactsByCustomFields(this.customFieldFilters)
-        .subscribe({
-          next: (contacts) => {
-            this.contacts = contacts;
-            this.totalResults = contacts.length;
-            this.loading = false;
-          },
-          error: (error) => {
-            console.error('Error loading contacts with custom filters:', error);
-            this.snackBar.open('Ошибка загрузки контактов', 'Закрыть', { duration: 3000 });
-            this.loading = false;
-          }
+    // Use filter state to build query
+    const listPromise = this.contactsService
+      .listContacts({
+        search: this.filterState.search || undefined,
+        isActive: this.filterState.isActive ?? undefined,
+        page: this.currentPage,
+        pageSize: this.pageSize,
+      })
+      .toPromise();
+
+    Promise.all([
+      listPromise,
+      this.contactsService.getContactsStats().toPromise(),
+    ])
+      .then(([response, stats]) => {
+        // Handle { data, total } response
+        const contactsData = (response as any).data || response || [];
+        this.contacts = contactsData;
+        this.stats = stats || null;
+
+        this.totalResults = (response as any).total !== undefined
+          ? (response as any).total
+          : contactsData.length;
+
+        this.loading = false;
+      })
+      .catch((error) => {
+        console.error('Error loading contacts:', error);
+        this.snackBar.open('Ошибка загрузки контактов', 'Закрыть', {
+          duration: 3000,
         });
-    } else {
-      // Standard filtering
-      const listPromise = this.contactsService
-        .listContacts({
-          search: this.searchQuery || undefined,
-          isActive:
-            this.activeFilter === 'all'
-              ? undefined
-              : this.activeFilter === 'active',
-          page: this.currentPage,
-          pageSize: this.pageSize,
-        })
-        .toPromise();
-
-      Promise.all([
-        listPromise,
-        this.contactsService.getContactsStats().toPromise(),
-      ])
-        .then(([response, stats]) => {
-          // Handle { data, total } response
-          const contactsData = (response as any).data || response || [];
-          this.contacts = contactsData;
-          this.stats = stats || null;
-
-          this.totalResults = (response as any).total !== undefined
-            ? (response as any).total
-            : contactsData.length;
-
-          this.loading = false;
-        })
-        .catch((error) => {
-          console.error('Error loading contacts:', error);
-          this.snackBar.open('Ошибка загрузки контактов', 'Закрыть', {
-            duration: 3000,
-          });
-          this.loading = false;
-        });
-    }
+        this.loading = false;
+      });
   }
 
   onPageChange(event: PageEvent): void {
@@ -202,13 +184,13 @@ export class ContactsComponent implements OnInit {
     this.selected.clear();
   }
 
-  onSearchChange(value: string): void {
-    this.searchQuery = value || '';
-    this.loadData();
-  }
-
   onActiveFilterChange(value: string | null): void {
     this.activeFilter = value;
+    if (value === null) {
+      this.filterState.isActive = null;
+    } else {
+      this.filterState.isActive = value === 'active';
+    }
     this.loadData();
   }
 
@@ -386,92 +368,76 @@ export class ContactsComponent implements OnInit {
   }
 
   // Custom field filter methods
-  addCustomFieldFilter(): void {
-    const definitions = this.customFieldDefinitions();
-    if (definitions.length === 0) {
-      this.snackBar.open('Нет доступных дополнительных полей', 'Закрыть', { duration: 3000 });
-      return;
-    }
+  openFiltersDialog(): void {
+    const dialogRef = this.dialog.open(FiltersDialogComponent, {
+      width: '800px',
+      maxWidth: '95vw',
+      data: {
+        customFieldDefinitions: this.customFieldDefinitions(),
+        filterState: this.filterState,
+      },
+    });
 
-    this.customFieldFilters.push({
-      fieldName: definitions[0].name,
-      operator: 'equals',
-      value: ''
+    dialogRef.afterClosed().subscribe((result: ContactsFilterState | null) => {
+      if (result !== null) {
+        this.filterState = result;
+        // Update active filter based on isActive
+        if (result.isActive === null) {
+          this.activeFilter = null;
+        } else if (result.isActive === true) {
+          this.activeFilter = 'active';
+        } else {
+          this.activeFilter = 'inactive';
+        }
+        this.loadData();
+      }
     });
   }
 
-  removeCustomFieldFilter(index: number): void {
-    this.customFieldFilters.splice(index, 1);
+  removeFilter(index: number): void {
+    this.filterState.filters.splice(index, 1);
     this.loadData();
   }
 
-  applyCustomFieldFilters(): void {
-    this.loadData();
-  }
-
-  clearCustomFieldFilters(): void {
-    this.customFieldFilters = [];
-    this.loadData();
-  }
-
-  getFieldDefinition(fieldName: string): CustomFieldDefinition | undefined {
-    return this.customFieldDefinitions().find(def => def.name === fieldName);
-  }
-
-  getOperatorsForFieldType(fieldType: FieldType): Array<{value: string, label: string}> {
-    const commonOperators = [
-      { value: 'equals', label: 'Равно' },
-      { value: 'not_equals', label: 'Не равно' },
-      { value: 'exists', label: 'Заполнено' }
-    ];
-
-    switch (fieldType) {
-      case 'text':
-      case 'textarea':
-      case 'email':
-      case 'phone':
-      case 'url':
-        return [
-          ...commonOperators,
-          { value: 'contains', label: 'Содержит' },
-          { value: 'not_contains', label: 'Не содержит' },
-          { value: 'starts_with', label: 'Начинается с' },
-          { value: 'ends_with', label: 'Заканчивается на' }
-        ];
-      case 'number':
-      case 'date':
-        return [
-          ...commonOperators,
-          { value: 'greater', label: 'Больше' },
-          { value: 'less', label: 'Меньше' },
-          { value: 'between', label: 'Между' }
-        ];
-      case 'select':
-      case 'multiselect':
-        return [
-          ...commonOperators,
-          { value: 'in', label: 'Один из' },
-          { value: 'not_in', label: 'Не один из' }
-        ];
-      case 'boolean':
-        return commonOperators.slice(0, 2); // Only equals and not_equals
-      default:
-        return commonOperators;
-    }
-  }
-
-  getFieldTypeLabel(type: FieldType): string {
-    const labels: Record<FieldType, string> = {
-      text: 'Текст',
-      number: 'Число',
-      date: 'Дата',
-      boolean: 'Да/Нет',
-      select: 'Выбор',
-      multiselect: 'Множественный выбор',
-      email: 'Email',
-      phone: 'Телефон',
-      url: 'URL',
-      textarea: 'Текстовая область'
+  clearAllFilters(): void {
+    this.filterState = {
+      search: undefined,
+      isActive: true,
+      filters: [],
     };
-    return labels[type] || type;
-  }}
+    this.activeFilter = 'active';
+    this.loadData();
+  }
+
+  getFilterLabel(filter: UniversalFilter): string {
+    return filter.fieldLabel || filter.fieldName;
+  }
+
+  getOperatorLabel(operator: UniversalFilter['operator']): string {
+    const labels: Record<UniversalFilter['operator'], string> = {
+      equals: '=',
+      not_equals: '≠',
+      contains: 'содержит',
+      not_contains: 'не содержит',
+      starts_with: 'начинается с',
+      ends_with: 'заканчивается на',
+      greater: '>',
+      less: '<',
+      between: 'между',
+      in: 'один из',
+      not_in: 'не один из',
+      exists: 'заполнено',
+    };
+    return labels[operator] || operator;
+  }
+
+  getTotalActiveFilters(): number {
+    if (!this.filterState) return 0;
+    
+    let count = 0;
+    if (this.filterState.search) count++;
+    if (this.filterState.isActive !== null && this.filterState.isActive !== true) count++;
+    count += this.filterState.filters.length;
+    return count;
+  }
+}
