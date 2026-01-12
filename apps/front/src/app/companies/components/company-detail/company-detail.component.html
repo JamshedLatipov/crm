@@ -1,0 +1,402 @@
+<div class="company-detail-page">
+  <!-- Загрузка -->
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Загрузка компании...</p>
+  </div>
+
+  <!-- Ошибка -->
+  <div *ngIf="error && !isLoading" class="error-container">
+    <div class="error-card">
+      <mat-icon class="error-icon">sentiment_dissatisfied</mat-icon>
+      <h3>Компания не найдена</h3>
+      <p>{{ error }}</p>
+      <button mat-raised-button color="primary" (click)="goBack()">
+        <mat-icon>arrow_back</mat-icon>
+        Вернуться к списку
+      </button>
+    </div>
+  </div>
+
+  <!-- Детали компании -->
+  <div *ngIf="company && !isLoading" class="company-content">
+    <!-- Заголовок -->
+    <div class="page-header">
+      <div class="header-background">
+        <div class="header-top">
+          <div class="breadcrumb">
+            <button mat-button (click)="goBack()" class="breadcrumb-link">
+              <mat-icon>arrow_back</mat-icon>
+              <span>Компании</span>
+            </button>
+            <mat-icon class="separator">chevron_right</mat-icon>
+            <span class="current">{{ company.name }}</span>
+          </div>
+
+          <div class="header-actions-top">
+            <button mat-raised-button color="primary" (click)="editCompany()">
+              <mat-icon>edit</mat-icon>
+              Редактировать
+            </button>
+            <button mat-icon-button [matMenuTriggerFor]="menu" class="more-button">
+              <mat-icon>more_vert</mat-icon>
+            </button>
+            <mat-menu #menu="matMenu">
+              <button mat-menu-item (click)="deleteCompany()">
+                <mat-icon color="warn">delete</mat-icon>
+                <span>Удалить</span>
+              </button>
+            </mat-menu>
+          </div>
+        </div>
+
+        <div class="header-main">
+          <div class="company-header-left">
+            <div class="company-title-section">
+              <h1 class="company-title">{{ company.name }}</h1>
+              <p class="company-legal-name" *ngIf="company.legalName">{{ company.legalName }}</p>
+              <div class="company-badges">
+                <mat-chip class="status-chip" *ngIf="company.isActive">
+                  <mat-icon>check_circle</mat-icon>
+                  <span>Активна</span>
+                </mat-chip>
+                <mat-chip class="status-chip warning" *ngIf="!company.isActive">
+                  <mat-icon>hourglass_empty</mat-icon>
+                  <span>Неактивна</span>
+                </mat-chip>
+                <mat-chip class="status-chip error" *ngIf="company.isBlacklisted">
+                  <mat-icon>block</mat-icon>
+                  <span>В черном списке</span>
+                </mat-chip>
+                <mat-chip class="type-chip" *ngIf="company.type">
+                  <mat-icon>category</mat-icon>
+                  <span>{{ getTypeLabel(company.type) }}</span>
+                </mat-chip>
+                <mat-chip class="industry-chip" *ngIf="company.industry">
+                  <mat-icon>business_center</mat-icon>
+                  <span>{{ getIndustryLabel(company.industry) }}</span>
+                </mat-chip>
+              </div>
+            </div>
+
+            <div class="company-metrics">
+              <div class="metric-card" *ngIf="company.employeeCount">
+                <div class="metric-icon">
+                  <mat-icon>people</mat-icon>
+                </div>
+                <div class="metric-info">
+                  <div class="metric-label">Сотрудников</div>
+                  <div class="metric-value">{{ company.employeeCount }}</div>
+                </div>
+              </div>
+
+              <div class="metric-card" *ngIf="company.annualRevenue">
+                <div class="metric-icon">
+                  <mat-icon>attach_money</mat-icon>
+                </div>
+                <div class="metric-info">
+                  <div class="metric-label">Годовой доход</div>
+                  <div class="metric-value">{{ company.annualRevenue | number }}</div>
+                </div>
+              </div>
+
+              <div class="metric-card" *ngIf="company.size">
+                <div class="metric-icon">
+                  <mat-icon>business</mat-icon>
+                </div>
+                <div class="metric-info">
+                  <div class="metric-label">Размер</div>
+                  <div class="metric-value">{{ getSizeLabel(company.size) }}</div>
+                </div>
+              </div>
+
+              <div class="metric-card" *ngIf="company.createdAt">
+                <div class="metric-icon">
+                  <mat-icon>event</mat-icon>
+                </div>
+                <div class="metric-info">
+                  <div class="metric-label">Создана</div>
+                  <div class="metric-value">{{ company.createdAt | date: 'dd.MM.yyyy' }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Основная информация -->
+    <div class="main-content">
+      <div class="content-grid">
+        <!-- Левая колонка -->
+        <div class="left-column">
+          <!-- Основная информация -->
+          <mat-card class="info-card">
+            <mat-card-header>
+              <div mat-card-avatar class="card-avatar info">
+                <mat-icon>info</mat-icon>
+              </div>
+              <mat-card-title>Основная информация</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="info-grid">
+                <div class="info-item" *ngIf="company.inn">
+                  <span class="info-label">ИНН:</span>
+                  <span class="info-value">{{ company.inn }}</span>
+                </div>
+                <div class="info-item" *ngIf="company.kpp">
+                  <span class="info-label">КПП:</span>
+                  <span class="info-value">{{ company.kpp }}</span>
+                </div>
+                <div class="info-item" *ngIf="company.ogrn">
+                  <span class="info-label">ОГРН:</span>
+                  <span class="info-value">{{ company.ogrn }}</span>
+                </div>
+                <div class="info-item" *ngIf="company.website">
+                  <span class="info-label">Веб-сайт:</span>
+                  <a [href]="company.website" target="_blank" class="info-value link">{{ company.website }}</a>
+                </div>
+                <div class="info-item" *ngIf="company.foundedDate">
+                  <span class="info-label">Дата основания:</span>
+                  <span class="info-value">{{ company.foundedDate | date: 'dd.MM.yyyy' }}</span>
+                </div>
+                <div class="info-item" *ngIf="company.source">
+                  <span class="info-label">Источник:</span>
+                  <span class="info-value">{{ getSourceLabel(company.source) }}</span>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Контактная информация -->
+          <mat-card class="info-card">
+            <mat-card-header>
+              <div mat-card-avatar class="card-avatar contact">
+                <mat-icon>contact_phone</mat-icon>
+              </div>
+              <mat-card-title>Контактная информация</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="info-grid">
+                <div class="info-item" *ngIf="company.phone">
+                  <span class="info-label">Телефон:</span>
+                  <a [href]="'tel:' + company.phone" class="info-value link">{{ company.phone }}</a>
+                </div>
+                <div class="info-item" *ngIf="company.email">
+                  <span class="info-label">Email:</span>
+                  <a [href]="'mailto:' + company.email" class="info-value link">{{ company.email }}</a>
+                </div>
+                <div class="info-item full-width" *ngIf="company.address">
+                  <span class="info-label">Адрес:</span>
+                  <span class="info-value">{{ company.address }}</span>
+                </div>
+                <div class="info-item" *ngIf="company.city">
+                  <span class="info-label">Город:</span>
+                  <span class="info-value">{{ company.city }}</span>
+                </div>
+                <div class="info-item" *ngIf="company.region">
+                  <span class="info-label">Регион:</span>
+                  <span class="info-value">{{ company.region }}</span>
+                </div>
+                <div class="info-item" *ngIf="company.country">
+                  <span class="info-label">Страна:</span>
+                  <span class="info-value">{{ company.country }}</span>
+                </div>
+                <div class="info-item" *ngIf="company.postalCode">
+                  <span class="info-label">Индекс:</span>
+                  <span class="info-value">{{ company.postalCode }}</span>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Социальные сети -->
+          <mat-card class="info-card" *ngIf="company.socialMedia && (company.socialMedia.linkedin || company.socialMedia.facebook || company.socialMedia.twitter || company.socialMedia.instagram)">
+            <mat-card-header>
+              <div mat-card-avatar class="card-avatar social">
+                <mat-icon>share</mat-icon>
+              </div>
+              <mat-card-title>Социальные сети</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="social-links">
+                <a *ngIf="company.socialMedia.linkedin" [href]="company.socialMedia.linkedin" target="_blank" class="social-link linkedin">
+                  <mat-icon>link</mat-icon>
+                  <span>LinkedIn</span>
+                </a>
+                <a *ngIf="company.socialMedia.facebook" [href]="company.socialMedia.facebook" target="_blank" class="social-link facebook">
+                  <mat-icon>link</mat-icon>
+                  <span>Facebook</span>
+                </a>
+                <a *ngIf="company.socialMedia.twitter" [href]="company.socialMedia.twitter" target="_blank" class="social-link twitter">
+                  <mat-icon>link</mat-icon>
+                  <span>Twitter</span>
+                </a>
+                <a *ngIf="company.socialMedia.instagram" [href]="company.socialMedia.instagram" target="_blank" class="social-link instagram">
+                  <mat-icon>link</mat-icon>
+                  <span>Instagram</span>
+                </a>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Теги -->
+          <mat-card class="info-card" *ngIf="company.tags && company.tags.length > 0">
+            <mat-card-header>
+              <div mat-card-avatar class="card-avatar tags">
+                <mat-icon>label</mat-icon>
+              </div>
+              <mat-card-title>Теги</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="tags-container">
+                <mat-chip *ngFor="let tag of company.tags">{{ tag }}</mat-chip>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Связанные контакты -->
+          <mat-card class="info-card">
+            <mat-card-header>
+              <div mat-card-avatar class="card-avatar contacts">
+                <mat-icon>contacts</mat-icon>
+              </div>
+              <mat-card-title>Связанные контакты ({{ relatedContacts.length }})</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div *ngIf="contactsLoading" class="loading-contacts">
+                <mat-spinner diameter="24"></mat-spinner>
+                <span>Загрузка контактов...</span>
+              </div>
+              
+              <div *ngIf="!contactsLoading && relatedContacts.length === 0" class="no-contacts">
+                <mat-icon>person_off</mat-icon>
+                <p>Нет связанных контактов</p>
+              </div>
+
+              <div *ngIf="!contactsLoading && relatedContacts.length > 0" class="contacts-list">
+                <div 
+                  *ngFor="let contact of relatedContacts" 
+                  class="contact-item"
+                  (click)="viewContact(contact)"
+                >
+                  <div class="contact-avatar">
+                    <mat-icon>person</mat-icon>
+                  </div>
+                  <div class="contact-info">
+                    <div class="contact-name">{{ contact.name }}</div>
+                    <div class="contact-details">
+                      <span *ngIf="contact.position" class="contact-position">{{ contact.position }}</span>
+                      <span *ngIf="contact.email" class="contact-email">{{ contact.email }}</span>
+                      <span *ngIf="contact.phone" class="contact-phone">{{ contact.phone }}</span>
+                    </div>
+                  </div>
+                  <button mat-icon-button class="contact-action">
+                    <mat-icon>chevron_right</mat-icon>
+                  </button>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
+
+        <!-- Правая колонка -->
+        <div class="right-column">
+          <!-- Описание -->
+          <mat-card class="info-card" *ngIf="company.description">
+            <mat-card-header>
+              <div mat-card-avatar class="card-avatar description">
+                <mat-icon>description</mat-icon>
+              </div>
+              <mat-card-title>Описание</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <p class="description-text">{{ company.description }}</p>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Заметки -->
+          <mat-card class="info-card" *ngIf="company.notes">
+            <mat-card-header>
+              <div mat-card-avatar class="card-avatar notes">
+                <mat-icon>notes</mat-icon>
+              </div>
+              <mat-card-title>Заметки</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <p class="notes-text">{{ company.notes }}</p>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Причина блокировки -->
+          <mat-card class="info-card warning-card" *ngIf="company.isBlacklisted && company.blacklistReason">
+            <mat-card-header>
+              <div mat-card-avatar class="card-avatar warning">
+                <mat-icon>warning</mat-icon>
+              </div>
+              <mat-card-title>Причина блокировки</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <p class="warning-text">{{ company.blacklistReason }}</p>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Кастомные поля -->
+          <mat-card class="info-card" *ngIf="customFieldDefinitions().length > 0">
+            <mat-card-header>
+              <div mat-card-avatar class="card-avatar custom">
+                <mat-icon>tune</mat-icon>
+              </div>
+              <mat-card-title>Дополнительные поля</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div *ngIf="customFieldsLoading" class="loading-fields">
+                <mat-spinner diameter="24"></mat-spinner>
+                <span>Загрузка полей...</span>
+              </div>
+              <div *ngIf="!customFieldsLoading" class="custom-fields-grid">
+                <div class="custom-field" *ngFor="let fieldDef of customFieldDefinitions()">
+                  <app-dynamic-field
+                    [fieldDef]="fieldDef"
+                    [value]="company.customFields?.[fieldDef.name]"
+                    [readonly]="true"
+                  ></app-dynamic-field>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Системная информация -->
+          <mat-card class="info-card">
+            <mat-card-header>
+              <div mat-card-avatar class="card-avatar system">
+                <mat-icon>schedule</mat-icon>
+              </div>
+              <mat-card-title>Системная информация</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="info-grid">
+                <div class="info-item" *ngIf="company.createdAt">
+                  <span class="info-label">Создана:</span>
+                  <span class="info-value">{{ company.createdAt | date: 'dd.MM.yyyy HH:mm' }}</span>
+                </div>
+                <div class="info-item" *ngIf="company.updatedAt">
+                  <span class="info-label">Обновлена:</span>
+                  <span class="info-value">{{ company.updatedAt | date: 'dd.MM.yyyy HH:mm' }}</span>
+                </div>
+                <div class="info-item" *ngIf="company.firstContactDate">
+                  <span class="info-label">Первый контакт:</span>
+                  <span class="info-value">{{ company.firstContactDate | date: 'dd.MM.yyyy' }}</span>
+                </div>
+                <div class="info-item" *ngIf="company.lastActivityDate">
+                  <span class="info-label">Последняя активность:</span>
+                  <span class="info-value">{{ company.lastActivityDate | date: 'dd.MM.yyyy' }}</span>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

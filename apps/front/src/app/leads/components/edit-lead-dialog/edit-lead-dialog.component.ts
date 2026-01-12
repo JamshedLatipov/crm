@@ -17,6 +17,9 @@ import { Company } from '../../../pipeline/dtos';
 // rxjs operators not needed (autocomplete provided by shared component)
 import { Lead, LeadPriority, UpdateLeadRequest } from '../../models/lead.model';
 import { LeadService } from '../../services/lead.service';
+import { CustomFieldsService } from '../../../services/custom-fields.service';
+import { CustomFieldDefinition } from '../../../models/custom-field.model';
+import { DynamicFieldComponent } from '../../../shared/components/dynamic-field/dynamic-field.component';
 
 @Component({
   selector: 'app-edit-lead-dialog',
@@ -35,6 +38,7 @@ import { LeadService } from '../../services/lead.service';
     MatAutocompleteModule,
     CompanyAutocompleteComponent,
     UserSelectorComponent,
+    DynamicFieldComponent,
   ],
   templateUrl: './edit-lead-dialog.component.html',
   styleUrls: ['./edit-lead-dialog.component.scss'],
@@ -44,11 +48,14 @@ export class EditLeadDialogComponent {
   private leadService = inject(LeadService);
   private dialogRef = inject(MatDialogRef<EditLeadDialogComponent>);
   private readonly companiesService = inject(CompaniesService);
+  private readonly customFieldsService = inject(CustomFieldsService);
   
   data = inject(MAT_DIALOG_DATA) as { lead: Lead };
 
   editForm: FormGroup;
   loading = false;
+  customFieldDefinitions: CustomFieldDefinition[] = [];
+  customFieldValues: Record<string, any> = {};
   // autocomplete handled by shared component
 
   priorityOptions = [
@@ -61,6 +68,7 @@ export class EditLeadDialogComponent {
   constructor() {
     this.editForm = this.createForm();
     this.populateForm();
+    this.loadCustomFields();
     // company autocomplete provided by CompanyAutocompleteComponent
     // ensure companyId control exists
     this.editForm.addControl('companyId', this.fb.control(null));
@@ -120,6 +128,23 @@ export class EditLeadDialogComponent {
       notes: lead.notes || '',
       assignedTo: (lead as any).assignedTo ? ((lead as any).assignedTo.id ?? (lead as any).assignedTo) : null,
     });
+    // Загружаем значения кастомных полей
+    this.customFieldValues = lead.customFields || {};
+  }
+
+  private loadCustomFields(): void {
+    this.customFieldsService.findByEntity('lead').subscribe({
+      next: (fields) => {
+        this.customFieldDefinitions = fields;
+      },
+      error: (err) => {
+        console.error('Error loading custom fields:', err);
+      },
+    });
+  }
+
+  onCustomFieldChange(fieldName: string, value: any): void {
+    this.customFieldValues[fieldName] = value;
   }
 
   onSave(): void {
@@ -143,6 +168,7 @@ export class EditLeadDialogComponent {
         decisionTimeframe: formValue.decisionTimeframe || undefined,
         notes: formValue.notes || undefined,
         assignedTo: formValue.assignedTo || undefined,
+        customFields: this.customFieldValues,
       };
 
       this.leadService.updateLead(this.data.lead.id, updateRequest).subscribe({

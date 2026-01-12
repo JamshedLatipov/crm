@@ -32,6 +32,7 @@ import {
   FilterFieldDefinition,
 } from '../shared/interfaces/universal-filter.interface';
 import { ConfirmActionDialogComponent } from '../shared/dialogs/confirm-action-dialog.component';
+import { CreateCompanyDialogComponent } from '../shared/components/create-company-dialog/create-company-dialog.component';
 
 @Component({
   selector: 'app-companies',
@@ -329,13 +330,24 @@ export class CompaniesComponent implements OnInit {
   }
 
   viewCompany(company: Company) {
-    // TODO: Navigate to company detail view
-    console.log('View company:', company);
+    this.router.navigate(['/companies', company.id]);
   }
 
   editCompany(company: Company) {
-    // TODO: Open edit dialog
-    console.log('Edit company:', company);
+    const dialogRef = this.dialog.open(CreateCompanyDialogComponent, {
+      width: '800px',
+      maxHeight: '90vh',
+      data: { company },
+    });
+
+    dialogRef.afterClosed().subscribe((result: Company | undefined) => {
+      if (result) {
+        this.snackBar.open('Компания успешно обновлена', 'Закрыть', {
+          duration: 3000,
+        });
+        this.loadCompanies();
+      }
+    });
   }
 
   deleteCompany(company: Company) {
@@ -368,9 +380,18 @@ export class CompaniesComponent implements OnInit {
   }
 
   createCompany() {
-    // TODO: Open create dialog
-    this.snackBar.open('Функция создания пока не реализована', 'Закрыть', {
-      duration: 3000,
+    const dialogRef = this.dialog.open(CreateCompanyDialogComponent, {
+      width: '800px',
+      maxHeight: '90vh',
+    });
+
+    dialogRef.afterClosed().subscribe((result: Company | undefined) => {
+      if (result) {
+        this.snackBar.open('Компания успешно создана', 'Закрыть', {
+          duration: 3000,
+        });
+        this.loadCompanies();
+      }
     });
   }
 

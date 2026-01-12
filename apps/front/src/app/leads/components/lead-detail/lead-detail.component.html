@@ -264,6 +264,31 @@
               <div class="notes-content">{{ lead.notes }}</div>
             </mat-card-content>
           </mat-card>
+
+          <!-- Custom Fields -->
+          <mat-card class="info-card" *ngIf="customFieldDefinitions.length > 0">
+            <mat-card-header>
+              <div mat-card-avatar class="card-avatar">
+                <mat-icon>tune</mat-icon>
+              </div>
+              <mat-card-title>Дополнительные поля</mat-card-title>
+              <mat-card-subtitle>Пользовательские данные</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <div *ngIf="customFieldsLoading" class="loading-indicator">
+                <mat-spinner diameter="24"></mat-spinner>
+              </div>
+              <div *ngIf="!customFieldsLoading" class="custom-fields-grid">
+                <div *ngFor="let field of customFieldDefinitions" class="custom-field-item">
+                  <app-dynamic-field
+                    [fieldDef]="field"
+                    [value]="lead.customFields?.[field.name]"
+                    [readonly]="true"
+                  ></app-dynamic-field>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
         </div>
 
         <!-- Правая колонка -->
