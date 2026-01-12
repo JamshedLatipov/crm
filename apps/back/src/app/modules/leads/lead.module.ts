@@ -28,6 +28,7 @@ import { PromoCompaniesModule } from '../promo-companies/promo-companies.module'
 import { Contact } from '../contacts/contact.entity';
 import { ContactActivity } from '../contacts/contact-activity.entity';
 import { ContactsModule } from '../contacts/contacts.module';
+import { CustomFieldsModule } from '../custom-fields/custom-fields.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { ContactsModule } from '../contacts/contacts.module';
     ]),
     CompaniesModule,
     ContactsModule,
+    CustomFieldsModule,
   forwardRef(() => PipelineModule),
     UserModule,
     DealsModule,

@@ -137,6 +137,9 @@ export class Company {
   @Column({ type: 'timestamp', nullable: true })
   lastActivityDate: Date;
 
+  @Column({ type: 'jsonb', nullable: true })
+  customFields?: Record<string, unknown>;
+
   // Связи
   @OneToMany(() => Contact, contact => contact.company, { cascade: true })
   contacts: Contact[];

@@ -28,6 +28,8 @@ import { AssignmentService } from '../shared/services/assignment.service';
 import { PromoCompaniesService } from '../promo-companies/services/promo-companies.service';
 import { NotificationService } from '../shared/services/notification.service';
 import { NotificationType, NotificationChannel, NotificationPriority } from '../shared/entities/notification.entity';
+import { CustomFieldsService } from '../custom-fields/services/custom-fields.service';
+import { BadRequestException } from '@nestjs/common';
 
 // Интерфейс для создания лида с дополнительными полями
 interface CreateLeadData extends Partial<Lead> {
@@ -86,11 +88,26 @@ export class LeadService {
     private readonly assignmentService: AssignmentService,
     private readonly pipelineService: PipelineService,
     private readonly promoCompaniesService: PromoCompaniesService,
-    private readonly notificationService: NotificationService
+    private readonly notificationService: NotificationService,
+    private readonly customFieldsService: CustomFieldsService,
   ) {}
 
   async create(data: CreateLeadData, userId?: string, userName?: string): Promise<Lead> {
     console.log('Creating lead with data:', data);
+    
+    // Validate custom fields if provided
+    if (data.customFields) {
+      const validation = await this.customFieldsService.validateCustomFields(
+        'lead',
+        data.customFields
+      );
+      if (!validation.isValid) {
+        const errorMessages = Object.entries(validation.errors)
+          .map(([field, errs]) => `${field}: ${errs.join(', ')}`)
+          .join('; ');
+        throw new BadRequestException(`Custom fields validation failed: ${errorMessages}`);
+      }
+    }
     
     // Подготавливаем данные для сохранения
     const { companyId, ...leadDataWithoutCompanyId } = data;
@@ -425,6 +442,20 @@ export class LeadService {
     const existingLead = await this.findById(id);
     if (!existingLead) {
       throw new Error('Lead not found');
+    }
+
+    // Validate custom fields if provided
+    if (data.customFields) {
+      const validation = await this.customFieldsService.validateCustomFields(
+        'lead',
+        data.customFields
+      );
+      if (!validation.isValid) {
+        const errorMessages = Object.entries(validation.errors)
+          .map(([field, errs]) => `${field}: ${errs.join(', ')}`)
+          .join('; ');
+        throw new BadRequestException(`Custom fields validation failed: ${errorMessages}`);
+      }
     }
 
     // Проверяем, если пытаются изменить статус и лид находится в финальном состоянии

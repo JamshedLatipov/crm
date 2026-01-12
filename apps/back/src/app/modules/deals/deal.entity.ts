@@ -84,6 +84,9 @@ export class Deal {
   @Column('text', { nullable: true })
   notes?: string;
 
+  @Column('jsonb', { nullable: true })
+  customFields?: Record<string, unknown>;
+
   @Column('json', { nullable: true })
   meta?: Record<string, unknown>;
 

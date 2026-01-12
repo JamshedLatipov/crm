@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, In } from 'typeorm';
 import { Company, CompanyType, CompanySize, Industry } from '../entities/company.entity';
 import { CreateCompanyDto } from '../dto/create-company.dto';
 import { UpdateCompanyDto } from '../dto/update-company.dto';
+import { CustomFieldsService } from '../../custom-fields/services/custom-fields.service';
 
 export interface CompanyFilters {
   search?: string;
@@ -28,9 +29,24 @@ export class CompaniesService {
   constructor(
     @InjectRepository(Company)
     private companiesRepository: Repository<Company>,
+    private readonly customFieldsService: CustomFieldsService,
   ) {}
 
   async create(createCompanyDto: CreateCompanyDto): Promise<Company> {
+    // Validate custom fields if provided
+    if (createCompanyDto.customFields) {
+      const validation = await this.customFieldsService.validateCustomFields(
+        'company',
+        createCompanyDto.customFields
+      );
+      if (!validation.isValid) {
+        const errorMessages = Object.entries(validation.errors)
+          .map(([field, errs]) => `${field}: ${errs.join(', ')}`)
+          .join('; ');
+        throw new BadRequestException(`Custom fields validation failed: ${errorMessages}`);
+      }
+    }
+
     // Prevent creating companies with duplicate INN
     if (createCompanyDto.inn) {
       const existing = await this.companiesRepository.findOne({ where: { inn: createCompanyDto.inn } });
@@ -148,6 +164,20 @@ export class CompaniesService {
   }
 
   async update(id: string, updateCompanyDto: UpdateCompanyDto): Promise<Company> {
+    // Validate custom fields if provided
+    if (updateCompanyDto.customFields) {
+      const validation = await this.customFieldsService.validateCustomFields(
+        'company',
+        updateCompanyDto.customFields
+      );
+      if (!validation.isValid) {
+        const errorMessages = Object.entries(validation.errors)
+          .map(([field, errs]) => `${field}: ${errs.join(', ')}`)
+          .join('; ');
+        throw new BadRequestException(`Custom fields validation failed: ${errorMessages}`);
+      }
+    }
+
     const tags = updateCompanyDto.tags ? (updateCompanyDto.tags || []).map(t => t.trim()).filter(Boolean) : undefined;
     const uniqueTags = tags ? Array.from(new Set(tags)) : undefined;
 

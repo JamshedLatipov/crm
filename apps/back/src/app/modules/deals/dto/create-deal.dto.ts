@@ -13,5 +13,6 @@ export class CreateDealDto {
   stageId: string;
   assignedTo: string;
   notes?: string;
+  customFields?: Record<string, unknown>;
   meta?: Record<string, unknown>;
 }

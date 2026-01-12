@@ -3,6 +3,7 @@ import {
   NotFoundException,
   Inject,
   forwardRef,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
@@ -21,6 +22,7 @@ import { UserService } from '../user/user.service';
 import { AutomationService } from '../pipeline/automation.service';
 import { NotificationService } from '../shared/services/notification.service';
 import { NotificationType, NotificationChannel, NotificationPriority } from '../shared/entities/notification.entity';
+import { CustomFieldsService } from '../custom-fields/services/custom-fields.service';
 
 // Константа для определения высокоценной сделки (можно вынести в конфигурацию)
 const HIGH_VALUE_DEAL_THRESHOLD = 100000; // 100,000
@@ -39,7 +41,8 @@ export class DealsService {
     private readonly userService: UserService,
     @Inject(forwardRef(() => AutomationService))
     private readonly automationService: AutomationService,
-    private readonly notificationService: NotificationService
+    private readonly notificationService: NotificationService,
+    private readonly customFieldsService: CustomFieldsService,
   ) {}
 
   /**
@@ -208,6 +211,20 @@ export class DealsService {
     userId?: string,
     userName?: string
   ): Promise<Deal> {
+    // Validate custom fields if provided
+    if (dto.customFields) {
+      const validation = await this.customFieldsService.validateCustomFields(
+        'deal',
+        dto.customFields
+      );
+      if (!validation.isValid) {
+        const errorMessages = Object.entries(validation.errors)
+          .map(([field, errs]) => `${field}: ${errs.join(', ')}`)
+          .join('; ');
+        throw new BadRequestException(`Custom fields validation failed: ${errorMessages}`);
+      }
+    }
+
     // Создаем сделку без связей. Note: assignedTo is now stored in `assignments` table.
     const dealPayload: Partial<Deal> = {
       title: dto.title,
@@ -218,6 +235,7 @@ export class DealsService {
       stageId: dto.stageId,
       notes: dto.notes,
       meta: dto.meta,
+      customFields: dto.customFields,
     };
 
     const deal = this.dealRepository.create(dealPayload as any);
@@ -351,6 +369,21 @@ export class DealsService {
     userName?: string
   ): Promise<Deal> {
     const existingDeal = await this.getDealById(id);
+    
+    // Validate custom fields if provided
+    if (dto.customFields) {
+      const validation = await this.customFieldsService.validateCustomFields(
+        'deal',
+        dto.customFields
+      );
+      if (!validation.isValid) {
+        const errorMessages = Object.entries(validation.errors)
+          .map(([field, errs]) => `${field}: ${errs.join(', ')}`)
+          .join('; ');
+        throw new BadRequestException(`Custom fields validation failed: ${errorMessages}`);
+      }
+    }
+    
     // Извлекаем ID связей из DTO
     const {
       contactId,
