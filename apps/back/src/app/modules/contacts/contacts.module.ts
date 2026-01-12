@@ -8,6 +8,7 @@ import { CompaniesModule } from '../companies/companies.module';
 import { NotificationModule } from '../notifications/notification.module';
 import { ContactCenterModule } from '../contact-center/contact-center.module';
 import { CustomFieldsModule } from '../custom-fields/custom-fields.module';
+import { SharedModule } from '../shared/shared.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { CustomFieldsModule } from '../custom-fields/custom-fields.module';
     NotificationModule,
     forwardRef(() => ContactCenterModule),
     CustomFieldsModule,
+    SharedModule,
   ],
   providers: [ContactsService],
   controllers: [ContactsController],

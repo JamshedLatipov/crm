@@ -21,11 +21,13 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { ContactsService } from './contacts.service';
 import { StatusTabsComponent } from '../shared/components/status-tabs/status-tabs.component';
 import { Router } from '@angular/router';
-import { Contact, ContactsStats, ContactsFilterState, UniversalFilter } from './contact.interfaces';
+import { Contact, ContactsStats, ContactsFilterState, UniversalFilter, ContactType, ContactSource } from './contact.interfaces';
 import { PageLayoutComponent } from '../shared/page-layout/page-layout.component';
 import { CustomFieldsService } from '../services/custom-fields.service';
 import { CustomFieldDefinition } from '../models/custom-field.model';
-import { FiltersDialogComponent } from './components/filters-dialog/filters-dialog.component';
+import { UniversalFiltersDialogComponent } from '../shared/dialogs/universal-filters-dialog/universal-filters-dialog.component';
+import { UniversalFilterService } from '../shared/services/universal-filter.service';
+import { FilterFieldDefinition, BaseFilterState } from '../shared/interfaces/universal-filter.interface';
 
 @Component({
   selector: 'app-contacts',
@@ -80,6 +82,69 @@ export class ContactsComponent implements OnInit {
   // Custom field definitions
   customFieldDefinitions = signal<CustomFieldDefinition[]>([]);
 
+  // Static field definitions for filters
+  private staticFields: FilterFieldDefinition[] = [
+    {
+      name: 'type',
+      label: 'Тип контакта',
+      type: 'select',
+      selectOptions: [
+        { value: ContactType.PERSON, label: 'Физическое лицо' },
+        { value: ContactType.COMPANY, label: 'Компания' },
+      ],
+    },
+    {
+      name: 'source',
+      label: 'Источник',
+      type: 'select',
+      selectOptions: [
+        { value: ContactSource.WEBSITE, label: 'Веб-сайт' },
+        { value: ContactSource.PHONE, label: 'Телефон' },
+        { value: ContactSource.EMAIL, label: 'Email' },
+        { value: ContactSource.REFERRAL, label: 'Рекомендация' },
+        { value: ContactSource.SOCIAL_MEDIA, label: 'Социальные сети' },
+        { value: ContactSource.ADVERTISING, label: 'Реклама' },
+        { value: ContactSource.IMPORT, label: 'Импорт' },
+        { value: ContactSource.OTHER, label: 'Другое' },
+      ],
+    },
+    {
+      name: 'email',
+      label: 'Email',
+      type: 'email',
+    },
+    {
+      name: 'phone',
+      label: 'Телефон',
+      type: 'phone',
+    },
+    {
+      name: 'companyName',
+      label: 'Компания',
+      type: 'text',
+    },
+    {
+      name: 'position',
+      label: 'Должность',
+      type: 'text',
+    },
+    {
+      name: 'assignedTo',
+      label: 'Ответственный',
+      type: 'text',
+    },
+    {
+      name: 'createdAt',
+      label: 'Дата создания',
+      type: 'date',
+    },
+    {
+      name: 'isBlacklisted',
+      label: 'В черном списке',
+      type: 'boolean',
+    },
+  ];
+
   // Tabs config for StatusTabsComponent
   contactTabs = [
     { label: 'Все контакты', value: null },
@@ -97,6 +162,7 @@ export class ContactsComponent implements OnInit {
 
   private readonly contactsService = inject(ContactsService);
   private readonly customFieldsService = inject(CustomFieldsService);
+  private readonly universalFilterService = inject(UniversalFilterService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly router = inject(Router);
   private readonly dialog = inject(MatDialog);
@@ -116,7 +182,45 @@ export class ContactsComponent implements OnInit {
   loadData(): void {
     this.loading = true;
 
-    // Use filter state to build query
+    // Если есть дополнительные фильтры, используем advanced search
+    if (this.filterState.filters && this.filterState.filters.length > 0) {
+      this.contactsService
+        .searchContactsWithFilters({
+          search: this.filterState.search,
+          isActive: this.filterState.isActive,
+          filters: this.filterState.filters,
+          page: this.currentPage,
+          pageSize: this.pageSize,
+        })
+        .subscribe({
+          next: (response) => {
+            this.contacts = response.data || [];
+            this.totalResults = response.total || 0;
+            this.loading = false;
+          },
+          error: (error) => {
+            console.error('Error loading contacts with filters:', error);
+            this.snackBar.open('Ошибка загрузки контактов', 'Закрыть', {
+              duration: 3000,
+            });
+            this.loading = false;
+          },
+        });
+      
+      // Загружаем статистику отдельно
+      this.contactsService.getContactsStats().subscribe({
+        next: (stats) => {
+          this.stats = stats;
+        },
+        error: (error) => {
+          console.error('Error loading stats:', error);
+        },
+      });
+      
+      return;
+    }
+
+    // Стандартная фильтрация без дополнительных фильтров
     const listPromise = this.contactsService
       .listContacts({
         search: this.filterState.search || undefined,
@@ -369,20 +473,45 @@ export class ContactsComponent implements OnInit {
 
   // Custom field filter methods
   openFiltersDialog(): void {
-    const dialogRef = this.dialog.open(FiltersDialogComponent, {
+    // Преобразуем custom field definitions в FilterFieldDefinition
+    const customFields: FilterFieldDefinition[] = this.customFieldDefinitions().map(def => ({
+      name: def.name,
+      label: def.label,
+      type: def.fieldType as FilterFieldDefinition['type'],
+      selectOptions: def.selectOptions?.map(opt => {
+        // Если opt это объект SelectOption, берем label и value
+        if (typeof opt === 'object' && opt !== null && 'value' in opt && 'label' in opt) {
+          return {
+            label: opt.label,
+            value: opt.value,
+          };
+        }
+        // Если opt это строка, используем ее как label и value
+        return {
+          label: String(opt),
+          value: String(opt),
+        };
+      }),
+    }));
+
+    const dialogRef = this.dialog.open(UniversalFiltersDialogComponent, {
       width: '800px',
       maxWidth: '95vw',
       data: {
-        customFieldDefinitions: this.customFieldDefinitions(),
-        filterState: this.filterState,
+        title: 'Фильтры и поиск контактов',
+        staticFields: this.staticFields,
+        customFields: customFields,
+        initialState: this.filterState as BaseFilterState,
+        showSearch: true,
+        showStatus: true,
       },
     });
 
-    dialogRef.afterClosed().subscribe((result: ContactsFilterState | null) => {
-      if (result !== null) {
-        this.filterState = result;
+    dialogRef.afterClosed().subscribe((result: BaseFilterState | undefined) => {
+      if (result) {
+        this.filterState = result as ContactsFilterState;
         // Update active filter based on isActive
-        if (result.isActive === null) {
+        if (result.isActive === undefined) {
           this.activeFilter = null;
         } else if (result.isActive === true) {
           this.activeFilter = 'active';
@@ -414,30 +543,10 @@ export class ContactsComponent implements OnInit {
   }
 
   getOperatorLabel(operator: UniversalFilter['operator']): string {
-    const labels: Record<UniversalFilter['operator'], string> = {
-      equals: '=',
-      not_equals: '≠',
-      contains: 'содержит',
-      not_contains: 'не содержит',
-      starts_with: 'начинается с',
-      ends_with: 'заканчивается на',
-      greater: '>',
-      less: '<',
-      between: 'между',
-      in: 'один из',
-      not_in: 'не один из',
-      exists: 'заполнено',
-    };
-    return labels[operator] || operator;
+    return this.universalFilterService.getOperatorLabel(operator);
   }
 
   getTotalActiveFilters(): number {
-    if (!this.filterState) return 0;
-    
-    let count = 0;
-    if (this.filterState.search) count++;
-    if (this.filterState.isActive !== null && this.filterState.isActive !== true) count++;
-    count += this.filterState.filters.length;
-    return count;
+    return this.universalFilterService.countActiveFilters(this.filterState);
   }
 }

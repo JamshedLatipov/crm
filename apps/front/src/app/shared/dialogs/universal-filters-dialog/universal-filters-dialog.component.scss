@@ -40,7 +40,6 @@ mat-dialog-content {
   overflow-y: auto;
 }
 
-/* Search and Status Section */
 .search-status-section {
   padding: 24px;
   background: #ffffff;
@@ -72,7 +71,6 @@ mat-dialog-content {
   }
 }
 
-/* Filters Section */
 .filters-section {
   padding: 24px;
   background: #fafbfc;
@@ -98,7 +96,6 @@ mat-dialog-content {
   }
 }
 
-/* Tabs Styling */
 .filters-tabs {
   ::ng-deep {
     .mat-mdc-tab-labels {

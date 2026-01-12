@@ -1,26 +1,42 @@
 import { Injectable, NotFoundException, Inject, Optional, forwardRef, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 import { Contact, ContactType, ContactSource } from './contact.entity';
 import { ContactActivity, ActivityType } from './contact-activity.entity';
 import { Company } from '../companies/entities/company.entity';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
 import { CreateActivityDto } from './dto/create-activity.dto';
+import { AdvancedSearchDto } from './dto/advanced-search.dto';
 import { CompaniesService } from '../companies/services/companies.service';
 import { NotificationService } from '../shared/services/notification.service';
 import { NotificationType, NotificationPriority } from '../shared/entities/notification.entity';
 import { NameResolverService } from '../contact-center/services/name-resolver.service';
 import { CustomFieldsService } from '../custom-fields/services/custom-fields.service';
+import { UniversalFilterService } from '../shared/services/universal-filter.service';
 
 @Injectable()
 export class ContactsService {
+  // Map of frontend field names to entity column names for static fields
+  private readonly staticFieldsMap: Record<string, string> = {
+    type: 'contact.type',
+    source: 'contact.source',
+    email: 'contact.email',
+    phone: 'contact.phone',
+    companyName: 'company.name',
+    position: 'contact.position',
+    assignedTo: 'contact.assignedTo',
+    createdAt: 'contact.createdAt',
+    isBlacklisted: 'contact.isBlacklisted',
+  };
+
   constructor(
     @InjectRepository(Contact)
     private readonly contactRepository: Repository<Contact>,
     @InjectRepository(ContactActivity)
     private readonly activityRepository: Repository<ContactActivity>,
     private readonly customFieldsService: CustomFieldsService,
+    private readonly universalFilterService: UniversalFilterService,
     @Optional() private readonly companiesService?: CompaniesService,
     @Optional() private readonly notificationService?: NotificationService,
     @Optional() @Inject(forwardRef(() => NameResolverService))
@@ -340,6 +356,55 @@ export class ContactsService {
     }
 
     return qb.getMany();
+  }
+
+  /**
+   * Advanced search with universal filters for both static and custom fields
+   */
+  async searchContactsWithFilters(dto: AdvancedSearchDto): Promise<{ data: Contact[]; total: number }> {
+    const page = dto.page || 1;
+    const pageSize = dto.pageSize || 50;
+    
+    const qb = this.contactRepository
+      .createQueryBuilder('contact')
+      .leftJoinAndSelect('contact.company', 'company');
+
+    // Apply isActive filter
+    if (dto.isActive !== undefined) {
+      qb.andWhere('contact.isActive = :isActive', { isActive: dto.isActive });
+    }
+
+    // Apply search filter (searches name, email, phone, company name)
+    if (dto.search && dto.search.trim()) {
+      const searchPattern = `%${dto.search.trim()}%`;
+      qb.andWhere(
+        '(contact.name ILIKE :search OR contact.email ILIKE :search OR contact.phone ILIKE :search OR company.name ILIKE :search)',
+        { search: searchPattern }
+      );
+    }
+
+    // Apply universal filters using the shared service
+    if (dto.filters && dto.filters.length > 0) {
+      this.universalFilterService.applyFilters(
+        qb,
+        dto.filters,
+        'contact',
+        this.staticFieldsMap,
+        'customFields'
+      );
+    }
+
+    // Get total count before pagination
+    const total = await qb.getCount();
+
+    // Apply pagination and ordering
+    qb.orderBy('contact.createdAt', 'DESC')
+      .skip((page - 1) * pageSize)
+      .take(pageSize);
+
+    const data = await qb.getMany();
+
+    return { data, total };
   }
 
   async getRecentContacts(limit = 10): Promise<Contact[]> {
