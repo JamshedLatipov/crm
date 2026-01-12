@@ -13,6 +13,7 @@ import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartOptions } from 'chart.js';
 import './chart.config'; // Инициализация Chart.js
 import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.component';
+import { MessageBackButtonComponent } from '../shared/message-back-button/message-back-button.component';
 import { NotificationService } from '../../services/notification.service';
 import { DashboardStats, ChannelStats, CampaignStats } from '../../models/message.models';
 
@@ -31,6 +32,7 @@ import { DashboardStats, ChannelStats, CampaignStats } from '../../models/messag
     MatProgressSpinnerModule,
     MatTooltipModule,
     PageLayoutComponent,
+    MessageBackButtonComponent,
     BaseChartDirective
   ],
   templateUrl: './analytics.component.html',

@@ -8,6 +8,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.component';
+import { MessageBackButtonComponent } from '../shared/message-back-button/message-back-button.component';
 import { SettingService } from '../../services/setting.service';
 import { Setting, SettingCategory } from '../../models/setting.models';
 import { SettingDialogComponent } from './setting-dialog.component';
@@ -25,6 +26,7 @@ import { SettingDialogComponent } from './setting-dialog.component';
     MatDialogModule,
     MatTooltipModule,
     PageLayoutComponent,
+    MessageBackButtonComponent,
   ],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',

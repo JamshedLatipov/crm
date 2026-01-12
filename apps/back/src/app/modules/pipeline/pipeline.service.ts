@@ -123,16 +123,39 @@ export class PipelineService {
     const stages = await this.stagesRepo.find({ order: { position: 'ASC' } });
     const deals = await this.dealsRepo.find();
     const total = deals.length || 1;
-    const byStage = stages.map((s) => ({
-      id: s.id,
-      name: s.name,
-      count: deals.filter((d) => d.stageId === s.id).length,
-      conversion: +(
-        (deals.filter((d) => d.stageId === s.id).length / total) *
-        100
-      ).toFixed(2),
-    }));
-    return { total: deals.length, byStage };
+    
+    // Count only won deals for total calculations
+    const wonDeals = deals.filter((d) => d.status === 'won');
+    const totalAmount = wonDeals.reduce((sum, deal) => sum + Number(deal.amount || 0), 0);
+    const averageDealSize = wonDeals.length > 0 ? totalAmount / wonDeals.length : 0;
+    
+    const byStage = stages.map((s) => {
+      const stageDeals = deals.filter((d) => d.stageId === s.id);
+      // Only sum amounts for won deals in this stage
+      const stageWonDeals = stageDeals.filter((d) => d.status === 'won');
+      const stageTotalAmount = stageWonDeals.reduce((sum, deal) => sum + Number(deal.amount || 0), 0);
+      const stageAverageAmount = stageWonDeals.length > 0 ? stageTotalAmount / stageWonDeals.length : 0;
+      
+      return {
+        id: s.id,
+        name: s.name,
+        count: stageDeals.length,
+        totalAmount: stageTotalAmount,
+        averageAmount: stageAverageAmount,
+        conversion: +((stageDeals.length / total) * 100).toFixed(2),
+      };
+    });
+    
+    return { 
+      total: deals.length,
+      totalDeals: deals.length,
+      totalLeads: 0, // Not tracking leads here
+      totalAmount,
+      averageDealSize,
+      overallConversion: wonDeals.length > 0 ? +(wonDeals.length / total * 100).toFixed(2) : 0,
+      averageSalesCycle: 0, // Can be calculated if needed
+      byStage 
+    };
   }
 
   // Reorder stages by an array of stage IDs; positions will be updated to the array index order

@@ -286,6 +286,19 @@ export class UserController {
     return roles[0] || 'sales_manager';
   }
 
+  @Post('recalculate-workload')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Recalculate workload counters for all users' })
+  @ApiResponse({ status: 200, description: 'Workload counters recalculated successfully' })
+  async recalculateWorkload() {
+    const result = await this.userService.recalculateWorkloadCounters();
+    return {
+      success: true,
+      message: `Updated ${result.updated} users`,
+      errors: result.errors
+    };
+  }
+
   @Get('timezones')
   @ApiOperation({ summary: 'Get list of available timezones' })
   @ApiResponse({ status: 200, description: 'List of timezones with offsets' })

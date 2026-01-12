@@ -14,6 +14,7 @@ import {
   registerables 
 } from 'chart.js';
 import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.component';
+import { MessageBackButtonComponent } from '../../shared/message-back-button/message-back-button.component';
 import { NotificationService } from '../../../services/notification.service';
 
 // Регистрируем все компоненты Chart.js
@@ -31,6 +32,7 @@ Chart.register(...registerables);
     MatButtonModule,
     MatProgressSpinnerModule,
     PageLayoutComponent,
+    MessageBackButtonComponent,
     BaseChartDirective
   ],
   templateUrl: './campaign-stats.component.html',

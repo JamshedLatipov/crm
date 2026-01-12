@@ -9,6 +9,7 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../../environments/environment';
 import { CrmTableComponent, CrmColumn } from '../../../../shared/components/crm-table/crm-table.component';
 import { CurrencyService } from '../../../../services/currency.service';
+import { ExchangeRateService } from '../../../../services/exchange-rate.service';
 
 interface ManagerStats {
   managerId: string;
@@ -42,6 +43,7 @@ export class ManagersAnalysisComponent implements OnInit {
   
   private http = inject(HttpClient);
   private currencyService = inject(CurrencyService);
+  private exchangeRateService = inject(ExchangeRateService);
   private apiUrl = `${environment.apiBase}/pipeline`;
 
   managersStats: ManagerStats[] = [];
@@ -168,11 +170,31 @@ export class ManagersAnalysisComponent implements OnInit {
 
     // Вычисляем статистику для каждого менеджера
     return Array.from(managerMap.entries()).map(([managerId, data]) => {
-      const totalDeals = data.deals.length;
+      
+      // Подсчёт суммы с конвертацией валют
       const totalAmount = data.deals
         .filter(d => d.status === 'won')
-        .reduce((sum, d) => sum + (d.amount || 0), 0);
+        .reduce((sum, d) => {
+          const amount = d.amount || 0;
+          
+          // Используем сохранённый курс если есть, иначе текущий
+          let convertedAmount: number;
+          if (d.exchangeRate && d.currency !== 'RUB') {
+            // Используем сохранённый курс для конвертации
+            convertedAmount = amount * d.exchangeRate;
+          } else {
+            // Используем текущий курс
+            convertedAmount = this.exchangeRateService.convert(
+              amount,
+              d.currency || 'RUB',
+              this.exchangeRateService.getBaseCurrency()
+            );
+          }
+          
+          return sum + convertedAmount;
+        }, 0);
       
+      const totalDeals = data.wonDeals + data.lostDeals + data.activeDeals;
       const averageAmount = data.wonDeals > 0 ? totalAmount / data.wonDeals : 0;
       const conversionRate = totalDeals > 0 ? (data.wonDeals / totalDeals) * 100 : 0;
 

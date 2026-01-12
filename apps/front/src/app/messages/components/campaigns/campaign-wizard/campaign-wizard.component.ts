@@ -17,6 +17,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatDividerModule } from '@angular/material/divider';
 import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.component';
+import { MessageBackButtonComponent } from '../../shared/message-back-button/message-back-button.component';
 import { CampaignService } from '../../../services/campaign.service';
 import { SmsTemplateService } from '../../../services/sms-template.service';
 import { EmailTemplateService } from '../../../services/email-template.service';
@@ -48,6 +49,7 @@ import { CreateCampaignDto, CampaignType, SmsTemplate } from '../../../models/me
     MatNativeDateModule,
     MatDividerModule,
     PageLayoutComponent,
+    MessageBackButtonComponent,
     CurrencyFormatPipe,
   ],
   templateUrl: './campaign-wizard.component.html',

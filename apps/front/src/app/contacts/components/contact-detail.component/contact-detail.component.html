@@ -343,13 +343,7 @@
                       <div class="deal-info">
                         <div class="deal-title">{{ deal.title }}</div>
                         <div class="deal-details">
-                          <span class="deal-amount">{{
-                            deal.amount
-                              | currency
-                                : deal.currency || 'RUB'
-                                : 'symbol'
-                                : '1.0-0'
-                          }}</span>
+                          <span class="deal-amount">{{ deal.amount | currencyFormat:deal.currency }}</span>
                           <span
                             class="deal-status"
                             [class]="'status-' + deal.status?.toLowerCase()"

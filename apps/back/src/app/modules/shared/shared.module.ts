@@ -8,6 +8,7 @@ import { UserModule } from '../user/user.module';
 import { NotificationModule } from '../notifications/notification.module';
 import { UserActivityModule } from '../user-activity/user-activity.module';
 import { TimezoneService } from './timezone.service';
+import { ExchangeRateService } from './services/exchange-rate.service';
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { TimezoneService } from './timezone.service';
     forwardRef(() => UserModule)
   ],
   controllers: [AssignmentController],
-  providers: [AssignmentService, TimezoneService],
-  exports: [AssignmentService, TimezoneService]
+  providers: [AssignmentService, TimezoneService, ExchangeRateService],
+  exports: [AssignmentService, TimezoneService, ExchangeRateService]
 })
 export class SharedModule {}

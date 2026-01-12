@@ -13,6 +13,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.component';
+import { MessageBackButtonComponent } from '../../shared/message-back-button/message-back-button.component';
 import { VariableSelectorComponent } from '../../variable-selector/variable-selector.component';
 import { TelegramTemplateService } from '../../../services/telegram-template.service';
 import { MediaService } from '../../../services/media.service';
@@ -35,6 +36,7 @@ import { CreateTelegramTemplateDto } from '../../../models/message.models';
     MatProgressSpinnerModule,
     MatProgressBarModule,
     PageLayoutComponent,
+    MessageBackButtonComponent,
     VariableSelectorComponent
   ],
   templateUrl: './telegram-template-form.component.html',

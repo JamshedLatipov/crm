@@ -2,6 +2,8 @@
   [title]="'Предпросмотр: ' + (template()?.name || 'Загрузка...')"
   subtitle="Просмотр шаблона в формате WhatsApp"
 >
+  <app-message-back-button page-back-button></app-message-back-button>
+
   <div page-actions>
     <button mat-stroked-button routerLink="/messages/whatsapp-templates">
       <mat-icon>arrow_back</mat-icon>

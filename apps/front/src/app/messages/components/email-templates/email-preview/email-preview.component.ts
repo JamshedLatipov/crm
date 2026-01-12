@@ -12,6 +12,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.component';
+import { MessageBackButtonComponent } from '../../shared/message-back-button/message-back-button.component';
 import { EmailTemplateService } from '../../../services/email-template.service';
 import { EmailTemplate } from '../../../models/message.models';
 
@@ -29,7 +30,8 @@ import { EmailTemplate } from '../../../models/message.models';
     MatTabsModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
-    PageLayoutComponent
+    PageLayoutComponent,
+    MessageBackButtonComponent
   ],
   templateUrl: './email-preview.component.html',
   styleUrl: './email-preview.component.scss'

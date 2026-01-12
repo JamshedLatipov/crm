@@ -33,6 +33,7 @@ import {
 } from './components/status-change-dialog.component';
 import { User } from '../users/users.service';
 import { CurrencyFormatPipe } from '../shared/pipes/currency-format.pipe';
+import { ExchangeRateService } from '../services/exchange-rate.service';
 
 @Component({
   selector: 'app-deals',
@@ -252,7 +253,7 @@ import { CurrencyFormatPipe } from '../shared/pipes/currency-format.pipe';
                   <div class="amount-value">
                     {{
                       deal.amount || 0
-                        | currency : deal.currency : 'symbol' : '1.0-0'
+                        | currencyFormat:deal.currency
                     }}
                   </div>
                   <div class="amount-probability">
@@ -1024,6 +1025,7 @@ export class DealsComponent implements OnInit {
   private readonly snackBar = inject(MatSnackBar);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly exchangeRateService = inject(ExchangeRateService);
 
   deals: Deal[] = [];
   filteredDeals: Deal[] = [];
@@ -1251,13 +1253,32 @@ export class DealsComponent implements OnInit {
     const open = this.deals.filter((d) => d.status === 'open').length;
     const won = this.deals.filter((d) => d.status === 'won').length;
     const lost = this.deals.filter((d) => d.status === 'lost').length;
-    const totalValue = this.deals.reduce((sum, deal) => {
-      const amount =
-        typeof deal.amount === 'number'
-          ? deal.amount
-          : parseFloat(deal.amount) || 0;
-      return sum + amount;
-    }, 0);
+    
+    // Подсчёт общей суммы только из выигранных сделок с конвертацией валют в базовую валюту
+    const totalValue = this.deals
+      .filter((d) => d.status === 'won')
+      .reduce((sum, deal) => {
+        const amount =
+          typeof deal.amount === 'number'
+            ? deal.amount
+            : parseFloat(deal.amount) || 0;
+        
+        // Используем сохранённый курс если есть, иначе текущий
+        let convertedAmount: number;
+        if (deal.exchangeRate && deal.currency !== 'RUB') {
+          // Используем сохранённый курс для конвертации
+          convertedAmount = amount * deal.exchangeRate;
+        } else {
+          // Используем текущий курс
+          convertedAmount = this.exchangeRateService.convert(
+            amount,
+            deal.currency || 'RUB',
+            this.exchangeRateService.getBaseCurrency()
+          );
+        }
+        
+        return sum + convertedAmount;
+      }, 0);
 
     this.stats = { total, open, won, lost, totalValue };
   }

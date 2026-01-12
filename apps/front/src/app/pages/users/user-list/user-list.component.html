@@ -6,6 +6,14 @@
 >
   <div page-actions>
     <button
+      mat-icon-button
+      (click)="refreshUsers()"
+      [disabled]="userService.isLoading()"
+      matTooltip="Обновить список"
+    >
+      <mat-icon>refresh</mat-icon>
+    </button>
+    <button
       mat-raised-button
       color="primary"
       (click)="createUser()"

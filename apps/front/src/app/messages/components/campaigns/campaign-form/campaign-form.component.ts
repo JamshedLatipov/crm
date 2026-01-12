@@ -17,6 +17,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.component';
+import { MessageBackButtonComponent } from '../../shared/message-back-button/message-back-button.component';
 import { CampaignService } from '../../../services/campaign.service';
 import { SmsTemplateService } from '../../../services/sms-template.service';
 import { EmailTemplateService } from '../../../services/email-template.service';
@@ -47,6 +48,7 @@ import { CampaignType, CreateCampaignDto, MessageChannel } from '../../../models
     MatChipsModule,
     MatDividerModule,
     PageLayoutComponent,
+    MessageBackButtonComponent,
     CurrencyFormatPipe,
   ],
   templateUrl: './campaign-form.component.html',

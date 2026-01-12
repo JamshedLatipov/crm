@@ -2,6 +2,8 @@
   [title]="segment() ? segment()!.name : 'Контакты сегмента'"
   [subtitle]="'Всего контактов: ' + totalContacts()"
 >
+  <app-message-back-button page-back-button></app-message-back-button>
+
   <div page-actions>
     <button mat-stroked-button (click)="goBack()">
       <mat-icon>arrow_back</mat-icon>

@@ -123,5 +123,7 @@ export class TaskHeaderComponent {
     return icons[status] || 'schedule';
   }
 
-  goBack() {}
+  goBack() {
+    this.back.emit();
+  }
 }

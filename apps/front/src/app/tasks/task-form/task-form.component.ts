@@ -23,6 +23,7 @@ import { TaskTypeService, TaskType } from '../../services/task-type.service';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { TaskTypeSelectComponent } from '../components/task-type-select.component';
+import { CurrencyFormatPipe } from '../../shared/pipes/currency-format.pipe';
 
 @Component({
   selector: 'app-task-form',
@@ -43,7 +44,8 @@ import { TaskTypeSelectComponent } from '../components/task-type-select.componen
     MatSlideToggleModule,
     UserSelectorComponent,
     // Task type select component
-    TaskTypeSelectComponent
+    TaskTypeSelectComponent,
+    CurrencyFormatPipe
   ],
   templateUrl: './task-form.component.html',
   styleUrls: ['./task-form.component.scss']

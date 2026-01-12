@@ -10,6 +10,7 @@ export class UpdateDealDto {
   
   amount?: number;
   currency?: string;
+  exchangeRate?: number;
   probability?: number;
   expectedCloseDate?: string;
   actualCloseDate?: string;

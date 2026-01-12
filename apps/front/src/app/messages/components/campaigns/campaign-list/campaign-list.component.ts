@@ -14,6 +14,7 @@ import { CrmTableComponent, CrmColumn, CrmColumnTemplateDirective } from '../../
 import { ConfirmDialogComponent } from '../../../../shared/dialogs/confirm-dialog.component';
 import { CampaignService } from '../../../services/campaign.service';
 import { Campaign } from '../../../models/message.models';
+import { MessageBackButtonComponent } from '../../shared/message-back-button/message-back-button.component';
 
 @Component({
   selector: 'app-campaign-list',
@@ -31,7 +32,8 @@ import { Campaign } from '../../../models/message.models';
     MatDialogModule,
     PageLayoutComponent,
     CrmTableComponent,
-    CrmColumnTemplateDirective
+    CrmColumnTemplateDirective,
+    MessageBackButtonComponent
   ],
   templateUrl: './campaign-list.component.html',
   styleUrl: './campaign-list.component.scss'

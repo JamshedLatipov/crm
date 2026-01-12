@@ -2,6 +2,8 @@
   [title]="templateId() ? 'Редактировать Telegram шаблон' : 'Новый Telegram шаблон'"
   [subtitle]="templateId() ? 'Изменение шаблона Telegram сообщения' : 'Создание шаблона Telegram сообщения'"
 >
+  <app-message-back-button page-back-button></app-message-back-button>
+
   <div page-actions>
     <button mat-stroked-button (click)="cancel()" [disabled]="loading()">
       <mat-icon>close</mat-icon>
