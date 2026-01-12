@@ -15,6 +15,7 @@ import {
   StageMovementStats,
   MostActiveDeal
 } from './dtos';
+import { DealsFilterState } from '../deals/deals-filter-state.interface';
 import { environment } from '../../environments/environment';
 
 export interface DealAssignment {
@@ -351,5 +352,18 @@ export class DealsService {
     }
 
     return this.http.get<MostActiveDeal[]>(`${this.apiUrl}/history/most-active-deals`, { params });
+  }
+
+  /**
+   * Advanced search with universal filters
+   */
+  searchDealsAdvanced(filterState: DealsFilterState, page: number, pageSize: number): Observable<{ data: Deal[]; total: number }> {
+    return this.http.post<{ data: Deal[]; total: number }>(`${this.apiUrl}/search/advanced`, {
+      search: filterState.search,
+      filters: filterState.filters,
+      status: filterState.status,
+      page,
+      pageSize,
+    });
   }
 }

@@ -13,6 +13,7 @@ import { ApiTags, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { DealsService } from './deals.service';
 import { CreateDealDto } from './dto/create-deal.dto';
 import { UpdateDealDto } from './dto/update-deal.dto';
+import { SearchDealsAdvancedDto } from './dto/search-deals-advanced.dto';
 import { DealStatus } from './deal.entity';
 import { DealChangeType } from './entities/deal-history.entity';
 import { JwtAuthGuard } from '../user/jwt-auth.guard';
@@ -76,6 +77,11 @@ export class DealsController {
   @Get('overdue')
   async getOverdueDeals() {
     return this.dealsService.getOverdueDeals();
+  }
+
+  @Post('search/advanced')
+  async searchDealsAdvanced(@Body() dto: SearchDealsAdvancedDto) {
+    return this.dealsService.searchDealsWithFilters(dto);
   }
 
   @Get('search')

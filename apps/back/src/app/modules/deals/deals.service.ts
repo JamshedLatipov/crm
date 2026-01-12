@@ -14,6 +14,7 @@ import {
 } from '../contacts/contact-activity.entity';
 import { CreateDealDto } from './dto/create-deal.dto';
 import { UpdateDealDto } from './dto/update-deal.dto';
+import { SearchDealsAdvancedDto } from './dto/search-deals-advanced.dto';
 import { PipelineStage, StageType } from '../pipeline/pipeline.entity';
 import { DealHistoryService } from './services/deal-history.service';
 import { DealChangeType } from './entities/deal-history.entity';
@@ -23,6 +24,7 @@ import { AutomationService } from '../pipeline/automation.service';
 import { NotificationService } from '../shared/services/notification.service';
 import { NotificationType, NotificationChannel, NotificationPriority } from '../shared/entities/notification.entity';
 import { CustomFieldsService } from '../custom-fields/services/custom-fields.service';
+import { UniversalFilterService } from '../shared/services/universal-filter.service';
 
 // Константа для определения высокоценной сделки (можно вынести в конфигурацию)
 const HIGH_VALUE_DEAL_THRESHOLD = 100000; // 100,000
@@ -43,6 +45,7 @@ export class DealsService {
     private readonly automationService: AutomationService,
     private readonly notificationService: NotificationService,
     private readonly customFieldsService: CustomFieldsService,
+    private readonly universalFilterService: UniversalFilterService,
   ) {}
 
   /**
@@ -1317,5 +1320,75 @@ export class DealsService {
       /*userId=*/ undefined,
       /*userName=*/ undefined
     );
+  }
+
+  /**
+   * Advanced search for deals with universal filters
+   */
+  async searchDealsWithFilters(dto: SearchDealsAdvancedDto): Promise<{ data: Deal[]; total: number }> {
+    const qb = this.dealRepository
+      .createQueryBuilder('deal')
+      .leftJoinAndSelect('deal.stage', 'stage')
+      .leftJoinAndSelect('deal.company', 'company')
+      .leftJoinAndSelect('deal.contact', 'contact')
+      .leftJoinAndSelect('deal.lead', 'lead');
+
+    // Static fields mapping for Deal entity
+    const staticFieldsMap: Record<string, string> = {
+      title: 'deal.title',
+      amount: 'deal.amount',
+      currency: 'deal.currency',
+      probability: 'deal.probability',
+      expectedCloseDate: 'deal.expectedCloseDate',
+      actualCloseDate: 'deal.actualCloseDate',
+      status: 'deal.status',
+      notes: 'deal.notes',
+      createdAt: 'deal.createdAt',
+      updatedAt: 'deal.updatedAt',
+    };
+
+    // Apply universal filters
+    this.universalFilterService.applyFilters(
+      qb,
+      dto.filters || [],
+      'deal',
+      staticFieldsMap
+    );
+
+    // Apply search across title, company name, contact name
+    if (dto.search) {
+      const searchTerm = `%${dto.search.toLowerCase()}%`;
+      qb.andWhere(
+        `(
+          LOWER(deal.title) LIKE :search OR
+          LOWER(company.name) LIKE :search OR
+          LOWER(contact.name) LIKE :search
+        )`,
+        { search: searchTerm }
+      );
+    }
+
+    // Apply status tab filter (open, won, lost, all)
+    if (dto.status && dto.status !== 'all') {
+      qb.andWhere('deal.status = :status', { status: dto.status });
+    }
+
+    // Count total before pagination
+    const total = await qb.getCount();
+
+    // Apply pagination
+    const page = dto.page || 1;
+    const pageSize = dto.pageSize || 25;
+    qb.skip((page - 1) * pageSize).take(pageSize);
+
+    // Default sorting
+    qb.orderBy('deal.createdAt', 'DESC');
+
+    const items = await qb.getMany();
+
+    // Attach assignments
+    await this.attachAssignments(items);
+
+    return { data: items, total };
   }
 }
