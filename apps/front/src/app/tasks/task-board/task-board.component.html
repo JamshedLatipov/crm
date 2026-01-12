@@ -1,0 +1,101 @@
+<app-page-layout 
+  title="Доска задач" 
+  subtitle="Управляйте задачами с помощью drag & drop">
+  
+  <!-- Page Actions (кнопки в header) -->
+  <div page-actions>
+    <button mat-stroked-button routerLink="/tasks">
+      <mat-icon>list</mat-icon>
+      Список
+    </button>
+    <button mat-stroked-button routerLink="/tasks/calendar">
+      <mat-icon>calendar_month</mat-icon>
+      Календарь
+    </button>
+    <button mat-stroked-button routerLink="/tasks/types">
+      <mat-icon>category</mat-icon>
+      Типы задач
+    </button>
+    <button mat-raised-button color="primary" (click)="createTask()">
+      <mat-icon>add</mat-icon>
+      Создать задачу
+    </button>
+  </div>
+
+  <!-- Filters Section -->
+  <div class="filters-section">
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-label>Поиск задач</mat-label>
+        <input 
+          matInput 
+          [value]="searchQuery()" 
+          (input)="onSearchChange($any($event.target).value)"
+          placeholder="Название или описание...">
+        <mat-icon matPrefix>search</mat-icon>
+      </mat-form-field>
+
+      <!-- Переиспользуемый компонент фильтра исполнителей -->
+      <app-user-multiselect-filter
+        #userFilter
+        (selectionChange)="onAssigneesChange($event)">
+      </app-user-multiselect-filter>
+  </div>
+
+  <!-- Stats Section -->
+  <div class="stats-section">
+    <div class="stat-card">
+      <mat-icon class="stat-icon total">folder_open</mat-icon>
+      <div class="stat-content">
+        <div class="stat-value">{{ stats().total }}</div>
+        <div class="stat-label">Всего задач</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <mat-icon class="stat-icon pending">schedule</mat-icon>
+      <div class="stat-content">
+        <div class="stat-value">{{ stats().pending }}</div>
+        <div class="stat-label">К выполнению</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <mat-icon class="stat-icon in-progress">play_circle</mat-icon>
+      <div class="stat-content">
+        <div class="stat-value">{{ stats().inProgress }}</div>
+        <div class="stat-label">В работе</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <mat-icon class="stat-icon done">check_circle</mat-icon>
+      <div class="stat-content">
+        <div class="stat-value">{{ stats().done }}</div>
+        <div class="stat-label">Завершено</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Board Content -->
+  <div class="board-content">
+    @if (isLoading()) {
+      <div class="loading-container">
+        <mat-spinner diameter="48"></mat-spinner>
+        <p>Загрузка задач...</p>
+      </div>
+    } @else {
+      <div class="board-columns" cdkDropListGroup>
+        @for (column of columns(); track column.id) {
+          <app-task-board-column
+            [column]="column"
+            [connectedTo]="columnIds()"
+            (drop)="onDrop($event, column)"
+            (taskClick)="onTaskClick($event)"
+            (taskEdit)="onTaskEdit($event)"
+            (taskDelete)="onTaskDelete($event)">
+          </app-task-board-column>
+        }
+      </div>
+    }
+  </div>
+</app-page-layout>

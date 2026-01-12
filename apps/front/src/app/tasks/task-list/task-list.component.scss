@@ -222,6 +222,16 @@
   }
 }
 
+// Wrapper для фильтра исполнителей (чтобы сохранить состояние вне *ngIf)
+.filters-section-wrapper {
+  margin-bottom: 16px;
+  
+  app-user-multiselect-filter {
+    display: block;
+    max-width: 400px;
+  }
+}
+
 // Filters
 .filters-section {
   margin-bottom: 24px;
@@ -236,7 +246,8 @@
 .filters-grid {
   display: flex;
   gap: 20px;
-  align-items: center;
+  align-items: flex-start;
+  flex-wrap: wrap;
 
   .status-tabs {
     display: flex;
@@ -459,3 +470,17 @@
 ::ng-deep .mat-mdc-paginator {
   border-top: 1px solid #e2e8f0;
 }
+
+// ========== Стили для мультиселекта исполнителей ==========
+
+.filter-field {
+  min-width: 280px;
+  
+  &.multiselect-field {
+    min-width: 400px;
+    flex: 1;
+  }
+}
+
+// Все стили для мультиселекта пользователей (чипы, аватары, автокомплит) 
+// теперь находятся в UserMultiselectFilterComponent

@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, ViewChild, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -25,6 +25,7 @@ import { TaskStatusComponent } from '../components/task-status/task-status.compo
 import { TaskModalService } from '../services/task-modal.service';
 import { TaskModalComponent } from '../components/task-modal/task-modal.component';
 import { PageLayoutComponent } from '../../shared/page-layout/page-layout.component';
+import { UserMultiselectFilterComponent } from '../../shared/components/user-multiselect-filter/user-multiselect-filter.component';
 
 // Ensure this matches TaskDto in service
 interface Task {
@@ -71,17 +72,21 @@ interface Task {
     TaskModalComponent,
     PageLayoutComponent,
     MatDialogModule,
+    UserMultiselectFilterComponent,
   ],
   templateUrl: './task-list.component.html',
   styleUrls: ['./task-list.component.scss']
 })
-export class TaskListComponent implements OnInit {
+export class TaskListComponent implements OnInit, AfterViewInit {
   tasks = signal<Task[]>([]);
   paginatedTasks = signal<Task[]>([]);
   isLoading = signal(true);
   
   searchQuery = '';
   selectedStatus: string | null = null;
+  selectedAssignees = signal<Array<number | string>>([]);
+  
+  @ViewChild(UserMultiselectFilterComponent) userFilter!: UserMultiselectFilterComponent;
   
   // Pagination
   currentPage = 0;
@@ -119,7 +124,15 @@ export class TaskListComponent implements OnInit {
     });
   }
 
+  ngAfterViewInit() {
+    // Синхронизируем состояние фильтра с компонентом после инициализации view
+    if (this.userFilter && this.selectedAssignees().length > 0) {
+      this.userFilter.setSelectedUsers(this.selectedAssignees());
+    }
+  }
+
   loadTasks() {
+    console.log('Task List: loadTasks() called, selectedAssignees:', this.selectedAssignees());
     this.isLoading.set(true);
     // Use server-side pagination and filtering
     this.tasksService.list(
@@ -132,11 +145,21 @@ export class TaskListComponent implements OnInit {
     ).subscribe({
       next: (res) => {
         // Support both {data, total} and Array formats for robustness
-        const data = Array.isArray(res) ? res : (res.data || []);
+        let data = Array.isArray(res) ? res : (res.data || []);
         const total = (res as any).total !== undefined ? (res as any).total : data.length;
 
+        // Клиентская фильтрация по исполнителям (если выбраны)
+        const assigneeIds = this.selectedAssignees();
+        if (assigneeIds.length > 0) {
+          data = data.filter((task: Task) => {
+            // Проверяем assignedToId или assignedTo.id
+            const taskAssigneeId = task.assignedTo?.id || (task as any).assignedToId;
+            return taskAssigneeId && assigneeIds.some(id => taskAssigneeId == id);
+          });
+        }
+
         this.tasks.set(data);
-        this.totalResults = total;
+        this.totalResults = data.length; // Обновляем total после фильтрации
         this.paginatedTasks.set(data);
 
         // Stats are now partial (per page), until we add a separate stats endpoint
@@ -168,14 +191,6 @@ export class TaskListComponent implements OnInit {
     this.stats.inProgress = tasks.filter(t => t.status === 'in_progress').length;
     this.stats.done = tasks.filter(t => t.status === 'done').length;
     this.stats.overdue = tasks.filter(t => t.status === 'overdue').length;
-  }
-  
-  applyFilters() {
-     // Trigger reload to apply filters on server if implemented, or just local
-     // Since backend list() doesn't take status/query yet in my TasksService interface update (I only added page/limit),
-     // I will stick to simple pagination. If filters are needed, I'd need to update Service/Backend.
-     // For now, reload.
-     this.loadTasks();
   }
   
   // Removed local pagination logic
@@ -318,4 +333,27 @@ export class TaskListComponent implements OnInit {
 
     return '';
   }
+
+  // ========== Методы для фильтра по исполнителям ==========
+  
+  onAssigneesChange(userIds: Array<number | string>): void {
+    console.log('Task List: onAssigneesChange called with:', userIds);
+    console.log('Task List: selectedAssignees BEFORE set:', this.selectedAssignees());
+    this.selectedAssignees.set(userIds);
+    console.log('Task List: selectedAssignees AFTER set:', this.selectedAssignees());
+    
+    // Синхронизируем дочерний компонент с новым состоянием
+    if (this.userFilter) {
+      console.log('Task List: Syncing userFilter with new selection:', userIds);
+      this.userFilter.setSelectedUsers(userIds);
+    }
+    
+    this.applyFilters();
+  }
+
+  applyFilters(): void {
+    this.currentPage = 0; // Reset to first page
+    this.loadTasks();
+  }
+
 }

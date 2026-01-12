@@ -1,5 +1,7 @@
 import { Injectable, signal } from '@angular/core';
-import { Subject } from 'rxjs';
+import { Subject, Observable } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
+import { Router } from '@angular/router';
 
 export interface TaskModalConfig {
   title?: string;
@@ -24,6 +26,11 @@ export class TaskModalService {
   
   // Event emitter for when a task is created or updated
   public taskSaved$ = new Subject<void>();
+
+  constructor(
+    private dialog: MatDialog,
+    private router: Router
+  ) {}
 
   /**
    * Open the task creation/editing modal
@@ -80,5 +87,47 @@ export class TaskModalService {
       mode: 'edit',
       taskId,
     });
+  }
+
+  /**
+   * Open task creation modal
+   */
+  openCreateTask(config: Partial<TaskModalConfig> = {}): Observable<any> {
+    return new Observable(observer => {
+      this.openModal({
+        mode: 'create',
+        ...config
+      });
+      
+      const subscription = this.taskSaved$.subscribe(() => {
+        observer.next(true);
+        observer.complete();
+      });
+
+      return () => subscription.unsubscribe();
+    });
+  }
+
+  /**
+   * Open task edit modal
+   */
+  openEditTask(taskId: number): Observable<any> {
+    return new Observable(observer => {
+      this.openEditModal(taskId);
+      
+      const subscription = this.taskSaved$.subscribe(() => {
+        observer.next(true);
+        observer.complete();
+      });
+
+      return () => subscription.unsubscribe();
+    });
+  }
+
+  /**
+   * Open task detail view (navigate to detail page)
+   */
+  openTaskDetail(taskId: number): void {
+    this.router.navigate(['/tasks', taskId]);
   }
 }

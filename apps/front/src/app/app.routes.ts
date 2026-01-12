@@ -25,6 +25,7 @@ import { CreateStageComponent } from './pipeline/create-stage/create-stage.compo
 import { TaskListComponent } from './tasks/task-list/task-list.component';
 import { TaskFormComponent } from './tasks/task-form/task-form.component';
 import { TaskDetailComponent } from './tasks/task-detail/task-detail.component';
+import { TaskBoardComponent } from './tasks/task-board/task-board.component';
 import { TaskTypesManagerComponent } from './components/task-types-manager.component';
 import { usersRoutes } from './pages/users/users.routes';
 import { AdsCampaignsComponent } from './pages/ads/ads-campaigns.component';
@@ -102,6 +103,7 @@ export const appRoutes: Route[] = [
         canActivate: [authGuard],
         children: [
             { path: '', component: TaskListComponent },
+            { path: 'board', component: TaskBoardComponent },
             { path: 'calendar', component: TaskCalendarPageComponent },
             { path: 'types', component: TaskTypesManagerComponent },
             { path: 'new', component: TaskFormComponent },

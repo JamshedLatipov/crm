@@ -1,51 +1,76 @@
-<div class="calendar">
-  <crm-task-calendar-header
-    [active]="active"
-    [viewMode]="viewMode"
-    [users]="users"
-    [taskTypes]="taskTypes"
-    (prev)="prevMonth()"
-    (next)="nextMonth()"
-    (setView)="setView($event)"
-    (filtersChange)="onFiltersChange($event)"
-  ></crm-task-calendar-header>
-
-  <div *ngIf="viewMode==='month'">
-    <crm-task-calendar-month 
-      [weeks]="weeks" 
-      [maxTasksPerCell]="maxTasksPerCell" 
-      (openCreate)="openCreate($event)"
-      (taskClick)="onTaskClick($event)"
-      (showMore)="onShowMore($event)">
-    </crm-task-calendar-month>
-  </div>
-
-  <div *ngIf="viewMode==='week' || viewMode==='work-week'">
-    <crm-task-calendar-week
-      [weekDays]="weekDays"
-      [weekHours]="weekHours"
-      [maxTasksPerCell]="maxTasksPerCell"
-      [currentHour]="currentHour"
-      (openCreate)="openCreate($event.date, $event.hour)"
-      (taskClick)="onTaskClick($event)"
-      (showMoreForHour)="onShowMoreForHour($event)"
-    ></crm-task-calendar-week>
-  </div>
-
-  <div *ngIf="viewMode==='year'">
-    <crm-task-calendar-year [months]="months" (goToMonth)="goToMonth($event)"></crm-task-calendar-year>
-  </div>
+<app-page-layout 
+  title="Календарь задач" 
+  subtitle="Управляйте задачами в календарном представлении">
   
-  <crm-task-calendar-create-modal
-    [open]="createModalOpen"
-    [dateStr]="createDateStr"
-    [timeStr]="createTimeStr"
-    [title]="createTitle"
-    [showTime]="createHour !== null"
-    (create)="onCreateFromModal($event)"
-    (cancel)="closeCreate()"
-  ></crm-task-calendar-create-modal>
+  <!-- Page Actions (кнопки в header) -->
+  <div page-actions>
+    <button mat-stroked-button routerLink="/tasks">
+      <mat-icon>list</mat-icon>
+      Список
+    </button>
+    <button mat-stroked-button routerLink="/tasks/board">
+      <mat-icon>view_kanban</mat-icon>
+      Доска
+    </button>
+    <button mat-stroked-button routerLink="/tasks/types">
+      <mat-icon>category</mat-icon>
+      Типы задач
+    </button>
+    <button mat-raised-button color="primary" (click)="createTaskToday()">
+      <mat-icon>add</mat-icon>
+      Создать задачу
+    </button>
+  </div>
 
-  <!-- New unified task modal -->
-  <app-task-modal></app-task-modal>
-</div>
+  <div class="calendar">
+    <crm-task-calendar-header
+      [active]="active"
+      [viewMode]="viewMode"
+      [users]="users"
+      [taskTypes]="taskTypes"
+      (prev)="prevMonth()"
+      (next)="nextMonth()"
+      (setView)="setView($event)"
+      (filtersChange)="onFiltersChange($event)"
+    ></crm-task-calendar-header>
+
+    <div *ngIf="viewMode==='month'">
+      <crm-task-calendar-month 
+        [weeks]="weeks" 
+        [maxTasksPerCell]="maxTasksPerCell" 
+        (openCreate)="openCreate($event)"
+        (taskClick)="onTaskClick($event)"
+        (showMore)="onShowMore($event)">
+      </crm-task-calendar-month>
+    </div>
+
+    <div *ngIf="viewMode==='week' || viewMode==='work-week'">
+      <crm-task-calendar-week
+        [weekDays]="weekDays"
+        [weekHours]="weekHours"
+        [maxTasksPerCell]="maxTasksPerCell"
+        [currentHour]="currentHour"
+        (openCreate)="openCreate($event.date, $event.hour)"
+        (taskClick)="onTaskClick($event)"
+        (showMoreForHour)="onShowMoreForHour($event)"
+      ></crm-task-calendar-week>
+    </div>
+
+    <div *ngIf="viewMode==='year'">
+      <crm-task-calendar-year [months]="months" (goToMonth)="goToMonth($event)"></crm-task-calendar-year>
+    </div>
+    
+    <crm-task-calendar-create-modal
+      [open]="createModalOpen"
+      [dateStr]="createDateStr"
+      [timeStr]="createTimeStr"
+      [title]="createTitle"
+      [showTime]="createHour !== null"
+      (create)="onCreateFromModal($event)"
+      (cancel)="closeCreate()"
+    ></crm-task-calendar-create-modal>
+
+    <!-- New unified task modal -->
+    <app-task-modal></app-task-modal>
+  </div>
+</app-page-layout>

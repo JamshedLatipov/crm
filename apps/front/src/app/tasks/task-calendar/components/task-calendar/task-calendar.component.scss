@@ -16,42 +16,7 @@
   font-family: var(--font-sans, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif);
   color: var(--text-primary);
   max-width: 100%;
-  padding: 20px;
   background: var(--background-light);
-  border-radius: 12px;
-}
-
-.calendar-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20px;
-  padding: 16px 20px;
-  background: var(--card-bg);
-  border-radius: 12px;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border-color);
-}
-
-.calendar-header .nav-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.calendar-header .month {
-  font-weight: 700;
-  font-size: 20px;
-  color: var(--text-primary);
-  min-width: 200px;
-}
-
-.view-modes {
-  display: flex;
-  gap: 8px;
-  background: #f1f5f9;
-  padding: 4px;
-  border-radius: 8px;
 }
 
 .mode-btn {

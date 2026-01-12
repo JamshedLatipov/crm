@@ -1,5 +1,13 @@
 <app-page-layout title="Задачи" subtitle="Управление задачами и их выполнением">
   <div page-actions>
+    <button mat-stroked-button routerLink="/tasks/board">
+      <mat-icon>dashboard</mat-icon>
+      Board View
+    </button>
+    <button mat-stroked-button routerLink="/tasks/calendar">
+      <mat-icon>calendar_month</mat-icon>
+      Календарь
+    </button>
     <button mat-stroked-button (click)="goToTaskTypes()">
       <mat-icon>category</mat-icon>
       Типы задач
@@ -61,6 +69,14 @@
     <div *ngIf="isLoading()" class="loading-container">
       <mat-spinner diameter="40"></mat-spinner>
       <p>Загрузка задач...</p>
+    </div>
+
+    <!-- Фильтр по исполнителям (вынесен за пределы *ngIf для сохранения состояния) -->
+    <div class="filters-section-wrapper">
+      <app-user-multiselect-filter
+        #userFilter
+        (selectionChange)="onAssigneesChange($event)">
+      </app-user-multiselect-filter>
     </div>
 
     <!-- Фильтры -->

@@ -1,0 +1,60 @@
+<div class="board-column">
+  <!-- Column Header -->
+  <div class="column-header" [style.border-color]="column.color">
+    <div class="header-left">
+      <mat-icon [style.color]="column.color">{{ column.icon }}</mat-icon>
+      <h3 class="column-title">{{ column.title }}</h3>
+      <span class="task-count">{{ column.tasks.length }}</span>
+    </div>
+    
+    <div class="header-actions">
+      <button 
+        mat-icon-button 
+        class="column-action-btn"
+        matTooltip="Действия"
+        [matMenuTriggerFor]="columnMenu">
+        <mat-icon>more_vert</mat-icon>
+      </button>
+      
+      <mat-menu #columnMenu="matMenu">
+        <button mat-menu-item>
+          <mat-icon>sort</mat-icon>
+          <span>Сортировать</span>
+        </button>
+        <button mat-menu-item>
+          <mat-icon>filter_list</mat-icon>
+          <span>Фильтровать</span>
+        </button>
+      </mat-menu>
+    </div>
+  </div>
+
+  <!-- Tasks List -->
+  <div 
+    class="column-content"
+    cdkDropList
+    [id]="column.id"
+    [cdkDropListData]="column.tasks"
+    [cdkDropListConnectedTo]="connectedTo"
+    (cdkDropListDropped)="onDrop($event)">
+    
+    @if (column.tasks.length === 0) {
+      <div class="empty-column">
+        <mat-icon>inbox</mat-icon>
+        <p>Нет задач</p>
+      </div>
+    } @else {
+      @for (task of column.tasks; track task.id) {
+        <app-task-board-card
+          [task]="task"
+          [columnColor]="column.color"
+          (click)="onTaskClick(task)"
+          (edit)="onTaskEdit(task)"
+          (delete)="onTaskDelete(task)"
+          cdkDrag
+          [cdkDragData]="task">
+        </app-task-board-card>
+      }
+    }
+  </div>
+</div>

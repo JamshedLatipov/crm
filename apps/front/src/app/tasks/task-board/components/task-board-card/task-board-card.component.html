@@ -1,0 +1,75 @@
+<mat-card class="task-card" [style.border-left-color]="columnColor">
+  <mat-card-content>
+    <!-- Header with priority and actions -->
+    <div class="card-header">
+      <div class="priority-badge" [style.background]="getPriorityConfig().color">
+        <mat-icon class="priority-icon">{{ getPriorityConfig().icon }}</mat-icon>
+      </div>
+      
+      <button 
+        mat-icon-button 
+        class="card-action-btn"
+        [matMenuTriggerFor]="cardMenu"
+        (click)="$event.stopPropagation()">
+        <mat-icon>more_vert</mat-icon>
+      </button>
+      
+      <mat-menu #cardMenu="matMenu">
+        <button mat-menu-item (click)="onEdit($event)">
+          <mat-icon>edit</mat-icon>
+          <span>Редактировать</span>
+        </button>
+        <button mat-menu-item (click)="onDelete($event)">
+          <mat-icon>delete</mat-icon>
+          <span>Удалить</span>
+        </button>
+      </mat-menu>
+    </div>
+
+    <!-- Title -->
+    <h4 class="task-title" [matTooltip]="task?.title || ''">{{ task?.title || 'Без названия' }}</h4>
+
+    <!-- Description -->
+    @if (task?.description) {
+      <p class="task-description">{{ task.description }}</p>
+    }
+
+    <!-- Task Type -->
+    @if (task?.taskType) {
+      <div class="task-type-section">
+        <app-task-type-display [taskType]="task.taskType" [compact]="true"></app-task-type-display>
+      </div>
+    }
+
+    <!-- Footer -->
+    <div class="card-footer">
+      <!-- Due Date -->
+      @if (task?.dueDate) {
+        <app-task-due-date [task]="task"></app-task-due-date>
+      }
+
+      <!-- Assignee -->
+      @if (task?.assignedTo) {
+        <div class="assignee" [matTooltip]="task.assignedTo.name || task.assignedTo.email">
+          <mat-icon>person</mat-icon>
+          <span class="assignee-name">{{ task.assignedTo.name || task.assignedTo.email }}</span>
+        </div>
+      }
+
+      <!-- Links indicators -->
+      @if (hasLinks()) {
+        <div class="links-section">
+          @if (task.leadId) {
+            <mat-icon class="link-icon" matTooltip="Связан с лидом">contact_page</mat-icon>
+          }
+          @if (task.dealId) {
+            <mat-icon class="link-icon" matTooltip="Связан со сделкой">handshake</mat-icon>
+          }
+          @if (task.callLogId) {
+            <mat-icon class="link-icon" matTooltip="Связан с звонком">phone</mat-icon>
+          }
+        </div>
+      }
+    </div>
+  </mat-card-content>
+</mat-card>

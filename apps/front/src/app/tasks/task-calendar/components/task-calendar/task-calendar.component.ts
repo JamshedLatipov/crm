@@ -1,6 +1,10 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.component';
 import { TaskCalendarHeaderComponent } from '../task-calendar-header/task-calendar-header.component';
 import { TaskCalendarMonthComponent } from '../task-calendar-month/task-calendar-month.component';
 import { TaskCalendarWeekComponent } from '../task-calendar-week/task-calendar-week.component';
@@ -31,6 +35,10 @@ import {
   imports: [
     CommonModule,
     FormsModule,
+    RouterModule,
+    MatButtonModule,
+    MatIconModule,
+    PageLayoutComponent,
     TaskCalendarHeaderComponent,
     TaskCalendarMonthComponent,
     TaskCalendarWeekComponent,
@@ -393,6 +401,10 @@ export class TaskCalendarComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.subs.forEach((s) => s?.unsubscribe?.());
+  }
+
+  createTaskToday() {
+    this.openCreate(new Date());
   }
 
   openCreate(date: Date | null, hour?: number | null) {
