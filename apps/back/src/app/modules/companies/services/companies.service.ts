@@ -5,6 +5,8 @@ import { Company, CompanyType, CompanySize, Industry } from '../entities/company
 import { CreateCompanyDto } from '../dto/create-company.dto';
 import { UpdateCompanyDto } from '../dto/update-company.dto';
 import { CustomFieldsService } from '../../custom-fields/services/custom-fields.service';
+import { UniversalFilterService } from '../../shared/services/universal-filter.service';
+import { SearchCompaniesAdvancedDto } from '../dto/search-companies-advanced.dto';
 
 export interface CompanyFilters {
   search?: string;
@@ -30,6 +32,7 @@ export class CompaniesService {
     @InjectRepository(Company)
     private companiesRepository: Repository<Company>,
     private readonly customFieldsService: CustomFieldsService,
+    private readonly universalFilterService: UniversalFilterService,
   ) {}
 
   async create(createCompanyDto: CreateCompanyDto): Promise<Company> {
@@ -354,5 +357,89 @@ export class CompaniesService {
     }
 
     return result;
+  }
+
+  /**
+   * Advanced search with universal filters
+   */
+  async searchCompaniesWithFilters(
+    dto: SearchCompaniesAdvancedDto,
+    page = 1,
+    pageSize = 25,
+  ): Promise<{ data: Company[]; total: number }> {
+    // Static field mappings for companies
+    const staticFields: Record<string, string> = {
+      name: 'company.name',
+      legalName: 'company.legalName',
+      inn: 'company.inn',
+      kpp: 'company.kpp',
+      description: 'company.description',
+      website: 'company.website',
+      email: 'company.email',
+      phone: 'company.phone',
+      address: 'company.address',
+      city: 'company.city',
+      region: 'company.region',
+      country: 'company.country',
+      postalCode: 'company.postalCode',
+      type: 'company.type',
+      industry: 'company.industry',
+      size: 'company.size',
+      employeeCount: 'company.employeeCount',
+      revenue: 'company.revenue',
+      foundedDate: 'company.foundedDate',
+      firstContactDate: 'company.firstContactDate',
+      lastActivityDate: 'company.lastActivityDate',
+      isActive: 'company.isActive',
+      isBlacklisted: 'company.isBlacklisted',
+      blacklistReason: 'company.blacklistReason',
+      notes: 'company.notes',
+      createdAt: 'company.createdAt',
+      updatedAt: 'company.updatedAt',
+    };
+
+    const queryBuilder = this.companiesRepository.createQueryBuilder('company');
+
+    // Apply text search across multiple fields
+    if (dto.search) {
+      queryBuilder.andWhere(
+        '(company.name ILIKE :search OR company.legalName ILIKE :search OR company.description ILIKE :search OR company.address ILIKE :search OR company.email ILIKE :search OR company.phone ILIKE :search)',
+        { search: `%${dto.search}%` }
+      );
+    }
+
+    // Apply status tab filtering
+    if (dto.status && dto.status !== 'all') {
+      if (dto.status === 'active') {
+        queryBuilder.andWhere('company.isActive = :isActive', { isActive: true });
+      } else if (dto.status === 'inactive') {
+        queryBuilder.andWhere('company.isActive = :isActive', { isActive: false });
+      } else if (dto.status === 'blacklisted') {
+        queryBuilder.andWhere('company.isBlacklisted = :isBlacklisted', { isBlacklisted: true });
+      }
+    }
+
+    // Apply universal filters
+    if (dto.filters && dto.filters.length > 0) {
+      this.universalFilterService.applyFilters(
+        queryBuilder,
+        dto.filters,
+        'company',
+        staticFields,
+      );
+    }
+
+    // Count total results
+    const total = await queryBuilder.getCount();
+
+    // Apply pagination
+    queryBuilder.skip((page - 1) * pageSize).take(pageSize);
+
+    // Default ordering
+    queryBuilder.orderBy('company.name', 'ASC');
+
+    const data = await queryBuilder.getMany();
+
+    return { data, total };
   }
 }

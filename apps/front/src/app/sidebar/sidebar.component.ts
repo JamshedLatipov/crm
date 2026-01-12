@@ -48,6 +48,7 @@ export class SidebarComponent {
   menuItems: MenuItem[] = [
     { icon: 'dashboard', label: 'Дашборд', route: '/dashboard' },
     { icon: 'people', label: 'Контакты', route: '/contacts' },
+    { icon: 'business', label: 'Компании', route: '/companies' },
     { icon: 'trending_up', label: 'Лиды', route: '/leads' },
     { icon: 'account_tree', label: 'Воронка', route: '/pipeline' },
     { icon: 'handshake', label: 'Сделки', route: '/deals' },
