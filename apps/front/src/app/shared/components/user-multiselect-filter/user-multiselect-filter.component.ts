@@ -62,17 +62,13 @@ export class UserMultiselectFilterComponent implements OnInit {
     return filtered;
   });
 
-  constructor(private usersService: UsersService) {
-    console.log('UserMultiselectFilter: Constructor called');
-  }
+  constructor(private usersService: UsersService) {}
 
   ngOnInit(): void {
-    console.log('UserMultiselectFilter: ngOnInit called');
     this.loadUsers();
   }
 
   loadUsers(): void {
-    console.log('UserMultiselectFilter: loadUsers called');
     this.usersService.getAllUsers().subscribe({
       next: (users) => {
         this.users.set(users);
@@ -85,25 +81,18 @@ export class UserMultiselectFilterComponent implements OnInit {
 
   onUserSelected(event: any): void {
     const user = event.option.value;
-    console.log('UserMultiselectFilter: User selected:', user);
     
     if (user && user.id) {
       const currentIds = this.selectedUserIds();
       const currentObjects = this.selectedUserObjects();
       
-      console.log('UserMultiselectFilter: Current IDs before adding:', currentIds);
-      console.log('UserMultiselectFilter: Current objects before adding:', currentObjects);
-      
       if (!currentIds.includes(user.id)) {
         const updatedIds = [...currentIds, user.id];
         const updatedObjects = [...currentObjects, user];
         
-        console.log('UserMultiselectFilter: Emitting selection:', updatedIds);
         this.selectedUserIds.set(updatedIds);
         this.selectedUserObjects.set(updatedObjects);
         this.selectionChange.emit(updatedIds);
-      } else {
-        console.log('UserMultiselectFilter: User already selected, skipping');
       }
     }
     this.userSearchControl.setValue('', { emitEvent: false });
@@ -194,9 +183,6 @@ export class UserMultiselectFilterComponent implements OnInit {
 
   // Метод для программной установки выбранных пользователей
   setSelectedUsers(userIds: Array<number | string>): void {
-    console.log('UserMultiselectFilter: setSelectedUsers called with:', userIds);
-    console.log('UserMultiselectFilter: Available users:', this.users().length);
-    
     this.selectedUserIds.set(userIds);
     
     // Находим объекты пользователей для выбранных ID
@@ -204,11 +190,7 @@ export class UserMultiselectFilterComponent implements OnInit {
       .map(id => this.users().find(u => u.id === id))
       .filter(u => u !== undefined) as User[];
     
-    console.log('UserMultiselectFilter: Found user objects:', userObjects.length);
     this.selectedUserObjects.set(userObjects);
-    
-    console.log('UserMultiselectFilter: After setSelectedUsers - selectedUserIds:', this.selectedUserIds());
-    console.log('UserMultiselectFilter: After setSelectedUsers - selectedUserObjects:', this.selectedUserObjects());
   }
 
   // Метод для получения текущего выбора

@@ -25,7 +25,7 @@ import { MatMenuModule } from '@angular/material/menu';
     MatMenuModule,
   ],
   template: `
-    <app-page-layout title="PJSIP Endpoints">
+    <app-page-layout [title]="'PJSIP Endpoints'">
       <div page-actions class="actions">
         <button mat-flat-button color="primary" (click)="add()">Создать endpoint</button>
       </div>

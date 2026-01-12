@@ -132,7 +132,6 @@ export class TaskListComponent implements OnInit, AfterViewInit {
   }
 
   loadTasks() {
-    console.log('Task List: loadTasks() called, selectedAssignees:', this.selectedAssignees());
     this.isLoading.set(true);
     // Use server-side pagination and filtering
     this.tasksService.list(
@@ -337,14 +336,10 @@ export class TaskListComponent implements OnInit, AfterViewInit {
   // ========== Методы для фильтра по исполнителям ==========
   
   onAssigneesChange(userIds: Array<number | string>): void {
-    console.log('Task List: onAssigneesChange called with:', userIds);
-    console.log('Task List: selectedAssignees BEFORE set:', this.selectedAssignees());
     this.selectedAssignees.set(userIds);
-    console.log('Task List: selectedAssignees AFTER set:', this.selectedAssignees());
     
     // Синхронизируем дочерний компонент с новым состоянием
     if (this.userFilter) {
-      console.log('Task List: Syncing userFilter with new selection:', userIds);
       this.userFilter.setSelectedUsers(userIds);
     }
     

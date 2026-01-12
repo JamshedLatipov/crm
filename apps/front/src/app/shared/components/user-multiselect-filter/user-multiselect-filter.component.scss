@@ -12,13 +12,9 @@
 }
 
 .clear-btn {
-  width: 24px;
-  height: 24px;
+  margin-right: 10px;
   
   mat-icon {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
   }
 }
 
@@ -37,11 +33,22 @@ mat-chip-row {
   padding: 0.375rem 0.75rem !important;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
   color: white !important;
-  border-radius: 16px !important;
   font-size: 0.875rem;
   font-weight: 500;
   box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
   transition: all 0.2s;
+
+
+  & .crm-chip-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+
+    
+    .chip-avatar {
+        margin-right: 10px;
+    }
+  }
 
   &:hover {
     box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);

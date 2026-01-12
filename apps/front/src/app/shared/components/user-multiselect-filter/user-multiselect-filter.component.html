@@ -1,20 +1,24 @@
-<mat-form-field [appearance]="appearance()" class="filter-field multiselect-field">
+<mat-form-field
+  [appearance]="appearance()"
+  class="filter-field multiselect-field"
+>
   <mat-label>{{ label() }}</mat-label>
-  
+
   <!-- Чипы выбранных пользователей -->
   <mat-chip-grid #chipGrid>
-    @for (userId of selectedUserIds(); track userId) {
-      @if (getUserById(userId); as user) {
-        <mat-chip-row (removed)="removeUser(userId)">
-          <div class="chip-avatar">{{ getInitials(user) }}</div>
-          <span class="chip-label">{{ getUserDisplayName(user) }}</span>
-          <button matChipRemove>
-            <mat-icon>cancel</mat-icon>
-          </button>
-        </mat-chip-row>
-      }
-    }
-    
+    @for (userId of selectedUserIds(); track userId) { @if (getUserById(userId);
+    as user) {
+    <mat-chip-row (removed)="removeUser(userId)">
+      <div class="crm-chip-row">
+        <div class="chip-avatar">{{ getInitials(user) }}</div>
+        <span class="chip-label">{{ getUserDisplayName(user) }}</span>
+        <button matChipRemove>
+          <mat-icon>cancel</mat-icon>
+        </button>
+      </div>
+    </mat-chip-row>
+    } }
+
     <!-- Поле ввода для поиска -->
     <input
       type="text"
@@ -22,38 +26,42 @@
       [formControl]="userSearchControl"
       [matAutocomplete]="auto"
       [matChipInputFor]="chipGrid"
-      [placeholder]="selectedUserIds().length === 0 ? placeholder() : 'Добавить еще...'">
+      [placeholder]="
+        selectedUserIds().length === 0 ? placeholder() : 'Добавить еще...'
+      "
+    />
   </mat-chip-grid>
-  
+
   <mat-icon matPrefix class="filter-icon">people</mat-icon>
   @if (selectedUserIds().length > 0) {
-    <button 
-      matSuffix 
-      mat-icon-button 
-      (click)="clearAll($event)"
-      class="clear-btn"
-      matTooltip="Очистить фильтр">
-      <mat-icon>close</mat-icon>
-    </button>
+  <button
+    matSuffix
+    mat-icon-button
+    (click)="clearAll($event)"
+    class="clear-btn"
+    matTooltip="Очистить фильтр"
+  >
+    <mat-icon>close</mat-icon>
+  </button>
   }
-  
-  <mat-autocomplete 
+
+  <mat-autocomplete
     #auto="matAutocomplete"
     (optionSelected)="onUserSelected($event)"
-    class="user-autocomplete">
-    
+    class="user-autocomplete"
+  >
     @for (user of filteredUsers(); track user.id) {
-      <mat-option [value]="user">
-        <div class="user-option">
-          <div class="user-avatar">
-            {{ getInitials(user) }}
-          </div>
-          <div class="user-info">
-            <span class="user-name">{{ getUserDisplayName(user) }}</span>
-            <span class="user-email">{{ user.email }}</span>
-          </div>
+    <mat-option [value]="user">
+      <div class="user-option">
+        <div class="user-avatar">
+          {{ getInitials(user) }}
         </div>
-      </mat-option>
+        <div class="user-info">
+          <span class="user-name">{{ getUserDisplayName(user) }}</span>
+          <span class="user-email">{{ user.email }}</span>
+        </div>
+      </div>
+    </mat-option>
     }
   </mat-autocomplete>
 </mat-form-field>

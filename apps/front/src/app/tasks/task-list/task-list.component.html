@@ -71,16 +71,8 @@
       <p>Загрузка задач...</p>
     </div>
 
-    <!-- Фильтр по исполнителям (вынесен за пределы *ngIf для сохранения состояния) -->
-    <div class="filters-section-wrapper">
-      <app-user-multiselect-filter
-        #userFilter
-        (selectionChange)="onAssigneesChange($event)">
-      </app-user-multiselect-filter>
-    </div>
-
     <!-- Фильтры -->
-    <div *ngIf="!isLoading()" class="filters-section">
+    <div class="filters-section">
       <div class="filters-card">
         <div class="filters-grid">
           <!-- Статус табы -->
@@ -133,14 +125,21 @@
             />
             <mat-icon matSuffix>search</mat-icon>
           </mat-form-field>
+
+          <!-- Фильтр по исполнителям (вынесен за пределы *ngIf для сохранения состояния) -->
+          <div class="filters-section-wrapper">
+            <app-user-multiselect-filter
+              #userFilter
+              (selectionChange)="onAssigneesChange($event)"
+            >
+            </app-user-multiselect-filter>
+          </div>
         </div>
       </div>
     </div>
+    
     <!-- Таблица задач -->
-    <div
-      *ngIf="!isLoading() && tasks().length > 0"
-      class="table-container"
-    >
+    <div *ngIf="!isLoading() && tasks().length > 0" class="table-container">
       <table
         mat-table
         [dataSource]="paginatedTasks()"
