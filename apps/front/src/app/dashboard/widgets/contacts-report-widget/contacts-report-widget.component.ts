@@ -95,4 +95,9 @@ export class ContactsReportWidgetComponent implements OnInit {
     const definition = this.customFieldDefinitions().find(f => f.name === fieldName);
     return definition?.label || fieldName;
   }
+
+  hasData(): boolean {
+    const data = this.reportData();
+    return !!(data && data.totalContacts > 0);
+  }
 }
