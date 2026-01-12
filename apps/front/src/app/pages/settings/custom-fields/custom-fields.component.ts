@@ -1,12 +1,11 @@
 import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatTabsModule } from '@angular/material/tabs';
@@ -15,6 +14,7 @@ import { CustomFieldsService } from '../../../services/custom-fields.service';
 import {
   CustomFieldDefinition,
   EntityType,
+  FieldType,
 } from '../../../models/custom-field.model';
 import { CustomFieldEditorDialogComponent } from './custom-field-editor-dialog.component';
 
@@ -30,7 +30,6 @@ import { CustomFieldEditorDialogComponent } from './custom-field-editor-dialog.c
     MatTableModule,
     MatDialogModule,
     MatSnackBarModule,
-    MatCardModule,
     MatChipsModule,
     MatTooltipModule,
     MatTabsModule,

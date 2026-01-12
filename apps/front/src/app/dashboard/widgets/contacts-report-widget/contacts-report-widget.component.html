@@ -1,4 +1,4 @@
-<mat-card class="contacts-report-widget" *ngIf="!loading && hasData()">
+<mat-card class="contacts-report-widget">
   <mat-card-header>
     <mat-card-title>
       <mat-icon>contacts</mat-icon>
@@ -17,7 +17,19 @@
   </mat-card-header>
 
   <mat-card-content>
-    <div *ngIf="reportData()" class="report-content">
+    <!-- Loading State -->
+    <div *ngIf="loading" class="loading-container">
+      <mat-progress-spinner mode="indeterminate" diameter="48"></mat-progress-spinner>
+    </div>
+
+    <!-- No Data State -->
+    <div *ngIf="!loading && !hasData()" class="empty-state">
+      <mat-icon>inbox</mat-icon>
+      <p>Нет данных для отображения</p>
+    </div>
+
+    <!-- Report Content -->
+    <div *ngIf="!loading && hasData()" class="report-content">
       <!-- Main statistics -->
       <div class="stats-grid">
         <div class="stat-card">

@@ -1,128 +1,118 @@
 <div class="custom-fields-container">
-  <mat-card>
-    <mat-card-header>
-      <mat-card-title>
-        <div class="header-row">
-          <h2>Настройка дополнительных полей</h2>
-          <button mat-raised-button color="primary" (click)="openCreateDialog()">
-            <mat-icon>add</mat-icon>
-            Добавить поле
-          </button>
-        </div>
-      </mat-card-title>
-    </mat-card-header>
+  <div class="header-row">
+    <mat-tab-group (selectedTabChange)="onEntityTypeChange(entityTypes[$event.index])">
+      <mat-tab label="Контакты"></mat-tab>
+      <mat-tab label="Лиды"></mat-tab>
+      <mat-tab label="Сделки"></mat-tab>
+      <mat-tab label="Компании"></mat-tab>
+    </mat-tab-group>
+    <button mat-raised-button color="primary" (click)="openCreateDialog()">
+      <mat-icon>add</mat-icon>
+      Добавить поле
+    </button>
+  </div>
 
-    <mat-card-content>
-      <mat-tab-group (selectedTabChange)="onEntityTypeChange(entityTypes[$event.index])">
-        <mat-tab label="Контакты"></mat-tab>
-        <mat-tab label="Лиды"></mat-tab>
-        <mat-tab label="Сделки"></mat-tab>
-        <mat-tab label="Компании"></mat-tab>
-      </mat-tab-group>
+  @if (loading()) {
+    <div class="loading-state">
+      <p>Загрузка...</p>
+    </div>
+  } @else if (fields().length === 0) {
+    <div class="empty-state">
+      <mat-icon>tune</mat-icon>
+      <p>Нет настроенных полей для {{ selectedEntityType() }}</p>
+      <button mat-stroked-button (click)="openCreateDialog()">
+        Создать первое поле
+      </button>
+    </div>
+  } @else {
+    <div class="fields-table-container">
+      <table mat-table [dataSource]="fields()" cdkDropList (cdkDropListDropped)="drop($event)" class="fields-table">
+        <!-- Drag Handle Column -->
+        <ng-container matColumnDef="drag">
+          <th mat-header-cell *matHeaderCellDef style="width: 48px;"></th>
+          <td mat-cell *matCellDef="let field">
+            <mat-icon class="drag-handle" cdkDragHandle>drag_indicator</mat-icon>
+          </td>
+        </ng-container>
 
-      @if (loading()) {
-        <div class="loading-state">
-          <p>Загрузка...</p>
-        </div>
-      } @else if (fields().length === 0) {
-        <div class="empty-state">
-          <mat-icon>tune</mat-icon>
-          <p>Нет настроенных полей для {{ selectedEntityType() }}</p>
-          <button mat-stroked-button (click)="openCreateDialog()">
-            Создать первое поле
-          </button>
-        </div>
-      } @else {
-        <div class="fields-table" cdkDropList (cdkDropListDropped)="drop($event)">
-          <table mat-table [dataSource]="fields()">
-            <!-- Drag Handle Column -->
-            <ng-container matColumnDef="drag">
-              <th mat-header-cell *matHeaderCellDef></th>
-              <td mat-cell *matCellDef="let field">
-                <mat-icon class="drag-handle" cdkDragHandle>drag_indicator</mat-icon>
-              </td>
-            </ng-container>
+        <!-- Label Column -->
+        <ng-container matColumnDef="label">
+          <th mat-header-cell *matHeaderCellDef>Название</th>
+          <td mat-cell *matCellDef="let field">
+            <div class="field-info">
+              @if (field.displayConfig?.icon) {
+                <mat-icon>{{ field.displayConfig.icon }}</mat-icon>
+              }
+              <span>{{ field.label }}</span>
+            </div>
+          </td>
+        </ng-container>
 
-            <!-- Label Column -->
-            <ng-container matColumnDef="label">
-              <th mat-header-cell *matHeaderCellDef>Название</th>
-              <td mat-cell *matCellDef="let field">
-                <div class="field-info">
-                  @if (field.displayConfig.icon) {
-                    <mat-icon>{{ field.displayConfig.icon }}</mat-icon>
-                  }
-                  <span>{{ field.label }}</span>
-                </div>
-              </td>
-            </ng-container>
+        <!-- Name Column -->
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>Ключ</th>
+          <td mat-cell *matCellDef="let field">
+            <code>{{ field.name }}</code>
+          </td>
+        </ng-container>
 
-            <!-- Name Column -->
-            <ng-container matColumnDef="name">
-              <th mat-header-cell *matHeaderCellDef>Ключ</th>
-              <td mat-cell *matCellDef="let field">
-                <code>{{ field.name }}</code>
-              </td>
-            </ng-container>
+        <!-- Field Type Column -->
+        <ng-container matColumnDef="fieldType">
+          <th mat-header-cell *matHeaderCellDef>Тип</th>
+          <td mat-cell *matCellDef="let field">
+            <mat-chip>{{ getFieldTypeLabel(field.fieldType) }}</mat-chip>
+          </td>
+        </ng-container>
 
-            <!-- Field Type Column -->
-            <ng-container matColumnDef="fieldType">
-              <th mat-header-cell *matHeaderCellDef>Тип</th>
-              <td mat-cell *matCellDef="let field">
-                <mat-chip>{{ getFieldTypeLabel(field.fieldType) }}</mat-chip>
-              </td>
-            </ng-container>
+        <!-- Active Status Column -->
+        <ng-container matColumnDef="isActive">
+          <th mat-header-cell *matHeaderCellDef style="width: 120px;">Активно</th>
+          <td mat-cell *matCellDef="let field">
+            <mat-chip [class.active]="field.isActive" [class.inactive]="!field.isActive">
+              {{ field.isActive ? 'Да' : 'Нет' }}
+            </mat-chip>
+          </td>
+        </ng-container>
 
-            <!-- Active Status Column -->
-            <ng-container matColumnDef="isActive">
-              <th mat-header-cell *matHeaderCellDef>Активно</th>
-              <td mat-cell *matCellDef="let field">
-                <mat-chip [class.active]="field.isActive" [class.inactive]="!field.isActive">
-                  {{ field.isActive ? 'Да' : 'Нет' }}
-                </mat-chip>
-              </td>
-            </ng-container>
+        <!-- Actions Column -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef style="width: 160px;">Действия</th>
+          <td mat-cell *matCellDef="let field">
+            <div class="actions">
+              <button
+                mat-icon-button
+                (click)="toggleActive(field); $event.stopPropagation()"
+                [matTooltip]="field.isActive ? 'Деактивировать' : 'Активировать'"
+              >
+                <mat-icon>{{ field.isActive ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+              </button>
+              <button
+                mat-icon-button
+                (click)="openEditDialog(field); $event.stopPropagation()"
+                matTooltip="Редактировать"
+              >
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button
+                mat-icon-button
+                color="warn"
+                (click)="deleteField(field); $event.stopPropagation()"
+                matTooltip="Удалить"
+              >
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </td>
+        </ng-container>
 
-            <!-- Actions Column -->
-            <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef>Действия</th>
-              <td mat-cell *matCellDef="let field">
-                <div class="actions">
-                  <button
-                    mat-icon-button
-                    (click)="toggleActive(field)"
-                    [matTooltip]="field.isActive ? 'Деактивировать' : 'Активировать'"
-                  >
-                    <mat-icon>{{ field.isActive ? 'toggle_on' : 'toggle_off' }}</mat-icon>
-                  </button>
-                  <button
-                    mat-icon-button
-                    (click)="openEditDialog(field)"
-                    matTooltip="Редактировать"
-                  >
-                    <mat-icon>edit</mat-icon>
-                  </button>
-                  <button
-                    mat-icon-button
-                    color="warn"
-                    (click)="deleteField(field)"
-                    matTooltip="Удалить"
-                  >
-                    <mat-icon>delete</mat-icon>
-                  </button>
-                </div>
-              </td>
-            </ng-container>
-
-            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            <tr
-              mat-row
-              *matRowDef="let row; columns: displayedColumns"
-              cdkDrag
-              class="draggable-row"
-            ></tr>
-          </table>
-        </div>
-      }
-    </mat-card-content>
-  </mat-card>
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr
+          mat-row
+          *matRowDef="let row; columns: displayedColumns"
+          cdkDrag
+          class="draggable-row"
+        ></tr>
+      </table>
+    </div>
+  }
 </div>

@@ -4,50 +4,28 @@
   padding: 0;
 }
 
-.settings-header {
-  margin-bottom: 32px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 24px;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  button {
-    white-space: nowrap;
-  }
-}
-
-.page-title {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 28px;
-  font-weight: 600;
-  color: #111827;
-  margin: 0 0 8px 0;
-
-  mat-icon {
-    font-size: 32px;
-    width: 32px;
-    height: 32px;
-    color: #6366f1;
-  }
-}
-
-.page-description {
-  font-size: 14px;
-  color: #6b7280;
-  margin: 0;
-}
-
 .settings-tabs {
+  ::ng-deep .mat-mdc-tab-labels {
+    background: var(--surface-color);
+    border-radius: 12px 12px 0 0;
+    border: 1px solid var(--border-color);
+    border-bottom: none;
+  }
+
   ::ng-deep .mat-mdc-tab-label {
     min-width: 140px;
     padding: 0 24px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: var(--text-primary);
+    }
+
+    &.mat-mdc-tab-label-active {
+      color: var(--primary-color);
+    }
   }
 
   ::ng-deep .mat-mdc-tab-body-wrapper {
@@ -66,9 +44,58 @@
   padding: 0;
 }
 
+.tab-content-no-card {
+  padding: 0;
+  
+  app-custom-fields {
+    display: block;
+  }
+}
+
 .settings-card {
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--border-color);
+  background: var(--surface-color);
+  animation: fadeIn 0.3s ease-in-out;
+  transition: box-shadow 0.3s ease, transform 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  ::ng-deep .mat-mdc-card-header {
+    padding: 24px 24px 16px;
+    
+    .mat-mdc-card-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin: 0;
+    }
+
+    .mat-mdc-card-subtitle {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin: 4px 0 0 0;
+    }
+  }
+
+  ::ng-deep .mat-mdc-card-content {
+    padding: 0 24px 24px;
+  }
 }
 
 .pricing-form,
@@ -76,8 +103,19 @@
 .currency-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
   padding: 16px 0;
+
+  mat-form-field {
+    ::ng-deep .mat-mdc-text-field-wrapper {
+      background-color: var(--surface-color);
+    }
+
+    ::ng-deep .mat-mdc-form-field-icon-prefix {
+      color: var(--text-secondary);
+      padding-right: 8px;
+    }
+  }
 }
 
 .form-row {
@@ -106,7 +144,18 @@
   button {
     mat-icon {
       margin-right: 8px;
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
     }
+  }
+
+  button[mat-raised-button] {
+    font-weight: 500;
+  }
+
+  button[mat-stroked-button] {
+    font-weight: 500;
   }
 }
 
@@ -134,36 +183,37 @@
 }
 
 .currency-examples {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 16px;
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px;
   margin: 8px 0;
 
   h4 {
-    margin: 0 0 12px 0;
+    margin: 0 0 16px 0;
     font-size: 14px;
-    font-weight: 600;
-    color: #374151;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: 0.01em;
   }
 
   .example-item {
-    padding: 6px 0;
+    padding: 8px 0;
     font-size: 13px;
-    color: #6b7280;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
 
     strong {
-      color: #111827;
+      color: var(--text-primary);
       font-weight: 600;
-      margin-right: 8px;
+      font-family: 'SF Mono', 'Monaco', monospace;
+      background: rgba(0, 0, 0, 0.04);
+      padding: 2px 6px;
+      border-radius: 4px;
+      min-width: 45px;
+      text-align: center;
     }
   }
-}
-
-::ng-deep .mat-mdc-card-header {
-  padding: 24px 24px 0;
-}
-
-::ng-deep .mat-mdc-card-content {
-  padding: 0 24px 24px;
 }
