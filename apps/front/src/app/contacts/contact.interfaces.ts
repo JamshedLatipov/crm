@@ -14,22 +14,7 @@ export enum ContactSource {
   OTHER = 'other',
 }
 
-export interface CustomFieldFilter {
-  fieldName: string;
-  operator: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'starts_with' | 'ends_with' | 'greater' | 'less' | 'between' | 'in' | 'not_in' | 'exists';
-  value?: any;
-}
-
-export type FilterFieldType = 'static' | 'custom';
-
-export interface UniversalFilter {
-  id?: string;
-  fieldType: FilterFieldType;
-  fieldName: string;
-  fieldLabel?: string;
-  operator: CustomFieldFilter['operator'];
-  value?: any;
-}
+import { UniversalFilter } from '../shared/interfaces/universal-filter.interface';
 
 export interface ContactsFilterState {
   search?: string;

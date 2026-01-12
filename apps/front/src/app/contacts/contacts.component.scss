@@ -95,18 +95,12 @@
     padding: 0 24px;
     font-weight: 500;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(47, 120, 255, 0.2);
     transition: all 0.2s ease;
     position: relative;
     display: flex;
     align-items: center;
     gap: 8px;
-    
-    &:hover {
-      box-shadow: 0 4px 12px rgba(47, 120, 255, 0.3);
-      transform: translateY(-1px);
-    }
-    
+  
     mat-icon {
       font-size: 20px;
       width: 20px;
@@ -126,143 +120,6 @@
       min-width: 20px;
       text-align: center;
       box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
-    }
-  }
-}
-
-/* Active filters chips */
-.active-filters {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-  border-radius: 12px;
-  margin-bottom: 24px;
-  border: 1px solid #bae6fd;
-  
-  .filters-label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-weight: 600;
-    color: #0369a1;
-    white-space: nowrap;
-    
-    mat-icon {
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
-    }
-  }
-  
-  .filter-chips {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    flex: 1;
-    
-    mat-chip-set {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    
-    .filter-chip {
-      background: white;
-      border: 1px solid #93c5fd;
-      color: #1e40af;
-      font-weight: 500;
-      padding: 8px 12px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      transition: all 0.2s ease;
-      
-      &.search-chip {
-        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-        border-color: #fbbf24;
-        color: #92400e;
-        
-        mat-icon {
-          font-size: 18px;
-          width: 18px;
-          height: 18px;
-        }
-        
-        .value {
-          background: #fffbeb;
-          padding: 2px 8px;
-          border-radius: 4px;
-          font-weight: 600;
-          color: #78350f;
-        }
-      }
-      
-      &:hover {
-        background: #f8fafc;
-        border-color: #60a5fa;
-        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15);
-      }
-      
-      .chip-content {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 13px;
-        
-        strong {
-          color: #1e3a8a;
-        }
-        
-        .operator {
-          color: #64748b;
-          font-size: 12px;
-        }
-        
-        .value {
-          background: #dbeafe;
-          padding: 2px 8px;
-          border-radius: 4px;
-          font-weight: 600;
-          color: #1e40af;
-        }
-      }
-      
-      button[matChipRemove] {
-        margin-left: 4px;
-        
-        mat-icon {
-          font-size: 18px;
-          width: 18px;
-          height: 18px;
-          color: #64748b;
-          transition: color 0.2s ease;
-          
-          &:hover {
-            color: #dc2626;
-          }
-        }
-      }
-    }
-    
-    .clear-filters-btn {
-      color: #dc2626;
-      font-weight: 500;
-      margin-left: auto;
-      
-      mat-icon {
-        margin-right: 4px;
-        font-size: 18px;
-        width: 18px;
-        height: 18px;
-      }
-      
-      &:hover {
-        background: #fef2f2;
-      }
     }
   }
 }

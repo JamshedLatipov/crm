@@ -116,25 +116,12 @@
     </div>
 
     <!-- Active Filters Display -->
-    @if (filterState().filters.length > 0 || filterState().search) {
-      <div class="active-filters">
-        <span class="filters-label">Активные фильтры:</span>
-        @if (filterState().search) {
-          <mat-chip>
-            <mat-icon>search</mat-icon>
-            Поиск: {{ filterState().search }}
-          </mat-chip>
-        }
-        @for (filter of filterState().filters; track $index) {
-          <mat-chip>
-            {{ filter.fieldLabel }}: {{ universalFilterService.getOperatorLabel(filter.operator) }} 
-            @if (filter.value !== undefined && filter.value !== null) {
-              <strong>{{ filter.value }}</strong>
-            }
-          </mat-chip>
-        }
-      </div>
-    }
+    <app-active-filters 
+      [search]="filterState().search || ''"
+      [filters]="filterState().filters"
+      (filterRemoved)="removeFilter($event)"
+      (clearAllFilters)="clearAllFilters()">
+    </app-active-filters>
 
     <!-- Таблица сделок -->
     <div

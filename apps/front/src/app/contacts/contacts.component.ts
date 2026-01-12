@@ -21,14 +21,15 @@ import { ConfirmActionDialogComponent } from '../shared/dialogs/confirm-action-d
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { ContactsService } from './contacts.service';
 import { StatusTabsComponent } from '../shared/components/status-tabs/status-tabs.component';
+import { ActiveFiltersComponent } from '../shared/components/active-filters/active-filters.component';
 import { Router } from '@angular/router';
-import { Contact, ContactsStats, ContactsFilterState, UniversalFilter, ContactType, ContactSource } from './contact.interfaces';
+import { Contact, ContactsStats, ContactsFilterState, ContactType, ContactSource } from './contact.interfaces';
 import { PageLayoutComponent } from '../shared/page-layout/page-layout.component';
 import { CustomFieldsService } from '../services/custom-fields.service';
 import { CustomFieldDefinition } from '../models/custom-field.model';
 import { UniversalFiltersDialogComponent } from '../shared/dialogs/universal-filters-dialog/universal-filters-dialog.component';
 import { UniversalFilterService } from '../shared/services/universal-filter.service';
-import { FilterFieldDefinition, BaseFilterState } from '../shared/interfaces/universal-filter.interface';
+import { FilterFieldDefinition, BaseFilterState, UniversalFilter } from '../shared/interfaces/universal-filter.interface';
 
 @Component({
   selector: 'app-contacts',
@@ -53,6 +54,7 @@ import { FilterFieldDefinition, BaseFilterState } from '../shared/interfaces/uni
     FormsModule,
     MatDialogModule,
     StatusTabsComponent,
+    ActiveFiltersComponent,
     PageLayoutComponent,
   ],
   templateUrl: './contacts.component.html',

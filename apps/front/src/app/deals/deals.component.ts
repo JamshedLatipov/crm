@@ -39,6 +39,7 @@ import { UniversalFiltersDialogComponent } from '../shared/dialogs/universal-fil
 import { UniversalFilterService } from '../shared/services/universal-filter.service';
 import { CustomFieldsService } from '../services/custom-fields.service';
 import { DealsFilterState } from './deals-filter-state.interface';
+import { ActiveFiltersComponent } from '../shared/components/active-filters/active-filters.component';
 import {
   BaseFilterState,
   FilterFieldDefinition,
@@ -69,6 +70,7 @@ import {
     MatPaginatorModule,
     MatDialogModule,
     CurrencyFormatPipe,
+    ActiveFiltersComponent,
   ],
   templateUrl: './deals.component.html',
   styleUrl: './deals.component.scss',
@@ -677,5 +679,23 @@ export class DealsComponent implements OnInit {
   onStatusTabChange(status: string | null) {
     this.selectedStatus = status;
     this.applyFilters();
+  }
+
+  removeFilter(index: number): void {
+    const state = this.filterState();
+    state.filters = state.filters.filter((_, i) => i !== index);
+    this.filterState.set({ ...state });
+    this.currentPage = 0;
+    this.loadDeals();
+  }
+
+  clearAllFilters(): void {
+    this.filterState.set({
+      search: '',
+      filters: [],
+      status: this.filterState().status,
+    });
+    this.currentPage = 0;
+    this.loadDeals();
   }
 }

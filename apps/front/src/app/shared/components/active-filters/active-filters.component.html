@@ -1,0 +1,39 @@
+@if (hasActiveFilters()) {
+  <div class="active-filters">
+    <div class="filters-label">
+      <mat-icon>filter_alt</mat-icon>
+      <span>Активные фильтры:</span>
+    </div>
+    <div class="filter-chips">
+      <mat-chip-set>
+        @if (search()) {
+          <mat-chip class="filter-chip search-chip">
+            <span class="chip-content">
+              <mat-icon>search</mat-icon>
+              <span class="value">{{ search() }}</span>
+            </span>
+          </mat-chip>
+        }
+        
+        @for (filter of filters(); track $index) {
+          <mat-chip (removed)="removeFilter($index)" class="filter-chip">
+            <span class="chip-content">
+              <strong>{{ filter.fieldLabel }}</strong>
+              <span class="operator">{{ universalFilterService.getOperatorLabel(filter.operator) }}</span>
+              @if (filter.operator !== 'exists' && filter.value !== undefined && filter.value !== null) {
+                <span class="value">{{ filter.value }}</span>
+              }
+            </span>
+            <button matChipRemove>
+              <mat-icon>cancel</mat-icon>
+            </button>
+          </mat-chip>
+        }
+      </mat-chip-set>
+      <button mat-button class="clear-filters-btn" (click)="clearAll()">
+        <mat-icon>close</mat-icon>
+        Очистить всё
+      </button>
+    </div>
+  </div>
+}

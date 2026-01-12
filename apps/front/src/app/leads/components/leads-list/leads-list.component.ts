@@ -52,6 +52,7 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
 import { UniversalFiltersDialogComponent } from '../../../shared/dialogs/universal-filters-dialog/universal-filters-dialog.component';
 import { UniversalFilterService } from '../../../shared/services/universal-filter.service';
 import { CustomFieldsService } from '../../../services/custom-fields.service';
+import { ActiveFiltersComponent } from '../../../shared/components/active-filters/active-filters.component';
 import {
   BaseFilterState,
   FilterFieldDefinition,
@@ -82,6 +83,7 @@ import {
     MatCheckboxModule,
     StatusTabsComponent,
     PageLayoutComponent,
+    ActiveFiltersComponent,
   ],
   templateUrl: './leads-list.component.html',
   styleUrls: ['./leads-list.component.scss'],
@@ -717,9 +719,9 @@ export class LeadsListComponent implements OnInit {
     return this.universalFilterService.countActiveFilters(this.filterState());
   }
 
-  removeFilter(filter: any): void {
+  removeFilter(index: number): void {
     const state = this.filterState();
-    state.filters = state.filters.filter((f) => f !== filter);
+    state.filters = state.filters.filter((_, i) => i !== index);
     this.filterState.set({ ...state });
     this.currentPage = 1;
     this.loadLeads();

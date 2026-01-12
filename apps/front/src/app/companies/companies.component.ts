@@ -26,6 +26,7 @@ import { UniversalFiltersDialogComponent } from '../shared/dialogs/universal-fil
 import { UniversalFilterService } from '../shared/services/universal-filter.service';
 import { CustomFieldsService } from '../services/custom-fields.service';
 import { CompaniesFilterState } from './companies-filter-state.interface';
+import { ActiveFiltersComponent } from '../shared/components/active-filters/active-filters.component';
 import {
   BaseFilterState,
   FilterFieldDefinition,
@@ -55,6 +56,7 @@ import { ConfirmActionDialogComponent } from '../shared/dialogs/confirm-action-d
     PageLayoutComponent,
     MatPaginatorModule,
     MatDialogModule,
+    ActiveFiltersComponent,
   ],
   templateUrl: './companies.component.html',
   styleUrl: './companies.component.scss',
@@ -409,5 +411,22 @@ export class CompaniesComponent implements OnInit {
       enterprise: 'Корпорация',
     };
     return labels[size] || size;
+  }
+
+  removeFilter(index: number): void {
+    const state = this.filterState();
+    state.filters = state.filters.filter((_, i) => i !== index);
+    this.filterState.set({ ...state });
+    this.currentPage = 0;
+    this.loadCompanies();
+  }
+
+  clearAllFilters(): void {
+    this.filterState.set({
+      search: '',
+      filters: [],
+    });
+    this.currentPage = 0;
+    this.loadCompanies();
   }
 }

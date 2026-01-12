@@ -36,36 +36,12 @@
   </div>
 
   <!-- Active Filters Display -->
-  @if (filterState().filters.length > 0) {
-    <div class="active-filters">
-      <div class="filters-header">
-        <span class="filters-label">Активные фильтры:</span>
-        <button 
-          mat-button 
-          color="primary" 
-          (click)="clearAllFilters()"
-          class="clear-all-button">
-          Очистить все
-        </button>
-      </div>
-      <mat-chip-set class="filter-chips">
-        @for (filter of filterState().filters; track filter) {
-          <mat-chip (removed)="removeFilter(filter)">
-            <span class="chip-content">
-              <strong>{{ filter.fieldLabel }}</strong>
-              <span class="operator">{{ getOperatorLabel(filter.operator) }}</span>
-              @if (filter.value !== undefined && filter.value !== null) {
-                <span class="value">{{ filter.value }}</span>
-              }
-            </span>
-            <button matChipRemove>
-              <mat-icon>cancel</mat-icon>
-            </button>
-          </mat-chip>
-        }
-      </mat-chip-set>
-    </div>
-  }
+  <app-active-filters 
+    [search]="''"
+    [filters]="filterState().filters"
+    (filterRemoved)="removeFilter($event)"
+    (clearAllFilters)="clearAllFilters()">
+  </app-active-filters>
 
   <!-- Table -->
   <div class="table-container">

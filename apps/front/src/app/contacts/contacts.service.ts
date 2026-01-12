@@ -13,8 +13,7 @@ import {
   ContactActivity,
   ActivityType,
   Deal,
-  CreateDealDto,
-  CustomFieldFilter
+  CreateDealDto
 } from './contact.interfaces';
 
 @Injectable({ providedIn: 'root' })
@@ -81,10 +80,6 @@ export class ContactsService {
 
   findDuplicates(): Observable<Contact[][]> {
     return this.http.get<Contact[][]>(`${this.apiUrl}/duplicates`);
-  }
-
-  searchContactsByCustomFields(filters: CustomFieldFilter[]): Observable<Contact[]> {
-    return this.http.post<Contact[]>(`${this.apiUrl}/custom-fields-search`, { filters });
   }
 
   // Универсальный поиск с фильтрами
