@@ -8,7 +8,6 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatExpansionModule } from '@angular/material/expansion';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatOptionModule } from '@angular/material/core';
@@ -26,7 +25,7 @@ import { DynamicFieldComponent } from '../../../shared/components/dynamic-field/
 @Component({
   selector: 'app-create-contact-dialog',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatIconModule, MatProgressSpinnerModule, MatOptionModule, MatAutocompleteModule, CompanySelectorComponent, MatExpansionModule, MatDividerModule, MatTooltipModule, DynamicFieldComponent],
+  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatIconModule, MatProgressSpinnerModule, MatOptionModule, MatAutocompleteModule, CompanySelectorComponent, MatDividerModule, MatTooltipModule, DynamicFieldComponent],
   templateUrl: './create-contact-dialog.component.html',
   styleUrls: ['./create-contact-dialog.component.scss'],
 })
@@ -93,11 +92,43 @@ export class CreateContactDialogComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadCustomFields();
+    this.setupFullNameAutofill();
+  }
+
+  setupFullNameAutofill(): void {
+    // Слушаем изменения в полях firstName, lastName, middleName
+    const firstNameControl = this.form.get('firstName');
+    const lastNameControl = this.form.get('lastName');
+    const middleNameControl = this.form.get('middleName');
+    const nameControl = this.form.get('name');
+
+    if (firstNameControl && lastNameControl && middleNameControl && nameControl) {
+      // Подписываемся на изменения всех трех полей
+      firstNameControl.valueChanges.subscribe(() => this.updateFullName());
+      lastNameControl.valueChanges.subscribe(() => this.updateFullName());
+      middleNameControl.valueChanges.subscribe(() => this.updateFullName());
+    }
+  }
+
+  updateFullName(): void {
+    const firstName = this.form.get('firstName')?.value || '';
+    const lastName = this.form.get('lastName')?.value || '';
+    const middleName = this.form.get('middleName')?.value || '';
+
+    // Формируем полное имя: Фамилия Имя Отчество (русский формат)
+    const parts = [lastName, firstName, middleName].filter(part => part && part.trim() !== '');
+    const fullName = parts.join(' ');
+
+    // Обновляем поле name только если есть хотя бы одна часть имени
+    if (fullName) {
+      this.form.get('name')?.setValue(fullName, { emitEvent: false });
+    }
   }
 
   loadCustomFields(): void {
     this.customFieldsService.findByEntity('contact').subscribe({
       next: (fields) => {
+        console.log('Custom fields loaded:', fields);
         this.customFieldDefinitions.set(fields);
       },
       error: (err) => {
@@ -185,24 +216,5 @@ export class CreateContactDialogComponent implements OnInit {
 
   cancel(): void {
     this.dialogRef.close(null);
-  }
-
-  // utility used by template to show if a group has any filled value
-  hasValues(...controlNames: string[]): boolean {
-    try {
-      return controlNames.some((name) => {
-        const control = this.form.get(name);
-        if (!control) return false;
-        const val = control.value;
-        if (val == null) return false;
-        if (typeof val === 'string') return val.trim() !== '';
-        if (typeof val === 'object') {
-          return Object.values(val).some((v) => v != null && v.toString().trim() !== '');
-        }
-        return true;
-      });
-    } catch (e) {
-      return false;
-    }
   }
 }

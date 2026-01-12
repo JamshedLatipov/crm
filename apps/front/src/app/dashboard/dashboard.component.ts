@@ -183,8 +183,9 @@ export class DashboardComponent {
   addNewContact(): void {
     import('../contacts/components/create-contact-dialog/create-contact-dialog.component').then((m) => {
       const dialogRef = this.dialog.open(m.CreateContactDialogComponent, {
-        width: '520px',
-        maxWidth: '90vw',
+        width: '700px',
+        maxWidth: '95vw',
+        panelClass: 'modern-dialog',
       });
 
       dialogRef.afterClosed().subscribe((created) => {
