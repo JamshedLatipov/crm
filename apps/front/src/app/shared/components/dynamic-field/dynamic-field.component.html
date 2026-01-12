@@ -1,0 +1,269 @@
+<div class="dynamic-field-wrapper">
+  @if (readonly()) {
+    <!-- Read-only display -->
+    <div class="readonly-field">
+      <div class="field-label">
+        @if (fieldDef().displayConfig.icon) {
+          <mat-icon>{{ fieldDef().displayConfig.icon }}</mat-icon>
+        }
+        <span>{{ fieldDef().label }}</span>
+      </div>
+      <div class="field-value">
+        @switch (fieldDef().fieldType) {
+          @case ('boolean') {
+            <span>{{ control().value ? 'Да' : 'Нет' }}</span>
+          }
+          @case ('date') {
+            <span>{{ control().value | date: 'dd.MM.yyyy' }}</span>
+          }
+          @case ('select') {
+            <span>{{ getOptionLabel(control().value) }}</span>
+          }
+          @case ('multiselect') {
+            <div class="chips-readonly">
+              @for (val of control().value; track val) {
+                <span class="chip-readonly">{{ getOptionLabel(val) }}</span>
+              }
+            </div>
+          }
+          @default {
+            <span>{{ control().value || '—' }}</span>
+          }
+        }
+      </div>
+    </div>
+  } @else {
+    <!-- Editable field -->
+    @switch (fieldDef().fieldType) {
+      @case ('text') {
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>{{ fieldDef().label }}</mat-label>
+          @if (fieldDef().displayConfig.icon) {
+            <mat-icon matPrefix>{{ fieldDef().displayConfig.icon }}</mat-icon>
+          }
+          <input
+            matInput
+            [formControl]="control()"
+            [placeholder]="fieldDef().displayConfig.placeholder || ''"
+          />
+          @if (fieldDef().displayConfig.helpText) {
+            <mat-hint>{{ fieldDef().displayConfig.helpText }}</mat-hint>
+          }
+          @if (errorMessage()) {
+            <mat-error>{{ errorMessage() }}</mat-error>
+          }
+        </mat-form-field>
+      }
+
+      @case ('textarea') {
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>{{ fieldDef().label }}</mat-label>
+          @if (fieldDef().displayConfig.icon) {
+            <mat-icon matPrefix>{{ fieldDef().displayConfig.icon }}</mat-icon>
+          }
+          <textarea
+            matInput
+            [formControl]="control()"
+            [placeholder]="fieldDef().displayConfig.placeholder || ''"
+            rows="3"
+          ></textarea>
+          @if (fieldDef().displayConfig.helpText) {
+            <mat-hint>{{ fieldDef().displayConfig.helpText }}</mat-hint>
+          }
+          @if (errorMessage()) {
+            <mat-error>{{ errorMessage() }}</mat-error>
+          }
+        </mat-form-field>
+      }
+
+      @case ('number') {
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>{{ fieldDef().label }}</mat-label>
+          @if (fieldDef().displayConfig.icon) {
+            <mat-icon matPrefix>{{ fieldDef().displayConfig.icon }}</mat-icon>
+          }
+          <input
+            matInput
+            type="number"
+            [formControl]="control()"
+            [placeholder]="fieldDef().displayConfig.placeholder || ''"
+          />
+          @if (fieldDef().displayConfig.helpText) {
+            <mat-hint>{{ fieldDef().displayConfig.helpText }}</mat-hint>
+          }
+          @if (errorMessage()) {
+            <mat-error>{{ errorMessage() }}</mat-error>
+          }
+        </mat-form-field>
+      }
+
+      @case ('email') {
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>{{ fieldDef().label }}</mat-label>
+          <mat-icon matPrefix>email</mat-icon>
+          <input
+            matInput
+            type="email"
+            [formControl]="control()"
+            [placeholder]="fieldDef().displayConfig.placeholder || ''"
+          />
+          @if (fieldDef().displayConfig.helpText) {
+            <mat-hint>{{ fieldDef().displayConfig.helpText }}</mat-hint>
+          }
+          @if (errorMessage()) {
+            <mat-error>{{ errorMessage() }}</mat-error>
+          }
+        </mat-form-field>
+      }
+
+      @case ('phone') {
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>{{ fieldDef().label }}</mat-label>
+          <mat-icon matPrefix>phone</mat-icon>
+          <input
+            matInput
+            type="tel"
+            [formControl]="control()"
+            [placeholder]="fieldDef().displayConfig.placeholder || ''"
+          />
+          @if (fieldDef().displayConfig.helpText) {
+            <mat-hint>{{ fieldDef().displayConfig.helpText }}</mat-hint>
+          }
+          @if (errorMessage()) {
+            <mat-error>{{ errorMessage() }}</mat-error>
+          }
+        </mat-form-field>
+      }
+
+      @case ('url') {
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>{{ fieldDef().label }}</mat-label>
+          <mat-icon matPrefix>link</mat-icon>
+          <input
+            matInput
+            type="url"
+            [formControl]="control()"
+            [placeholder]="fieldDef().displayConfig.placeholder || ''"
+          />
+          @if (fieldDef().displayConfig.helpText) {
+            <mat-hint>{{ fieldDef().displayConfig.helpText }}</mat-hint>
+          }
+          @if (errorMessage()) {
+            <mat-error>{{ errorMessage() }}</mat-error>
+          }
+        </mat-form-field>
+      }
+
+      @case ('date') {
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>{{ fieldDef().label }}</mat-label>
+          @if (fieldDef().displayConfig.icon) {
+            <mat-icon matPrefix>{{ fieldDef().displayConfig.icon }}</mat-icon>
+          }
+          <input
+            matInput
+            [matDatepicker]="picker"
+            [formControl]="control()"
+            [placeholder]="fieldDef().displayConfig.placeholder || ''"
+          />
+          <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+          <mat-datepicker #picker></mat-datepicker>
+          @if (fieldDef().displayConfig.helpText) {
+            <mat-hint>{{ fieldDef().displayConfig.helpText }}</mat-hint>
+          }
+          @if (errorMessage()) {
+            <mat-error>{{ errorMessage() }}</mat-error>
+          }
+        </mat-form-field>
+      }
+
+      @case ('boolean') {
+        <div class="checkbox-field">
+          <mat-checkbox [formControl]="control()">
+            {{ fieldDef().label }}
+          </mat-checkbox>
+          @if (fieldDef().displayConfig.helpText) {
+            <mat-icon
+              class="help-icon"
+              [matTooltip]="fieldDef().displayConfig.helpText"
+            >
+              help_outline
+            </mat-icon>
+          }
+        </div>
+      }
+
+      @case ('select') {
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>{{ fieldDef().label }}</mat-label>
+          @if (fieldDef().displayConfig.icon) {
+            <mat-icon matPrefix>{{ fieldDef().displayConfig.icon }}</mat-icon>
+          }
+          <mat-select [formControl]="control()">
+            @for (option of fieldDef().selectOptions; track option.value) {
+              <mat-option [value]="option.value">
+                @if (option.color) {
+                  <span
+                    class="color-indicator"
+                    [style.background-color]="option.color"
+                  ></span>
+                }
+                {{ option.label }}
+              </mat-option>
+            }
+          </mat-select>
+          @if (fieldDef().displayConfig.helpText) {
+            <mat-hint>{{ fieldDef().displayConfig.helpText }}</mat-hint>
+          }
+          @if (errorMessage()) {
+            <mat-error>{{ errorMessage() }}</mat-error>
+          }
+        </mat-form-field>
+      }
+
+      @case ('multiselect') {
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>{{ fieldDef().label }}</mat-label>
+          @if (fieldDef().displayConfig.icon) {
+            <mat-icon matPrefix>{{ fieldDef().displayConfig.icon }}</mat-icon>
+          }
+          <mat-select [formControl]="control()" multiple>
+            @for (option of fieldDef().selectOptions; track option.value) {
+              <mat-option [value]="option.value">
+                @if (option.color) {
+                  <span
+                    class="color-indicator"
+                    [style.background-color]="option.color"
+                  ></span>
+                }
+                {{ option.label }}
+              </mat-option>
+            }
+          </mat-select>
+          @if (fieldDef().displayConfig.helpText) {
+            <mat-hint>{{ fieldDef().displayConfig.helpText }}</mat-hint>
+          }
+          @if (errorMessage()) {
+            <mat-error>{{ errorMessage() }}</mat-error>
+          }
+        </mat-form-field>
+
+        <!-- Display selected chips -->
+        @if (control().value && control().value.length > 0) {
+          <div class="chips-container">
+            @for (val of control().value; track val) {
+              <mat-chip
+                [style.background-color]="getOptionColor(val) || undefined"
+                [removable]="true"
+                (removed)="onChipRemove(val)"
+              >
+                {{ getOptionLabel(val) }}
+                <mat-icon matChipRemove>cancel</mat-icon>
+              </mat-chip>
+            }
+          </div>
+        }
+      }
+    }
+  }
+</div>

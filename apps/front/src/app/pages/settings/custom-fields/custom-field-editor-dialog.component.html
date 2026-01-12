@@ -1,0 +1,191 @@
+<h2 mat-dialog-title>
+  {{ isEditMode ? 'Редактировать поле' : 'Создать новое поле' }}
+</h2>
+
+<mat-dialog-content>
+  <mat-stepper [linear]="true" #stepper>
+    <!-- Step 1: Basic Information -->
+    <mat-step [stepControl]="basicInfoForm" label="Основная информация">
+      <form [formGroup]="basicInfoForm">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Ключ поля (латиница)</mat-label>
+          <input matInput formControlName="name" placeholder="customer_type" />
+          <mat-hint>Используется в коде, только латиница и _</mat-hint>
+          @if (basicInfoForm.get('name')?.hasError('pattern')) {
+            <mat-error>Только латиница, цифры и подчеркивание</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Название поля</mat-label>
+          <input matInput formControlName="label" placeholder="Тип клиента" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Тип поля</mat-label>
+          <mat-select formControlName="fieldType">
+            @for (type of fieldTypes; track type.value) {
+              <mat-option [value]="type.value">{{ type.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Значение по умолчанию</mat-label>
+          <input matInput formControlName="defaultValue" />
+        </mat-form-field>
+
+        <div class="button-row">
+          <button mat-button matStepperNext>Далее</button>
+        </div>
+      </form>
+    </mat-step>
+
+    <!-- Step 2: Validation Rules -->
+    <mat-step [stepControl]="validationForm" label="Правила валидации">
+      <form [formGroup]="validationForm">
+        <mat-checkbox formControlName="required">
+          Обязательное поле
+        </mat-checkbox>
+
+        @if (basicInfoForm.get('fieldType')?.value === 'text' || basicInfoForm.get('fieldType')?.value === 'textarea') {
+          <mat-form-field appearance="outline" class="half-width">
+            <mat-label>Минимальная длина</mat-label>
+            <input matInput type="number" formControlName="minLength" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="half-width">
+            <mat-label>Максимальная длина</mat-label>
+            <input matInput type="number" formControlName="maxLength" />
+          </mat-form-field>
+        }
+
+        @if (basicInfoForm.get('fieldType')?.value === 'number') {
+          <mat-form-field appearance="outline" class="half-width">
+            <mat-label>Минимальное значение</mat-label>
+            <input matInput type="number" formControlName="min" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="half-width">
+            <mat-label>Максимальное значение</mat-label>
+            <input matInput type="number" formControlName="max" />
+          </mat-form-field>
+        }
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Регулярное выражение</mat-label>
+          <input matInput formControlName="pattern" placeholder="^[A-Z0-9]+$" />
+          <mat-hint>Для дополнительной валидации формата</mat-hint>
+        </mat-form-field>
+
+        <div class="button-row">
+          <button mat-button matStepperPrevious>Назад</button>
+          <button mat-button matStepperNext>Далее</button>
+        </div>
+      </form>
+    </mat-step>
+
+    <!-- Step 3: Select Options (only for select/multiselect) -->
+    @if (isSelectType) {
+      <mat-step [stepControl]="selectOptionsForm" label="Варианты выбора">
+        <form [formGroup]="selectOptionsForm">
+          <div formArrayName="options">
+            @for (option of optionsArray.controls; track $index; let i = $index) {
+              <div [formGroupName]="i" class="option-row">
+                <mat-form-field appearance="outline" class="option-field">
+                  <mat-label>Значение</mat-label>
+                  <input matInput formControlName="value" placeholder="vip" />
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="option-field">
+                  <mat-label>Название</mat-label>
+                  <input matInput formControlName="label" placeholder="VIP клиент" />
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="option-color">
+                  <mat-label>Цвет</mat-label>
+                  <input matInput type="color" formControlName="color" />
+                </mat-form-field>
+
+                <button
+                  mat-icon-button
+                  color="warn"
+                  type="button"
+                  (click)="removeOption(i)"
+                  [disabled]="optionsArray.length === 1"
+                >
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+            }
+          </div>
+
+          <button mat-stroked-button type="button" (click)="addOption()">
+            <mat-icon>add</mat-icon>
+            Добавить вариант
+          </button>
+
+          <div class="button-row">
+            <button mat-button matStepperPrevious>Назад</button>
+            <button mat-button matStepperNext>Далее</button>
+          </div>
+        </form>
+      </mat-step>
+    }
+
+    <!-- Step 4: Display Configuration -->
+    <mat-step [stepControl]="displayForm" label="Настройки отображения">
+      <form [formGroup]="displayForm">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Описание</mat-label>
+          <input matInput formControlName="description" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Placeholder</mat-label>
+          <input matInput formControlName="placeholder" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Иконка (Material Icon)</mat-label>
+          <input matInput formControlName="icon" placeholder="star" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Текст подсказки</mat-label>
+          <textarea matInput formControlName="helpText" rows="2"></textarea>
+        </mat-form-field>
+
+        <div class="checkboxes">
+          <mat-checkbox formControlName="showInList">
+            Показывать в списках
+          </mat-checkbox>
+          <mat-checkbox formControlName="showInDetail">
+            Показывать в деталях
+          </mat-checkbox>
+          <mat-checkbox formControlName="showInFilters">
+            Доступно для фильтрации
+          </mat-checkbox>
+        </div>
+
+        <div class="button-row">
+          <button mat-button matStepperPrevious>Назад</button>
+        </div>
+      </form>
+    </mat-step>
+  </mat-stepper>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()" [disabled]="loading()">
+    Отмена
+  </button>
+  <button
+    mat-raised-button
+    color="primary"
+    (click)="onSubmit()"
+    [disabled]="loading()"
+  >
+    {{ isEditMode ? 'Сохранить' : 'Создать' }}
+  </button>
+</mat-dialog-actions>

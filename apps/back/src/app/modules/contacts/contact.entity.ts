@@ -119,7 +119,7 @@ export class Contact {
   @Column('text', { nullable: true })
   notes?: string;
 
-  @Column('json', { nullable: true })
+  @Column('jsonb', { nullable: true })
   customFields?: Record<string, unknown>;
 
   // Статус активности

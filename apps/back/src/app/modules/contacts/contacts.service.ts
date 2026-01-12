@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Inject, Optional, forwardRef } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, Optional, forwardRef, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Contact, ContactType, ContactSource } from './contact.entity';
@@ -11,6 +11,7 @@ import { CompaniesService } from '../companies/services/companies.service';
 import { NotificationService } from '../shared/services/notification.service';
 import { NotificationType, NotificationPriority } from '../shared/entities/notification.entity';
 import { NameResolverService } from '../contact-center/services/name-resolver.service';
+import { CustomFieldsService } from '../custom-fields/services/custom-fields.service';
 
 @Injectable()
 export class ContactsService {
@@ -19,6 +20,7 @@ export class ContactsService {
     private readonly contactRepository: Repository<Contact>,
     @InjectRepository(ContactActivity)
     private readonly activityRepository: Repository<ContactActivity>,
+    private readonly customFieldsService: CustomFieldsService,
     @Optional() private readonly companiesService?: CompaniesService,
     @Optional() private readonly notificationService?: NotificationService,
     @Optional() @Inject(forwardRef(() => NameResolverService))
@@ -62,6 +64,20 @@ export class ContactsService {
     const safeName = dto.name && dto.name.toString().trim() ? dto.name : 'Unknown';
     const safeType = dto.type || (ContactType.PERSON as ContactType);
     const safeSource = dto.source || (ContactSource.OTHER as ContactSource);
+
+    // Validate custom fields if provided
+    if (dto.customFields) {
+      const validation = await this.customFieldsService.validateCustomFields(
+        'contact',
+        dto.customFields
+      );
+      if (!validation.isValid) {
+        const errorMessages = Object.entries(validation.errors)
+          .map(([field, errors]) => `${field}: ${errors.join(', ')}`)
+          .join('; ');
+        throw new BadRequestException(`Custom fields validation failed: ${errorMessages}`);
+      }
+    }
 
     let resolvedCompany: Company | undefined = undefined;
 
@@ -116,6 +132,20 @@ export class ContactsService {
     const contact = await this.getContactById(id);
     // preserve snapshot for change detection
     const beforeSnapshot = { ...(contact as any) };
+
+    // Validate custom fields if provided
+    if (dto.customFields) {
+      const validation = await this.customFieldsService.validateCustomFields(
+        'contact',
+        dto.customFields
+      );
+      if (!validation.isValid) {
+        const errorMessages = Object.entries(validation.errors)
+          .map(([field, errors]) => `${field}: ${errors.join(', ')}`)
+          .join('; ');
+        throw new BadRequestException(`Custom fields validation failed: ${errorMessages}`);
+      }
+    }
 
     // Prevent assigning removed fields directly. Resolve company if companyId provided.
   const payload = { ...((dto as unknown) as Record<string, unknown>) };
@@ -431,6 +461,88 @@ export class ContactsService {
     });
 
     return this.activityRepository.save(activity);
+  }
+
+  /**
+   * Search contacts with custom field filters
+   * @param filters Object with customFields as key-value pairs or operators
+   * Example: { customFields: { customer_type: 'vip', budget: { operator: 'greater', value: 1000 } } }
+   */
+  async searchContactsByCustomFields(
+    filters: Record<string, any>,
+    page = 1,
+    limit = 50
+  ): Promise<{ data: Contact[]; total: number }> {
+    const qb = this.contactRepository
+      .createQueryBuilder('contact')
+      .leftJoinAndSelect('contact.company', 'company')
+      .where('contact.isActive = :isActive', { isActive: true });
+
+    // Apply custom field filters
+    Object.entries(filters).forEach(([field, value], index) => {
+      if (value && typeof value === 'object' && 'operator' in value) {
+        // Complex filter with operator
+        const { operator, value: filterValue } = value;
+        const paramKey = `customField${index}`;
+
+        switch (operator) {
+          case 'equals':
+            qb.andWhere(`contact.customFields->>'${field}' = :${paramKey}`, {
+              [paramKey]: filterValue,
+            });
+            break;
+          case 'contains':
+            qb.andWhere(`contact.customFields->>'${field}' ILIKE :${paramKey}`, {
+              [paramKey]: `%${filterValue}%`,
+            });
+            break;
+          case 'greater':
+            qb.andWhere(`(contact.customFields->>'${field}')::numeric > :${paramKey}`, {
+              [paramKey]: filterValue,
+            });
+            break;
+          case 'less':
+            qb.andWhere(`(contact.customFields->>'${field}')::numeric < :${paramKey}`, {
+              [paramKey]: filterValue,
+            });
+            break;
+          case 'between':
+            if (Array.isArray(filterValue) && filterValue.length === 2) {
+              qb.andWhere(
+                `(contact.customFields->>'${field}')::numeric BETWEEN :${paramKey}Min AND :${paramKey}Max`,
+                {
+                  [`${paramKey}Min`]: filterValue[0],
+                  [`${paramKey}Max`]: filterValue[1],
+                }
+              );
+            }
+            break;
+          case 'in':
+            if (Array.isArray(filterValue)) {
+              qb.andWhere(`contact.customFields->>'${field}' IN (:...${paramKey})`, {
+                [paramKey]: filterValue,
+              });
+            }
+            break;
+          case 'exists':
+            qb.andWhere(`contact.customFields ? '${field}'`);
+            break;
+        }
+      } else {
+        // Simple equality filter
+        const paramKey = `customField${index}`;
+        qb.andWhere(`contact.customFields->>'${field}' = :${paramKey}`, {
+          [paramKey]: value,
+        });
+      }
+    });
+
+    qb.orderBy('contact.createdAt', 'DESC')
+      .take(limit)
+      .skip((page - 1) * limit);
+
+    const [data, total] = await qb.getManyAndCount();
+    return { data, total };
   }
 
   /**

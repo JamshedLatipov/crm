@@ -1,0 +1,84 @@
+.dynamic-field-wrapper {
+  margin-bottom: 16px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.readonly-field {
+  padding: 12px 0;
+  border-bottom: 1px solid #e0e0e0;
+
+  .field-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 4px;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  .field-value {
+    font-size: 14px;
+    color: #333;
+    font-weight: 500;
+  }
+}
+
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+
+  .help-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: #999;
+    cursor: help;
+  }
+}
+
+.color-indicator {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.chips-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.chips-readonly {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  .chip-readonly {
+    padding: 4px 12px;
+    background: #e0e0e0;
+    border-radius: 16px;
+    font-size: 13px;
+  }
+}
+
+mat-form-field {
+  mat-icon[matPrefix] {
+    margin-right: 8px;
+    color: #666;
+  }
+}
