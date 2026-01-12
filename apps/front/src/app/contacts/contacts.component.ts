@@ -6,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatBadgeModule } from '@angular/material/badge';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -40,6 +41,7 @@ import { FilterFieldDefinition, BaseFilterState } from '../shared/interfaces/uni
     MatProgressSpinnerModule,
     MatTableModule,
     MatTooltipModule,
+    MatBadgeModule,
     MatCheckboxModule,
     MatFormFieldModule,
     MatInputModule,
@@ -503,21 +505,29 @@ export class ContactsComponent implements OnInit {
         customFields: customFields,
         initialState: this.filterState as BaseFilterState,
         showSearch: true,
-        showStatus: true,
+        statusTabs: this.contactTabs, // Array of status tabs
+        selectedStatusTab: this.activeFilter, // Current active filter ('active', 'inactive', or null)
       },
     });
 
-    dialogRef.afterClosed().subscribe((result: BaseFilterState | undefined) => {
+    dialogRef.afterClosed().subscribe((result: BaseFilterState & { selectedStatusTab?: string | null } | undefined) => {
       if (result) {
         this.filterState = result as ContactsFilterState;
-        // Update active filter based on isActive
-        if (result.isActive === undefined) {
-          this.activeFilter = null;
-        } else if (result.isActive === true) {
-          this.activeFilter = 'active';
-        } else {
-          this.activeFilter = 'inactive';
+        
+        // Handle status tab change
+        if (result.selectedStatusTab !== undefined) {
+          this.activeFilter = result.selectedStatusTab as 'active' | 'inactive' | null;
+          
+          // Update isActive based on selected status tab
+          if (result.selectedStatusTab === 'active') {
+            this.filterState.isActive = true;
+          } else if (result.selectedStatusTab === 'inactive') {
+            this.filterState.isActive = false;
+          } else {
+            this.filterState.isActive = undefined;
+          }
         }
+        
         this.loadData();
       }
     });

@@ -27,6 +27,7 @@ import {
   ScheduleFollowUpDto,
   LeadFiltersDto,
 } from './lead.dto';
+import { LeadAdvancedSearchDto } from './dto/advanced-search.dto';
 import { LeadStatus, LeadSource, LeadPriority } from './lead.entity';
 import { LeadActivity } from './entities/lead-activity.entity';
 import { ChangeType } from './entities/lead-history.entity';
@@ -145,6 +146,15 @@ export class LeadController {
     });
 
     return lead;
+  }
+
+  /**
+   * Advanced search with universal filters
+   */
+  @Post('advanced-search')
+  @ApiBody({ type: LeadAdvancedSearchDto })
+  async advancedSearch(@Body() dto: LeadAdvancedSearchDto) {
+    return this.leadService.searchLeadsWithFilters(dto);
   }
 
   @Get()

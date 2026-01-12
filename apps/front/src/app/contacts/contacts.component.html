@@ -43,18 +43,15 @@
     </div>
     <div class="search-section">
       <button 
-        mat-raised-button
+        mat-icon-button
         color="primary"
         (click)="openFiltersDialog()"
         class="filter-button"
-      >
+        matTooltip="Фильтры и поиск"
+        [matBadge]="getTotalActiveFilters() > 0 ? getTotalActiveFilters() : null"
+        matBadgeColor="accent"
+        matBadgeSize="small">
         <mat-icon>tune</mat-icon>
-        <span>Фильтры и поиск</span>
-        @if (getTotalActiveFilters() > 0) {
-          <span class="filter-badge">
-            {{ getTotalActiveFilters() }}
-          </span>
-        }
       </button>
     </div>
   </div>

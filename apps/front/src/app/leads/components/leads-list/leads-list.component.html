@@ -19,18 +19,53 @@
         (selectedChange)="setActiveTab($event)">
       </app-status-tabs>
     </div>
-    <div class="search-section">
-      <mat-form-field appearance="outline" class="search-field">
-        <input
-          matInput
-          [(ngModel)]="searchQuery"
-          (ngModelChange)="onSearch()"
-          placeholder="Поиск лидов"
-        />
-        <mat-icon matSuffix>search</mat-icon>
-      </mat-form-field>
+    <div class="search-and-filter-section">
+      
+      <button 
+        mat-icon-button 
+        color="primary"
+        (click)="openFiltersDialog()"
+        class="filter-button"
+        matTooltip="Фильтры и поиск"
+        [matBadge]="getTotalActiveFilters() > 0 ? getTotalActiveFilters() : null"
+        matBadgeColor="accent"
+        matBadgeSize="small">
+        <mat-icon>tune</mat-icon>
+      </button>
     </div>
   </div>
+
+  <!-- Active Filters Display -->
+  @if (filterState().filters.length > 0) {
+    <div class="active-filters">
+      <div class="filters-header">
+        <span class="filters-label">Активные фильтры:</span>
+        <button 
+          mat-button 
+          color="primary" 
+          (click)="clearAllFilters()"
+          class="clear-all-button">
+          Очистить все
+        </button>
+      </div>
+      <mat-chip-set class="filter-chips">
+        @for (filter of filterState().filters; track filter) {
+          <mat-chip (removed)="removeFilter(filter)">
+            <span class="chip-content">
+              <strong>{{ filter.fieldLabel }}</strong>
+              <span class="operator">{{ getOperatorLabel(filter.operator) }}</span>
+              @if (filter.value !== undefined && filter.value !== null) {
+                <span class="value">{{ filter.value }}</span>
+              }
+            </span>
+            <button matChipRemove>
+              <mat-icon>cancel</mat-icon>
+            </button>
+          </mat-chip>
+        }
+      </mat-chip-set>
+    </div>
+  }
 
   <!-- Table -->
   <div class="table-container">

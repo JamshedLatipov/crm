@@ -16,13 +16,21 @@ import {
 } from '../../interfaces/universal-filter.interface';
 import { UniversalFilterService } from '../../services/universal-filter.service';
 
+export interface StatusTab {
+  label: string;
+  value: string;
+  count?: number;
+}
+
 export interface UniversalFiltersDialogData {
-  title: string;
+  title?: string;
   staticFields: FilterFieldDefinition[];
   customFields: FilterFieldDefinition[];
   initialState: BaseFilterState;
   showSearch?: boolean;
-  showStatus?: boolean;
+  // Optional status tabs (like Contact types, Lead statuses)
+  statusTabs?: StatusTab[];
+  selectedStatusTab?: string;
 }
 
 /**
@@ -53,18 +61,16 @@ export class UniversalFiltersDialogComponent {
   data = inject<UniversalFiltersDialogData>(MAT_DIALOG_DATA);
 
   // State
-  search = signal<string>(this.data.initialState.search || '');
-  isActive = signal<boolean>(
-    this.data.initialState.isActive !== undefined
-      ? this.data.initialState.isActive
-      : true
-  );
+  search = this.data.initialState?.search || '';
   staticFilters = signal<UniversalFilter[]>(
-    this.data.initialState.filters.filter((f) => f.fieldType === 'static')
+    this.data.initialState?.filters?.filter((f) => f.fieldType === 'static') || []
   );
   customFilters = signal<UniversalFilter[]>(
-    this.data.initialState.filters.filter((f) => f.fieldType === 'custom')
+    this.data.initialState?.filters?.filter((f) => f.fieldType === 'custom') || []
   );
+  
+  // Status tabs (optional) - now as regular property for ngModel
+  selectedStatusTab: string | null = this.data.selectedStatusTab || null;
 
   /**
    * Add new static filter
@@ -220,20 +226,32 @@ export class UniversalFiltersDialogComponent {
    */
   hasAnyActiveFilters(): boolean {
     return (
-      (this.search().trim().length > 0) ||
+      (this.search.trim().length > 0) ||
       this.getTotalFilters() > 0
     );
+  }
+
+  /**
+   * Select status tab
+   */
+  selectStatusTab(value: string): void {
+    this.selectedStatusTab = value;
   }
 
   /**
    * Apply filters and close dialog
    */
   apply(): void {
-    const result: BaseFilterState = {
-      search: this.search().trim() || undefined,
-      isActive: this.isActive(),
+    const result: BaseFilterState & { selectedStatusTab?: string } = {
+      search: this.search.trim() || undefined,
       filters: [...this.staticFilters(), ...this.customFilters()],
     };
+    
+    // Add selectedStatusTab if status tabs are provided
+    if (this.data.statusTabs && this.data.statusTabs.length > 0) {
+      result.selectedStatusTab = this.selectedStatusTab || undefined;
+    }
+    
     this.dialogRef.close(result);
   }
 
@@ -241,10 +259,10 @@ export class UniversalFiltersDialogComponent {
    * Reset all filters
    */
   reset(): void {
-    this.search.set('');
-    this.isActive.set(true);
+    this.search = '';
     this.staticFilters.set([]);
     this.customFilters.set([]);
+    this.selectedStatusTab = null;
   }
 
   /**

@@ -30,6 +30,8 @@ import { NotificationService } from '../shared/services/notification.service';
 import { NotificationType, NotificationChannel, NotificationPriority } from '../shared/entities/notification.entity';
 import { CustomFieldsService } from '../custom-fields/services/custom-fields.service';
 import { BadRequestException } from '@nestjs/common';
+import { UniversalFilterService } from '../shared/services/universal-filter.service';
+import { LeadAdvancedSearchDto } from './dto/advanced-search.dto';
 
 // Интерфейс для создания лида с дополнительными полями
 interface CreateLeadData extends Partial<Lead> {
@@ -90,6 +92,7 @@ export class LeadService {
     private readonly promoCompaniesService: PromoCompaniesService,
     private readonly notificationService: NotificationService,
     private readonly customFieldsService: CustomFieldsService,
+    private readonly universalFilterService: UniversalFilterService,
   ) {}
 
   async create(data: CreateLeadData, userId?: string, userName?: string): Promise<Lead> {
@@ -1502,5 +1505,68 @@ export class LeadService {
     });
 
     return updated;
+  }
+
+  /**
+   * Static fields mapping for universal filter system
+   */
+  private readonly staticFieldsMap: Record<string, string> = {
+    leadName: 'lead.name',
+    email: 'lead.email',
+    phone: 'lead.phone',
+    status: 'lead.status',
+    source: 'lead.source',
+    priority: 'lead.priority',
+    leadScore: 'lead.score',
+    createdAt: 'lead.createdAt',
+    lastActivityDate: 'lead.lastContactDate',
+  };
+
+  /**
+   * Advanced search with universal filters
+   */
+  async searchLeadsWithFilters(dto: LeadAdvancedSearchDto) {
+    const qb = this.leadRepo
+      .createQueryBuilder('lead')
+      .leftJoinAndSelect('lead.promoCompany', 'promoCompany')
+      .select([
+        'lead',
+        'promoCompany.id',
+        'promoCompany.name',
+      ]);
+
+    // Apply universal filters
+    this.universalFilterService.applyFilters(
+      qb,
+      dto.filters || [],
+      'lead',
+      this.staticFieldsMap
+    );
+
+    // Apply search
+    if (dto.search) {
+      qb.andWhere(
+        '(lead.name ILIKE :search OR lead.email ILIKE :search OR lead.phone ILIKE :search)',
+        { search: `%${dto.search}%` }
+      );
+    }
+
+    // Pagination
+    const page = dto.page || 1;
+    const limit = dto.pageSize || 20;
+    qb.skip((page - 1) * limit).take(limit);
+
+    // Order
+    qb.orderBy('lead.createdAt', 'DESC');
+
+    const [items, total] = await qb.getManyAndCount();
+
+    return {
+      data: items,
+      total,
+      page,
+      pageSize: limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 }

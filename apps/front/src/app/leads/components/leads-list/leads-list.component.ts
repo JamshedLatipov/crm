@@ -49,6 +49,13 @@ import {
   leadPriorityDisplay,
 } from '../../../shared/utils';
 import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.component';
+import { UniversalFiltersDialogComponent } from '../../../shared/dialogs/universal-filters-dialog/universal-filters-dialog.component';
+import { UniversalFilterService } from '../../../shared/services/universal-filter.service';
+import { CustomFieldsService } from '../../../services/custom-fields.service';
+import {
+  BaseFilterState,
+  FilterFieldDefinition,
+} from '../../../shared/interfaces/universal-filter.interface';
 
 @Component({
   selector: 'app-leads-list',
@@ -86,12 +93,82 @@ export class LeadsListComponent implements OnInit {
   private promoCompaniesService = inject(PromoCompaniesService);
   private router = inject(Router);
   private dialog = inject(MatDialog);
+  private universalFilterService = inject(UniversalFilterService);
+  private customFieldsService = inject(CustomFieldsService);
 
   // Signals
   leads = signal<Lead[]>([]);
   // Selection for bulk actions
   selectedLeads = signal<Lead[]>([]);
   loading = signal(true);
+
+  // Universal filters
+  filterState = signal<BaseFilterState>({
+    search: '',
+    filters: [],
+  });
+  customFieldDefinitions = signal<FilterFieldDefinition[]>([]);
+
+  // Static field definitions for Leads
+  staticFields: FilterFieldDefinition[] = [
+    {
+      name: 'leadName',
+      label: 'Lead Name',
+      type: 'text',
+    },
+    {
+      name: 'email',
+      label: 'Email',
+      type: 'email',
+    },
+    {
+      name: 'phone',
+      label: 'Phone',
+      type: 'phone',
+    },
+    {
+      name: 'status',
+      label: 'Status',
+      type: 'select',
+      selectOptions: Object.values(LeadStatus).map((status) => ({
+        label: leadStatusDisplay(status),
+        value: status,
+      })),
+    },
+    {
+      name: 'source',
+      label: 'Source',
+      type: 'select',
+      selectOptions: Object.values(LeadSource).map((source) => ({
+        label: leadSourceDisplay(source),
+        value: source,
+      })),
+    },
+    {
+      name: 'priority',
+      label: 'Priority',
+      type: 'select',
+      selectOptions: Object.values(LeadPriority).map((priority) => ({
+        label: leadPriorityDisplay(priority),
+        value: priority,
+      })),
+    },
+    {
+      name: 'leadScore',
+      label: 'Lead Score',
+      type: 'number',
+    },
+    {
+      name: 'createdAt',
+      label: 'Created At',
+      type: 'date',
+    },
+    {
+      name: 'lastActivityDate',
+      label: 'Last Activity',
+      type: 'date',
+    },
+  ];
 
   // Promo companies for display
   promoCompanies: PromoCompany[] = [];
@@ -150,6 +227,32 @@ export class LeadsListComponent implements OnInit {
     this.loadLeads();
     this.loadManagers();
     this.loadPromoCompanies();
+    this.loadCustomFieldDefinitions();
+  }
+
+  private loadCustomFieldDefinitions(): void {
+    this.customFieldsService.findByEntity('lead').subscribe({
+      next: (fields) => {
+        const definitions: FilterFieldDefinition[] = fields.map((field) => ({
+          name: field.name,
+          label: field.label,
+          type: field.fieldType as FilterFieldDefinition['type'],
+          selectOptions: field.selectOptions
+            ? field.selectOptions.map((opt) => {
+                if (typeof opt === 'object' && opt !== null && 'value' in opt && 'label' in opt) {
+                  return {
+                    label: (opt as { label: string }).label,
+                    value: String((opt as { value: unknown }).value),
+                  };
+                }
+                return { label: String(opt), value: String(opt) };
+              })
+            : undefined,
+        }));
+        this.customFieldDefinitions.set(definitions);
+      },
+      error: (err) => console.error('Error loading custom fields:', err),
+    });
   }
 
   // Selection helpers
@@ -211,23 +314,21 @@ export class LeadsListComponent implements OnInit {
   loadLeads(): void {
     this.loading.set(true);
 
-    const filters: LeadFilters = {
-      search: this.searchQuery || undefined,
-      status: this.getStatusesForActiveTab(),
-      source: this.selectedSources.length ? this.selectedSources : undefined,
-      priority: this.selectedPriorities.length
-        ? this.selectedPriorities
-        : undefined,
-    };
-
+    const state = this.filterState();
+    
     this.leadService
-      .getLeads(filters, this.currentPage, this.pageSize)
+      .advancedSearch({
+        search: state.search || undefined,
+        filters: state.filters,
+        page: this.currentPage,
+        pageSize: this.pageSize,
+      })
       .subscribe({
         next: (response) => {
-          this.leads.set(response.leads);
+          this.leads.set(response.data);
           this.totalResults = response.total;
           // Fetch current assignments for the loaded leads in batch
-          const ids = response.leads.map((l) => l.id).filter(Boolean);
+          const ids = response.data.map((l) => l.id).filter(Boolean);
           if (ids.length) {
             this.assignmentService
               .getCurrentAssignmentsForEntities('lead', ids)
@@ -250,6 +351,35 @@ export class LeadsListComponent implements OnInit {
           this.loading.set(false);
         },
       });
+  }
+
+  openFiltersDialog(): void {
+    const dialogRef = this.dialog.open(UniversalFiltersDialogComponent, {
+      minWidth: '800px',
+      data: {
+        title: 'Фильтры лидов',
+        staticFields: this.staticFields,
+        customFields: this.customFieldDefinitions(),
+        initialState: this.filterState(),
+        showSearch: true,
+        statusTabs: this.leadTabs, // Array of tabs
+        selectedStatusTab: this.activeTab || 'all', // Current active tab
+      },
+    });
+
+    dialogRef.afterClosed().subscribe((result: BaseFilterState & { selectedStatusTab?: string } | undefined) => {
+      if (result) {
+        this.filterState.set(result);
+        
+        // Handle status tab change
+        if (result.selectedStatusTab && result.selectedStatusTab !== this.activeTab) {
+          this.setActiveTab(result.selectedStatusTab);
+        }
+        
+        this.currentPage = 1;
+        this.loadLeads();
+      }
+    });
   }
 
   setActiveTab(tab: string): void {
@@ -576,5 +706,31 @@ export class LeadsListComponent implements OnInit {
     if (lead.assignedTo) return this.getManagerName(lead.assignedTo);
 
     return '';
+  }
+
+  // Universal filter helper methods
+  getOperatorLabel(operator: string): string {
+    return this.universalFilterService.getOperatorLabel(operator as any);
+  }
+
+  getTotalActiveFilters(): number {
+    return this.universalFilterService.countActiveFilters(this.filterState());
+  }
+
+  removeFilter(filter: any): void {
+    const state = this.filterState();
+    state.filters = state.filters.filter((f) => f !== filter);
+    this.filterState.set({ ...state });
+    this.currentPage = 1;
+    this.loadLeads();
+  }
+
+  clearAllFilters(): void {
+    this.filterState.set({
+      search: '',
+      filters: [],
+    });
+    this.currentPage = 1;
+    this.loadLeads();
   }
 }
