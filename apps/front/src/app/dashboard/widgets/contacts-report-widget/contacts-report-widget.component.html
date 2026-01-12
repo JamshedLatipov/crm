@@ -1,0 +1,111 @@
+<mat-card class="contacts-report-widget">
+  <mat-card-header>
+    <mat-card-title>
+      <mat-icon>contacts</mat-icon>
+      <span>Отчет по контактам</span>
+    </mat-card-title>
+    
+    <mat-form-field appearance="outline" class="group-field" *ngIf="customFieldDefinitions().length > 0">
+      <mat-label>Группировка</mat-label>
+      <mat-select [(ngModel)]="selectedGroupField" (selectionChange)="onGroupFieldChange()">
+        <mat-option [value]="null">Без группировки</mat-option>
+        @for (field of customFieldDefinitions(); track field.id) {
+          <mat-option [value]="field.name">{{ field.label }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  </mat-card-header>
+
+  <mat-card-content>
+    <div *ngIf="loading" class="loading-container">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
+
+    <div *ngIf="!loading && reportData()" class="report-content">
+      <!-- Main statistics -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">
+            <mat-icon>group</mat-icon>
+          </div>
+          <div class="stat-info">
+            <div class="stat-value">{{ reportData()?.totalContacts || 0 }}</div>
+            <div class="stat-label">Всего контактов</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon active">
+            <mat-icon>check_circle</mat-icon>
+          </div>
+          <div class="stat-info">
+            <div class="stat-value">{{ reportData()?.activeCount || 0 }}</div>
+            <div class="stat-label">Активные</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon recent">
+            <mat-icon>schedule</mat-icon>
+          </div>
+          <div class="stat-info">
+            <div class="stat-value">{{ reportData()?.recentCount || 0 }}</div>
+            <div class="stat-label">За 30 дней</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon email">
+            <mat-icon>email</mat-icon>
+          </div>
+          <div class="stat-info">
+            <div class="stat-value">{{ reportData()?.withEmailCount || 0 }}</div>
+            <div class="stat-label">С email</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon phone">
+            <mat-icon>phone</mat-icon>
+          </div>
+          <div class="stat-info">
+            <div class="stat-value">{{ reportData()?.withPhoneCount || 0 }}</div>
+            <div class="stat-label">С телефоном</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- By type -->
+      <div class="section" *ngIf="getTypeDataArray().length > 0">
+        <h3 class="section-title">По типу</h3>
+        <div class="distribution-list">
+          @for (item of getTypeDataArray(); track item.key) {
+            <div class="distribution-item">
+              <div class="item-label">{{ getTypeLabel(item.key) }}</div>
+              <div class="item-bar">
+                <div class="bar-fill" [style.width.%]="(item.value / (reportData()?.totalContacts || 1)) * 100"></div>
+              </div>
+              <div class="item-value">{{ item.value }}</div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Grouped data -->
+      <div class="section" *ngIf="reportData()?.groupedData && getGroupedDataArray().length > 0">
+        <h3 class="section-title">{{ getFieldLabel(reportData()?.groupedBy || '') }}</h3>
+        <div class="distribution-list">
+          @for (item of getGroupedDataArray(); track item.key) {
+            <div class="distribution-item">
+              <div class="item-label">{{ item.key }}</div>
+              <div class="item-bar">
+                <div class="bar-fill grouped" [style.width.%]="(item.value / (reportData()?.totalContacts || 1)) * 100"></div>
+              </div>
+              <div class="item-value">{{ item.value }}</div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </mat-card-content>
+</mat-card>

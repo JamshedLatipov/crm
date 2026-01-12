@@ -28,4 +28,16 @@ export class ReportsController {
   async tasks(@Query('days') days = '30') {
     return this.svc.tasksReport(Number(days));
   }
+
+  // Contacts report with optional custom field grouping
+  @Get('contacts')
+  async contacts(@Query('groupBy') groupBy?: string) {
+    return this.svc.contactsReport(groupBy);
+  }
+
+  // Custom field distribution report
+  @Get('contacts/custom-field/:fieldName')
+  async customFieldDistribution(@Query('fieldName') fieldName: string) {
+    return this.svc.contactsCustomFieldDistribution(fieldName);
+  }
 }

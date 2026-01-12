@@ -5,6 +5,7 @@ import { Lead, LeadStatus } from '../leads/lead.entity';
 import { Deal, DealStatus } from '../deals/deal.entity';
 import { Task } from '../tasks/task.entity';
 import { PipelineStage } from '../pipeline/pipeline.entity';
+import { Contact } from '../contacts/contact.entity';
 import { AssignmentService } from '../shared/services/assignment.service';
 
 @Injectable()
@@ -18,6 +19,8 @@ export class ReportsService {
     private taskRepo: Repository<Task>,
     @InjectRepository(PipelineStage)
     private stageRepo: Repository<PipelineStage>,
+    @InjectRepository(Contact)
+    private contactRepo: Repository<Contact>,
     private readonly assignmentService: AssignmentService,
   ) {}
 
@@ -153,4 +156,100 @@ export class ReportsService {
 
     return { since: since.toISOString(), completedCount: completed.length, byManager };
   }
-}
+
+  // Contacts report with custom fields grouping
+  async contactsReport(groupByField?: string) {
+    const contacts = await this.contactRepo.find({
+      where: { isActive: true }
+    });
+
+    const totalContacts = contacts.length;
+
+    // Group by custom field if specified
+    let groupedData: Record<string, number> = {};
+    
+    if (groupByField) {
+      contacts.forEach(contact => {
+        const customFields = contact.customFields as Record<string, any> || {};
+        const value = customFields[groupByField];
+        const key = value !== undefined && value !== null ? String(value) : 'Не указано';
+        groupedData[key] = (groupedData[key] || 0) + 1;
+      });
+    }
+
+    // Basic statistics
+    const activeCount = contacts.filter(c => c.isActive).length;
+    const withEmailCount = contacts.filter(c => c.email).length;
+    const withPhoneCount = contacts.filter(c => c.phone || c.mobilePhone).length;
+
+    // Group by type
+    const byType: Record<string, number> = {};
+    contacts.forEach(c => {
+      const type = c.type || 'unknown';
+      byType[type] = (byType[type] || 0) + 1;
+    });
+
+    // Recent contacts (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const recentCount = contacts.filter(c => 
+      c.createdAt && new Date(c.createdAt) > thirtyDaysAgo
+    ).length;
+
+    return {
+      totalContacts,
+      activeCount,
+      recentCount,
+      withEmailCount,
+      withPhoneCount,
+      byType,
+      ...(groupByField ? { groupedBy: groupByField, groupedData } : {})
+    };
+  }
+
+  // Contacts distribution by custom field value
+  async contactsCustomFieldDistribution(fieldName: string) {
+    const contacts = await this.contactRepo.find({
+      select: ['id', 'customFields'] as any
+    });
+
+    const distribution: Record<string, number> = {};
+    let withValueCount = 0;
+
+    contacts.forEach(contact => {
+      const customFields = contact.customFields as Record<string, any> || {};
+      const value = customFields[fieldName];
+      
+      if (value !== undefined && value !== null) {
+        withValueCount++;
+        // Handle arrays (multiselect)
+        if (Array.isArray(value)) {
+          value.forEach(v => {
+            const key = String(v);
+            distribution[key] = (distribution[key] || 0) + 1;
+          });
+        } else {
+          const key = String(value);
+          distribution[key] = (distribution[key] || 0) + 1;
+        }
+      } else {
+        distribution['Не заполнено'] = (distribution['Не заполнено'] || 0) + 1;
+      }
+    });
+
+    // Sort by count descending
+    const sortedDistribution = Object.entries(distribution)
+      .sort(([, a], [, b]) => b - a)
+      .reduce((acc, [key, value]) => {
+        acc[key] = value;
+        return acc;
+      }, {} as Record<string, number>);
+
+    return {
+      fieldName,
+      totalContacts: contacts.length,
+      withValueCount,
+      fillRate: contacts.length > 0 ? Math.round((withValueCount / contacts.length) * 10000) / 100 : 0,
+      distribution: sortedDistribution
+    };
+  }}

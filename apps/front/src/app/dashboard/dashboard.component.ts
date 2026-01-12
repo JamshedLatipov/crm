@@ -17,6 +17,7 @@ import { LeadStatistics } from '../leads/models/lead.model';
 import { ActivityService, ActivityItem } from '../services/activity.service';
 import { Router } from '@angular/router';
 import { PageLayoutComponent } from '../shared/page-layout/page-layout.component';
+import { ContactsReportWidgetComponent } from './widgets/contacts-report-widget/contacts-report-widget.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -31,7 +32,8 @@ import { PageLayoutComponent } from '../shared/page-layout/page-layout.component
     MatChipsModule,
     MatTooltipModule,
     MatBadgeModule,
-    PageLayoutComponent
+    PageLayoutComponent,
+    ContactsReportWidgetComponent
   ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
