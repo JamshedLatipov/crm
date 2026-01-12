@@ -203,7 +203,7 @@
                   <div class="autocomplete-option">
                     <span class="option-name">{{ deal.title }}</span>
                     <span class="option-detail" *ngIf="deal.amount">
-                      {{ deal.amount | currency:deal.currency:'symbol':'1.0-0' }}
+                      {{ deal.amount | currencyFormat:deal.currency }}
                     </span>
                   </div>
                 </mat-option>

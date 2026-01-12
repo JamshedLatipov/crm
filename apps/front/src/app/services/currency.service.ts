@@ -64,9 +64,52 @@ export class CurrencyService {
    */
   formatAmount(amount: number | string, showSymbol = true): string {
     const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-    const formatted = numAmount.toFixed(2);
     
-    return showSymbol ? `${formatted} ${this.currencySymbol()}` : formatted;
+    if (isNaN(numAmount)) {
+      return showSymbol ? `0,00 ${this.currencySymbol()}` : '0,00';
+    }
+    
+    const currencyCode = this.currencyCode();
+    const decimalPlaces = this.getDecimalPlaces(currencyCode);
+    const locale = this.getLocale(currencyCode);
+    
+    try {
+      const formatted = new Intl.NumberFormat(locale, {
+        minimumFractionDigits: decimalPlaces,
+        maximumFractionDigits: decimalPlaces,
+        useGrouping: true,
+      }).format(numAmount);
+      
+      return showSymbol ? `${formatted} ${this.currencySymbol()}` : formatted;
+    } catch (e) {
+      // Fallback
+      const fixed = numAmount.toFixed(decimalPlaces);
+      return showSymbol ? `${fixed} ${this.currencySymbol()}` : fixed;
+    }
+  }
+
+  /**
+   * Получает количество десятичных знаков для валюты
+   */
+  private getDecimalPlaces(currencyCode: string): number {
+    const twoDecimals = ['RUB', 'USD', 'EUR', 'GBP', 'TJS', 'CHF', 'UAH', 'KZT', 'KGS', 'UZS'];
+    const noDecimals = ['JPY', 'KRW', 'VND', 'CLP', 'ISK', 'PYG'];
+    const threeDecimals = ['BHD', 'IQD', 'JOD', 'KWD', 'OMR', 'TND'];
+    
+    if (noDecimals.includes(currencyCode)) {
+      return 0;
+    } else if (threeDecimals.includes(currencyCode)) {
+      return 3;
+    }
+    return 2;
+  }
+
+  /**
+   * Получает локаль для форматирования чисел
+   */
+  private getLocale(currencyCode: string): string {
+    const ruLocale = ['RUB', 'UAH', 'KZT', 'KGS', 'UZS', 'TJS'];
+    return ruLocale.includes(currencyCode) ? 'ru-RU' : 'en-US';
   }
 
   /**

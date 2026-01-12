@@ -57,6 +57,9 @@ export class Deal {
   @Column({ default: 'TJS' })
   currency: string;
 
+  @Column('decimal', { precision: 10, scale: 6, nullable: true })
+  exchangeRate?: number; // Курс валюты к RUB на момент создания/завершения сделки
+
   @Column('int', { default: 50 })
   probability: number; // 0-100
 

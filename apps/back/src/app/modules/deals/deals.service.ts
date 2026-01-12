@@ -21,6 +21,7 @@ import { UserService } from '../user/user.service';
 import { AutomationService } from '../pipeline/automation.service';
 import { NotificationService } from '../shared/services/notification.service';
 import { NotificationType, NotificationChannel, NotificationPriority } from '../shared/entities/notification.entity';
+import { ExchangeRateService } from '../shared/services/exchange-rate.service';
 
 // Константа для определения высокоценной сделки (можно вынести в конфигурацию)
 const HIGH_VALUE_DEAL_THRESHOLD = 100000; // 100,000
@@ -39,7 +40,8 @@ export class DealsService {
     private readonly userService: UserService,
     @Inject(forwardRef(() => AutomationService))
     private readonly automationService: AutomationService,
-    private readonly notificationService: NotificationService
+    private readonly notificationService: NotificationService,
+    private readonly exchangeRateService: ExchangeRateService
   ) {}
 
   /**
@@ -208,11 +210,15 @@ export class DealsService {
     userId?: string,
     userName?: string
   ): Promise<Deal> {
+    // Получаем текущий курс валюты
+    const exchangeRate = this.exchangeRateService.getRate(dto.currency);
+
     // Создаем сделку без связей. Note: assignedTo is now stored in `assignments` table.
     const dealPayload: Partial<Deal> = {
       title: dto.title,
       amount: dto.amount,
       currency: dto.currency,
+      exchangeRate, // Сохраняем курс на момент создания
       probability: dto.probability,
       expectedCloseDate: new Date(dto.expectedCloseDate),
       stageId: dto.stageId,
@@ -233,6 +239,7 @@ export class DealsService {
       metadata: {
         Название: savedDeal.title,
         Сумма: `${savedDeal.amount} ${savedDeal.currency}`,
+        'Курс валюты': exchangeRate,
         Вероятность: `${savedDeal.probability}%`,
         Этап: savedDeal.stageId,
         Назначена: (dto as any).assignedTo || null,
@@ -645,9 +652,13 @@ export class DealsService {
       if (stage.type === StageType.WON_STAGE) {
         updateData.status = DealStatus.WON;
         updateData.actualCloseDate = new Date().toISOString();
+        // Обновляем курс валюты на момент завершения сделки
+        updateData.exchangeRate = this.exchangeRateService.getRate(existingDeal.currency);
       } else if (stage.type === StageType.LOST_STAGE) {
         updateData.status = DealStatus.LOST;
         updateData.actualCloseDate = new Date().toISOString();
+        // Обновляем курс валюты на момент завершения сделки
+        updateData.exchangeRate = this.exchangeRateService.getRate(existingDeal.currency);
       }
     }
 
@@ -743,9 +754,11 @@ export class DealsService {
     }
 
     // Fallback: update status directly
+    const existingDeal = await this.getDealById(id);
     const updateData: UpdateDealDto = {
       status: DealStatus.WON,
       actualCloseDate: new Date().toISOString(),
+      exchangeRate: this.exchangeRateService.getRate(existingDeal.currency),
     };
 
     if (actualAmount !== undefined) {
@@ -830,12 +843,14 @@ export class DealsService {
       console.warn('Failed to auto-move to LOST stage:', err?.message || err);
     }
 
+    const existingDeal = await this.getDealById(id);
     const result = await this.updateDeal(
       id,
       {
         status: DealStatus.LOST,
         actualCloseDate: new Date().toISOString(),
         notes: reason,
+        exchangeRate: this.exchangeRateService.getRate(existingDeal.currency),
       },
       userId,
       userName
@@ -954,25 +969,63 @@ export class DealsService {
     const now = new Date();
     let startDate: Date;
     let endDate: Date;
+    let prevStartDate: Date;
+    let prevEndDate: Date;
 
     switch (period) {
       case 'month':
         startDate = new Date(now.getFullYear(), now.getMonth(), 1);
         endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        // Previous month
+        prevStartDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        prevEndDate = new Date(now.getFullYear(), now.getMonth(), 0);
         break;
       case 'quarter': {
         const quarter = Math.floor(now.getMonth() / 3);
         startDate = new Date(now.getFullYear(), quarter * 3, 1);
         endDate = new Date(now.getFullYear(), quarter * 3 + 3, 0);
+        // Previous quarter
+        const prevQuarter = quarter - 1;
+        if (prevQuarter < 0) {
+          prevStartDate = new Date(now.getFullYear() - 1, 9, 1); // Q4 of prev year
+          prevEndDate = new Date(now.getFullYear() - 1, 12, 0);
+        } else {
+          prevStartDate = new Date(now.getFullYear(), prevQuarter * 3, 1);
+          prevEndDate = new Date(now.getFullYear(), prevQuarter * 3 + 3, 0);
+        }
         break;
       }
       case 'year':
         startDate = new Date(now.getFullYear(), 0, 1);
         endDate = new Date(now.getFullYear(), 11, 31);
+        // Previous year
+        prevStartDate = new Date(now.getFullYear() - 1, 0, 1);
+        prevEndDate = new Date(now.getFullYear() - 1, 11, 31);
         break;
     }
 
-    const deals = await this.dealRepository
+    // Get won deals for the current period (based on actual close date)
+    const wonDeals = await this.dealRepository
+      .createQueryBuilder('deal')
+      .where('deal.actualCloseDate BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate,
+      })
+      .andWhere('deal.status = :status', { status: DealStatus.WON })
+      .getMany();
+
+    // Get won deals for the previous period
+    const prevWonDeals = await this.dealRepository
+      .createQueryBuilder('deal')
+      .where('deal.actualCloseDate BETWEEN :prevStartDate AND :prevEndDate', {
+        prevStartDate,
+        prevEndDate,
+      })
+      .andWhere('deal.status = :status', { status: DealStatus.WON })
+      .getMany();
+
+    // Also get open deals for weighted forecast
+    const openDeals = await this.dealRepository
       .createQueryBuilder('deal')
       .where('deal.expectedCloseDate BETWEEN :startDate AND :endDate', {
         startDate,
@@ -981,11 +1034,28 @@ export class DealsService {
       .andWhere('deal.status = :status', { status: DealStatus.OPEN })
       .getMany();
 
-    const totalAmount = deals.reduce(
+    // Total amount from WON deals only
+    const totalAmount = wonDeals.reduce(
       (sum, deal) => sum + Number(deal.amount),
       0
     );
-    const weightedAmount = deals.reduce(
+    
+    // Previous period amount
+    const prevTotalAmount = prevWonDeals.reduce(
+      (sum, deal) => sum + Number(deal.amount),
+      0
+    );
+    
+    // Calculate growth percentage
+    let growthPercentage = 0;
+    if (prevTotalAmount > 0) {
+      growthPercentage = +((totalAmount - prevTotalAmount) / prevTotalAmount * 100).toFixed(2);
+    } else if (totalAmount > 0) {
+      growthPercentage = 100; // If no previous data but we have current data
+    }
+    
+    // Weighted forecast from OPEN deals
+    const weightedAmount = openDeals.reduce(
       (sum, deal) => sum + Number(deal.amount) * (deal.probability / 100),
       0
     );
@@ -996,7 +1066,9 @@ export class DealsService {
       }`,
       totalAmount,
       weightedAmount,
-      dealsCount: deals.length,
+      dealsCount: wonDeals.length, // Count only won deals for the metric
+      prevTotalAmount,
+      growthPercentage,
     };
   }
 

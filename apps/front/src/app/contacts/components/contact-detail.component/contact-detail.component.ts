@@ -16,6 +16,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ConfirmActionDialogComponent } from '../../../shared/dialogs/confirm-action-dialog.component';
 import { ContactsService } from '../../contacts.service';
 import { Contact, ContactType, ContactSource, ContactActivity, ActivityType, Deal } from '../../contact.interfaces';
+import { CurrencyFormatPipe } from '../../../shared/pipes/currency-format.pipe';
 
 @Component({
   selector: 'app-contact-detail',
@@ -35,6 +36,7 @@ import { Contact, ContactType, ContactSource, ContactActivity, ActivityType, Dea
     MatDividerModule
     ,
     MatDialogModule,
+    CurrencyFormatPipe
   ],
   templateUrl: './contact-detail.component.html',
   styleUrls: ['./contact-detail.component.scss']

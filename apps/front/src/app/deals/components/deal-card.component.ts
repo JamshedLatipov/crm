@@ -13,6 +13,7 @@ import { Deal } from '../../pipeline/dtos';
 import { UsersService, User } from '../../users/users.service';
 import { AssignUserDialogComponent } from './assign-user-dialog.component';
 import { DealStatusComponent } from '../../shared/components';
+import { CurrencyFormatPipe } from '../../shared/pipes/currency-format.pipe';
 
 @Component({
   selector: 'app-deal-card',
@@ -26,7 +27,8 @@ import { DealStatusComponent } from '../../shared/components';
     MatChipsModule,
     MatTooltipModule,
     MatDividerModule,
-    DealStatusComponent
+    DealStatusComponent,
+    CurrencyFormatPipe
   ],
   template: `
     <mat-card class="deal-card" [class.urgent]="isUrgent()">
@@ -65,7 +67,7 @@ import { DealStatusComponent } from '../../shared/components';
           <!-- Сумма и валюта -->
           <div class="deal-amount">
             <mat-icon>monetization_on</mat-icon>
-            <span class="amount">{{ (deal.amount || 0) | currency:deal.currency:'symbol':'1.0-0' }}</span>
+            <span class="amount">{{ (deal.amount || 0) | currencyFormat:deal.currency }}</span>
             <span class="probability">({{ deal.probability }}%)</span>
           </div>
 

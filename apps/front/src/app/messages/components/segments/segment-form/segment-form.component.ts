@@ -14,6 +14,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.component';
+import { MessageBackButtonComponent } from '../../shared/message-back-button/message-back-button.component';
 import { SegmentService } from '../../../services/segment.service';
 import { CreateSegmentDto } from '../../../models/message.models';
 
@@ -34,7 +35,8 @@ import { CreateSegmentDto } from '../../../models/message.models';
     MatProgressSpinnerModule,
     MatDividerModule,
     MatSnackBarModule,
-    PageLayoutComponent
+    PageLayoutComponent,
+    MessageBackButtonComponent
   ],
   templateUrl: './segment-form.component.html',
   styleUrl: './segment-form.component.scss'

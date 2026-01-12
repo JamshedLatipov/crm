@@ -17,6 +17,7 @@ import { AutomationSettingsComponent } from './automation-settings/automation-se
 import { DealStatusComponent, DealStatus as DealStatusType } from '../shared/components/deal-status/deal-status.component';
 import { forkJoin } from 'rxjs';
 import { PageLayoutComponent } from '../shared/page-layout/page-layout.component';
+import { CurrencyFormatPipe } from '../shared/pipes/currency-format.pipe';
 
 @Component({
   selector: 'app-pipeline',
@@ -30,7 +31,8 @@ import { PageLayoutComponent } from '../shared/page-layout/page-layout.component
     MatButtonModule, 
     MatTooltipModule, 
     DealStatusComponent,
-    PageLayoutComponent
+    PageLayoutComponent,
+    CurrencyFormatPipe
   ],
   templateUrl: './pipeline.component.html',
   styleUrls: ['./pipeline.component.scss'],

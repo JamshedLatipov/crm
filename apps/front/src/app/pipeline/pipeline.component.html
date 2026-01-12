@@ -133,7 +133,7 @@
               <mat-icon>contacts</mat-icon>
               Лид: {{ deal.lead.name }}
             </div>
-            <div class="deal-amount">{{ deal.amount | currency:deal.currency:'symbol':'1.0-0' }}</div>
+            <div class="deal-amount">{{ deal.amount | currencyFormat:deal.currency }}</div>
             <div class="deal-probability">{{ deal.probability }}% вероятность</div>
             <div class="deal-date">{{ deal.expectedCloseDate | date:'shortDate' }}</div>
           </div>
@@ -189,7 +189,7 @@
                 <mat-icon>contacts</mat-icon>
                 Лид: {{ deal.lead.name }}
               </div>
-              <div class="deal-amount">{{ deal.amount | currency:deal.currency:'symbol':'1.0-0' }}</div>
+              <div class="deal-amount">{{ deal.amount | currencyFormat:deal.currency }}</div>
               <div class="deal-probability">{{ deal.probability }}% вероятность</div>
               <div class="deal-date">{{ deal.expectedCloseDate | date:'shortDate' }}</div>
             </div>

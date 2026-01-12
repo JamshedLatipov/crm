@@ -9,6 +9,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.component';
+import { MessageBackButtonComponent } from '../../shared/message-back-button/message-back-button.component';
 import { WhatsAppTemplateService } from '../../../services/whatsapp-template.service';
 import { WhatsAppTemplate } from '../../../models/message.models';
 import { Nl2brPipe } from '../../../../shared/pipes/nl2br.pipe';
@@ -27,6 +28,7 @@ import { Nl2brPipe } from '../../../../shared/pipes/nl2br.pipe';
     MatCardModule,
     MatSnackBarModule,
     PageLayoutComponent,
+    MessageBackButtonComponent,
     Nl2brPipe
   ],
   templateUrl: './whatsapp-preview.component.html',

@@ -140,15 +140,28 @@ export class DealFormComponent implements OnInit {
     const contactSearchControl = this.dealForm.get('contactSearch');
     if (!contactSearchControl) return;
     
+    // Отслеживаем изменения для сброса выбранного контакта
+    contactSearchControl.valueChanges.subscribe(value => {
+      // Если значение - строка (пользователь вводит текст), сбрасываем выбранный контакт
+      if (typeof value === 'string') {
+        this.selectedContact = null;
+      }
+    });
+    
     this.filteredContacts = contactSearchControl.valueChanges.pipe(
       startWith(''),
       debounceTime(300),
       distinctUntilChanged(),
       switchMap(value => {
-        if (typeof value === 'string' && value.trim().length > 0) {
-          return this.contactsService.searchContacts(value.trim());
+        const searchTerm = typeof value === 'string' ? value.trim() : '';
+        
+        // Если поле пустое или короткое, показываем последние контакты
+        if (searchTerm.length === 0) {
+          return this.contactsService.getRecentContacts(20);
         }
-        return of([]);
+        
+        // Иначе ищем по запросу
+        return this.contactsService.searchContacts(searchTerm);
       })
     );
   }

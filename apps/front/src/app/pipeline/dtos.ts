@@ -149,6 +149,7 @@ export interface Deal {
   
   amount: number;
   currency: string;
+  exchangeRate?: number;
   probability: number; // 0-100
   expectedCloseDate: Date;
   actualCloseDate?: Date;

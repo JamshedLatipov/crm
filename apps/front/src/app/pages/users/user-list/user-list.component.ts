@@ -121,6 +121,24 @@ export class UserListComponent implements OnInit {
     this.loadUsersAndSetupFilters();
   }
 
+  refreshUsers(): void {
+    this.userService.loadUsers(true).subscribe({
+      next: () => {
+        // После загрузки сразу обновляем фильтрованный список
+        this.updateFilteredUsers();
+        this.snackBar.open('Данные обновлены', 'Закрыть', {
+          duration: 2000
+        });
+      },
+      error: (error) => {
+        console.error('Error loading users:', error);
+        this.snackBar.open('Ошибка загрузки пользователей', 'Закрыть', {
+          duration: 5000
+        });
+      }
+    });
+  }
+
   private loadUsersAndSetupFilters(): void {
     this.userService.loadUsers().subscribe({
       next: () => {

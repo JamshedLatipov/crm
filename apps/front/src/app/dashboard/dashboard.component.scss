@@ -225,6 +225,20 @@
       font-size: 18px;
       width: 18px;
       height: 18px;
+      
+      &.down {
+        color: #ef4444;
+      }
+    }
+    
+    .trend-text {
+      &.negative {
+        color: #ef4444;
+      }
+      
+      &.positive {
+        color: #22c55e;
+      }
     }
   }
 

@@ -13,6 +13,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTabsModule } from '@angular/material/tabs';
 import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.component';
+import { MessageBackButtonComponent } from '../../shared/message-back-button/message-back-button.component';
 import { VariableSelectorComponent } from '../../variable-selector/variable-selector.component';
 import { EmailTemplateService } from '../../../services/email-template.service';
 import { CreateEmailTemplateDto, EmailTemplateCategory } from '../../../models/message.models';
@@ -34,6 +35,7 @@ import { CreateEmailTemplateDto, EmailTemplateCategory } from '../../../models/m
     MatProgressSpinnerModule,
     MatTabsModule,
     PageLayoutComponent,
+    MessageBackButtonComponent,
     VariableSelectorComponent
   ],
   templateUrl: './email-template-form.component.html',

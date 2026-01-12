@@ -28,6 +28,7 @@ import {
   translateMetadataKey,
 } from '../../../shared/utils';
 import { ConfirmActionDialogComponent } from '../../../shared/dialogs/confirm-action-dialog.component';
+import { CurrencyFormatPipe } from '../../../shared/pipes/currency-format.pipe';
 
 @Component({
   selector: 'app-deal-detail',
@@ -46,6 +47,7 @@ import { ConfirmActionDialogComponent } from '../../../shared/dialogs/confirm-ac
     DealHistoryStatsComponent,
     CommentsComponent,
     TaskListWidgetComponent,
+    CurrencyFormatPipe,
   ],
   templateUrl: `./deal-detail.component.html`,
   styleUrls: [`./deal-detail.component.scss`],

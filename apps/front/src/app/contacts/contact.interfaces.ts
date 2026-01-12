@@ -149,6 +149,7 @@ export interface Deal {
   title: string;
   amount: number;
   currency: string;
+  exchangeRate?: number;
   status: string;
   stage?: string;
   probability?: number;

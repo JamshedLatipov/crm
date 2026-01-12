@@ -73,7 +73,7 @@
                 <div class="metric-info">
                   <div class="metric-label">Сумма сделки</div>
                   <div class="metric-value">
-                    {{ deal.amount || 0 | currency : deal.currency : 'symbol' : '1.0-0' }}
+                    {{ deal.amount || 0 | currencyFormat:deal.currency }}
                   </div>
                 </div>
               </div>
@@ -131,7 +131,7 @@
                     <div class="value weighted-value">
                       {{
                         ((deal.amount || 0) * deal.probability) / 100
-                          | currency : deal.currency : 'symbol' : '1.0-0'
+                          | currencyFormat:deal.currency
                       }}
                     </div>
                     <span class="hint">С учетом вероятности {{ deal.probability }}%</span>

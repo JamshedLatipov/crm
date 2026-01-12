@@ -181,9 +181,9 @@
                 </div>
               </mat-option>
             </mat-autocomplete>
-            <mat-hint *ngIf="selectedContact" class="contact-hint">
+            <mat-hint *ngIf="dealForm.get('contactSearch')?.value" class="contact-hint">
               <mat-icon>check_circle</mat-icon>
-              Выбран: {{ selectedContact.name }}
+              Выбран: {{ selectedContact?.name || dealForm.get('contactSearch')?.value }}
             </mat-hint>
           </mat-form-field>
 

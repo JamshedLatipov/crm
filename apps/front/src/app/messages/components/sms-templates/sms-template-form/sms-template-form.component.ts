@@ -12,6 +12,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.component';
+import { MessageBackButtonComponent } from '../../shared/message-back-button/message-back-button.component';
 import { SmsTemplateService } from '../../../services/sms-template.service';
 import { SmsTemplate, CreateSmsTemplateDto } from '../../../models/message.models';
 
@@ -30,7 +31,8 @@ import { SmsTemplate, CreateSmsTemplateDto } from '../../../models/message.model
     MatIconModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
-    PageLayoutComponent
+    PageLayoutComponent,
+    MessageBackButtonComponent
   ],
   templateUrl: './sms-template-form.component.html',
   styleUrl: './sms-template-form.component.scss'

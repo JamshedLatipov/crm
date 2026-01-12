@@ -2,6 +2,8 @@
   [title]="templateId() ? 'Редактировать SMS шаблон' : 'Новый SMS шаблон'"
   [subtitle]="templateId() ? 'Изменение настроек шаблона' : 'Создание нового SMS шаблона'"
 >
+  <app-message-back-button page-back-button></app-message-back-button>
+
   <div page-actions>
     <button mat-stroked-button (click)="cancel()" [disabled]="loading()">
       <mat-icon>close</mat-icon>

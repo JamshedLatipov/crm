@@ -2,6 +2,8 @@
   [title]="template()?.name || 'Предпросмотр Email шаблона'"
   subtitle="Предварительный просмотр шаблона с переменными"
 >
+  <app-message-back-button page-back-button></app-message-back-button>
+
   <div page-actions>
     <button mat-stroked-button (click)="goBack()">
       <mat-icon>arrow_back</mat-icon>

@@ -104,13 +104,22 @@
           <mat-chip class="trend-chip success">{{ revenueForecast()?.dealsCount ?? 0 }} сделок</mat-chip>
         </div>
         <div class="stat-body">
-          <h3>{{ revenueForecast()?.totalAmount ? (revenueForecast()?.totalAmount | number:'1.0-0') : '—' }}</h3>
-          <p>Прогноз выручки (мес.)</p>
+          <h3>{{ revenueForecast()?.totalAmount ? (revenueForecast()?.totalAmount | currencyFormat) : '—' }}</h3>
+          <p>Общая сумма выручки</p>
         </div>
         <div class="stat-footer">
           <div class="revenue-trend">
-            <mat-icon class="trend-icon up">trending_up</mat-icon>
-            <span class="trend-text">+15% к прошлому месяцу</span>
+            @if (revenueForecast()?.growthPercentage !== undefined && revenueForecast()?.growthPercentage !== null) {
+              <mat-icon class="trend-icon" [class.up]="revenueForecast()!.growthPercentage >= 0" [class.down]="revenueForecast()!.growthPercentage < 0">
+                {{ revenueForecast()!.growthPercentage >= 0 ? 'trending_up' : 'trending_down' }}
+              </mat-icon>
+              <span class="trend-text" [class.positive]="revenueForecast()!.growthPercentage >= 0" [class.negative]="revenueForecast()!.growthPercentage < 0">
+                {{ revenueForecast()!.growthPercentage > 0 ? '+' : '' }}{{ revenueForecast()!.growthPercentage }}% к прошлому месяцу
+              </span>
+            } @else {
+              <mat-icon class="trend-icon up">trending_up</mat-icon>
+              <span class="trend-text">Нет данных за прошлый период</span>
+            }
           </div>
         </div>
       </mat-card>

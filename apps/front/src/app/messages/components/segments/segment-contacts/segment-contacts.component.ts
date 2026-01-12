@@ -8,6 +8,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.component';
+import { MessageBackButtonComponent } from '../../shared/message-back-button/message-back-button.component';
 import { CrmTableComponent, CrmColumn, CrmColumnTemplateDirective } from '../../../../shared/components/crm-table/crm-table.component';
 import { SegmentService } from '../../../services/segment.service';
 import { Segment } from '../../../models/message.models';
@@ -26,7 +27,8 @@ import { Segment } from '../../../models/message.models';
     MatProgressSpinnerModule,
     MatSnackBarModule,
     MatTooltipModule,
-    PageLayoutComponent
+    PageLayoutComponent,
+    MessageBackButtonComponent
   ],
   templateUrl: './segment-contacts.component.html',
   styleUrl: './segment-contacts.component.scss'

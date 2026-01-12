@@ -8,6 +8,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.component';
+import { MessageBackButtonComponent } from '../../shared/message-back-button/message-back-button.component';
 import { CrmTableComponent, CrmColumn, CrmColumnTemplateDirective } from '../../../../shared/components/crm-table/crm-table.component';
 import { EmailTemplateService } from '../../../services/email-template.service';
 import { EmailTemplate } from '../../../models/message.models';
@@ -26,7 +27,8 @@ import { EmailTemplate } from '../../../models/message.models';
     MatTooltipModule,
     MatMenuModule,
     MatSnackBarModule,
-    PageLayoutComponent
+    PageLayoutComponent,
+    MessageBackButtonComponent
   ],
   templateUrl: './email-template-list.component.html',
   styleUrl: './email-template-list.component.scss'

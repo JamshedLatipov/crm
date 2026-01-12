@@ -484,4 +484,56 @@ export class UserService {
       };
     }
   }
+
+  /**
+   * Recalculate workload counters for all users by counting active assignments
+   * This is useful for syncing counters after migrations or data fixes
+   */
+  async recalculateWorkloadCounters(): Promise<{ updated: number; errors: string[] }> {
+    const users = await this.getAllUsers();
+    const errors: string[] = [];
+    let updated = 0;
+
+    for (const user of users) {
+      try {
+        // Count active deals assigned to this user
+        const dealsCount = await this.userRepository.manager.query(
+          `SELECT COUNT(*) as count FROM assignments WHERE user_id = $1 AND entity_type = 'deal' AND status = 'active'`,
+          [user.id]
+        );
+
+        // Count active tasks assigned to this user
+        const tasksCount = await this.userRepository.manager.query(
+          `SELECT COUNT(*) as count FROM assignments WHERE user_id = $1 AND entity_type = 'task' AND status = 'active'`,
+          [user.id]
+        );
+
+        // Count active leads assigned to this user
+        const leadsCount = await this.userRepository.manager.query(
+          `SELECT COUNT(*) as count FROM assignments WHERE user_id = $1 AND entity_type = 'lead' AND status = 'active'`,
+          [user.id]
+        );
+
+        const currentDealsCount = parseInt(dealsCount[0]?.count || '0', 10);
+        const currentTasksCount = parseInt(tasksCount[0]?.count || '0', 10);
+        const currentLeadsCount = parseInt(leadsCount[0]?.count || '0', 10);
+
+        // Update user counters
+        await this.userRepository.update(
+          { id: user.id },
+          {
+            currentDealsCount,
+            currentTasksCount,
+            currentLeadsCount
+          }
+        );
+
+        updated++;
+      } catch (err) {
+        errors.push(`Failed to update user ${user.id}: ${err?.message || err}`);
+      }
+    }
+
+    return { updated, errors };
+  }
 }
