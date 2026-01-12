@@ -1,0 +1,254 @@
+<div class="dialog-header">
+  <div class="header-content">
+    <div class="header-icon">
+      <mat-icon>{{ isEditMode ? 'edit' : 'business' }}</mat-icon>
+    </div>
+    <div class="header-text">
+      <h2>{{ isEditMode ? 'Редактировать компанию' : 'Создать компанию' }}</h2>
+      <p class="header-subtitle">{{ isEditMode ? 'Измените информацию о компании' : 'Добавьте новую компанию в вашу систему' }}</p>
+    </div>
+  </div>
+  <button mat-icon-button (click)="cancel()" class="close-button">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content class="dialog-content">
+  <form [formGroup]="form" class="create-company-form">
+    <!-- Basic Information -->
+    <div class="form-section">
+      <div class="section-header">
+        <mat-icon class="section-icon">business</mat-icon>
+        <h3>Основная информация</h3>
+      </div>
+      <div class="form-field-container">
+        <mat-form-field appearance="outline" class="full-width required-field">
+          <mat-label>Название компании</mat-label>
+          <input matInput formControlName="name" placeholder="Введите название" />
+          <mat-icon matSuffix>business</mat-icon>
+          <mat-error *ngIf="form.get('name')?.hasError('required')">Название обязательно</mat-error>
+        </mat-form-field>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Юридическое название</mat-label>
+            <input matInput formControlName="legalName" placeholder="Полное юр. название" />
+            <mat-icon matSuffix>gavel</mat-icon>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>ИНН</mat-label>
+            <input matInput formControlName="inn" placeholder="ИНН" />
+            <mat-icon matSuffix>assignment</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>KPP</mat-label>
+            <input matInput formControlName="kpp" placeholder="KPP" />
+            <mat-icon matSuffix>fingerprint</mat-icon>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>OGRN</mat-label>
+            <input matInput formControlName="ogrn" placeholder="OGRN" />
+            <mat-icon matSuffix>badge</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Описание</mat-label>
+          <textarea matInput formControlName="description" rows="3" placeholder="Краткое описание компании..."></textarea>
+          <mat-icon matSuffix>description</mat-icon>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <!-- Custom Fields -->
+    <div class="form-section" *ngIf="customFieldDefinitions.length > 0">
+      <div class="section-header">
+        <mat-icon class="section-icon">tune</mat-icon>
+        <h3>Дополнительные поля</h3>
+        <span class="field-count">{{ customFieldDefinitions.length }}</span>
+      </div>
+      <div class="form-field-container">
+        <div *ngFor="let field of customFieldDefinitions" class="full-width">
+          <app-dynamic-field
+            [fieldDef]="field"
+            [value]="customFieldValues[field.name]"
+            (valueChange)="onCustomFieldChange(field.name, $event)"
+          ></app-dynamic-field>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contact Information -->
+    <div class="form-section">
+      <div class="section-header">
+        <mat-icon class="section-icon">contact_phone</mat-icon>
+        <h3>Контактная информация</h3>
+      </div>
+      <div class="form-field-container">
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Веб-сайт</mat-label>
+            <input matInput formControlName="website" placeholder="https://example.com" />
+            <mat-icon matSuffix>language</mat-icon>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Телефон</mat-label>
+            <input matInput formControlName="phone" placeholder="+7 (XXX) XXX-XX-XX" />
+            <mat-icon matSuffix>phone</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Email</mat-label>
+          <input matInput type="email" formControlName="email" placeholder="contact@company.com" />
+          <mat-icon matSuffix>email</mat-icon>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <!-- Address Information -->
+    <div class="form-section">
+      <div class="section-header">
+        <mat-icon class="section-icon">place</mat-icon>
+        <h3>Адрес</h3>
+      </div>
+      <div class="form-field-container">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Адрес</mat-label>
+          <input matInput formControlName="address" placeholder="Улица, дом, офис" />
+          <mat-icon matSuffix>location_on</mat-icon>
+        </mat-form-field>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Город</mat-label>
+            <input matInput formControlName="city" />
+            <mat-icon matSuffix>location_city</mat-icon>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Регион</mat-label>
+            <input matInput formControlName="region" />
+            <mat-icon matSuffix>map</mat-icon>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Страна</mat-label>
+            <input matInput formControlName="country" />
+            <mat-icon matSuffix>public</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Почтовый индекс</mat-label>
+          <input matInput formControlName="postalCode" />
+          <mat-icon matSuffix>markunread_mailbox</mat-icon>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <!-- Company Details -->
+    <div class="form-section">
+      <div class="section-header">
+        <mat-icon class="section-icon">analytics</mat-icon>
+        <h3>Данные компании</h3>
+      </div>
+      <div class="form-field-container">
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Количество сотрудников</mat-label>
+            <input matInput type="number" formControlName="employeeCount" />
+            <mat-icon matSuffix>groups</mat-icon>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Годовая выручка</mat-label>
+            <input matInput type="number" formControlName="annualRevenue" />
+            <mat-icon matSuffix>attach_money</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Дата основания</mat-label>
+            <input matInput formControlName="foundedDate" placeholder="YYYY-MM-DD" />
+            <mat-icon matSuffix>event</mat-icon>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Источник</mat-label>
+            <input matInput formControlName="source" />
+            <mat-icon matSuffix>source</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Теги (через запятую)</mat-label>
+          <input matInput formControlName="tagsInput" placeholder="клиент, партнер, инвестор" />
+          <mat-icon matSuffix>label</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Заметки</mat-label>
+          <textarea matInput formControlName="notes" rows="3" placeholder="Дополнительные заметки..."></textarea>
+          <mat-icon matSuffix>note</mat-icon>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <!-- Social Media -->
+    <div class="form-section">
+      <div class="section-header">
+        <mat-icon class="section-icon">share</mat-icon>
+        <h3>Социальные сети</h3>
+      </div>
+      <div class="form-field-container">
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>LinkedIn</mat-label>
+            <input matInput formControlName="social_linkedin" placeholder="linkedin.com/company/..." />
+            <mat-icon matSuffix>link</mat-icon>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Facebook</mat-label>
+            <input matInput formControlName="social_facebook" placeholder="facebook.com/..." />
+            <mat-icon matSuffix>link</mat-icon>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Twitter</mat-label>
+            <input matInput formControlName="social_twitter" placeholder="twitter.com/..." />
+            <mat-icon matSuffix>link</mat-icon>
+          </mat-form-field>
+        </div>
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Instagram</mat-label>
+            <input matInput formControlName="social_instagram" placeholder="instagram.com/..." />
+            <mat-icon matSuffix>link</mat-icon>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>VK</mat-label>
+            <input matInput formControlName="social_vk" placeholder="vk.com/..." />
+            <mat-icon matSuffix>link</mat-icon>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Telegram</mat-label>
+            <input matInput formControlName="social_telegram" placeholder="t.me/..." />
+            <mat-icon matSuffix>link</mat-icon>
+          </mat-form-field>
+        </div>
+      </div>
+    </div>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions class="dialog-actions">
+  <button mat-stroked-button (click)="cancel()">
+    <mat-icon>close</mat-icon>
+    <span>Отмена</span>
+  </button>
+  <button mat-raised-button color="primary" (click)="save()" [disabled]="form.invalid || saving">
+    <mat-spinner diameter="20" *ngIf="saving"></mat-spinner>
+    <mat-icon *ngIf="!saving">{{ isEditMode ? 'save' : 'add' }}</mat-icon>
+    <span>{{ saving ? (isEditMode ? 'Сохранение...' : 'Создание...') : (isEditMode ? 'Сохранить' : 'Создать компанию') }}</span>
+  </button>
+</mat-dialog-actions>
