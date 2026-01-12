@@ -1,31 +1,47 @@
 <div class="custom-fields-container">
-  <div class="header-row">
-    <mat-tab-group (selectedTabChange)="onEntityTypeChange(entityTypes[$event.index])">
-      <mat-tab label="Контакты"></mat-tab>
-      <mat-tab label="Лиды"></mat-tab>
-      <mat-tab label="Сделки"></mat-tab>
-      <mat-tab label="Компании"></mat-tab>
+  <div class="custom-fields-layout">
+    <!-- Вертикальные табы слева -->
+    <mat-tab-group 
+      class="vertical-tabs" 
+      [(selectedIndex)]="selectedTabIndex"
+      (selectedIndexChange)="onTabChange($event)"
+      [animationDuration]="0">
+      @for (type of entityTypes; track type.value) {
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon>{{ type.icon }}</mat-icon>
+            <span>{{ type.label }}</span>
+          </ng-template>
+        </mat-tab>
+      }
     </mat-tab-group>
-    <button mat-raised-button color="primary" (click)="openCreateDialog()">
-      <mat-icon>add</mat-icon>
-      Добавить поле
-    </button>
-  </div>
 
-  @if (loading()) {
-    <div class="loading-state">
-      <p>Загрузка...</p>
-    </div>
-  } @else if (fields().length === 0) {
-    <div class="empty-state">
-      <mat-icon>tune</mat-icon>
-      <p>Нет настроенных полей для {{ selectedEntityType() }}</p>
-      <button mat-stroked-button (click)="openCreateDialog()">
-        Создать первое поле
-      </button>
-    </div>
-  } @else {
-    <div class="fields-table-container">
+    <!-- Контент справа -->
+    <div class="fields-content">
+      <div class="header-row">
+        <div class="entity-type-info">
+          <h3>Дополнительные поля для {{ getEntityTypeLabel() }}</h3>
+        </div>
+        <button mat-raised-button color="primary" (click)="openCreateDialog()">
+          <mat-icon>add</mat-icon>
+          Добавить поле
+        </button>
+      </div>
+
+      @if (loading()) {
+        <div class="loading-state">
+          <p>Загрузка...</p>
+        </div>
+      } @else if (fields().length === 0) {
+        <div class="empty-state">
+          <mat-icon>tune</mat-icon>
+          <p>Нет настроенных полей для {{ getEntityTypeLabel() }}</p>
+          <button mat-stroked-button (click)="openCreateDialog()">
+            Создать первое поле
+          </button>
+        </div>
+      } @else {
+        <div class="fields-table-container">
       <table mat-table [dataSource]="fields()" cdkDropList (cdkDropListDropped)="drop($event)" class="fields-table">
         <!-- Drag Handle Column -->
         <ng-container matColumnDef="drag">
@@ -115,4 +131,6 @@
       </table>
     </div>
   }
+    </div>
+  </div>
 </div>

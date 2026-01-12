@@ -43,9 +43,20 @@ export class CustomFieldsComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
 
+  // Выбранный тип сущности (управляется внутренними табами)
+  selectedEntityType = signal<EntityType>('contact');
+  selectedTabIndex = 0;
+
   fields = signal<CustomFieldDefinition[]>([]);
   loading = signal(false);
-  selectedEntityType = signal<EntityType>('contact');
+
+  // Доступные типы сущностей для вертикальных табов
+  entityTypes: Array<{ value: EntityType; label: string; icon: string }> = [
+    { value: 'contact', label: 'Контакты', icon: 'person' },
+    { value: 'lead', label: 'Лиды', icon: 'emoji_people' },
+    { value: 'deal', label: 'Сделки', icon: 'handshake' },
+    { value: 'company', label: 'Компании', icon: 'business' },
+  ];
 
   displayedColumns = [
     'drag',
@@ -56,14 +67,17 @@ export class CustomFieldsComponent implements OnInit {
     'actions',
   ];
 
-  entityTypes: EntityType[] = ['contact', 'lead', 'deal', 'company'];
-
   ngOnInit(): void {
     this.loadFields();
   }
 
-  onEntityTypeChange(entityType: EntityType): void {
-    this.selectedEntityType.set(entityType);
+  onTabChange(index: number): void {
+    const selectedType = this.entityTypes[index];
+    this.selectedEntityType.set(selectedType.value);
+    this.loadFields();
+  }
+
+  onEntityTypeChange(): void {
     this.loadFields();
   }
 
@@ -194,5 +208,15 @@ export class CustomFieldsComponent implements OnInit {
       textarea: 'Многострочный текст',
     };
     return labels[type] || type;
+  }
+
+  getEntityTypeLabel(): string {
+    const labels: Record<EntityType, string> = {
+      contact: 'контактов',
+      lead: 'лидов',
+      deal: 'сделок',
+      company: 'компаний',
+    };
+    return labels[this.selectedEntityType()] || this.selectedEntityType();
   }
 }
