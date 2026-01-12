@@ -235,11 +235,6 @@
               <mat-label>Назначен (assignedTo)</mat-label>
               <input matInput formControlName="assignedTo" placeholder="ID пользователя" />
             </mat-form-field>
-
-            <mat-form-field appearance="outline" class="form-field full-width">
-              <mat-label>Custom fields (JSON или k=v,k2=v2)</mat-label>
-              <input matInput formControlName="customFieldsInput" />
-            </mat-form-field>
           </div>
 
           <mat-divider></mat-divider>
@@ -252,6 +247,30 @@
           </mat-form-field>
         </div>
       </mat-expansion-panel>
+
+      <!-- Custom Fields Panel -->
+      @if (customFieldDefinitions().length > 0) {
+        <mat-expansion-panel hideToggle="false" [expanded]="false">
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              <mat-icon class="panel-header-icon">tune</mat-icon>
+              Дополнительные поля
+            </mat-panel-title>
+            <mat-panel-description class="panel-desc">
+              Настраиваемые поля контакта
+            </mat-panel-description>
+          </mat-expansion-panel-header>
+          <div class="optional-group">
+            @for (field of customFieldDefinitions(); track field.id) {
+              <app-dynamic-field
+                [fieldDef]="field"
+                [value]="customFieldValues[field.name]"
+                (valueChange)="onCustomFieldChange(field.name, $event)"
+              ></app-dynamic-field>
+            }
+          </div>
+        </mat-expansion-panel>
+      }
 
         </mat-accordion>
       </div>

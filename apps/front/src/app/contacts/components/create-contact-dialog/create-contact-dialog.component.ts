@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -19,25 +19,32 @@ import { CompanySelectorComponent } from '../../../shared/components/company-sel
 import { CreateContactDto } from '../../contact.interfaces';
 import { CompaniesService } from '../../../services/companies.service';
 import { Company } from '../../../pipeline/dtos';
+import { CustomFieldsService } from '../../../services/custom-fields.service';
+import { CustomFieldDefinition } from '../../../models/custom-field.model';
+import { DynamicFieldComponent } from '../../../shared/components/dynamic-field/dynamic-field.component';
 
 @Component({
   selector: 'app-create-contact-dialog',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatIconModule, MatProgressSpinnerModule, MatOptionModule, MatAutocompleteModule, CompanySelectorComponent, MatExpansionModule, MatDividerModule, MatTooltipModule],
+  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatIconModule, MatProgressSpinnerModule, MatOptionModule, MatAutocompleteModule, CompanySelectorComponent, MatExpansionModule, MatDividerModule, MatTooltipModule, DynamicFieldComponent],
   templateUrl: './create-contact-dialog.component.html',
   styleUrls: ['./create-contact-dialog.component.scss'],
 })
-export class CreateContactDialogComponent {
+export class CreateContactDialogComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly contactsService = inject(ContactsService);
   private readonly dialogRef = inject(MatDialogRef<CreateContactDialogComponent>);
   private readonly companiesService = inject(CompaniesService);
+  private readonly customFieldsService = inject(CustomFieldsService);
 
   form: FormGroup;
   saving = false;
   companyOptions: Array<{ id: string; name?: string; legalName?: string }> = [];
   showCreateInline = false;
   inlineCompanyText = '';
+  
+  customFieldDefinitions = signal<CustomFieldDefinition[]>([]);
+  customFieldValues: Record<string, any> = {};
 
   constructor() {
     this.form = this.fb.group({
@@ -75,7 +82,6 @@ export class CreateContactDialogComponent {
       tagsInput: [''],
       source: [null],
       assignedTo: [null],
-      customFieldsInput: [''],
     });
     this.companyOptions = [];
     this.showCreateInline = false;
@@ -83,6 +89,25 @@ export class CreateContactDialogComponent {
 
     // Wire autocomplete for companyName
     // autocomplete handled by shared CompanyAutocompleteComponent
+  }
+
+  ngOnInit(): void {
+    this.loadCustomFields();
+  }
+
+  loadCustomFields(): void {
+    this.customFieldsService.findByEntity('contact').subscribe({
+      next: (fields) => {
+        this.customFieldDefinitions.set(fields);
+      },
+      error: (err) => {
+        console.error('Error loading custom fields:', err);
+      },
+    });
+  }
+
+  onCustomFieldChange(fieldName: string, value: any): void {
+    this.customFieldValues[fieldName] = value;
   }
 
   // expose typed form controls for child components
@@ -143,29 +168,7 @@ export class CreateContactDialogComponent {
         .split(',')
         .map((t: string) => t.trim())
         .filter((t: string) => !!t),
-      customFields: (() => {
-        const raw = this.form.value.customFieldsInput || '';
-        if (!raw) return undefined;
-        try {
-          // allow either JSON object or key=val pairs separated by commas
-          const parsed = JSON.parse(raw);
-          if (typeof parsed === 'object' && parsed !== null) return parsed as Record<string, unknown>;
-        } catch (e) {
-          // fallback to parse key=val pairs
-          const out: Record<string, unknown> = {};
-          raw.toString()
-            .split(',')
-            .map((p: string) => p.trim())
-            .filter((p: string) => !!p)
-            .forEach((pair: string) => {
-              const [k, ...rest] = pair.split('=');
-              if (!k) return;
-              out[k.trim()] = rest.join('=').trim();
-            });
-          return Object.keys(out).length ? out : undefined;
-        }
-        return undefined;
-      })(),
+      customFields: Object.keys(this.customFieldValues).length > 0 ? this.customFieldValues : undefined,
     };
 
     this.contactsService.createContact(dto).subscribe({
