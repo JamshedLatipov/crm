@@ -27,10 +27,12 @@ import { RecordingsModule } from './recordings/recordings.module';
 import { QueuesModule } from './queues/queues.module';
 import { QueueConsumersModule } from './queues/queue-consumers.module';
 import { CustomFieldsModule } from './custom-fields/custom-fields.module';
+import { SegmentsModule } from './segments/segments.module';
 
 export const MODULES = [
     QueuesModule, // Must be early for global availability
     CustomFieldsModule,
+    SegmentsModule, // Universal contact segmentation for SMS, Campaigns, Email, etc.
     LeadModule,
     UserModule,
     TaskModule,

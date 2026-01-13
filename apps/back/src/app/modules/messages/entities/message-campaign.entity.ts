@@ -10,7 +10,7 @@ import {
 import { User } from '../../user/user.entity';
 import { SmsTemplate } from './sms-template.entity';
 import { EmailTemplate } from './email-template.entity';
-import { SmsSegment } from './sms-segment.entity';
+import { ContactSegment } from '../../segments/entities/contact-segment.entity';
 
 export enum MessageChannelType {
   SMS = 'sms',
@@ -120,10 +120,10 @@ export class MessageCampaign {
   @JoinColumn({ name: 'emailTemplateId' })
   emailTemplate: EmailTemplate;
 
-  // Сегмент получателей
-  @ManyToOne(() => SmsSegment, { nullable: true })
-  @JoinColumn({ name: 'segmentId' })
-  segment: SmsSegment;
+  // Универсальный сегмент получателей (для всех каналов)
+  // Использует UUID без FK constraint для обратной совместимости
+  @Column({ type: 'uuid', nullable: true, name: 'segmentId' })
+  segmentId: string | null;
 
   @Column({
     type: 'enum',

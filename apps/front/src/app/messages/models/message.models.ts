@@ -107,16 +107,27 @@ export interface CreateEmailTemplateDto {
 // Segment
 export interface SegmentFilter {
   field: string;
-  operator: 'equals' | 'contains' | 'greater' | 'less' | 'between' | 'in' | 'notIn';
+  operator: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'starts_with' | 'ends_with' | 'greater' | 'less' | 'between' | 'in' | 'notIn' | 'is_null' | 'is_not_null';
   value: any;
+  logicOperator?: 'AND' | 'OR';
+}
+
+export interface FilterCondition {
+  item: SegmentFilter | FilterGroup;
+  logicOperator: 'AND' | 'OR';
+}
+
+export interface FilterGroup {
+  logic?: 'AND' | 'OR'; // Deprecated
+  conditions: Array<FilterCondition>;
 }
 
 export interface Segment {
   id: string;
   name: string;
   description?: string;
-  filters: SegmentFilter[];
-  filterLogic: 'AND' | 'OR';
+  filters: SegmentFilter[] | FilterGroup;
+  filterLogic?: 'AND' | 'OR'; // Deprecated: for backward compatibility
   contactsCount: number;
   isDynamic: boolean;
   isActive: boolean;
@@ -127,8 +138,7 @@ export interface Segment {
 export interface CreateSegmentDto {
   name: string;
   description?: string;
-  filters: SegmentFilter[];
-  filterLogic?: 'AND' | 'OR';
+  filters: FilterGroup;
   isDynamic?: boolean;
 }
 

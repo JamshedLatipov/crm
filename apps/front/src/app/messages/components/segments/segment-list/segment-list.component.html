@@ -1,74 +1,100 @@
-<app-page-layout
-  title="Сегменты контактов"
-  [subtitle]="'Всего: ' + (segments()?.length || 0) + ' сегментов'"
->
-  <div page-actions>
-    <button mat-raised-button color="primary" routerLink="/messages/segments/new">
-      <mat-icon>add</mat-icon>
-      Создать сегмент
-    </button>
-  </div>
-
-  @if (segments()?.length === 0 && !loading()) {
-    <div class="empty-state">
-      <mat-icon>group_work</mat-icon>
-      <h3>Нет сегментов</h3>
-      <p>Создайте первый сегмент для группировки контактов</p>
-      <button mat-raised-button color="primary" routerLink="/messages/segments/new">
+<app-page-layout>
+  <div class="segment-list-container">
+    <div class="header">
+      <h1>Сегменты</h1>
+      <button mat-raised-button color="primary" (click)="createSegment()">
         <mat-icon>add</mat-icon>
         Создать сегмент
       </button>
     </div>
-  } @else {
-    <crm-table
-      [columns]="columns"
-      [data]="segments()"
-      [pageSize]="20"
-    >
-      <ng-template crmColumnTemplate="descriptionTemplate" let-segment>
-        <div class="description-text">{{ segment.description }}</div>
-      </ng-template>
 
-      <ng-template crmColumnTemplate="contactCountTemplate" let-segment>
-        <div class="count-badge">
-          <mat-icon>people</mat-icon>
-          <span>{{ segment.contactsCount || 0 }}</span>
-        </div>
-      </ng-template>
+    @if (isLoading()) {
+      <div class="loading-spinner">
+        <mat-spinner></mat-spinner>
+        <p>Загрузка сегментов...</p>
+      </div>
+    } @else if (error()) {
+      <div class="error-message">
+        <mat-icon>error</mat-icon>
+        <p>{{ error() }}</p>
+        <button mat-button color="primary" (click)="loadSegments()">
+          Попробовать снова
+        </button>
+      </div>
+    } @else if (segments().length === 0) {
+      <div class="empty-state">
+        <mat-icon>inbox</mat-icon>
+        <h2>Нет сегментов</h2>
+        <p>Создайте первый сегмент для группировки контактов</p>
+        <button mat-raised-button color="primary" (click)="createSegment()">
+          <mat-icon>add</mat-icon>
+          Создать сегмент
+        </button>
+      </div>
+    } @else {
+      <crm-table
+        [columns]="columns"
+        [data]="segments()"
+        [pageSize]="20"
+      >
+        <!-- Name Template -->
+        <ng-template crmColumnTemplate="nameTemplate" let-segment>
+          <div class="segment-name">
+            <strong>{{ segment.name }}</strong>
+            @if (segment.description) {
+              <p class="description">{{ segment.description }}</p>
+            }
+          </div>
+        </ng-template>
 
-      <ng-template crmColumnTemplate="filterCountTemplate" let-segment>
-        <div class="filter-badge">
-          <mat-icon>filter_alt</mat-icon>
-          <span>{{ segment.filters?.length || 0 }}</span>
-        </div>
-      </ng-template>
+        <!-- Usage Type Template -->
+        <ng-template crmColumnTemplate="usageTypeTemplate" let-segment>
+          <mat-chip [color]="getUsageTypeColor(segment.usageType)">
+            {{ getUsageTypeLabel(segment.usageType) }}
+          </mat-chip>
+        </ng-template>
 
-      <ng-template crmColumnTemplate="actionsTemplate" let-segment>
-        <button mat-icon-button [routerLink]="['/messages/segments', segment.id]" matTooltip="Редактировать">
-          <mat-icon>edit</mat-icon>
-        </button>
-        <button mat-icon-button [routerLink]="['/messages/segments', segment.id, 'contacts']" matTooltip="Просмотр контактов">
-          <mat-icon>people</mat-icon>
-        </button>
-        <button mat-icon-button [matMenuTriggerFor]="actionMenu" matTooltip="Еще">
-          <mat-icon>more_vert</mat-icon>
-        </button>
-        
-        <mat-menu #actionMenu="matMenu">
-          <button mat-menu-item (click)="duplicateSegment(segment)">
-            <mat-icon>content_copy</mat-icon>
-            <span>Дублировать</span>
+        <!-- Contacts Count Template -->
+        <ng-template crmColumnTemplate="contactsCountTemplate" let-segment>
+          <div class="contacts-count">
+            <mat-icon>people</mat-icon>
+            {{ segment.contactsCount || 0 }}
+          </div>
+        </ng-template>
+
+        <!-- Active Status Template -->
+        <ng-template crmColumnTemplate="isActiveTemplate" let-segment>
+          <mat-chip [class.active]="segment.isActive" [class.inactive]="!segment.isActive">
+            {{ segment.isActive ? 'Активен' : 'Неактивен' }}
+          </mat-chip>
+        </ng-template>
+
+        <!-- Actions Template -->
+        <ng-template crmColumnTemplate="actionsTemplate" let-segment>
+          <button mat-icon-button [matMenuTriggerFor]="menu" (click)="$event.stopPropagation()">
+            <mat-icon>more_vert</mat-icon>
           </button>
-          <button mat-menu-item (click)="refreshSegment(segment)">
-            <mat-icon>refresh</mat-icon>
-            <span>Обновить</span>
-          </button>
-          <button mat-menu-item (click)="deleteSegment(segment)">
-            <mat-icon>delete</mat-icon>
-            <span>Удалить</span>
-          </button>
-        </mat-menu>
-      </ng-template>
-    </crm-table>
-  }
+          <mat-menu #menu="matMenu">
+            <button mat-menu-item (click)="viewContacts(segment)">
+              <mat-icon>people</mat-icon>
+              <span>Просмотр контактов</span>
+            </button>
+            <button mat-menu-item (click)="editSegment(segment)">
+              <mat-icon>edit</mat-icon>
+              <span>Редактировать</span>
+            </button>
+            <button mat-menu-item (click)="duplicateSegment(segment)">
+              <mat-icon>content_copy</mat-icon>
+              <span>Дублировать</span>
+            </button>
+            <mat-divider></mat-divider>
+            <button mat-menu-item (click)="deleteSegment(segment)" class="delete-action">
+              <mat-icon>delete</mat-icon>
+              <span>Удалить</span>
+            </button>
+          </mat-menu>
+        </ng-template>
+      </crm-table>
+    }
+  </div>
 </app-page-layout>

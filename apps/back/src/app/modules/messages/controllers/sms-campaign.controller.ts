@@ -77,7 +77,7 @@ export class SmsCampaignController {
   async prepare(@Param('id') id: string, @Body() body?: { segmentId?: string }) {
     // Если segmentId не передан в body, берём из кампании
     const campaign = await this.campaignService.findOne(id);
-    const segmentId = body?.segmentId || (campaign.segment ? campaign.segment.id : 'all');
+    const segmentId = body?.segmentId || campaign.segmentId || 'all';
     await this.campaignService.prepareCampaignMessages(id, segmentId);
     return { message: 'Campaign messages prepared successfully' };
   }

@@ -89,6 +89,14 @@ export class CampaignController {
     return this.campaignService.uploadContacts(id, uploadDto);
   }
 
+  @Post(':id/contacts/from-segment/:segmentId')
+  loadContactsFromSegment(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('segmentId', ParseUUIDPipe) segmentId: string
+  ) {
+    return this.campaignService.loadContactsFromSegment(id, segmentId);
+  }
+
   @Get(':id/contacts')
   getContacts(@Param('id', ParseUUIDPipe) id: string) {
     return this.campaignService.getContacts(id);

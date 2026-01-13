@@ -28,7 +28,6 @@ import { Company } from '../companies/entities/company.entity';
 import { SmsProviderService } from './services/sms-provider.service';
 import { SmsTemplateService } from './services/sms-template.service';
 import { MessageCampaignService } from './services/message-campaign.service';
-import { SmsSegmentService } from './services/sms-segment.service';
 import { EmailProviderService } from './services/email-provider.service';
 import { WhatsAppProviderService } from './services/whatsapp-provider.service';
 import { WhatsAppTemplateService } from './services/whatsapp-template.service';
@@ -43,10 +42,12 @@ import { MessageAnalyticsService } from './services/message-analytics.service';
 import { MediaService } from './services/media.service';
 import { SettingService } from './services/setting.service';
 
+// Universal segments module
+import { SegmentsModule } from '../segments/segments.module';
+
 // Controllers
 import { SmsTemplateController } from './controllers/sms-template.controller';
 import { SmsCampaignController } from './controllers/sms-campaign.controller';
-import { SmsSegmentController } from './controllers/sms-segment.controller';
 import { EmailTemplateController } from './controllers/email-template.controller';
 import { NotificationController } from './controllers/notification.controller';
 import { WhatsAppTemplateController } from './controllers/whatsapp-template.controller';
@@ -58,6 +59,7 @@ import { SettingController } from './controllers/setting.controller';
 
 @Module({
   imports: [
+    SegmentsModule, // Universal segments - MUST be first for dependency injection
     TypeOrmModule.forFeature([
       SmsTemplate,
       SmsMessage,
@@ -110,7 +112,6 @@ import { SettingController } from './controllers/setting.controller';
   controllers: [
     SmsTemplateController,
     SmsCampaignController,
-    SmsSegmentController,
     EmailTemplateController,
     NotificationController,
     WhatsAppTemplateController,
@@ -124,7 +125,6 @@ import { SettingController } from './controllers/setting.controller';
     SmsProviderService,
     SmsTemplateService,
     MessageCampaignService,
-    SmsSegmentService,
     EmailProviderService,
     EmailTemplateService,
     WhatsAppProviderService,
@@ -143,7 +143,6 @@ import { SettingController } from './controllers/setting.controller';
     SmsProviderService,
     SmsTemplateService,
     MessageCampaignService,
-    SmsSegmentService,
     EmailProviderService,
     EmailTemplateService,
     WhatsAppProviderService,

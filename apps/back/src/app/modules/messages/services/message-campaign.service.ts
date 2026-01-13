@@ -12,7 +12,8 @@ import { SmsTemplateService } from './sms-template.service';
 import { EmailTemplateService } from './email-template.service';
 import { WhatsAppTemplateService } from './whatsapp-template.service';
 import { TelegramTemplateService } from './telegram-template.service';
-import { SmsSegmentService } from './sms-segment.service';
+import { ContactSegmentService } from '../../segments/services/contact-segment.service';
+import { SegmentUsageType } from '../../segments/entities/contact-segment.entity';
 import { User } from '../../user/user.entity';
 import { Contact } from '../../contacts/contact.entity';
 import { MessageQueueService } from './message-queue.service';
@@ -48,7 +49,7 @@ export class MessageCampaignService {
     private telegramTemplateService: TelegramTemplateService,
     
     // Other services
-    private segmentService: SmsSegmentService,
+    private segmentService: ContactSegmentService,
     @Optional() private messageQueueService?: MessageQueueService,
   ) {}
 
@@ -111,9 +112,10 @@ export class MessageCampaignService {
     }
 
     // Проверяем существование сегмента (если указан)
-    let segment = null;
+    let segmentId = null;
     if (createDto.segmentId && createDto.segmentId !== 'all') {
-      segment = await this.segmentService.findOne(createDto.segmentId);
+      const segment = await this.segmentService.findOne(createDto.segmentId);
+      segmentId = segment.id;
     }
 
     // Создаем кампанию
@@ -123,7 +125,7 @@ export class MessageCampaignService {
       templateId: createDto.templateId,
       channel: channel,
       channels: [channel], // Single channel for now
-      segment,
+      segmentId,
       type: createDto.type || CampaignType.IMMEDIATE,
       scheduledAt: createDto.scheduledAt ? new Date(createDto.scheduledAt) : null,
       settings: {
@@ -152,7 +154,6 @@ export class MessageCampaignService {
     search?: string;
   }): Promise<MessageCampaign[]> {
     const query = this.campaignRepository.createQueryBuilder('campaign')
-      .leftJoinAndSelect('campaign.segment', 'segment')
       .leftJoinAndSelect('campaign.createdBy', 'createdBy')
       .orderBy('campaign.createdAt', 'DESC');
 
@@ -180,7 +181,7 @@ export class MessageCampaignService {
   async findOne(id: string): Promise<MessageCampaign> {
     const campaign = await this.campaignRepository.findOne({
       where: { id },
-      relations: ['segment', 'createdBy'],
+      relations: ['createdBy'],
     });
 
     if (!campaign) {
@@ -257,9 +258,10 @@ export class MessageCampaignService {
     }
 
     if (updateDto.segmentId && updateDto.segmentId !== 'all') {
-      campaign.segment = await this.segmentService.findOne(updateDto.segmentId);
+      const segment = await this.segmentService.findOne(updateDto.segmentId);
+      campaign.segmentId = segment.id;
     } else if (updateDto.segmentId === 'all') {
-      campaign.segment = null;
+      campaign.segmentId = null;
     }
 
     Object.assign(campaign, {
@@ -309,10 +311,10 @@ export class MessageCampaignService {
       // Получаем все контакты
       phoneNumbers = await this.segmentService.getAllPhoneNumbers();
       this.logger.log(`Preparing messages for ALL contacts: ${phoneNumbers.length} recipients`);
-    } else if (campaign.segment) {
+    } else if (campaign.segmentId) {
       // Получаем контакты из конкретного сегмента
-      phoneNumbers = await this.segmentService.getSegmentPhoneNumbers(campaign.segment.id);
-      this.logger.log(`Preparing messages for segment ${campaign.segment.id}: ${phoneNumbers.length} recipients`);
+      phoneNumbers = await this.segmentService.getSegmentPhoneNumbers(campaign.segmentId);
+      this.logger.log(`Preparing messages for segment ${campaign.segmentId}: ${phoneNumbers.length} recipients`);
     } else {
       throw new BadRequestException('Campaign must have a segment or use "all" to send to all contacts');
     }

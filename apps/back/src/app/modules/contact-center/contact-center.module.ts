@@ -23,6 +23,7 @@ import { CampaignService } from './services/campaign.service';
 import { CampaignDialerService } from './services/campaign-dialer.service';
 import { UserModule } from '../user/user.module';
 import { AriModule } from '../ari/ari.module';
+import { SegmentsModule } from '../segments/segments.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { AriModule } from '../ari/ari.module';
     AmiModule,
     AriModule,
     UserModule,
+    SegmentsModule, // Universal segments for campaigns
   ],
   controllers: [ContactCenterController, CampaignController],
   providers: [

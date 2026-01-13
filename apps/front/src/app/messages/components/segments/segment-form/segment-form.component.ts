@@ -1,202 +1,215 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatChipsModule } from '@angular/material/chips';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatDividerModule } from '@angular/material/divider';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.component';
-import { SegmentService } from '../../../services/segment.service';
-import { CreateSegmentDto } from '../../../models/message.models';
+import { MatCardModule } from '@angular/material/card';
+import { MatDividerModule } from '@angular/material/divider';
+import { SegmentService } from '../../../../shared/services/segment.service';
+import { Segment, SegmentUsageType, FilterGroup, FilterCondition, isFilterGroup } from '../../../../shared/models/segment.models';
+import { SegmentFilterGroupComponent } from '../segment-filter-group/segment-filter-group.component';
 
 @Component({
   selector: 'app-segment-form',
   standalone: true,
   imports: [
     CommonModule,
+    RouterModule,
     ReactiveFormsModule,
-    MatCardModule,
+    MatButtonModule,
+    MatIconModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-    MatButtonModule,
-    MatIconModule,
-    MatSlideToggleModule,
-    MatChipsModule,
+    MatCheckboxModule,
     MatProgressSpinnerModule,
-    MatDividerModule,
     MatSnackBarModule,
-    PageLayoutComponent
+    MatCardModule,
+    MatDividerModule,
+    SegmentFilterGroupComponent,
   ],
   templateUrl: './segment-form.component.html',
-  styleUrl: './segment-form.component.scss'
+  styleUrls: ['./segment-form.component.scss'],
 })
 export class SegmentFormComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
-  private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute);
   private readonly segmentService = inject(SegmentService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
 
-  form!: FormGroup;
-  templateId = signal<string | null>(null);
-  loading = signal(false);
+  // Signals
+  readonly isLoading = signal(false);
+  readonly isEditMode = signal(false);
+  readonly segmentId = signal<string | null>(null);
+  readonly filterGroup = signal<FilterGroup>({
+    conditions: []
+  });
 
-  // Маппинг для читаемых названий полей
-  fieldLabels: Record<string, string> = {
-    'name': 'Имя',
-    'email': 'Email',
-    'phone': 'Телефон',
-    'status': 'Статус',
-    'createdAt': 'Дата создания',
-    'lastContactedAt': 'Последний контакт',
-    'tags': 'Теги'
-  };
+  // Form
+  segmentForm!: FormGroup;
 
-  // Маппинг для операторов
-  operatorLabels: Record<string, string> = {
-    'equals': '=',
-    'notEquals': '≠',
-    'contains': 'содержит',
-    'notContains': 'не содержит',
-    'startsWith': 'начинается с',
-    'endsWith': 'заканчивается на',
-    'greater': '>',
-    'less': '<',
-    'between': 'между',
-    'in': 'в списке',
-    'notIn': 'не в списке'
-  };
+  // Usage types
+  usageTypes = [
+    { value: SegmentUsageType.SMS, label: 'SMS' },
+    { value: SegmentUsageType.CAMPAIGN, label: 'Кампания' },
+    { value: SegmentUsageType.EMAIL, label: 'Email' },
+    { value: SegmentUsageType.WHATSAPP, label: 'WhatsApp' },
+    { value: SegmentUsageType.TELEGRAM, label: 'Telegram' },
+    { value: SegmentUsageType.GENERAL, label: 'Общий' },
+  ];
 
-  get filters(): FormArray {
-    return this.form.get('filters') as FormArray;
+  ngOnInit(): void {
+    this.initForm();
+    this.checkEditMode();
   }
 
-  ngOnInit() {
-    this.initForm();
-    
+  private initForm(): void {
+    this.segmentForm = this.fb.group({
+      name: ['', [Validators.required, Validators.minLength(2)]],
+      description: [''],
+      usageType: [SegmentUsageType.SMS, Validators.required],
+      isActive: [true],
+      filters: [[]],
+    });
+  }
+
+  private checkEditMode(): void {
     const id = this.route.snapshot.paramMap.get('id');
-    this.templateId.set(id);
-    
-    if (id && id !== 'new') {
+    if (id) {
+      this.isEditMode.set(true);
+      this.segmentId.set(id);
       this.loadSegment(id);
     }
   }
 
-  initForm() {
-    this.form = this.fb.group({
-      name: ['', [Validators.required, Validators.minLength(3)]],
-      description: [''],
-      filterLogic: ['AND'],
-      isDynamic: [true],
-      filters: this.fb.array([])
-    });
-  }
-
-  loadSegment(id: string) {
-    this.loading.set(true);
+  private loadSegment(id: string): void {
+    this.isLoading.set(true);
     this.segmentService.getById(id).subscribe({
       next: (segment) => {
-        this.form.patchValue({
+        this.segmentForm.patchValue({
           name: segment.name,
           description: segment.description,
-          filterLogic: segment.filterLogic,
-          isDynamic: segment.isDynamic
+          usageType: segment.usageType,
+          isActive: segment.isActive,
+          filters: segment.filters || [],
         });
-
-        // Очистить и добавить фильтры
-        this.filters.clear();
-        segment.filters.forEach(filter => {
-          this.filters.push(this.fb.group({
-            field: [filter.field, Validators.required],
-            operator: [filter.operator, Validators.required],
-            value: [filter.value, Validators.required]
+        
+        // Convert old format to new FilterGroup format if needed
+        if (Array.isArray(segment.filters)) {
+          // Old format: array of filters with separate filterLogic
+          // Конвертируем в новый формат с индивидуальными операторами
+          const conditions: FilterCondition[] = segment.filters.map((filter, index) => ({
+            item: filter,
+            logicOperator: index === 0 ? 'AND' : (segment.filterLogic || 'AND')
           }));
-        });
-
-        this.loading.set(false);
+          
+          this.filterGroup.set({
+            conditions: conditions
+          });
+        } else if (segment.filters && isFilterGroup(segment.filters)) {
+          // New format: already a FilterGroup
+          // Проверяем, есть ли новая структура с FilterCondition
+          if (segment.filters.conditions.length > 0 && 
+              'item' in segment.filters.conditions[0]) {
+            // Уже новый формат с FilterCondition
+            this.filterGroup.set(segment.filters);
+          } else {
+            // Старый формат FilterGroup (без FilterCondition)
+            // Конвертируем
+            const oldLogic = (segment.filters as any).logic || 'AND';
+            const conditions: FilterCondition[] = (segment.filters.conditions as any[]).map((cond, index) => ({
+              item: cond,
+              logicOperator: index === 0 ? 'AND' : oldLogic
+            }));
+            
+            this.filterGroup.set({
+              conditions: conditions
+            });
+          }
+        } else {
+          // Empty filters
+          this.filterGroup.set({
+            conditions: []
+          });
+        }
+        
+        this.isLoading.set(false);
       },
       error: (error) => {
-        this.snackBar.open(
-          error.error?.message || 'Ошибка загрузки сегмента',
-          'Закрыть',
-          { duration: 5000 }
-        );
-        this.loading.set(false);
-      }
+        this.snackBar.open('Ошибка загрузки сегмента', 'Закрыть', {
+          duration: 3000,
+        });
+        this.isLoading.set(false);
+        this.router.navigate(['/messages/segments']);
+      },
     });
   }
 
-  addFilter() {
-    const filterGroup = this.fb.group({
-      field: ['', Validators.required],
-      operator: ['equals', Validators.required],
-      value: ['', Validators.required]
-    });
-    this.filters.push(filterGroup);
-  }
-
-  removeFilter(index: number) {
-    this.filters.removeAt(index);
-  }
-
-  getFieldLabel(field: string): string {
-    return this.fieldLabels[field] || field;
-  }
-
-  getOperatorLabel(operator: string): string {
-    return this.operatorLabels[operator] || operator;
-  }
-
-  save() {
-    if (this.form.invalid) {
-      this.snackBar.open('Заполните все обязательные поля', 'Закрыть', { duration: 3000 });
+  onSubmit(): void {
+    if (this.segmentForm.invalid) {
+      this.segmentForm.markAllAsTouched();
       return;
     }
 
-    const dto: CreateSegmentDto = {
-      name: this.form.value.name,
-      description: this.form.value.description,
-      filters: this.form.value.filters,
-      filterLogic: this.form.value.filterLogic,
-      isDynamic: this.form.value.isDynamic
+    this.isLoading.set(true);
+    const formValue = {
+      ...this.segmentForm.value,
+      filters: this.filterGroup()
     };
 
-    this.loading.set(true);
-
-    const operation = this.templateId() 
-      ? this.segmentService.update(this.templateId()!, dto)
-      : this.segmentService.create(dto);
-
-    operation.subscribe({
-      next: () => {
-        this.snackBar.open(
-          this.templateId() ? 'Сегмент успешно обновлен!' : 'Сегмент успешно создан!',
-          'Закрыть',
-          { duration: 3000 }
-        );
-        this.router.navigate(['/messages/segments']);
-      },
-      error: (error) => {
-        this.snackBar.open(
-          error.error?.message || 'Ошибка сохранения сегмента',
-          'Закрыть',
-          { duration: 5000 }
-        );
-        this.loading.set(false);
-      }
-    });
+    if (this.isEditMode() && this.segmentId()) {
+      // Update existing segment
+      this.segmentService.update(this.segmentId()!, formValue).subscribe({
+        next: () => {
+          this.snackBar.open('Сегмент обновлен', 'Закрыть', { duration: 2000 });
+          this.router.navigate(['/messages/segments']);
+        },
+        error: () => {
+          this.snackBar.open('Ошибка обновления сегмента', 'Закрыть', {
+            duration: 3000,
+          });
+          this.isLoading.set(false);
+        },
+      });
+    } else {
+      // Create new segment
+      this.segmentService.create(formValue).subscribe({
+        next: () => {
+          this.snackBar.open('Сегмент создан', 'Закрыть', { duration: 2000 });
+          this.router.navigate(['/messages/segments']);
+        },
+        error: () => {
+          this.snackBar.open('Ошибка создания сегмента', 'Закрыть', {
+            duration: 3000,
+          });
+          this.isLoading.set(false);
+        },
+      });
+    }
   }
 
-  cancel() {
+  cancel(): void {
     this.router.navigate(['/messages/segments']);
+  }
+
+  get title(): string {
+    return this.isEditMode() ? 'Редактировать сегмент' : 'Создать сегмент';
+  }
+
+  get submitButtonText(): string {
+    return this.isEditMode() ? 'Сохранить' : 'Создать';
+  }
+
+  // Filter group management
+  onFilterGroupChange(updatedGroup: FilterGroup): void {
+    this.filterGroup.set(updatedGroup);
   }
 }

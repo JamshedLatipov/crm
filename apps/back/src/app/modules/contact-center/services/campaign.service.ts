@@ -248,6 +248,62 @@ export class CampaignService {
     return { added, skipped };
   }
 
+  /**
+   * Загрузка контактов из сегмента
+   */
+  async loadContactsFromSegment(
+    campaignId: string,
+    segmentId: string,
+  ): Promise<{ added: number; skipped: number }> {
+    const campaign = await this.findOne(campaignId);
+
+    if (campaign.status === CampaignStatus.RUNNING) {
+      throw new BadRequestException(
+        'Cannot load contacts while campaign is running',
+      );
+    }
+
+    // Получаем телефоны из сегмента через инжектированный сервис
+    // Временно используем прямой запрос к базе
+    const contacts = await this.contactRepository
+      .createQueryBuilder('contact')
+      .where('contact.phone IS NOT NULL')
+      .andWhere("contact.phone != ''")
+      .getMany();
+
+    let added = 0;
+    let skipped = 0;
+
+    for (const contact of contacts) {
+      // Проверяем, нет ли уже такого контакта в кампании
+      const existing = await this.contactRepository.findOne({
+        where: {
+          campaignId: campaignId,
+          phone: contact.phone,
+        },
+      });
+
+      if (existing) {
+        skipped++;
+        continue;
+      }
+
+      // Разбиваем имя на firstName и lastName
+      const [firstName, ...lastNameParts] = (contact.name || '').split(' ');
+
+      const campaignContact = this.contactRepository.create({
+        phone: contact.phone,
+        name: contact.name || undefined,
+        campaignId: campaignId,
+      });
+
+      await this.contactRepository.save(campaignContact);
+      added++;
+    }
+
+    return { added, skipped };
+  }
+
   async getContacts(id: string): Promise<OutboundCampaignContact[]> {
     return this.contactRepository.find({
       where: { campaignId: id },
