@@ -9,6 +9,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { trigger, transition, style, animate } from '@angular/animations';
 import {
   UniversalFilter,
   BaseFilterState,
@@ -53,10 +55,25 @@ export interface UniversalFiltersDialogData {
     MatSelectModule,
     MatTabsModule,
     MatDividerModule,
+    MatTooltipModule,
     UserMultiselectFilterComponent,
   ],
   templateUrl: './universal-filters-dialog.component.html',
   styleUrls: ['./universal-filters-dialog.component.scss'],
+  animations: [
+    trigger('fadeIn', [
+      transition(':enter', [
+        style({ opacity: 0 }),
+        animate('200ms ease-in', style({ opacity: 1 })),
+      ]),
+    ]),
+    trigger('fadeInUp', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'translateY(10px)' }),
+        animate('200ms ease-out', style({ opacity: 1, transform: 'translateY(0)' })),
+      ]),
+    ]),
+  ],
 })
 export class UniversalFiltersDialogComponent implements AfterViewInit {
   @ViewChildren(UserMultiselectFilterComponent) userMultiselectComponents!: QueryList<UserMultiselectFilterComponent>;
