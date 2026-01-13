@@ -1,0 +1,136 @@
+.filter-editor {
+  margin-bottom: 0;
+}
+
+.filter-fields {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  flex-wrap: nowrap;
+}
+
+.field-select {
+  flex: 0 1 220px;
+  min-width: 170px;
+}
+
+.operator-select {
+  flex: 0 1 180px;
+  min-width: 140px;
+}
+
+.value-input {
+  flex: 1 1 auto;
+  min-width: 180px;
+}
+
+.value-input-range {
+  flex: 0 1 calc(50% - 5px);
+  min-width: 140px;
+}
+
+.delete-btn {
+  flex-shrink: 0;
+  margin-top: 2px;
+  transition: all 0.2s ease;
+  width: 36px;
+  height: 36px;
+  
+  mat-icon {
+    font-size: 20px;
+  }
+  
+  &:hover {
+    transform: scale(1.1);
+  }
+}
+
+/* Стили для иконок в префиксах */
+.field-icon {
+  color: #1976d2;
+  margin-right: 6px;
+  font-size: 20px;
+}
+
+.operator-icon {
+  color: #7b1fa2;
+  margin-right: 6px;
+  font-size: 20px;
+}
+
+mat-icon[matPrefix] {
+  color: #616161;
+  margin-right: 6px;
+  font-size: 20px;
+}
+
+/* Стили для кастомных полей в выпадающем списке */
+.custom-field-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+  color: #ff9800;
+  vertical-align: middle;
+}
+
+.option-label {
+  vertical-align: middle;
+}
+
+/* Responsive design */
+@media (max-width: 1024px) {
+  .filter-fields {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .field-select,
+  .operator-select {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 140px;
+  }
+
+  .value-input {
+    flex: 1 1 calc(100% - 40px);
+    min-width: 180px;
+  }
+}
+
+@media (max-width: 768px) {
+  .filter-fields {
+    gap: 8px;
+  }
+
+  .field-select,
+  .operator-select,
+  .value-input {
+    flex: 1 1 100%;
+    min-width: 100%;
+  }
+
+  .delete-btn {
+    align-self: center;
+    margin-top: 0;
+  }
+}
+
+/* Уменьшенные form fields */
+::ng-deep .filter-editor {
+  mat-form-field {
+    .mat-mdc-form-field-infix {
+      padding-top: 14px;
+      padding-bottom: 14px;
+    }
+
+    .mat-mdc-text-field-wrapper {
+      background-color: #ffffff;
+    }
+
+    &.mat-focused {
+      .mat-mdc-form-field-focus-overlay {
+        opacity: 0.05;
+      }
+    }
+  }
+}

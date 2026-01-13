@@ -1,0 +1,124 @@
+<div class="filter-editor">
+  <div class="filter-fields">
+    <!-- Field Selector -->
+    <mat-form-field appearance="outline" class="field-select">
+      <mat-label>Поле</mat-label>
+      <mat-icon matPrefix class="field-icon">filter_alt</mat-icon>
+      <mat-select [value]="filter().field" (selectionChange)="onFieldChange($event.value)">
+        <mat-optgroup label="Стандартные поля">
+          @for (field of standardFields; track field.value) {
+            <mat-option [value]="field.value">
+              <span class="option-label">{{ field.label }}</span>
+            </mat-option>
+          }
+        </mat-optgroup>
+        @if (customFields().length > 0) {
+          <mat-optgroup label="Кастомные поля">
+            @for (field of customFields(); track field.value) {
+              <mat-option [value]="field.value">
+                <mat-icon class="custom-field-icon">extension</mat-icon>
+                <span class="option-label">{{ field.label }}</span>
+              </mat-option>
+            }
+          </mat-optgroup>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <!-- Operator Selector -->
+    <mat-form-field appearance="outline" class="operator-select">
+      <mat-label>Условие</mat-label>
+      <mat-icon matPrefix class="operator-icon">rule</mat-icon>
+      <mat-select [value]="filter().operator" (selectionChange)="onOperatorChange($event.value)">
+        @for (op of availableOperators(); track op.value) {
+          <mat-option [value]="op.value">{{ op.label }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <!-- Value Input -->
+    @if (selectedOperator()?.requiresValue) {
+      <!-- Для оператора between показываем два поля -->
+      @if (filter().operator === 'between') {
+        <mat-form-field appearance="outline" class="value-input-range">
+          <mat-label>От</mat-label>
+          @if (selectedFieldType() === 'number') {
+            <input matInput type="number" [value]="getRangeValue('start')" (input)="onRangeValueChange('start', $event)" placeholder="Начало">
+          } @else if (selectedFieldType() === 'date') {
+            <input matInput [matDatepicker]="datePickerStart" [value]="getRangeValue('start')" (dateChange)="onRangeDateChange('start', $event)" placeholder="От даты">
+          } @else {
+            <input matInput type="text" [value]="getRangeValue('start')" (input)="onRangeValueChange('start', $event)" placeholder="Начало">
+          }
+          
+          @if (selectedFieldType() === 'date') {
+            <mat-datepicker-toggle matSuffix [for]="datePickerStart"></mat-datepicker-toggle>
+          }
+          
+          <mat-datepicker #datePickerStart></mat-datepicker>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="value-input-range">
+          <mat-label>До</mat-label>
+          @if (selectedFieldType() === 'number') {
+            <input matInput type="number" [value]="getRangeValue('end')" (input)="onRangeValueChange('end', $event)" placeholder="Конец">
+          } @else if (selectedFieldType() === 'date') {
+            <input matInput [matDatepicker]="datePickerEnd" [value]="getRangeValue('end')" (dateChange)="onRangeDateChange('end', $event)" placeholder="До даты">
+          } @else {
+            <input matInput type="text" [value]="getRangeValue('end')" (input)="onRangeValueChange('end', $event)" placeholder="Конец">
+          }
+          
+          @if (selectedFieldType() === 'date') {
+            <mat-datepicker-toggle matSuffix [for]="datePickerEnd"></mat-datepicker-toggle>
+          }
+          
+          <mat-datepicker #datePickerEnd></mat-datepicker>
+        </mat-form-field>
+      } @else {
+        <!-- Обычное одно поле для других операторов -->
+        <mat-form-field appearance="outline" class="value-input">
+          <mat-label>Значение</mat-label>
+            @if (selectedFieldType() === 'number') {
+             <mat-icon matPrefix>tag</mat-icon>
+            } @else if (selectedFieldType() === 'boolean') {
+              <mat-icon matPrefix>check_circle</mat-icon>
+            } @else if (selectedCustomFieldDef()?.fieldType === 'select') {
+              <mat-icon matPrefix>list</mat-icon>
+            } @else if (selectedFieldType() === 'date') {}
+            @else {
+              <mat-icon matPrefix>text_fields</mat-icon>
+            }
+          @if (selectedFieldType() === 'number') {
+            <input matInput type="number" [value]="filter().value" (input)="onValueChange($event)" placeholder="Введите число">
+          } @else if (selectedFieldType() === 'date') {
+            <input matInput [matDatepicker]="datePicker" [value]="filter().value" (dateChange)="onDateChange($event)" placeholder="Выберите дату">
+          } @else if (selectedFieldType() === 'boolean') {
+            <mat-select [value]="filter().value" (selectionChange)="onBooleanChange($event.value)">
+              <mat-option [value]="true">Да</mat-option>
+              <mat-option [value]="false">Нет</mat-option>
+            </mat-select>
+          } @else if (selectedCustomFieldDef()?.fieldType === 'select') {
+            <mat-select [value]="filter().value" (selectionChange)="onSelectChange($event.value)">
+              @for (option of selectedCustomFieldDef()?.selectOptions || []; track option.value) {
+                <mat-option [value]="option.value">{{ option.label }}</mat-option>
+              }
+            </mat-select>
+          } @else {
+            <input matInput type="text" [value]="filter().value" (input)="onValueChange($event)" placeholder="Введите значение">
+          }
+          
+          @if (selectedFieldType() === 'date') {
+            <mat-datepicker-toggle matSuffix [for]="datePicker"></mat-datepicker-toggle>
+          }
+          
+          <mat-datepicker #datePicker></mat-datepicker>
+        </mat-form-field>
+      }
+    }
+
+    <!-- Delete Button -->
+    <button mat-icon-button color="warn" (click)="onDelete()" type="button" class="delete-btn" 
+            matTooltip="Удалить условие">
+      <mat-icon>delete_outline</mat-icon>
+    </button>
+  </div>
+</div>

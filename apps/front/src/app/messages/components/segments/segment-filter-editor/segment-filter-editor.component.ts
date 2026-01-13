@@ -42,227 +42,8 @@ interface FilterOperator {
     MatDatepickerModule,
     MatNativeDateModule,
   ],
-  template: `
-    <div class="filter-editor">
-      <div class="filter-fields">
-        <!-- Field Selector -->
-        <mat-form-field appearance="outline" class="field-select">
-          <mat-label>Поле</mat-label>
-          <mat-icon matPrefix class="field-icon">filter_alt</mat-icon>
-          <mat-select [value]="filter().field" (selectionChange)="onFieldChange($event.value)">
-            <mat-optgroup label="Стандартные поля">
-              @for (field of standardFields; track field.value) {
-                <mat-option [value]="field.value">
-                  <span class="option-label">{{ field.label }}</span>
-                </mat-option>
-              }
-            </mat-optgroup>
-            @if (customFields().length > 0) {
-              <mat-optgroup label="Кастомные поля">
-                @for (field of customFields(); track field.value) {
-                  <mat-option [value]="field.value">
-                    <mat-icon class="custom-field-icon">extension</mat-icon>
-                    <span class="option-label">{{ field.label }}</span>
-                  </mat-option>
-                }
-              </mat-optgroup>
-            }
-          </mat-select>
-        </mat-form-field>
-
-        <!-- Operator Selector -->
-        <mat-form-field appearance="outline" class="operator-select">
-          <mat-label>Условие</mat-label>
-          <mat-icon matPrefix class="operator-icon">rule</mat-icon>
-          <mat-select [value]="filter().operator" (selectionChange)="onOperatorChange($event.value)">
-            @for (op of availableOperators(); track op.value) {
-              <mat-option [value]="op.value">{{ op.label }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-
-        <!-- Value Input -->
-        @if (selectedOperator()?.requiresValue) {
-          <mat-form-field appearance="outline" class="value-input">
-            <mat-label>Значение</mat-label>
-              @if (selectedFieldType() === 'number') {
-               <mat-icon matPrefix>tag</mat-icon>
-              } @else if (selectedFieldType() === 'boolean') {
-                <mat-icon matPrefix>check_circle</mat-icon>
-              } @else if (selectedCustomFieldDef()?.fieldType === 'select') {
-                <mat-icon matPrefix>list</mat-icon>
-              } @else if (selectedFieldType() === 'date') {}
-              @else {
-                <mat-icon matPrefix>text_fields</mat-icon>
-              }
-            @if (selectedFieldType() === 'number') {
-              <input matInput type="number" [value]="filter().value" (input)="onValueChange($event)" placeholder="Введите число">
-            } @else if (selectedFieldType() === 'date') {
-              <input matInput [matDatepicker]="datePicker" [value]="filter().value" (dateChange)="onDateChange($event)" placeholder="Выберите дату">
-            } @else if (selectedFieldType() === 'boolean') {
-              <mat-select [value]="filter().value" (selectionChange)="onBooleanChange($event.value)">
-                <mat-option [value]="true">Да</mat-option>
-                <mat-option [value]="false">Нет</mat-option>
-              </mat-select>
-            } @else if (selectedCustomFieldDef()?.fieldType === 'select') {
-              <mat-select [value]="filter().value" (selectionChange)="onSelectChange($event.value)">
-                @for (option of selectedCustomFieldDef()?.selectOptions || []; track option.value) {
-                  <mat-option [value]="option.value">{{ option.label }}</mat-option>
-                }
-              </mat-select>
-            } @else {
-              <input matInput type="text" [value]="filter().value" (input)="onValueChange($event)" placeholder="Введите значение">
-            }
-            
-            @if (selectedFieldType() === 'date') {
-              <mat-datepicker-toggle matSuffix [for]="datePicker"></mat-datepicker-toggle>
-            }
-            
-            <mat-datepicker #datePicker></mat-datepicker>
-          </mat-form-field>
-        }
-
-        <!-- Delete Button -->
-        <button mat-icon-button color="warn" (click)="onDelete()" type="button" class="delete-btn" 
-                matTooltip="Удалить условие">
-          <mat-icon>delete_outline</mat-icon>
-        </button>
-      </div>
-    </div>
-  `,
-  styles: [`
-    .filter-editor {
-      margin-bottom: 0;
-    }
-
-    .filter-fields {
-      display: flex;
-      gap: 10px;
-      align-items: flex-start;
-      flex-wrap: nowrap;
-    }
-
-    .field-select {
-      flex: 0 1 220px;
-      min-width: 170px;
-    }
-
-    .operator-select {
-      flex: 0 1 180px;
-      min-width: 140px;
-    }
-
-    .value-input {
-      flex: 1 1 auto;
-      min-width: 180px;
-    }
-
-    .delete-btn {
-      flex-shrink: 0;
-      margin-top: 2px;
-      transition: all 0.2s ease;
-      width: 36px;
-      height: 36px;
-      
-      mat-icon {
-        font-size: 20px;
-      }
-      
-      &:hover {
-        transform: scale(1.1);
-      }
-    }
-
-    /* Стили для иконок в префиксах */
-    .field-icon {
-      color: #1976d2;
-      margin-right: 6px;
-      font-size: 20px;
-    }
-
-    .operator-icon {
-      color: #7b1fa2;
-      margin-right: 6px;
-      font-size: 20px;
-    }
-
-    mat-icon[matPrefix] {
-      color: #616161;
-      margin-right: 6px;
-      font-size: 20px;
-    }
-
-    /* Стили для кастомных полей в выпадающем списке */
-    .custom-field-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-      margin-right: 6px;
-      color: #ff9800;
-      vertical-align: middle;
-    }
-
-    .option-label {
-      vertical-align: middle;
-    }
-
-    /* Responsive design */
-    @media (max-width: 1024px) {
-      .filter-fields {
-        flex-wrap: wrap;
-        gap: 8px;
-      }
-
-      .field-select,
-      .operator-select {
-        flex: 1 1 calc(50% - 4px);
-        min-width: 140px;
-      }
-
-      .value-input {
-        flex: 1 1 calc(100% - 40px);
-        min-width: 180px;
-      }
-    }
-
-    @media (max-width: 768px) {
-      .filter-fields {
-        gap: 8px;
-      }
-
-      .field-select,
-      .operator-select,
-      .value-input {
-        flex: 1 1 100%;
-        min-width: 100%;
-      }
-
-      .delete-btn {
-        align-self: center;
-        margin-top: 0;
-      }
-    }
-
-    /* Уменьшенные form fields */
-    ::ng-deep .filter-editor {
-      mat-form-field {
-        .mat-mdc-form-field-infix {
-          padding-top: 14px;
-          padding-bottom: 14px;
-        }
-
-        .mat-mdc-text-field-wrapper {
-          background-color: #ffffff;
-        }
-
-        &.mat-focused {
-          .mat-mdc-form-field-focus-overlay {
-            opacity: 0.05;
-          }
-        }
-      }
-    }
-  `]
+  templateUrl: './segment-filter-editor.component.html',
+  styleUrls: ['./segment-filter-editor.component.scss']
 })
 export class SegmentFilterEditorComponent implements OnInit {
   private readonly customFieldsService = inject(CustomFieldsService);
@@ -416,19 +197,25 @@ export class SegmentFilterEditorComponent implements OnInit {
       }
     }
     
+    // Правильно инициализируем value в зависимости от оператора
+    const newValue = newOperator === 'between' ? ['', ''] : '';
+    
     this.filterChange.emit({
       ...this.filter(),
       field,
       operator: newOperator as any,
-      value: ''
+      value: newValue
     });
   }
 
   onOperatorChange(operator: string): void {
+    // При смене на between инициализируем массив, иначе пустая строка
+    const newValue = operator === 'between' ? ['', ''] : '';
+    
     this.filterChange.emit({
       ...this.filter(),
       operator: operator as any,
-      value: ''
+      value: newValue
     });
   }
 
@@ -448,6 +235,44 @@ export class SegmentFilterEditorComponent implements OnInit {
       this.filterChange.emit({
         ...this.filter(),
         value
+      });
+    }
+  }
+
+  // Методы для оператора between (диапазон значений)
+  getRangeValue(position: 'start' | 'end'): any {
+    const value = this.filter().value;
+    if (Array.isArray(value)) {
+      return position === 'start' ? value[0] : value[1];
+    }
+    return '';
+  }
+
+  onRangeValueChange(position: 'start' | 'end', event: Event): void {
+    const inputValue = (event.target as HTMLInputElement).value;
+    const currentValue = Array.isArray(this.filter().value) ? this.filter().value : ['', ''];
+    
+    const newValue = [...currentValue];
+    newValue[position === 'start' ? 0 : 1] = inputValue;
+    
+    this.filterChange.emit({
+      ...this.filter(),
+      value: newValue
+    });
+  }
+
+  onRangeDateChange(position: 'start' | 'end', event: any): void {
+    const date = event.value;
+    if (date) {
+      const dateValue = date.toISOString();
+      const currentValue = Array.isArray(this.filter().value) ? this.filter().value : ['', ''];
+      
+      const newValue = [...currentValue];
+      newValue[position === 'start' ? 0 : 1] = dateValue;
+      
+      this.filterChange.emit({
+        ...this.filter(),
+        value: newValue
       });
     }
   }
