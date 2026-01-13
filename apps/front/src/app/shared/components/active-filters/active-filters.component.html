@@ -21,7 +21,7 @@
               <strong>{{ filter.fieldLabel }}</strong>
               <span class="operator">{{ universalFilterService.getOperatorLabel(filter.operator) }}</span>
               @if (filter.operator !== 'exists' && filter.value !== undefined && filter.value !== null) {
-                <span class="value">{{ filter.value }}</span>
+                <span class="value">{{ getFilterDisplayValue(filter) }}</span>
               }
             </span>
             <button matChipRemove>

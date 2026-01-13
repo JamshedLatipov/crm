@@ -191,6 +191,24 @@ export class UserMultiselectFilterComponent implements OnInit {
       .filter(u => u !== undefined) as User[];
     
     this.selectedUserObjects.set(userObjects);
+
+    // Если не все пользователи найдены в текущем списке, перезагружаем список
+    if (userObjects.length < userIds.length && this.users().length === 0) {
+      // Список пользователей ещё не загружен, подождём загрузки
+      const subscription = this.usersService.getAllUsers().subscribe({
+        next: (users) => {
+          this.users.set(users);
+          // После загрузки находим всех пользователей
+          const fullUserObjects = userIds
+            .map(id => users.find(u => u.id === id))
+            .filter(u => u !== undefined) as User[];
+          this.selectedUserObjects.set(fullUserObjects);
+        },
+        error: (err) => {
+          console.error('Error loading users for initialization:', err);
+        }
+      });
+    }
   }
 
   // Метод для получения текущего выбора

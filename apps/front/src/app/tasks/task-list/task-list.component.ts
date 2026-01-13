@@ -30,6 +30,7 @@ import { ActiveFiltersComponent } from '../../shared/components/active-filters/a
 import { UniversalFiltersDialogComponent } from '../../shared/dialogs/universal-filters-dialog/universal-filters-dialog.component';
 import { BaseFilterState, FilterFieldDefinition, UniversalFilter } from '../../shared/interfaces/universal-filter.interface';
 import { StatusTabsComponent } from '../../shared/components/status-tabs/status-tabs.component';
+import { TaskTypeService } from '../../services/task-type.service';
 
 // Ensure this matches TaskDto in service
 interface Task {
@@ -143,7 +144,8 @@ export class TaskListComponent implements OnInit {
     private router: Router,
     private taskModalService: TaskModalService,
     private assignmentService: AssignmentService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private taskTypeService: TaskTypeService
   ) {}
 
   ngOnInit() {
@@ -157,27 +159,106 @@ export class TaskListComponent implements OnInit {
   }
 
   initializeStaticFields() {
-    this.staticFields = [
-      {
-        name: 'assignedTo',
-        label: 'Исполнитель',
-        type: 'select', // будет использовать user-select
-        operators: ['equals', 'not_equals', 'exists']
+    // Загружаем типы задач для справочника
+    this.taskTypeService.getAll(false).subscribe({
+      next: (types) => {
+        const taskTypeOptions = types
+          .filter(t => t.isActive)
+          .sort((a, b) => a.sortOrder - b.sortOrder)
+          .map(t => ({
+            label: t.name,
+            value: t.id.toString()
+          }));
+
+        this.staticFields = [
+          {
+            name: 'status',
+            label: 'Статус',
+            type: 'select',
+            operators: ['equals', 'not_equals', 'in'],
+            selectOptions: [
+              { label: 'В ожидании', value: 'pending' },
+              { label: 'В работе', value: 'in_progress' },
+              { label: 'Завершено', value: 'done' },
+              { label: 'Просрочено', value: 'overdue' }
+            ]
+          },
+          {
+            name: 'priority',
+            label: 'Приоритет',
+            type: 'select',
+            operators: ['equals', 'not_equals', 'in'],
+            selectOptions: [
+              { label: 'Низкий', value: 'low' },
+              { label: 'Средний', value: 'medium' },
+              { label: 'Высокий', value: 'high' },
+              { label: 'Критический', value: 'critical' }
+            ]
+          },
+          {
+            name: 'assignedTo',
+            label: 'Исполнитель',
+            type: 'select',
+            operators: ['equals', 'not_equals', 'exists']
+          },
+          {
+            name: 'taskType',
+            label: 'Тип задачи',
+            type: 'select',
+            operators: ['equals', 'not_equals', 'in'],
+            selectOptions: taskTypeOptions
+          },
+          {
+            name: 'dueDate',
+            label: 'Срок выполнения',
+            type: 'date',
+            operators: ['equals', 'greater', 'less', 'between']
+          }
+        ];
       },
-      {
-        name: 'taskType',
-        label: 'Тип задачи',
-        type: 'select',
-        operators: ['equals', 'not_equals'],
-        selectOptions: [] // TODO: загрузить типы задач
-      },
-      {
-        name: 'dueDate',
-        label: 'Срок выполнения',
-        type: 'date',
-        operators: ['equals', 'greater', 'less', 'between']
+      error: (err) => {
+        console.error('Failed to load task types for filters:', err);
+        // Инициализируем поля без типов задач
+        this.staticFields = [
+          {
+            name: 'status',
+            label: 'Статус',
+            type: 'select',
+            operators: ['equals', 'not_equals', 'in'],
+            selectOptions: [
+              { label: 'В ожидании', value: 'pending' },
+              { label: 'В работе', value: 'in_progress' },
+              { label: 'Завершено', value: 'done' },
+              { label: 'Просрочено', value: 'overdue' }
+            ]
+          },
+          {
+            name: 'priority',
+            label: 'Приоритет',
+            type: 'select',
+            operators: ['equals', 'not_equals', 'in'],
+            selectOptions: [
+              { label: 'Низкий', value: 'low' },
+              { label: 'Средний', value: 'medium' },
+              { label: 'Высокий', value: 'high' },
+              { label: 'Критический', value: 'critical' }
+            ]
+          },
+          {
+            name: 'assignedTo',
+            label: 'Исполнитель',
+            type: 'select',
+            operators: ['equals', 'not_equals', 'exists']
+          },
+          {
+            name: 'dueDate',
+            label: 'Срок выполнения',
+            type: 'date',
+            operators: ['equals', 'greater', 'less', 'between']
+          }
+        ];
       }
-    ];
+    });
   }
 
   openFiltersDialog(): void {
@@ -216,6 +297,57 @@ export class TaskListComponent implements OnInit {
     } else {
       this.selectedAssignees.set([]);
     }
+  }
+
+  // Извлечь значения фильтров для API запроса
+  private extractFilterValues() {
+    const state = this.filterState();
+    const result: {
+      priority?: string;
+      taskTypeId?: number;
+      assignedToId?: number | number[];
+    } = {};
+
+    // Приоритет - поддерживаем только оператор 'equals' для одиночного значения
+    // Для множественного выбора ('in') нужно будет добавить поддержку на backend
+    const priorityFilter = state.filters.find(f => f.fieldName === 'priority');
+    if (priorityFilter && priorityFilter.value) {
+      if (priorityFilter.operator === 'equals') {
+        result.priority = priorityFilter.value as string;
+      } else if (priorityFilter.operator === 'in' && Array.isArray(priorityFilter.value) && priorityFilter.value.length > 0) {
+        // Берем первое значение из массива (временное решение)
+        result.priority = priorityFilter.value[0] as string;
+      }
+    }
+
+    // Тип задачи - аналогично
+    const taskTypeFilter = state.filters.find(f => f.fieldName === 'taskType');
+    if (taskTypeFilter && taskTypeFilter.value) {
+      if (taskTypeFilter.operator === 'equals') {
+        const value = taskTypeFilter.value;
+        result.taskTypeId = typeof value === 'string' ? Number(value) : value as number;
+      } else if (taskTypeFilter.operator === 'in' && Array.isArray(taskTypeFilter.value) && taskTypeFilter.value.length > 0) {
+        // Берем первое значение из массива (временное решение)
+        const value = taskTypeFilter.value[0];
+        result.taskTypeId = typeof value === 'string' ? Number(value) : value as number;
+      }
+    }
+
+    // Исполнитель - полная поддержка множественного выбора
+    const assigneeFilter = state.filters.find(f => f.fieldName === 'assignedTo');
+    if (assigneeFilter && assigneeFilter.value) {
+      if (assigneeFilter.operator === 'equals') {
+        const value = assigneeFilter.value;
+        result.assignedToId = typeof value === 'string' ? Number(value) : value as number;
+      } else if (assigneeFilter.operator === 'in' && Array.isArray(assigneeFilter.value) && assigneeFilter.value.length > 0) {
+        // Для множественного выбора передаем весь массив
+        result.assignedToId = assigneeFilter.value.map(v => 
+          typeof v === 'string' ? Number(v) : v as number
+        );
+      }
+    }
+
+    return result;
   }
 
   getActiveFiltersCount(): number {
@@ -263,6 +395,10 @@ export class TaskListComponent implements OnInit {
 
   loadTasks() {
     this.isLoading.set(true);
+    
+    // Извлекаем значения фильтров
+    const filterValues = this.extractFilterValues();
+    
     // Use server-side pagination and filtering
     this.tasksService.list(
       this.currentPage + 1,
@@ -270,25 +406,19 @@ export class TaskListComponent implements OnInit {
       undefined,
       undefined,
       this.selectedStatus || undefined,
-      this.searchQuery || undefined
+      this.searchQuery || undefined,
+      filterValues.priority,
+      filterValues.taskTypeId,
+      filterValues.assignedToId
     ).subscribe({
       next: (res) => {
         // Support both {data, total} and Array formats for robustness
         let data = Array.isArray(res) ? res : (res.data || []);
         const total = (res as any).total !== undefined ? (res as any).total : data.length;
 
-        // Клиентская фильтрация по исполнителям (если выбраны)
-        const assigneeIds = this.selectedAssignees();
-        if (assigneeIds.length > 0) {
-          data = data.filter((task: Task) => {
-            // Проверяем assignedToId или assignedTo.id
-            const taskAssigneeId = task.assignedTo?.id || (task as any).assignedToId;
-            return taskAssigneeId && assigneeIds.some(id => taskAssigneeId == id);
-          });
-        }
-
+        // Больше не нужна клиентская фильтрация - бэкенд всё делает
         this.tasks.set(data);
-        this.totalResults = data.length; // Обновляем total после фильтрации
+        this.totalResults = total;
         this.paginatedTasks.set(data);
 
         // Stats are now partial (per page), until we add a separate stats endpoint

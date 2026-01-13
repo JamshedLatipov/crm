@@ -183,7 +183,13 @@ export class TaskService {
     }
   }
 
-  async findAll(page = 1, limit = 50, filters?: { status?: string, search?: string }): Promise<{ data: Task[]; total: number }> {
+  async findAll(page = 1, limit = 50, filters?: { 
+    status?: string; 
+    priority?: string;
+    taskTypeId?: number;
+    assignedToId?: number | number[];
+    search?: string;
+  }): Promise<{ data: Task[]; total: number }> {
     const qb = this.taskRepo.createQueryBuilder('task')
       .leftJoinAndSelect('task.lead', 'lead')
       .leftJoinAndSelect('task.deal', 'deal')
@@ -195,13 +201,43 @@ export class TaskService {
       qb.andWhere('task.status = :status', { status: filters.status });
     }
 
+    if (filters?.priority) {
+      qb.andWhere('task.priority = :priority', { priority: filters.priority });
+    }
+
+    if (filters?.taskTypeId) {
+      qb.andWhere('task.taskTypeId = :taskTypeId', { taskTypeId: filters.taskTypeId });
+    }
+
     if (filters?.search) {
       qb.andWhere('(task.title ILIKE :search OR task.description ILIKE :search)', { search: `%${filters.search}%` });
     }
 
     const [tasks, total] = await qb.getManyAndCount();
     await this.attachAssignments(tasks);
-    return { data: tasks, total };
+
+    // Фильтрация по assignedToId на уровне приложения (после attachAssignments)
+    let filteredTasks = tasks;
+    if (filters?.assignedToId) {
+      const assignedToIds = Array.isArray(filters.assignedToId) 
+        ? filters.assignedToId 
+        : [filters.assignedToId];
+      
+      filteredTasks = tasks.filter(task => {
+        // Проверяем assignedToId, который был установлен в attachAssignments
+        const taskAssignedToId = (task as any).assignedToId;
+        if (taskAssignedToId != null) {
+          // Задача должна быть назначена на одного из указанных пользователей
+          return assignedToIds.includes(taskAssignedToId);
+        }
+        return false;
+      });
+    }
+
+    return { 
+      data: filteredTasks, 
+      total: filters?.assignedToId ? filteredTasks.length : total 
+    };
   }
 
   async findByLeadId(leadId: number): Promise<Task[]> {

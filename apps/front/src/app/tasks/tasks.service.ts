@@ -45,7 +45,17 @@ export class TasksService {
   private base = environment.apiBase + '/tasks';
   constructor(private http: HttpClient) {}
 
-  list(page?: number, limit?: number, leadId?: number, dealId?: string, status?: string, search?: string): Observable<{ data: TaskDto[]; total: number }> {
+  list(
+    page?: number, 
+    limit?: number, 
+    leadId?: number, 
+    dealId?: string, 
+    status?: string, 
+    search?: string,
+    priority?: string,
+    taskTypeId?: number,
+    assignedToId?: number | number[]
+  ): Observable<{ data: TaskDto[]; total: number }> {
     const params: any = {};
     if (page != null) params.page = page;
     if (limit != null) params.limit = limit;
@@ -53,6 +63,28 @@ export class TasksService {
     if (dealId != null) params.dealId = dealId;
     if (status != null) params.status = status;
     if (search != null) params.search = search;
+    if (priority != null) params.priority = priority;
+    if (taskTypeId != null) params.taskTypeId = taskTypeId;
+    
+    // Поддержка как одиночного ID, так и массива ID для фильтрации по исполнителю
+    if (assignedToId != null) {
+      if (Array.isArray(assignedToId)) {
+        // Если массив, передаем как несколько параметров с одинаковым именем
+        // Это стандартный способ передачи массивов в query параметрах
+        assignedToId.forEach(id => {
+          if (!params.assignedToId) {
+            params.assignedToId = [];
+          }
+          if (!Array.isArray(params.assignedToId)) {
+            params.assignedToId = [params.assignedToId];
+          }
+          params.assignedToId.push(id);
+        });
+      } else {
+        params.assignedToId = assignedToId;
+      }
+    }
+    
     return this.http.get<{ data: TaskDto[]; total: number }>(this.base, { params });
   }
 

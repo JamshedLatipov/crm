@@ -92,14 +92,29 @@
                     </mat-form-field>
 
                     @if (requiresValue(filter.operator)) {
-                      @if (isSelectField(filter)) {
+                      @if (isUserSelectorField(filter)) {
+                        <!-- User multiselect for assignedTo field -->
+                        <app-user-multiselect-filter
+                          [label]="'Исполнитель'"
+                          [placeholder]="'Начните вводить имя...'"
+                          (selectionChange)="onUserSelectionChange(filter, $event)">
+                        </app-user-multiselect-filter>
+                      } @else if (isSelectField(filter)) {
                         <mat-form-field appearance="outline" class="value-input">
                           <mat-label>Значение</mat-label>
-                          <mat-select [(ngModel)]="filter.value">
-                            @for (option of getSelectOptions(filter); track option.value) {
-                              <mat-option [value]="option.value">{{ option.label }}</mat-option>
-                            }
-                          </mat-select>
+                          @if (isMultipleValueOperator(filter.operator)) {
+                            <mat-select [(ngModel)]="filter.value" multiple>
+                              @for (option of getSelectOptions(filter); track option.value) {
+                                <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                              }
+                            </mat-select>
+                          } @else {
+                            <mat-select [(ngModel)]="filter.value">
+                              @for (option of getSelectOptions(filter); track option.value) {
+                                <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                              }
+                            </mat-select>
+                          }
                         </mat-form-field>
                       } @else {
                         <mat-form-field appearance="outline" class="value-input">
@@ -179,14 +194,29 @@
                     </mat-form-field>
 
                     @if (requiresValue(filter.operator)) {
-                      @if (isSelectField(filter)) {
+                      @if (isUserSelectorField(filter)) {
+                        <!-- User multiselect for assignedTo field -->
+                        <app-user-multiselect-filter
+                          [label]="'Исполнитель'"
+                          [placeholder]="'Начните вводить имя...'"
+                          (selectionChange)="onUserSelectionChange(filter, $event)">
+                        </app-user-multiselect-filter>
+                      } @else if (isSelectField(filter)) {
                         <mat-form-field appearance="outline" class="value-input">
                           <mat-label>Значение</mat-label>
-                          <mat-select [(ngModel)]="filter.value">
-                            @for (option of getSelectOptions(filter); track option.value) {
-                              <mat-option [value]="option.value">{{ option.label }}</mat-option>
-                            }
-                          </mat-select>
+                          @if (isMultipleValueOperator(filter.operator)) {
+                            <mat-select [(ngModel)]="filter.value" multiple>
+                              @for (option of getSelectOptions(filter); track option.value) {
+                                <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                              }
+                            </mat-select>
+                          } @else {
+                            <mat-select [(ngModel)]="filter.value">
+                              @for (option of getSelectOptions(filter); track option.value) {
+                                <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                              }
+                            </mat-select>
+                          }
                         </mat-form-field>
                       } @else {
                         <mat-form-field appearance="outline" class="value-input">

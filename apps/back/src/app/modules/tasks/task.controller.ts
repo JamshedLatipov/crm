@@ -27,6 +27,9 @@ export class TaskController {
   @ApiQuery({ name: 'page', required: false, description: 'Номер страницы' })
   @ApiQuery({ name: 'limit', required: false, description: 'Количество записей на странице' })
   @ApiQuery({ name: 'status', required: false, description: 'Статус задачи' })
+  @ApiQuery({ name: 'priority', required: false, description: 'Приоритет задачи' })
+  @ApiQuery({ name: 'taskTypeId', required: false, description: 'ID типа задачи' })
+  @ApiQuery({ name: 'assignedToId', required: false, description: 'ID исполнителя (может быть массивом)', isArray: true })
   @ApiQuery({ name: 'search', required: false, description: 'Поиск' })
   @ApiQuery({ name: 'from', required: false, description: 'Начальная дата диапазона (ISO)' })
   @ApiQuery({ name: 'to', required: false, description: 'Конечная дата диапазона (ISO)' })
@@ -36,6 +39,9 @@ export class TaskController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('status') status?: string,
+    @Query('priority') priority?: string,
+    @Query('taskTypeId') taskTypeId?: string,
+    @Query('assignedToId') assignedToId?: string | string[],
     @Query('search') search?: string,
     @Query('from') from?: string,
     @Query('to') to?: string,
@@ -55,7 +61,23 @@ export class TaskController {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 50;
 
-    return this.taskService.findAll(pageNum, limitNum, { status, search });
+    // Обработка assignedToId как одиночного значения или массива
+    let assignedToIdProcessed: number | number[] | undefined;
+    if (assignedToId) {
+      if (Array.isArray(assignedToId)) {
+        assignedToIdProcessed = assignedToId.map(id => Number(id));
+      } else {
+        assignedToIdProcessed = Number(assignedToId);
+      }
+    }
+
+    return this.taskService.findAll(pageNum, limitNum, { 
+      status, 
+      priority,
+      taskTypeId: taskTypeId ? Number(taskTypeId) : undefined,
+      assignedToId: assignedToIdProcessed,
+      search 
+    });
   }
 
   @Get(':id')

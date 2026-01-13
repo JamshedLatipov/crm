@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ViewChildren, QueryList, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
@@ -13,8 +13,10 @@ import {
   UniversalFilter,
   BaseFilterState,
   FilterFieldDefinition,
+  FilterOperator,
 } from '../../interfaces/universal-filter.interface';
 import { UniversalFilterService } from '../../services/universal-filter.service';
+import { UserMultiselectFilterComponent } from '../../components/user-multiselect-filter/user-multiselect-filter.component';
 
 export interface StatusTab {
   label: string;
@@ -51,11 +53,13 @@ export interface UniversalFiltersDialogData {
     MatSelectModule,
     MatTabsModule,
     MatDividerModule,
+    UserMultiselectFilterComponent,
   ],
   templateUrl: './universal-filters-dialog.component.html',
   styleUrls: ['./universal-filters-dialog.component.scss'],
 })
-export class UniversalFiltersDialogComponent {
+export class UniversalFiltersDialogComponent implements AfterViewInit {
+  @ViewChildren(UserMultiselectFilterComponent) userMultiselectComponents!: QueryList<UserMultiselectFilterComponent>;
   private dialogRef = inject(MatDialogRef<UniversalFiltersDialogComponent>);
   private filterService = inject(UniversalFilterService);
   data = inject<UniversalFiltersDialogData>(MAT_DIALOG_DATA);
@@ -273,9 +277,74 @@ export class UniversalFiltersDialogComponent {
   }
 
   /**
+   * Check if field is user selector (assignedTo)
+   */
+  isUserSelectorField(filter: UniversalFilter): boolean {
+    return filter.fieldName === 'assignedTo' || filter.fieldName === 'assignee';
+  }
+
+  /**
+   * Handle user selection change
+   */
+  onUserSelectionChange(filter: UniversalFilter, userIds: Array<number | string>): void {
+    filter.value = userIds as any; // Mixed array is acceptable for filters
+  }
+
+  /**
+   * Check if operator supports multiple values
+   */
+  isMultipleValueOperator(operator: FilterOperator): boolean {
+    return operator === 'in' || operator === 'not_in' || operator === 'between';
+  }
+
+  /**
    * Check if operator requires value input
    */
   requiresValue(operator: string): boolean {
     return operator !== 'exists';
+  }
+
+  /**
+   * Initialize user multiselect components with existing filter values
+   */
+  ngAfterViewInit(): void {
+    // Wait for next tick to ensure components are fully initialized
+    setTimeout(() => {
+      this.initializeUserMultiselectComponents();
+    });
+  }
+
+  /**
+   * Initialize all user multiselect components with their respective filter values
+   */
+  private initializeUserMultiselectComponents(): void {
+    const userMultiselectArray = this.userMultiselectComponents.toArray();
+    let componentIndex = 0;
+
+    // Initialize static filters
+    this.staticFilters().forEach(filter => {
+      if (this.isUserSelectorField(filter) && Array.isArray(filter.value) && filter.value.length > 0) {
+        const component = userMultiselectArray[componentIndex];
+        if (component) {
+          component.setSelectedUsers(filter.value as Array<number | string>);
+        }
+        componentIndex++;
+      } else if (this.isUserSelectorField(filter)) {
+        componentIndex++; // Count component even if no value
+      }
+    });
+
+    // Initialize custom filters
+    this.customFilters().forEach(filter => {
+      if (this.isUserSelectorField(filter) && Array.isArray(filter.value) && filter.value.length > 0) {
+        const component = userMultiselectArray[componentIndex];
+        if (component) {
+          component.setSelectedUsers(filter.value as Array<number | string>);
+        }
+        componentIndex++;
+      } else if (this.isUserSelectorField(filter)) {
+        componentIndex++; // Count component even if no value
+      }
+    });
   }
 }

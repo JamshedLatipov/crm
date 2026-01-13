@@ -100,6 +100,7 @@
       *ngIf="getActiveFiltersCount() > 0"
       [search]="searchQuery"
       [filters]="getActiveFiltersForDisplay()"
+      [fieldDefinitions]="staticFields"
       (filterRemoved)="removeFilter($event)"
       (clearAllFilters)="clearAllFilters()">
     </app-active-filters>
