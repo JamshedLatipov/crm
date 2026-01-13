@@ -179,8 +179,9 @@ table.crm-deals-table {
   background: var(--card-bg, #fff);
 }
 
-.crm-table-footer .mat-paginator {
+.crm-table-footer .mat-mdc-paginator {
   margin-left: auto;
+  width: 100%;
 }
 
 /* Icon styling - matching deals */

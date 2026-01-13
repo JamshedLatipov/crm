@@ -47,11 +47,36 @@ export class SegmentListComponent implements OnInit {
 
   // Table columns
   columns: CrmColumn[] = [
-    { key: 'name', label: 'Название', template: 'nameTemplate' },
-    { key: 'usageType', label: 'Тип', template: 'usageTypeTemplate' },
-    { key: 'contactsCount', label: 'Контактов', template: 'contactsCountTemplate' },
-    { key: 'isActive', label: 'Статус', template: 'isActiveTemplate' },
-    { key: 'actions', label: 'Действия', template: 'actionsTemplate' },
+    { 
+      key: 'name', 
+      label: 'Название сегмента', 
+      template: 'nameTemplate',
+      width: '35%'
+    },
+    { 
+      key: 'usageType', 
+      label: 'Тип использования', 
+      template: 'usageTypeTemplate',
+      width: '15%'
+    },
+    { 
+      key: 'contactsCount', 
+      label: 'Количество контактов', 
+      template: 'contactsCountTemplate',
+      width: '15%'
+    },
+    { 
+      key: 'isActive', 
+      label: 'Статус', 
+      template: 'isActiveTemplate',
+      width: '15%'
+    },
+    { 
+      key: 'actions', 
+      label: '', 
+      template: 'actionsTemplate',
+      width: '10%'
+    },
   ];
 
   ngOnInit(): void {
@@ -166,6 +191,18 @@ export class SegmentListComponent implements OnInit {
       [SegmentUsageType.GENERAL]: 'Общий',
     };
     return labels[type] || type;
+  }
+
+  getUsageTypeIcon(type: SegmentUsageType): string {
+    const icons: Record<SegmentUsageType, string> = {
+      [SegmentUsageType.SMS]: 'sms',
+      [SegmentUsageType.CAMPAIGN]: 'campaign',
+      [SegmentUsageType.EMAIL]: 'email',
+      [SegmentUsageType.WHATSAPP]: 'chat',
+      [SegmentUsageType.TELEGRAM]: 'telegram',
+      [SegmentUsageType.GENERAL]: 'folder',
+    };
+    return icons[type] || 'label';
   }
 
   getUsageTypeColor(type: SegmentUsageType): string {

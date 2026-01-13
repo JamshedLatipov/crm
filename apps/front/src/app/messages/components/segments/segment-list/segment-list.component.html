@@ -1,13 +1,10 @@
-<app-page-layout>
-  <div class="segment-list-container">
-    <div class="header">
-      <h1>Сегменты</h1>
-      <button mat-raised-button color="primary" (click)="createSegment()">
-        <mat-icon>add</mat-icon>
-        Создать сегмент
-      </button>
-    </div>
+<app-page-layout [title]="'Сегменты'" [subtitle]="'Управление сегментами контактов для массовых рассылок'">
+  <button mat-raised-button color="primary" page-actions (click)="createSegment()">
+    <mat-icon>add</mat-icon>
+    Создать сегмент
+  </button>
 
+  <div class="segment-list-container">
     @if (isLoading()) {
       <div class="loading-spinner">
         <mat-spinner></mat-spinner>
@@ -23,12 +20,14 @@
       </div>
     } @else if (segments().length === 0) {
       <div class="empty-state">
-        <mat-icon>inbox</mat-icon>
+        <div class="empty-state-icon">
+          <mat-icon>segment</mat-icon>
+        </div>
         <h2>Нет сегментов</h2>
-        <p>Создайте первый сегмент для группировки контактов</p>
+        <p>Создайте первый сегмент для группировки контактов по различным критериям</p>
         <button mat-raised-button color="primary" (click)="createSegment()">
           <mat-icon>add</mat-icon>
-          Создать сегмент
+          Создать первый сегмент
         </button>
       </div>
     } @else {
@@ -36,6 +35,7 @@
         [columns]="columns"
         [data]="segments()"
         [pageSize]="20"
+        (rowClick)="editSegment($event)"
       >
         <!-- Name Template -->
         <ng-template crmColumnTemplate="nameTemplate" let-segment>
@@ -49,16 +49,17 @@
 
         <!-- Usage Type Template -->
         <ng-template crmColumnTemplate="usageTypeTemplate" let-segment>
-          <mat-chip [color]="getUsageTypeColor(segment.usageType)">
+          <mat-chip [class]="'usage-type-' + segment.usageType.toLowerCase()">
+            <mat-icon class="chip-icon">{{ getUsageTypeIcon(segment.usageType) }}</mat-icon>
             {{ getUsageTypeLabel(segment.usageType) }}
           </mat-chip>
         </ng-template>
 
         <!-- Contacts Count Template -->
         <ng-template crmColumnTemplate="contactsCountTemplate" let-segment>
-          <div class="contacts-count">
+          <div class="contacts-count" [matTooltip]="'Количество контактов в сегменте'">
             <mat-icon>people</mat-icon>
-            {{ segment.contactsCount || 0 }}
+            <span>{{ segment.contactsCount || 0 }}</span>
           </div>
         </ng-template>
 
@@ -71,28 +72,35 @@
 
         <!-- Actions Template -->
         <ng-template crmColumnTemplate="actionsTemplate" let-segment>
-          <button mat-icon-button [matMenuTriggerFor]="menu" (click)="$event.stopPropagation()">
-            <mat-icon>more_vert</mat-icon>
-          </button>
-          <mat-menu #menu="matMenu">
-            <button mat-menu-item (click)="viewContacts(segment)">
-              <mat-icon>people</mat-icon>
-              <span>Просмотр контактов</span>
+          <div class="actions-cell" (click)="$event.stopPropagation()">
+            <button 
+              mat-icon-button 
+              [matMenuTriggerFor]="menu" 
+              matTooltip="Действия"
+              class="action-button"
+            >
+              <mat-icon>more_vert</mat-icon>
             </button>
-            <button mat-menu-item (click)="editSegment(segment)">
-              <mat-icon>edit</mat-icon>
-              <span>Редактировать</span>
-            </button>
-            <button mat-menu-item (click)="duplicateSegment(segment)">
-              <mat-icon>content_copy</mat-icon>
-              <span>Дублировать</span>
-            </button>
-            <mat-divider></mat-divider>
-            <button mat-menu-item (click)="deleteSegment(segment)" class="delete-action">
-              <mat-icon>delete</mat-icon>
-              <span>Удалить</span>
-            </button>
-          </mat-menu>
+            <mat-menu #menu="matMenu" class="segment-actions-menu">
+              <button mat-menu-item (click)="viewContacts(segment)">
+                <mat-icon class="menu-icon">visibility</mat-icon>
+                <span>Просмотр контактов</span>
+              </button>
+              <button mat-menu-item (click)="editSegment(segment)">
+                <mat-icon class="menu-icon">edit</mat-icon>
+                <span>Редактировать</span>
+              </button>
+              <button mat-menu-item (click)="duplicateSegment(segment)">
+                <mat-icon class="menu-icon">content_copy</mat-icon>
+                <span>Дублировать</span>
+              </button>
+              <mat-divider></mat-divider>
+              <button mat-menu-item (click)="deleteSegment(segment)" class="delete-action">
+                <mat-icon class="menu-icon">delete</mat-icon>
+                <span>Удалить</span>
+              </button>
+            </mat-menu>
+          </div>
         </ng-template>
       </crm-table>
     }

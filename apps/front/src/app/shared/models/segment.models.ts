@@ -83,10 +83,15 @@ export interface UpdateSegmentDto {
 
 export interface SegmentContact {
   id: string;
+  name?: string;
   firstName?: string;
   lastName?: string;
   email?: string;
   phone?: string;
+  company?: {
+    id: string;
+    name: string;
+  };
   tags?: string[];
   createdAt: Date;
 }

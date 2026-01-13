@@ -49,10 +49,30 @@ export class SegmentContactsComponent implements OnInit {
 
   // Table columns
   columns: CrmColumn[] = [
-    { key: 'name', label: 'Имя', template: 'nameTemplate' },
-    { key: 'phone', label: 'Телефон', template: 'phoneTemplate' },
-    { key: 'email', label: 'Email', template: 'emailTemplate' },
-    { key: 'company', label: 'Компания', template: 'companyTemplate' },
+    { 
+      key: 'name', 
+      label: 'Имя контакта', 
+      template: 'nameTemplate',
+      width: '30%'
+    },
+    { 
+      key: 'phone', 
+      label: 'Номер телефона', 
+      template: 'phoneTemplate',
+      width: '25%'
+    },
+    { 
+      key: 'email', 
+      label: 'Электронная почта', 
+      template: 'emailTemplate',
+      width: '30%'
+    },
+    { 
+      key: 'company', 
+      label: 'Компания', 
+      template: 'companyTemplate',
+      width: '15%'
+    },
   ];
 
   ngOnInit(): void {

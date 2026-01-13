@@ -1,23 +1,18 @@
-<app-page-layout>
-  <div class="segment-contacts-container">
-    <div class="header">
-      <button mat-icon-button (click)="goBack()" class="back-button">
-        <mat-icon>arrow_back</mat-icon>
-      </button>
-      <div class="header-info">
-        <h1>Контакты сегмента</h1>
-        @if (segmentName()) {
-          <p class="segment-name">{{ segmentName() }}</p>
-        }
-      </div>
-      <div class="header-stats">
-        <span class="total-count">
-          <mat-icon>people</mat-icon>
-          {{ totalContacts() }} контактов
-        </span>
-      </div>
+<app-page-layout 
+  [title]="segmentName() || 'Контакты сегмента'" 
+  [subtitle]="'Просмотр и управление контактами в выбранном сегменте'">
+  
+  <div page-actions class="page-actions-group">
+    <button mat-icon-button (click)="goBack()" matTooltip="Вернуться к списку сегментов">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <div class="stats-badge">
+      <mat-icon>people</mat-icon>
+      <span>{{ totalContacts() }}</span>
     </div>
+  </div>
 
+  <div class="segment-contacts-container">
     @if (isLoading()) {
       <div class="loading-spinner">
         <mat-spinner></mat-spinner>
@@ -33,10 +28,13 @@
       </div>
     } @else if (contacts().length === 0) {
       <div class="empty-state">
-        <mat-icon>inbox</mat-icon>
+        <div class="empty-state-icon">
+          <mat-icon>group_off</mat-icon>
+        </div>
         <h2>Нет контактов</h2>
-        <p>В этом сегменте пока нет контактов</p>
+        <p>В этом сегменте пока нет контактов. Попробуйте изменить критерии фильтрации сегмента.</p>
         <button mat-raised-button color="primary" (click)="goBack()">
+          <mat-icon>arrow_back</mat-icon>
           Вернуться к списку сегментов
         </button>
       </div>
@@ -45,39 +43,56 @@
         [columns]="columns"
         [data]="contacts()"
         [pageSize]="pageSize()"
+        [showPaginator]="true"
       >
         <!-- Name Template -->
         <ng-template crmColumnTemplate="nameTemplate" let-contact>
           <div class="contact-name">
-            <strong>{{ contact.name || '—' }}</strong>
+            <mat-icon class="contact-icon">person</mat-icon>
+            <strong>{{ contact.name || 'Без имени' }}</strong>
           </div>
         </ng-template>
 
         <!-- Phone Template -->
         <ng-template crmColumnTemplate="phoneTemplate" let-contact>
           @if (contact.phone) {
-            <a href="tel:{{ contact.phone }}" class="contact-link">
+            <a href="tel:{{ contact.phone }}" class="contact-link phone-link">
+              <mat-icon class="link-icon">phone</mat-icon>
               {{ contact.phone }}
             </a>
           } @else {
-            <span class="no-data">—</span>
+            <span class="no-data">
+              <mat-icon class="no-data-icon">phone_disabled</mat-icon>
+              Не указан
+            </span>
           }
         </ng-template>
 
         <!-- Email Template -->
         <ng-template crmColumnTemplate="emailTemplate" let-contact>
           @if (contact.email) {
-            <a href="mailto:{{ contact.email }}" class="contact-link">
+            <a href="mailto:{{ contact.email }}" class="contact-link email-link">
+              <mat-icon class="link-icon">email</mat-icon>
               {{ contact.email }}
             </a>
           } @else {
-            <span class="no-data">—</span>
+            <span class="no-data">
+              <mat-icon class="no-data-icon">email</mat-icon>
+              Не указан
+            </span>
           }
         </ng-template>
 
         <!-- Company Template -->
         <ng-template crmColumnTemplate="companyTemplate" let-contact>
-          {{ contact.company || '—' }}
+          @if (contact.company?.name) {
+            <div class="company-cell">
+              <mat-icon class="company-icon">business</mat-icon>
+              {{ contact.company.name }}
+            </div>
+          } @else {
+            <span class="no-data">—</span>
+          }
         </ng-template>
       </crm-table>
     }
