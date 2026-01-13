@@ -471,15 +471,30 @@ export class ContactSegmentService {
     let condition = '';
     const parameters: Record<string, any> = {};
 
+    // Определяем, является ли поле кастомным и JSONB
+    const isCustomField = filter.field.startsWith('customFields.');
+    const isJsonbField = isCustomField;
+
     switch (filter.operator) {
       case 'equals':
-        condition = `${fieldPath} = :${paramKey}`;
-        parameters[paramKey] = filter.value;
+        if (isJsonbField) {
+          // Для JSONB полей используем оператор ->>
+          condition = `${fieldPath} = :${paramKey}`;
+          parameters[paramKey] = String(filter.value);
+        } else {
+          condition = `${fieldPath} = :${paramKey}`;
+          parameters[paramKey] = filter.value;
+        }
         break;
 
       case 'not_equals':
-        condition = `${fieldPath} != :${paramKey}`;
-        parameters[paramKey] = filter.value;
+        if (isJsonbField) {
+          condition = `${fieldPath} != :${paramKey}`;
+          parameters[paramKey] = String(filter.value);
+        } else {
+          condition = `${fieldPath} != :${paramKey}`;
+          parameters[paramKey] = filter.value;
+        }
         break;
 
       case 'contains':
@@ -503,43 +518,93 @@ export class ContactSegmentService {
         break;
 
       case 'greater':
-        condition = `${fieldPath} > :${paramKey}`;
-        parameters[paramKey] = filter.value;
+        if (isJsonbField) {
+          // Для числовых JSONB полей нужно приведение типа
+          // Заменяем ->> на -> и добавляем ::numeric для числового сравнения
+          const customFieldName = filter.field.replace('customFields.', '');
+          const jsonbFieldNumeric = `(contact."customFields"->'${customFieldName}')::numeric`;
+          condition = `(${fieldPath} IS NOT NULL AND ${jsonbFieldNumeric} > :${paramKey})`;
+          parameters[paramKey] = filter.value;
+        } else {
+          condition = `${fieldPath} > :${paramKey}`;
+          parameters[paramKey] = filter.value;
+        }
         break;
 
       case 'less':
-        condition = `${fieldPath} < :${paramKey}`;
-        parameters[paramKey] = filter.value;
+        if (isJsonbField) {
+          const customFieldName = filter.field.replace('customFields.', '');
+          const jsonbFieldNumeric = `(contact."customFields"->'${customFieldName}')::numeric`;
+          condition = `(${fieldPath} IS NOT NULL AND ${jsonbFieldNumeric} < :${paramKey})`;
+          parameters[paramKey] = filter.value;
+        } else {
+          condition = `${fieldPath} < :${paramKey}`;
+          parameters[paramKey] = filter.value;
+        }
         break;
 
       case 'between':
         if (Array.isArray(filter.value) && filter.value.length === 2) {
-          condition = `${fieldPath} BETWEEN :${paramKey}_start AND :${paramKey}_end`;
-          parameters[`${paramKey}_start`] = filter.value[0];
-          parameters[`${paramKey}_end`] = filter.value[1];
+          if (isJsonbField) {
+            const customFieldName = filter.field.replace('customFields.', '');
+            const jsonbFieldNumeric = `(contact."customFields"->'${customFieldName}')::numeric`;
+            condition = `(${fieldPath} IS NOT NULL AND ${jsonbFieldNumeric} BETWEEN :${paramKey}_start AND :${paramKey}_end)`;
+            parameters[`${paramKey}_start`] = filter.value[0];
+            parameters[`${paramKey}_end`] = filter.value[1];
+          } else {
+            condition = `${fieldPath} BETWEEN :${paramKey}_start AND :${paramKey}_end`;
+            parameters[`${paramKey}_start`] = filter.value[0];
+            parameters[`${paramKey}_end`] = filter.value[1];
+          }
         }
         break;
 
       case 'in':
-        condition = `${fieldPath} IN (:...${paramKey})`;
-        parameters[paramKey] = Array.isArray(filter.value) 
-          ? filter.value 
-          : [filter.value];
+        if (isJsonbField) {
+          // Для JSONB используем массив строк
+          const values = Array.isArray(filter.value) 
+            ? filter.value.map(v => String(v))
+            : [String(filter.value)];
+          condition = `${fieldPath} IN (:...${paramKey})`;
+          parameters[paramKey] = values;
+        } else {
+          condition = `${fieldPath} IN (:...${paramKey})`;
+          parameters[paramKey] = Array.isArray(filter.value) 
+            ? filter.value 
+            : [filter.value];
+        }
         break;
 
       case 'not_in':
-        condition = `${fieldPath} NOT IN (:...${paramKey})`;
-        parameters[paramKey] = Array.isArray(filter.value) 
-          ? filter.value 
-          : [filter.value];
+        if (isJsonbField) {
+          const values = Array.isArray(filter.value) 
+            ? filter.value.map(v => String(v))
+            : [String(filter.value)];
+          condition = `${fieldPath} NOT IN (:...${paramKey})`;
+          parameters[paramKey] = values;
+        } else {
+          condition = `${fieldPath} NOT IN (:...${paramKey})`;
+          parameters[paramKey] = Array.isArray(filter.value) 
+            ? filter.value 
+            : [filter.value];
+        }
         break;
 
       case 'is_null':
-        condition = `${fieldPath} IS NULL`;
+        if (isJsonbField) {
+          // Для JSONB проверяем как null, так и отсутствие ключа
+          condition = `(${fieldPath} IS NULL OR ${fieldPath} = 'null')`;
+        } else {
+          condition = `${fieldPath} IS NULL`;
+        }
         break;
 
       case 'is_not_null':
-        condition = `${fieldPath} IS NOT NULL`;
+        if (isJsonbField) {
+          condition = `(${fieldPath} IS NOT NULL AND ${fieldPath} != 'null')`;
+        } else {
+          condition = `${fieldPath} IS NOT NULL`;
+        }
         break;
     }
 
@@ -548,11 +613,20 @@ export class ContactSegmentService {
 
   /**
    * Маппинг поля на путь в запросе
+   * Поддерживает как стандартные поля контактов, так и кастомные поля
    */
   private getFieldPath(field: string): string {
     // Поля компании
     if (field === 'company' || field === 'companyName') {
       return 'company.name';
+    }
+    
+    // Кастомные поля (формат: customFields.fieldName)
+    if (field.startsWith('customFields.')) {
+      const customFieldName = field.replace('customFields.', '');
+      // Используем JSONB оператор для доступа к вложенным полям
+      // Важно: имя колонки в кавычках, так как PostgreSQL чувствителен к регистру
+      return `contact."customFields"->>'${customFieldName}'`;
     }
     
     // Все остальные поля контакта
