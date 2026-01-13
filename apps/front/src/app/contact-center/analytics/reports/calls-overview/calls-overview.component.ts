@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -32,6 +32,102 @@ export class CallsOverviewComponent implements OnInit {
   data = signal<CallsOverview | null>(null);
   error = signal<string | null>(null);
 
+  // Computed chart data - will only recalculate when data() changes
+  directionChartData = computed(() => {
+    const overview = this.data();
+    if (!overview) return null;
+
+    return {
+      labels: ['Входящие', 'Исходящие', 'Внутренние'],
+      datasets: [
+        {
+          data: [
+            overview.inboundCalls,
+            overview.outboundCalls,
+            overview.internalCalls,
+          ],
+          backgroundColor: ['#4caf50', '#2196f3', '#ff9800'],
+        },
+      ],
+    };
+  });
+
+  statusChartData = computed(() => {
+    const overview = this.data();
+    if (!overview) return null;
+
+    return {
+      labels: overview.statusDistribution.map((s) => s.status),
+      datasets: [
+        {
+          data: overview.statusDistribution.map((s) => s.count),
+          backgroundColor: [
+            '#4caf50',
+            '#f44336',
+            '#ff9800',
+            '#9e9e9e',
+          ],
+        },
+      ],
+    };
+  });
+
+  callsByDayChartData = computed(() => {
+    const overview = this.data();
+    if (!overview) return null;
+
+    console.log('callsByDay data:', overview.callsByDay);
+
+    if (!overview.callsByDay || overview.callsByDay.length === 0) {
+      console.warn('No callsByDay data available');
+      return null;
+    }
+
+    const chartData = {
+      labels: overview.callsByDay.map((d) => {
+        const date = new Date(d.period);
+        return date.toLocaleDateString('ru-RU', {
+          day: '2-digit',
+          month: '2-digit',
+        });
+      }),
+      datasets: [
+        {
+          label: 'Звонки',
+          data: overview.callsByDay.map((d) => d.count),
+          borderColor: '#2196f3',
+          backgroundColor: 'rgba(33, 150, 243, 0.1)',
+          fill: true,
+          tension: 0.4,
+        },
+      ],
+    };
+
+    console.log('callsByDayChartData:', chartData);
+    return chartData;
+  });
+
+  callsByHourChartData = computed(() => {
+    const overview = this.data();
+    if (!overview) return null;
+
+    // Create array with all hours 0-23
+    const hourlyData = new Array(24).fill(0);
+    overview.callsByHour.forEach((h) => {
+      hourlyData[h.period as number] = h.count;
+    });
+
+    return {
+      labels: hourlyData.map((_, i) => `${i}:00`),
+      datasets: [
+        {
+          data: hourlyData,
+          backgroundColor: '#2196f3',
+        },
+      ],
+    };
+  });
+
   // Chart configurations
   pieChartOptions: ChartConfiguration<'pie'>['options'] = {
     responsive: true,
@@ -44,17 +140,34 @@ export class CallsOverviewComponent implements OnInit {
 
   lineChartOptions: ChartConfiguration<'line'>['options'] = {
     responsive: true,
+    maintainAspectRatio: true,
+    aspectRatio: 3,
     plugins: {
       legend: {
         display: true,
         position: 'top',
       },
+      tooltip: {
+        mode: 'index',
+        intersect: false,
+      },
     },
     scales: {
+      x: {
+        display: true,
+        grid: {
+          display: true,
+          color: 'rgba(0, 0, 0, 0.05)',
+        },
+      },
       y: {
         beginAtZero: true,
         ticks: {
           precision: 0,
+        },
+        grid: {
+          display: true,
+          color: 'rgba(0, 0, 0, 0.05)',
         },
       },
     },
@@ -78,7 +191,7 @@ export class CallsOverviewComponent implements OnInit {
   };
 
   ngOnInit(): void {
-    // Data will be loaded when filters change
+    // Data will be loaded when filters change from ReportFiltersComponent
   }
 
   onFiltersChange(filters: CallFilters): void {
@@ -86,105 +199,27 @@ export class CallsOverviewComponent implements OnInit {
   }
 
   loadData(filters: CallFilters): void {
+    // Prevent duplicate requests
+    if (this.loading()) {
+      return;
+    }
+
     this.loading.set(true);
     this.error.set(null);
 
     this.analyticsApi.getCallsOverview(filters).subscribe({
       next: (response: CallsOverview) => {
+        console.log('Calls Overview Response:', response);
+        console.log('callsByDay data:', response.callsByDay);
         this.data.set(response);
         this.loading.set(false);
       },
       error: (err) => {
         console.error('Error loading calls overview:', err);
-        this.error.set('Ошибка загрузки данных');
+        this.error.set('Ошибка загрузки данных. Попробуйте еще раз.');
         this.loading.set(false);
       },
     });
-  }
-
-  getDirectionChartData() {
-    const overview = this.data();
-    if (!overview) return null;
-
-    return {
-      labels: ['Входящие', 'Исходящие', 'Внутренние'],
-      datasets: [
-        {
-          data: [
-            overview.inboundCalls,
-            overview.outboundCalls,
-            overview.internalCalls,
-          ],
-          backgroundColor: ['#4caf50', '#2196f3', '#ff9800'],
-        },
-      ],
-    };
-  }
-
-  getStatusChartData() {
-    const overview = this.data();
-    if (!overview) return null;
-
-    return {
-      labels: overview.statusDistribution.map((s) => s.status),
-      datasets: [
-        {
-          data: overview.statusDistribution.map((s) => s.count),
-          backgroundColor: [
-            '#4caf50',
-            '#f44336',
-            '#ff9800',
-            '#9e9e9e',
-          ],
-        },
-      ],
-    };
-  }
-
-  getCallsByDayChartData() {
-    const overview = this.data();
-    if (!overview) return null;
-
-    return {
-      labels: overview.callsByDay.map((d) => {
-        const date = new Date(d.period);
-        return date.toLocaleDateString('ru-RU', {
-          day: '2-digit',
-          month: '2-digit',
-        });
-      }),
-      datasets: [
-        {
-          label: 'Звонки',
-          data: overview.callsByDay.map((d) => d.count),
-          borderColor: '#2196f3',
-          backgroundColor: 'rgba(33, 150, 243, 0.1)',
-          fill: true,
-          tension: 0.4,
-        },
-      ],
-    };
-  }
-
-  getCallsByHourChartData() {
-    const overview = this.data();
-    if (!overview) return null;
-
-    // Create array with all hours 0-23
-    const hourlyData = new Array(24).fill(0);
-    overview.callsByHour.forEach((h) => {
-      hourlyData[h.period as number] = h.count;
-    });
-
-    return {
-      labels: hourlyData.map((_, i) => `${i}:00`),
-      datasets: [
-        {
-          data: hourlyData,
-          backgroundColor: '#2196f3',
-        },
-      ],
-    };
   }
 
   formatTime(seconds: number): string {

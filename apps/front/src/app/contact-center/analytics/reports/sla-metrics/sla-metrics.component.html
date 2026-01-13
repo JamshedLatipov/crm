@@ -59,13 +59,13 @@
       </mat-card-header>
       <mat-card-content>
         <canvas
-          *ngIf="getTrendChartData()"
+          *ngIf="trendChartData()"
           baseChart
           [type]="'line'"
-          [data]="getTrendChartData()!"
+          [data]="trendChartData()!"
           [options]="lineChartOptions"
         ></canvas>
-        <div *ngIf="!getTrendChartData()" class="no-data">
+        <div *ngIf="!trendChartData()" class="no-data">
           <p>Недостаточно данных для графика</p>
         </div>
       </mat-card-content>

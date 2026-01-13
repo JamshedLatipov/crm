@@ -47,7 +47,7 @@ export class AgentPerformanceComponent implements OnInit {
   ];
 
   ngOnInit(): void {
-    // Data will be loaded when filters change
+    // Data will be loaded when filters change from ReportFiltersComponent
   }
 
   onFiltersChange(filters: CallFilters): void {
@@ -55,6 +55,11 @@ export class AgentPerformanceComponent implements OnInit {
   }
 
   loadData(filters: CallFilters): void {
+    // Prevent duplicate requests
+    if (this.loading()) {
+      return;
+    }
+
     this.loading.set(true);
     this.error.set(null);
 
@@ -65,7 +70,7 @@ export class AgentPerformanceComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error loading agent performance:', err);
-        this.error.set('Ошибка загрузки данных');
+        this.error.set('Ошибка загрузки данных. Попробуйте еще раз.');
         this.loading.set(false);
       },
     });

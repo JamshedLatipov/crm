@@ -58,10 +58,10 @@
         </mat-card-header>
         <mat-card-content>
           <div class="chart-container">
-            @if (agentChartData) {
+            @if (agentChartData()) {
               <canvas
                 baseChart
-                [data]="agentChartData"
+                [data]="agentChartData()!"
                 [options]="agentChartOptions"
                 type="bar">
               </canvas>
@@ -76,10 +76,10 @@
         </mat-card-header>
         <mat-card-content>
           <div class="chart-container">
-            @if (trendChartData) {
+            @if (trendChartData()) {
               <canvas
                 baseChart
-                [data]="trendChartData"
+                [data]="trendChartData()!"
                 [options]="trendChartOptions"
                 type="line">
               </canvas>
@@ -97,10 +97,10 @@
         </mat-card-header>
         <mat-card-content>
           <div class="chart-container-small">
-            @if (dealStageChartData) {
+            @if (dealStageChartData()) {
               <canvas
                 baseChart
-                [data]="dealStageChartData"
+                [data]="dealStageChartData()!"
                 [options]="dealStageChartOptions"
                 type="pie">
               </canvas>

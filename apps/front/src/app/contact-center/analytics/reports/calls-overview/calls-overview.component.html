@@ -53,7 +53,7 @@
           <canvas
             baseChart
             [type]="'pie'"
-            [data]="getDirectionChartData()!"
+            [data]="directionChartData()!"
             [options]="pieChartOptions"
           ></canvas>
         </mat-card-content>
@@ -67,7 +67,7 @@
           <canvas
             baseChart
             [type]="'pie'"
-            [data]="getStatusChartData()!"
+            [data]="statusChartData()!"
             [options]="pieChartOptions"
           ></canvas>
         </mat-card-content>
@@ -78,12 +78,18 @@
           <mat-card-title>Звонки по дням</mat-card-title>
         </mat-card-header>
         <mat-card-content>
-          <canvas
-            baseChart
-            [type]="'line'"
-            [data]="getCallsByDayChartData()!"
-            [options]="lineChartOptions"
-          ></canvas>
+          @if (callsByDayChartData()) {
+            <div class="chart-container">
+              <canvas
+                baseChart
+                [type]="'line'"
+                [data]="callsByDayChartData()!"
+                [options]="lineChartOptions"
+              ></canvas>
+            </div>
+          } @else {
+            <div class="no-data">Нет данных для отображения</div>
+          }
         </mat-card-content>
       </mat-card>
 
@@ -95,7 +101,7 @@
           <canvas
             baseChart
             [type]="'bar'"
-            [data]="getCallsByHourChartData()!"
+            [data]="callsByHourChartData()!"
             [options]="barChartOptions"
           ></canvas>
         </mat-card-content>

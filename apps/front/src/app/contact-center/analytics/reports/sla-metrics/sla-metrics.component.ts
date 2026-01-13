@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -33,6 +33,32 @@ export class SlaMetricsComponent implements OnInit {
   data = signal<SlaMetrics | null>(null);
   error = signal<string | null>(null);
 
+  // Computed chart data
+  trendChartData = computed(() => {
+    const metrics = this.data();
+    if (!metrics || metrics.trend.length === 0) return null;
+
+    return {
+      labels: metrics.trend.map((t) => {
+        const date = new Date(t.date);
+        return date.toLocaleDateString('ru-RU', {
+          day: '2-digit',
+          month: '2-digit',
+        });
+      }),
+      datasets: [
+        {
+          label: 'SLA соответствие (%)',
+          data: metrics.trend.map((t) => t.complianceRate),
+          borderColor: '#4caf50',
+          backgroundColor: 'rgba(76, 175, 80, 0.1)',
+          fill: true,
+          tension: 0.4,
+        },
+      ],
+    };
+  });
+
   columns: CrmColumn[] = [
     { key: 'queue', label: 'Очередь' },
     { key: 'totalCalls', label: 'Всего звонков', cell: (row: any) => row.totalCalls.toString() },
@@ -64,7 +90,7 @@ export class SlaMetricsComponent implements OnInit {
   };
 
   ngOnInit(): void {
-    // Data will be loaded when filters change
+    // Data will be loaded when filters change from ReportFiltersComponent
   }
 
   onFiltersChange(filters: CallFilters): void {
@@ -72,6 +98,11 @@ export class SlaMetricsComponent implements OnInit {
   }
 
   loadData(filters: CallFilters): void {
+    // Prevent duplicate requests
+    if (this.loading()) {
+      return;
+    }
+
     this.loading.set(true);
     this.error.set(null);
 
@@ -82,35 +113,10 @@ export class SlaMetricsComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error loading SLA metrics:', err);
-        this.error.set('Ошибка загрузки данных');
+        this.error.set('Ошибка загрузки данных. Попробуйте еще раз.');
         this.loading.set(false);
       },
     });
-  }
-
-  getTrendChartData() {
-    const metrics = this.data();
-    if (!metrics || metrics.trend.length === 0) return null;
-
-    return {
-      labels: metrics.trend.map((t) => {
-        const date = new Date(t.date);
-        return date.toLocaleDateString('ru-RU', {
-          day: '2-digit',
-          month: '2-digit',
-        });
-      }),
-      datasets: [
-        {
-          label: 'SLA соответствие (%)',
-          data: metrics.trend.map((t) => t.complianceRate),
-          borderColor: '#4caf50',
-          backgroundColor: 'rgba(76, 175, 80, 0.1)',
-          fill: true,
-          tension: 0.4,
-        },
-      ],
-    };
   }
 
   formatTime(seconds: number): string {

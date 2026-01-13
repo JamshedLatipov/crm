@@ -275,22 +275,28 @@ export class CallAggregationService {
   private calculateTalkTime(trace: any, cdr: any, answeredAt: Date | null): number | null {
     // TalkTime = время от момента ответа до завершения звонка
     
-    // Приоритет 1: Вычисляем от answeredAt до endTime (наиболее точно)
-    if (answeredAt && trace.summary.endTime) {
-      const talkSeconds = Math.floor((trace.summary.endTime.getTime() - answeredAt.getTime()) / 1000);
-      return talkSeconds > 0 ? talkSeconds : null;
+    // Приоритет 1: Используем billsec из CDR (наиболее надежно)
+    if (cdr?.billsec && cdr.billsec > 0 && cdr.billsec < (cdr.duration || Infinity)) {
+      return cdr.billsec;
     }
     
     // Приоритет 2: Для звонков через очередь - от CONNECT до конца
     const connect = trace.timeline.find((e: any) => e.type === 'QUEUE' && (e.event === 'CONNECT' || e.event === 'AGENTCONNECT'));
     if (connect && trace.summary.endTime) {
       const talkSeconds = Math.floor((trace.summary.endTime.getTime() - connect.timestamp.getTime()) / 1000);
-      return talkSeconds > 0 ? talkSeconds : null;
+      if (talkSeconds > 0 && talkSeconds < 86400) { // Санити-проверка: меньше 24 часов
+        return talkSeconds;
+      }
     }
     
-    // Приоритет 3: Используем billsec из CDR (может быть неточным для очередей)
-    if (cdr?.billsec && cdr.billsec > 0 && cdr.billsec < (cdr.duration || Infinity)) {
-      return cdr.billsec;
+    // Приоритет 3: Вычисляем от answeredAt до endTime (может быть проблема с timezone)
+    if (answeredAt && trace.summary.endTime) {
+      const talkSeconds = Math.floor((trace.summary.endTime.getTime() - answeredAt.getTime()) / 1000);
+      // Санити-проверка: если больше 24 часов или отрицательное - игнорируем
+      if (talkSeconds > 0 && talkSeconds < 86400) {
+        return talkSeconds;
+      }
+      this.logger.warn(`Invalid talkTime calculated from answeredAt: ${talkSeconds}s for call ${trace.uniqueId}. Possible timezone issue.`);
     }
     
     return null;

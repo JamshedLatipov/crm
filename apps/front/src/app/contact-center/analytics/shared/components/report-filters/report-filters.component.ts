@@ -250,11 +250,14 @@ export class ReportFiltersComponent {
   selectedDirections = signal<string[]>([]);
   selectedStatuses = signal<string[]>([]);
 
+  private initialized = signal(false);
+
   constructor() {
-    // Emit initial filters
-    effect(() => {
+    // Emit initial filters after a short delay to ensure parent is ready
+    setTimeout(() => {
+      this.initialized.set(true);
       this.emitFilters();
-    }, { allowSignalWrites: true });
+    }, 0);
   }
 
   private getDefaultStartDate(): Date {
@@ -264,11 +267,16 @@ export class ReportFiltersComponent {
   }
 
   onDateChange(): void {
-    this.emitFilters();
+    if (this.initialized()) {
+      this.emitFilters();
+    }
   }
 
   onFiltersChange(): void {
     // Will be triggered by ngModel changes
+    if (this.initialized()) {
+      this.emitFilters();
+    }
   }
 
   applyFilters(): void {
@@ -284,9 +292,20 @@ export class ReportFiltersComponent {
   }
 
   private emitFilters(): void {
+    const start = this.startDate();
+    const end = this.endDate();
+
+    if (!start || !end) {
+      return;
+    }
+
+    // Ensure end date is at the end of the day
+    const endOfDay = new Date(end);
+    endOfDay.setHours(23, 59, 59, 999);
+
     const filters: CallFilters = {
-      startDate: this.startDate()?.toISOString(),
-      endDate: this.endDate()?.toISOString(),
+      startDate: start.toISOString(),
+      endDate: endOfDay.toISOString(),
     };
 
     if (this.selectedDirections().length > 0) {

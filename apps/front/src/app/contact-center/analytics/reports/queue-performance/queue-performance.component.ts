@@ -138,10 +138,7 @@ export class QueuePerformanceComponent implements OnInit {
   };
 
   ngOnInit(): void {
-    this.loadData({
-      startDate: this.getDefaultStartDate(),
-      endDate: this.getDefaultEndDate(),
-    });
+    // Data will be loaded when filters change from ReportFiltersComponent
   }
 
   onFiltersChange(filters: CallFilters): void {
@@ -149,6 +146,11 @@ export class QueuePerformanceComponent implements OnInit {
   }
 
   private loadData(filters: CallFilters): void {
+    // Prevent duplicate requests
+    if (this.loading()) {
+      return;
+    }
+
     this.loading.set(true);
     this.error.set(null);
 
@@ -159,20 +161,10 @@ export class QueuePerformanceComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error loading queue performance data:', err);
-        this.error.set('Ошибка загрузки данных');
+        this.error.set('Ошибка загрузки данных. Попробуйте еще раз.');
         this.loading.set(false);
       },
     });
-  }
-
-  private getDefaultStartDate(): string {
-    const date = new Date();
-    date.setDate(date.getDate() - 30);
-    return date.toISOString().split('T')[0];
-  }
-
-  private getDefaultEndDate(): string {
-    return new Date().toISOString().split('T')[0];
   }
 
   formatTime(seconds: number): string {

@@ -62,8 +62,17 @@ export class CurrencyService {
    * @param showSymbol Показывать символ валюты
    * @returns Отформатированная строка
    */
-  formatAmount(amount: number | string, showSymbol = true): string {
+  formatAmount(amount: number | string | null | undefined, showSymbol = true): string {
+    if (amount === null || amount === undefined) {
+      return showSymbol ? `0.00 ${this.currencySymbol()}` : '0.00';
+    }
+    
     const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+    
+    if (isNaN(numAmount)) {
+      return showSymbol ? `0.00 ${this.currencySymbol()}` : '0.00';
+    }
+    
     const formatted = numAmount.toFixed(2);
     
     return showSymbol ? `${formatted} ${this.currencySymbol()}` : formatted;

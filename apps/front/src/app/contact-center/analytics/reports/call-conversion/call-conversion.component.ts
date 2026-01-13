@@ -1,4 +1,4 @@
-import { Component, effect, signal, inject, OnInit } from '@angular/core';
+import { Component, signal, inject, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -33,6 +33,89 @@ export class CallConversionComponent implements OnInit {
   loading = signal<boolean>(false);
   error = signal<string | null>(null);
 
+  // Computed chart data
+  agentChartData = computed<ChartConfiguration<'bar'>['data'] | null>(() => {
+    const conversionData = this.data();
+    if (!conversionData) return null;
+
+    const topAgents = conversionData.byAgent.slice(0, 10);
+    return {
+      labels: topAgents.map(a => a.agent),
+      datasets: [
+        {
+          type: 'bar',
+          label: 'Calls with Leads',
+          data: topAgents.map(a => a.callsWithLeads),
+          backgroundColor: 'rgba(75, 192, 192, 0.6)',
+          yAxisID: 'y',
+        },
+        {
+          type: 'bar',
+          label: 'Calls with Deals',
+          data: topAgents.map(a => a.callsWithDeals),
+          backgroundColor: 'rgba(54, 162, 235, 0.6)',
+          yAxisID: 'y',
+        },
+        {
+          type: 'line',
+          label: 'Total Revenue',
+          data: topAgents.map(a => a.totalRevenue),
+          borderColor: 'rgba(255, 99, 132, 1)',
+          backgroundColor: 'rgba(255, 99, 132, 0.2)',
+          yAxisID: 'y1',
+          tension: 0.4,
+        },
+      ] as any,
+    };
+  });
+
+  trendChartData = computed<ChartConfiguration<'line'>['data'] | null>(() => {
+    const conversionData = this.data();
+    if (!conversionData) return null;
+
+    const recentTrend = conversionData.trend.slice(-30);
+    return {
+      labels: recentTrend.map(t => new Date(t.date).toLocaleDateString('ru-RU')),
+      datasets: [
+        {
+          label: 'Lead Conversion Rate',
+          data: recentTrend.map(t => t.leadConversionRate),
+          borderColor: 'rgba(75, 192, 192, 1)',
+          backgroundColor: 'rgba(75, 192, 192, 0.2)',
+          tension: 0.4,
+        },
+        {
+          label: 'Deal Conversion Rate',
+          data: recentTrend.map(t => t.dealConversionRate),
+          borderColor: 'rgba(54, 162, 235, 1)',
+          backgroundColor: 'rgba(54, 162, 235, 0.2)',
+          tension: 0.4,
+        },
+      ],
+    };
+  });
+
+  dealStageChartData = computed<ChartConfiguration<'pie'>['data'] | null>(() => {
+    const conversionData = this.data();
+    if (!conversionData) return null;
+
+    return {
+      labels: conversionData.dealStages.map(s => s.status),
+      datasets: [
+        {
+          data: conversionData.dealStages.map(s => s.count),
+          backgroundColor: [
+            'rgba(54, 162, 235, 0.8)',
+            'rgba(75, 192, 192, 0.8)',
+            'rgba(255, 206, 86, 0.8)',
+            'rgba(255, 99, 132, 0.8)',
+            'rgba(153, 102, 255, 0.8)',
+          ],
+        },
+      ],
+    };
+  });
+
   agentColumns: CrmColumn[] = [
     { key: 'agent', label: 'Оператор' },
     { key: 'totalCalls', label: 'Всего звонков', cell: (row: any) => row.totalCalls.toString() },
@@ -58,10 +141,6 @@ export class CallConversionComponent implements OnInit {
     { key: 'count', label: 'Количество', cell: (row: any) => row.count.toString() },
     { key: 'totalValue', label: 'Сумма', template: 'totalValueTemplate' },
   ];
-
-  agentChartData: ChartConfiguration<'bar'>['data'] | null = null;
-  trendChartData: ChartConfiguration<'line'>['data'] | null = null;
-  dealStageChartData: ChartConfiguration<'pie'>['data'] | null = null;
 
   agentChartOptions: ChartConfiguration<'bar'>['options'] = {
     responsive: true,
@@ -103,7 +182,7 @@ export class CallConversionComponent implements OnInit {
   };
 
   ngOnInit() {
-    this.loadData({});
+    // Data will be loaded when filters change from ReportFiltersComponent
   }
 
   onFiltersChange(filters: CallFilters) {
@@ -111,96 +190,28 @@ export class CallConversionComponent implements OnInit {
   }
 
   loadData(filters: CallFilters) {
+    // Prevent duplicate requests
+    if (this.loading()) {
+      return;
+    }
+
     this.loading.set(true);
     this.error.set(null);
 
     this.analyticsApi.getCallConversion(filters).subscribe({
       next: (data) => {
         this.data.set(data);
-        this.prepareCharts(data);
         this.loading.set(false);
       },
       error: (err) => {
-        this.error.set('Failed to load conversion data');
+        this.error.set('Ошибка загрузки данных. Попробуйте еще раз.');
         console.error('Conversion data error:', err);
         this.loading.set(false);
       },
     });
   }
 
-  prepareCharts(data: CallConversion) {
-    // Agent performance chart
-    const topAgents = data.byAgent.slice(0, 10);
-    this.agentChartData = {
-      labels: topAgents.map(a => a.agent),
-      datasets: [
-        {
-          type: 'bar',
-          label: 'Calls with Leads',
-          data: topAgents.map(a => a.callsWithLeads),
-          backgroundColor: 'rgba(75, 192, 192, 0.6)',
-          yAxisID: 'y',
-        },
-        {
-          type: 'bar',
-          label: 'Calls with Deals',
-          data: topAgents.map(a => a.callsWithDeals),
-          backgroundColor: 'rgba(54, 162, 235, 0.6)',
-          yAxisID: 'y',
-        },
-        {
-          type: 'line',
-          label: 'Total Revenue',
-          data: topAgents.map(a => a.totalRevenue),
-          borderColor: 'rgba(255, 99, 132, 1)',
-          backgroundColor: 'rgba(255, 99, 132, 0.2)',
-          yAxisID: 'y1',
-          tension: 0.4,
-        },
-      ] as any,
-    };
-
-    // Trend chart
-    const recentTrend = data.trend.slice(-30);
-    this.trendChartData = {
-      labels: recentTrend.map(t => new Date(t.date).toLocaleDateString('ru-RU')),
-      datasets: [
-        {
-          label: 'Lead Conversion Rate',
-          data: recentTrend.map(t => t.leadConversionRate),
-          borderColor: 'rgba(75, 192, 192, 1)',
-          backgroundColor: 'rgba(75, 192, 192, 0.2)',
-          tension: 0.4,
-        },
-        {
-          label: 'Deal Conversion Rate',
-          data: recentTrend.map(t => t.dealConversionRate),
-          borderColor: 'rgba(54, 162, 235, 1)',
-          backgroundColor: 'rgba(54, 162, 235, 0.2)',
-          tension: 0.4,
-        },
-      ],
-    };
-
-    // Deal stages pie chart
-    this.dealStageChartData = {
-      labels: data.dealStages.map(s => s.status),
-      datasets: [
-        {
-          data: data.dealStages.map(s => s.count),
-          backgroundColor: [
-            'rgba(54, 162, 235, 0.8)',
-            'rgba(75, 192, 192, 0.8)',
-            'rgba(255, 206, 86, 0.8)',
-            'rgba(255, 99, 132, 0.8)',
-            'rgba(153, 102, 255, 0.8)',
-          ],
-        },
-      ],
-    };
-  }
-
-  formatCurrency(value: number): string {
-    return this.currencyService.formatAmount(value);
+  formatCurrency(value: number | null | undefined): string {
+    return this.currencyService.formatAmount(value ?? 0);
   }
 }
