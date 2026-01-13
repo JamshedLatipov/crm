@@ -34,7 +34,15 @@ interface Task {
   description?: string;
   status?: string;
   dueDate?: string;
-  assignedTo?: any;
+  assignedTo?: {
+    id?: number;
+    firstName?: string;
+    lastName?: string;
+    fullName?: string;
+    name?: string;
+    email?: string;
+  };
+  assignedToId?: number;
   taskTypeId?: number;
   taskType?: {
     id: number;
@@ -319,16 +327,28 @@ export class TaskListComponent implements OnInit, AfterViewInit {
 
   // Return the display name for the assigned user using centralized assignments when available
   getAssignedManagerName(task: Task): string {
+    // Сначала проверяем assignedTo из бэкенда (уже прикреплено в attachAssignments)
+    if (task.assignedTo) {
+      const user = task.assignedTo;
+      // Если есть fullName, используем его
+      if (user.fullName) return user.fullName;
+      // Если есть firstName и lastName
+      if (user.firstName || user.lastName) {
+        const first = user.firstName || '';
+        const last = user.lastName || '';
+        return `${first} ${last}`.trim();
+      }
+      // Если есть только name
+      if (user.name) return user.name;
+      // Если есть email
+      if (user.email) return user.email;
+    }
+
+    // Fallback к централизованному assignments map
     const map = this.currentAssignmentsMap();
     const assigned = map && map[task.id as any];
+    
     if (assigned && assigned.name) return assigned.name;
-
-    // Fallback to legacy assignedTo field structure
-    if (task.assignedTo) {
-      const first = task.assignedTo.firstName || task.assignedTo.name || '';
-      const last = task.assignedTo.lastName || '';
-      return `${first} ${last}`.trim();
-    }
 
     return '';
   }

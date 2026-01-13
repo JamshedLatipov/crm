@@ -1,5 +1,6 @@
 .filter-editor {
   margin-bottom: 0;
+  width: 100%;
 }
 
 .filter-fields {
@@ -7,20 +8,23 @@
   gap: 10px;
   align-items: flex-start;
   flex-wrap: nowrap;
+  width: 100%;
 }
 
 .field-select {
-  flex: 0 1 220px;
+  flex: 1 1 220px;
   min-width: 170px;
+  max-width: 280px;
 }
 
 .operator-select {
-  flex: 0 1 180px;
+  flex: 1 1 180px;
   min-width: 140px;
+  max-width: 220px;
 }
 
 .value-input {
-  flex: 1 1 auto;
+  flex: 2 1 auto;
   min-width: 180px;
 }
 
@@ -89,6 +93,7 @@ mat-icon[matPrefix] {
   .operator-select {
     flex: 1 1 calc(50% - 4px);
     min-width: 140px;
+    max-width: none;
   }
 
   .value-input {
@@ -107,6 +112,7 @@ mat-icon[matPrefix] {
   .value-input {
     flex: 1 1 100%;
     min-width: 100%;
+    max-width: none;
   }
 
   .delete-btn {

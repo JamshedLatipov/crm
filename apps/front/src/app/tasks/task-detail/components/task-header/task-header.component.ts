@@ -47,6 +47,28 @@ export class TaskHeaderComponent {
   readonly status = computed(() => this.task()?.status ?? 'open');
   readonly isDone = computed(() => this.status() === 'done');
   readonly due = computed(() => this.task()?.dueDate ?? null);
+  
+  // Вычисляемое свойство для имени исполнителя
+  readonly assignedUserName = computed(() => {
+    const task = this.task();
+    if (!task?.assignedTo) return '';
+    
+    const user = task.assignedTo;
+    // Если есть fullName, используем его
+    if (user.fullName) return user.fullName;
+    // Если есть firstName и lastName
+    if (user.firstName || user.lastName) {
+      const first = user.firstName || '';
+      const last = user.lastName || '';
+      return `${first} ${last}`.trim();
+    }
+    // Если есть только name
+    if (user.name) return user.name;
+    // Если есть email
+    if (user.email) return user.email;
+    
+    return '';
+  });
 
   constructor() {
     effect(() => {

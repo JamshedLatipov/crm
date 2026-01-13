@@ -37,9 +37,8 @@
         >
           <mat-icon>person_add</mat-icon>
           <span class="btn-text">
-            <ng-container *ngIf="task()?.assignedTo; else noAssigneeBtn">
-              {{ task()?.assignedTo.firstName }}
-              {{ task()?.assignedTo.lastName }}
+            <ng-container *ngIf="assignedUserName(); else noAssigneeBtn">
+              {{ assignedUserName() }}
             </ng-container>
             <ng-template #noAssigneeBtn>Назначить</ng-template>
           </span>

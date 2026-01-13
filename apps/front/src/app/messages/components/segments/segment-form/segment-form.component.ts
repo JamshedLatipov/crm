@@ -206,6 +206,12 @@ export class SegmentFormComponent implements OnInit {
     return this.isEditMode() ? 'Редактировать сегмент' : 'Создать сегмент';
   }
 
+  get subtitle(): string {
+    return this.isEditMode() 
+      ? 'Обновите параметры сегмента и условия фильтрации контактов' 
+      : 'Настройте условия для выборки контактов с поддержкой группировки и вложенных условий';
+  }
+
   get submitButtonText(): string {
     return this.isEditMode() ? 'Сохранить' : 'Создать';
   }

@@ -59,4 +59,24 @@ export class TaskBoardCardComponent {
     if (!this.task) return false;
     return !!(this.task.leadId || this.task.dealId || this.task.callLogId);
   }
+
+  getAssignedUserName(): string {
+    if (!this.task?.assignedTo) return '';
+    
+    const user = this.task.assignedTo;
+    // Если есть fullName, используем его
+    if (user.fullName) return user.fullName;
+    // Если есть firstName и lastName
+    if (user.firstName || user.lastName) {
+      const first = user.firstName || '';
+      const last = user.lastName || '';
+      return `${first} ${last}`.trim();
+    }
+    // Если есть только name
+    if (user.name) return user.name;
+    // Если есть email
+    if (user.email) return user.email;
+    
+    return '';
+  }
 }

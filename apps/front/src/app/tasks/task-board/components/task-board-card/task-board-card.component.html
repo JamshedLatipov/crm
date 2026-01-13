@@ -50,9 +50,9 @@
 
       <!-- Assignee -->
       @if (task?.assignedTo) {
-        <div class="assignee" [matTooltip]="task.assignedTo.name || task.assignedTo.email">
+        <div class="assignee" [matTooltip]="getAssignedUserName()">
           <mat-icon>person</mat-icon>
-          <span class="assignee-name">{{ task.assignedTo.name || task.assignedTo.email }}</span>
+          <span class="assignee-name">{{ getAssignedUserName() }}</span>
         </div>
       }
 

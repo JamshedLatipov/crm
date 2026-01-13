@@ -233,6 +233,7 @@
 
 .condition-wrapper {
   position: relative;
+  width: 100%;
 }
 
 .filter-item {
@@ -242,6 +243,12 @@
   border: 1px solid #e8e8e8;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: all 0.2s ease;
+  width: 100%;
+
+  app-segment-filter-editor {
+    display: block;
+    width: 100%;
+  }
 
   &:hover {
     border-color: #1976d2;
