@@ -23,6 +23,7 @@ import { TaskTypeService, TaskType } from '../../services/task-type.service';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { TaskTypeSelectComponent } from '../components/task-type-select.component';
+import { PageLayoutComponent } from '../../shared/page-layout/page-layout.component';
 
 @Component({
   selector: 'app-task-form',
@@ -42,8 +43,8 @@ import { TaskTypeSelectComponent } from '../components/task-type-select.componen
     MatAutocompleteModule,
     MatSlideToggleModule,
     UserSelectorComponent,
-    // Task type select component
-    TaskTypeSelectComponent
+    TaskTypeSelectComponent,
+    PageLayoutComponent
   ],
   templateUrl: './task-form.component.html',
   styleUrls: ['./task-form.component.scss']

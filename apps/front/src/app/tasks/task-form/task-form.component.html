@@ -1,13 +1,13 @@
-<div class="task-form-container">
-  <!-- Хедер -->
-  <div class="form-header">
-    <button mat-icon-button class="back-button" (click)="cancel()">
+<app-page-layout 
+  [title]="isEdit ? 'Редактировать задачу' : 'Новая задача'"
+  [subtitle]="isEdit ? 'Обновите информацию о задаче' : 'Заполните информацию о новой задаче'">
+  
+  <!-- Кнопка "Назад" в хедере -->
+  <div page-actions>
+    <button mat-stroked-button (click)="cancel()" class="back-button">
       <mat-icon>arrow_back</mat-icon>
+      Назад
     </button>
-    <div class="header-content">
-      <h1>{{ isEdit ? 'Редактировать задачу' : 'Новая задача' }}</h1>
-      <p class="subtitle">{{ isEdit ? 'Обновите информацию о задаче' : 'Заполните информацию о новой задаче' }}</p>
-    </div>
   </div>
 
   <!-- Загрузка -->
@@ -89,13 +89,31 @@
         <div class="form-section">
           <h3 class="section-title">Временные рамки</h3>
           
-          <!-- Тип задачи (вынесен в отдельный компонент) -->
-          <app-task-type-select
-            formControlName="taskTypeId"
-            [taskTypes]="taskTypes"
-            (selectionChange)="onTaskTypeChange($event)"
-            class="full-width">
-          </app-task-type-select>
+          <div class="form-row">
+            <!-- Тип задачи (вынесен в отдельный компонент) -->
+            <app-task-type-select
+              formControlName="taskTypeId"
+              [taskTypes]="taskTypes"
+              (selectionChange)="onTaskTypeChange($event)"
+              class="half-width">
+            </app-task-type-select>
+
+            <!-- Датапикер (только если тоггл выключен) -->
+            <mat-form-field 
+              appearance="outline" 
+              class="half-width"
+              *ngIf="!form.get('autoCalculateDueDate')?.value || !form.get('taskTypeId')?.value">
+              <mat-label>Срок выполнения</mat-label>
+              <input 
+                matInput 
+                [matDatepicker]="picker" 
+                formControlName="dueDate"
+                placeholder="Выберите дату" />
+              <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+              <mat-datepicker #picker></mat-datepicker>
+              <mat-icon matPrefix>event</mat-icon>
+            </mat-form-field>
+          </div>
 
           <!-- Тоггл автоматического расчета -->
           <div class="auto-calculate-toggle" 
@@ -124,28 +142,12 @@
               </div>
             </div>
           </div>
-          
-          <!-- Датапикер (только если тоггл выключен) -->
-          <mat-form-field 
-            appearance="outline" 
-            class="full-width"
-            *ngIf="!form.get('autoCalculateDueDate')?.value || !form.get('taskTypeId')?.value">
-            <mat-label>Срок выполнения</mat-label>
-            <input 
-              matInput 
-              [matDatepicker]="picker" 
-              formControlName="dueDate"
-              placeholder="Выберите дату" />
-            <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-            <mat-datepicker #picker></mat-datepicker>
-            <mat-icon matPrefix>event</mat-icon>
-          </mat-form-field>
         </div>
 
         <!-- Привязка к лиду или сделке -->
         <div class="form-section">
           <h3 class="section-title">Связь с лидом или сделкой</h3>
-          <p class="section-subtitle">Привяжите задачу к лиду или сделке (необязательно)</p>
+          <p class="section-subtitle">Привяжите задачу к лиду или сделке для отслеживания прогресса</p>
           
           <div class="form-row">
             <!-- Выбор лида -->
@@ -245,4 +247,4 @@
       </button>
     </div>
   </form>
-</div>
+</app-page-layout>
