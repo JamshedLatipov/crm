@@ -10,6 +10,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatInputModule } from '@angular/material/input';
+import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.component';
 import { environment } from '../../../../environments/environment';
 
 interface ContactSegment {
@@ -41,6 +42,7 @@ type ContactSource = 'csv' | 'segment' | 'all';
     MatFormFieldModule,
     MatSelectModule,
     MatInputModule,
+    PageLayoutComponent,
   ],
   templateUrl: './contact-source-selector.component.html',
   styleUrls: ['./contact-source-selector.component.scss'],
@@ -189,7 +191,7 @@ export class ContactSourceSelectorComponent {
     this.loading.set(true);
 
     this.http.post<UploadResult>(
-      `${this.apiUrl}/${this.campaignId()}/contacts/upload`,
+      `${this.apiUrl}/${this.campaignId()}/contacts`,
       formData
     ).subscribe({
       next: (result) => {
@@ -239,5 +241,36 @@ export class ContactSourceSelectorComponent {
 
   goToContacts(): void {
     this.router.navigate(['/contact-center/campaigns', this.campaignId(), 'contacts']);
+  }
+
+  downloadExampleCsv(): void {
+    // Создаем пример CSV контента
+    const csvContent = `phone,name,customData
++998901234567,Иван Иванов,"{""email"":""ivan@example.com"",""company"":""Tech Corp"",""position"":""Manager""}"
++998902345678,Мария Петрова,"{""email"":""maria@example.com"",""company"":""Digital Ltd"",""position"":""Director""}"
++998903456789,Алексей Сидоров,"{""email"":""alexey@example.com"",""company"":""Startup Inc"",""position"":""Developer""}"
++998904567890,Елена Козлова,"{""email"":""elena@example.com"",""company"":""Marketing Pro"",""position"":""Specialist""}"
++998905678901,Дмитрий Новиков,"{""email"":""dmitry@example.com"",""company"":""Sales Group"",""position"":""Sales Manager""}"`;
+
+    // Создаем Blob с UTF-8 BOM для корректного отображения кириллицы в Excel
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+    
+    // Создаем временную ссылку для скачивания
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'contacts-example.csv');
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Освобождаем память
+    URL.revokeObjectURL(url);
+    
+    this.snackBar.open('Пример CSV файла скачан', 'ОК', { duration: 2000 });
   }
 }

@@ -1,0 +1,6 @@
+phone,name,customData
++998901234567,Иван Иванов,"{""email"":""ivan@example.com"",""company"":""Tech Corp"",""position"":""Manager""}"
++998902345678,Мария Петрова,"{""email"":""maria@example.com"",""company"":""Digital Ltd"",""position"":""Director""}"
++998903456789,Алексей Сидоров,"{""email"":""alexey@example.com"",""company"":""Startup Inc"",""position"":""Developer""}"
++998904567890,Елена Козлова,"{""email"":""elena@example.com"",""company"":""Marketing Pro"",""position"":""Specialist""}"
++998905678901,Дмитрий Новиков,"{""email"":""dmitry@example.com"",""company"":""Sales Group"",""position"":""Sales Manager""}"

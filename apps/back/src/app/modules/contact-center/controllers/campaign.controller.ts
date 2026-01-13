@@ -12,7 +12,10 @@ import {
   ParseUUIDPipe,
   HttpCode,
   HttpStatus,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { CampaignService } from '../services/campaign.service';
 import { CreateCampaignDto } from '../dto/campaign/create-campaign.dto';
 import { UpdateCampaignDto } from '../dto/campaign/update-campaign.dto';
@@ -23,6 +26,15 @@ import {
   CurrentUser,
   CurrentUserPayload,
 } from '../../user/current-user.decorator';
+
+interface UploadedFileType {
+  fieldname: string;
+  originalname: string;
+  encoding: string;
+  mimetype: string;
+  buffer: Buffer;
+  size: number;
+}
 
 @Controller('contact-center/campaigns')
 @UseGuards(JwtAuthGuard)
@@ -82,11 +94,12 @@ export class CampaignController {
   }
 
   @Post(':id/contacts')
+  @UseInterceptors(FileInterceptor('file'))
   uploadContacts(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() uploadDto: UploadContactsDto
+    @UploadedFile() file: UploadedFileType
   ) {
-    return this.campaignService.uploadContacts(id, uploadDto);
+    return this.campaignService.uploadCsvFile(id, file);
   }
 
   @Post(':id/contacts/from-segment/:segmentId')

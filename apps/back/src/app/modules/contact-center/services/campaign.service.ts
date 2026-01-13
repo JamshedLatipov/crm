@@ -12,6 +12,15 @@ import { UploadContactsDto } from '../dto/campaign/upload-contacts.dto';
 import { ContactSegmentService } from '../../segments/services/contact-segment.service';
 import { Contact } from '../../contacts/contact.entity';
 
+interface UploadedFileType {
+  fieldname: string;
+  originalname: string;
+  encoding: string;
+  mimetype: string;
+  buffer: Buffer;
+  size: number;
+}
+
 @Injectable()
 export class CampaignService {
   constructor(
@@ -252,6 +261,125 @@ export class CampaignService {
     }
 
     return { added, skipped };
+  }
+
+  /**
+   * Загрузка контактов из CSV файла
+   */
+  async uploadCsvFile(
+    id: string,
+    file: UploadedFileType,
+  ): Promise<{ added: number; skipped: number }> {
+    const campaign = await this.findOne(id);
+
+    if (campaign.status === CampaignStatus.RUNNING) {
+      throw new BadRequestException(
+        'Cannot upload contacts while campaign is running',
+      );
+    }
+
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+
+    // Parse CSV content
+    const csvContent = file.buffer.toString('utf-8');
+    const lines = csvContent.split('\n').filter((line) => line.trim() !== '');
+
+    if (lines.length < 2) {
+      throw new BadRequestException('CSV file is empty or has no data rows');
+    }
+
+    // Skip header row
+    const dataLines = lines.slice(1);
+
+    let added = 0;
+    let skipped = 0;
+
+    for (const line of dataLines) {
+      const parts = this.parseCSVLine(line);
+
+      if (parts.length < 2) {
+        skipped++;
+        continue;
+      }
+
+      const phone = parts[0]?.trim();
+      const name = parts[1]?.trim();
+      const customDataStr = parts[2]?.trim();
+
+      if (!phone) {
+        skipped++;
+        continue;
+      }
+
+      // Check if contact already exists
+      const existing = await this.contactRepository.findOne({
+        where: {
+          campaignId: id,
+          phone,
+        },
+      });
+
+      if (existing) {
+        skipped++;
+        continue;
+      }
+
+      let customData: Record<string, any> | undefined;
+      if (customDataStr) {
+        try {
+          customData = JSON.parse(customDataStr);
+        } catch (err) {
+          // Invalid JSON, skip custom data
+          customData = undefined;
+        }
+      }
+
+      const contact = this.contactRepository.create({
+        phone,
+        name,
+        customData,
+        campaignId: id,
+      });
+
+      await this.contactRepository.save(contact);
+      added++;
+    }
+
+    return { added, skipped };
+  }
+
+  /**
+   * Parse CSV line handling quoted fields
+   */
+  private parseCSVLine(line: string): string[] {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          // Escaped quote
+          current += '"';
+          i++;
+        } else {
+          // Toggle quotes
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        result.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+
+    result.push(current);
+    return result;
   }
 
   /**

@@ -1,213 +1,324 @@
-<div class="contact-source-container">
-  <div class="header">
-    <button mat-icon-button (click)="back()">
+<app-page-layout
+  [title]="'Загрузка контактов'"
+  [subtitle]="'Выберите источник контактов для кампании'"
+>
+  <div page-actions>
+    <button mat-button (click)="back()">
       <mat-icon>arrow_back</mat-icon>
+      Назад
     </button>
-    <h1>Выбор источника контактов</h1>
   </div>
 
-  <mat-card>
-    <mat-card-header>
-      <mat-card-title>Выберите источник контактов для кампании</mat-card-title>
-    </mat-card-header>
-    <mat-card-content>
-      <!-- Source selection -->
-      <div class="source-selection">
-        <div 
-          class="source-option" 
-          [class.selected]="selectedSource() === 'csv'"
-          (click)="onSourceChange('csv')"
-        >
-          <mat-icon>upload_file</mat-icon>
-          <div class="option-content">
-            <h3>Загрузить CSV файл</h3>
-            <p>Импортируйте контакты из CSV файла</p>
-          </div>
-          <mat-icon class="check-icon">{{ selectedSource() === 'csv' ? 'radio_button_checked' : 'radio_button_unchecked' }}</mat-icon>
-        </div>
-
-        <div 
-          class="source-option" 
-          [class.selected]="selectedSource() === 'segment'"
-          (click)="onSourceChange('segment')"
-        >
-          <mat-icon>filter_list</mat-icon>
-          <div class="option-content">
-            <h3>Использовать сегмент</h3>
-            <p>Выберите существующий сегмент контактов</p>
-          </div>
-          <mat-icon class="check-icon">{{ selectedSource() === 'segment' ? 'radio_button_checked' : 'radio_button_unchecked' }}</mat-icon>
-        </div>
-
-        <div 
-          class="source-option" 
-          [class.selected]="selectedSource() === 'all'"
-          (click)="onSourceChange('all')"
-        >
-          <mat-icon>contacts</mat-icon>
-          <div class="option-content">
-            <h3>Все контакты системы</h3>
-            <p>Загрузить все контакты с телефонами</p>
-          </div>
-          <mat-icon class="check-icon">{{ selectedSource() === 'all' ? 'radio_button_checked' : 'radio_button_unchecked' }}</mat-icon>
-        </div>
+  <!-- Source selection cards -->
+  <div class="source-selection">
+    <div 
+      class="source-card" 
+      [class.selected]="selectedSource() === 'csv'"
+      (click)="onSourceChange('csv')"
+    >
+      <div class="source-icon">
+        <mat-icon>upload_file</mat-icon>
       </div>
+      <div class="source-content">
+        <h3>Загрузить CSV файл</h3>
+        <p>Импортируйте контакты из CSV файла</p>
+      </div>
+      <div class="source-check">
+        <mat-icon>{{ selectedSource() === 'csv' ? 'radio_button_checked' : 'radio_button_unchecked' }}</mat-icon>
+      </div>
+    </div>
 
-      <!-- CSV Upload -->
-      @if (selectedSource() === 'csv') {
-        <div class="source-details">
-          <h3>Загрузка CSV файла</h3>
-          <p class="hint">
-            <mat-icon>info</mat-icon>
-            Формат: phone, name, customData (JSON). Максимальный размер файла: 5MB
-          </p>
-          
-          @if (selectedFile()) {
-            <div class="file-selected">
-              <mat-icon>description</mat-icon>
-              <div class="file-info">
-                <span class="file-name">{{ selectedFile()!.name }}</span>
-                <span class="file-size">{{ (selectedFile()!.size / 1024).toFixed(2) }} KB</span>
-              </div>
-              <button mat-icon-button (click)="selectedFile.set(null)" [disabled]="loading()">
-                <mat-icon>close</mat-icon>
-              </button>
-            </div>
-          } @else {
-            <div class="file-selector">
-              <input
-                type="file"
-                #fileInput
-                accept=".csv"
-                (change)="onFileSelected($event)"
-                style="display: none"
-              />
-              <button mat-raised-button color="primary" (click)="fileInput.click()">
-                <mat-icon>attach_file</mat-icon>
-                Выбрать CSV файл
-              </button>
-            </div>
-          }
+    <div 
+      class="source-card" 
+      [class.selected]="selectedSource() === 'segment'"
+      (click)="onSourceChange('segment')"
+    >
+      <div class="source-icon">
+        <mat-icon>filter_list</mat-icon>
+      </div>
+      <div class="source-content">
+        <h3>Использовать сегмент</h3>
+        <p>Выберите существующий сегмент контактов</p>
+      </div>
+      <div class="source-check">
+        <mat-icon>{{ selectedSource() === 'segment' ? 'radio_button_checked' : 'radio_button_unchecked' }}</mat-icon>
+      </div>
+    </div>
+
+    <div 
+      class="source-card" 
+      [class.selected]="selectedSource() === 'all'"
+      (click)="onSourceChange('all')"
+    >
+      <div class="source-icon">
+        <mat-icon>contacts</mat-icon>
+      </div>
+      <div class="source-content">
+        <h3>Все контакты системы</h3>
+        <p>Загрузить все контакты с телефонами</p>
+      </div>
+      <div class="source-check">
+        <mat-icon>{{ selectedSource() === 'all' ? 'radio_button_checked' : 'radio_button_unchecked' }}</mat-icon>
+      </div>
+    </div>
+  </div>
+
+  <!-- CSV Upload -->
+  @if (selectedSource() === 'csv') {
+    <mat-card class="content-card">
+      <mat-card-header>
+        <mat-card-title>Загрузка CSV файла</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <p class="hint">
+          <mat-icon>info</mat-icon>
+          Формат: phone, name, customData (JSON). Максимальный размер файла: 5MB
+        </p>
+
+        <div class="example-download">
+          <button mat-stroked-button color="primary" (click)="downloadExampleCsv()">
+            <mat-icon>download</mat-icon>
+            Скачать пример CSV
+          </button>
+          <span class="example-hint">Заполните по образцу и загрузите обратно</span>
         </div>
-      }
+        
+        @if (selectedFile()) {
+          <div class="file-selected">
+            <mat-icon>description</mat-icon>
+            <div class="file-info">
+              <span class="file-name">{{ selectedFile()!.name }}</span>
+              <span class="file-size">{{ (selectedFile()!.size / 1024).toFixed(2) }} KB</span>
+            </div>
+            <button mat-icon-button (click)="selectedFile.set(null)" [disabled]="loading()">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+        } @else {
+          <div class="file-selector">
+            <input
+              type="file"
+              #fileInput
+              accept=".csv"
+              (change)="onFileSelected($event)"
+              style="display: none"
+            />
+            <button mat-raised-button color="primary" (click)="fileInput.click()">
+              <mat-icon>attach_file</mat-icon>
+              Выбрать CSV файл
+            </button>
+          </div>
+        }
+      </mat-card-content>
+      <mat-card-actions>
+        <button mat-button (click)="selectedSource.set('csv')">
+          Отмена
+        </button>
+        <button 
+          mat-raised-button 
+          color="primary"
+          [disabled]="!selectedFile() || loading()"
+          (click)="proceed()"
+        >
+          @if (loading()) {
+            <ng-container>
+              <mat-spinner diameter="20"></mat-spinner>
+              Загрузка...
+            </ng-container>
+          } @else {
+            <ng-container>
+              <mat-icon>upload</mat-icon>
+              Загрузить
+            </ng-container>
+          }
+        </button>
+      </mat-card-actions>
+    </mat-card>
+  }
 
-      <!-- Segment Selection -->
-      @if (selectedSource() === 'segment') {
-        <div class="source-details">
-          <h3>Выбор сегмента</h3>
-          
-          @if (loadingSegments()) {
-            <div class="loading-segments">
-              <mat-spinner diameter="32"></mat-spinner>
-              <p>Загрузка сегментов...</p>
+  <!-- Segment Selection -->
+  @if (selectedSource() === 'segment') {
+    <mat-card class="content-card">
+      <mat-card-header>
+        <mat-card-title>Выбор сегмента</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        @if (loadingSegments()) {
+          <div class="loading-state">
+            <mat-spinner diameter="32"></mat-spinner>
+            <p>Загрузка сегментов...</p>
+          </div>
+        } @else {
+          @if (segments().length === 0) {
+            <div class="empty-state">
+              <mat-icon>info</mat-icon>
+              <p>Нет доступных сегментов с контактами</p>
+              <button mat-raised-button color="primary" routerLink="/messages/segments/new">
+                <mat-icon>add</mat-icon>
+                Создать сегмент
+              </button>
             </div>
           } @else {
-            @if (segments().length === 0) {
-              <div class="no-segments">
-                <mat-icon>info</mat-icon>
-                <p>Нет доступных сегментов с контактами</p>
-                <button mat-button color="primary" routerLink="/messages/segments/new">
-                  Создать сегмент
-                </button>
-              </div>
-            } @else {
-              <mat-form-field class="segment-selector">
-                <mat-label>Выберите сегмент</mat-label>
-                <mat-select [value]="selectedSegmentId()" (selectionChange)="onSegmentChange($event.value)">
-                  @for (segment of segments(); track segment.id) {
-                    <mat-option [value]="segment.id">
-                      {{ segment.name }} ({{ segment.contactsCount }} контактов)
-                    </mat-option>
-                  }
-                </mat-select>
-                <mat-hint>Сегменты с активными контактами</mat-hint>
-              </mat-form-field>
-
-              @if (selectedSegmentId()) {
-                <div class="segment-info">
-                  <mat-icon>info</mat-icon>
-                  <p>
-                    Будет загружено контактов из сегмента: 
-                    <strong>{{ selectedSegmentContactsCount() }}</strong>
-                  </p>
+            <p class="hint">
+              <mat-icon>info</mat-icon>
+              Выберите сегмент для загрузки контактов в кампанию
+            </p>
+            
+            <div class="segments-grid">
+              @for (segment of segments(); track segment.id) {
+                <div 
+                  class="segment-card" 
+                  [class.selected]="selectedSegmentId() === segment.id"
+                  (click)="onSegmentChange(segment.id)"
+                >
+                  <div class="segment-header">
+                    <div class="segment-icon">
+                      <mat-icon>filter_list</mat-icon>
+                    </div>
+                    <div class="segment-check">
+                      <mat-icon>
+                        {{ selectedSegmentId() === segment.id ? 'check_circle' : 'radio_button_unchecked' }}
+                      </mat-icon>
+                    </div>
+                  </div>
+                  
+                  <div class="segment-body">
+                    <h4 class="segment-name">{{ segment.name }}</h4>
+                    
+                    @if (segment.description) {
+                      <p class="segment-description">{{ segment.description }}</p>
+                    }
+                    
+                    <div class="segment-stats">
+                      <div class="stat-item">
+                        <mat-icon>people</mat-icon>
+                        <span>{{ segment.contactsCount }} контактов</span>
+                      </div>
+                      
+                      <div class="stat-item">
+                        <mat-icon>{{ segment.isActive ? 'check_circle' : 'cancel' }}</mat-icon>
+                        <span>{{ segment.isActive ? 'Активен' : 'Неактивен' }}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               }
+            </div>
+
+            @if (selectedSegmentId()) {
+              <div class="info-box">
+                <mat-icon>info</mat-icon>
+                <p>
+                  Будет загружено контактов: 
+                  <strong>{{ selectedSegmentContactsCount() }}</strong>
+                </p>
+              </div>
             }
           }
-        </div>
+        }
+      </mat-card-content>
+      @if (segments().length > 0) {
+        <mat-card-actions>
+          <button mat-button (click)="selectedSource.set('segment')">
+            Отмена
+          </button>
+          <button 
+            mat-raised-button 
+            color="primary"
+            [disabled]="!selectedSegmentId() || loading()"
+            (click)="proceed()"
+          >
+            @if (loading()) {
+              <ng-container>
+                <mat-spinner diameter="20"></mat-spinner>
+                Загрузка...
+              </ng-container>
+            } @else {
+              <ng-container>
+                <mat-icon>upload</mat-icon>
+                Загрузить
+              </ng-container>
+            }
+          </button>
+        </mat-card-actions>
       }
+    </mat-card>
+  }
 
-      <!-- All Contacts -->
-      @if (selectedSource() === 'all') {
-        <div class="source-details">
-          <h3>Загрузка всех контактов</h3>
-          <div class="warning-box">
-            <mat-icon>warning</mat-icon>
+  <!-- All Contacts -->
+  @if (selectedSource() === 'all') {
+    <mat-card class="content-card">
+      <mat-card-header>
+        <mat-card-title>Загрузка всех контактов</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="warning-box">
+          <mat-icon>warning</mat-icon>
+          <div>
             <p>
               Будут загружены все контакты системы, у которых есть номер телефона.
               Контакты, уже добавленные в эту кампанию, будут пропущены.
             </p>
           </div>
         </div>
-      }
+      </mat-card-content>
+      <mat-card-actions>
+        <button mat-button (click)="selectedSource.set('all')">
+          Отмена
+        </button>
+        <button 
+          mat-raised-button 
+          color="primary"
+          [disabled]="loading()"
+          (click)="proceed()"
+        >
+          @if (loading()) {
+            <ng-container>
+              <mat-spinner diameter="20"></mat-spinner>
+              Загрузка...
+            </ng-container>
+          } @else {
+            <ng-container>
+              <mat-icon>upload</mat-icon>
+              Загрузить
+            </ng-container>
+          }
+        </button>
+      </mat-card-actions>
+    </mat-card>
+  }
 
-      <!-- Upload Result -->
-      @if (uploadResult()) {
-        <div class="result-section">
-          <h3>Результат загрузки</h3>
-          <div class="result-stats">
-            <div class="stat success">
-              <mat-icon>check_circle</mat-icon>
-              <div>
-                <span class="label">Добавлено</span>
-                <span class="value">{{ uploadResult()!.added }}</span>
-              </div>
-            </div>
-            <div class="stat warning">
-              <mat-icon>warning</mat-icon>
-              <div>
-                <span class="label">Пропущено</span>
-                <span class="value">{{ uploadResult()!.skipped }}</span>
-              </div>
-            </div>
+  <!-- Upload Result -->
+  @if (uploadResult()) {
+    <mat-card class="result-card success">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>check_circle</mat-icon>
+          Загрузка завершена
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="result-stats">
+          <div class="stat">
+            <div class="stat-value success">{{ uploadResult()!.added }}</div>
+            <div class="stat-label">Добавлено</div>
           </div>
-
-          <div class="result-actions">
-            <button mat-button (click)="back()">
-              <mat-icon>arrow_back</mat-icon>
-              К списку кампаний
-            </button>
-            <button mat-raised-button color="primary" (click)="goToContacts()">
-              <mat-icon>visibility</mat-icon>
-              Просмотреть контакты
-            </button>
+          <div class="stat">
+            <div class="stat-value warning">{{ uploadResult()!.skipped }}</div>
+            <div class="stat-label">Пропущено</div>
           </div>
         </div>
-      }
-    </mat-card-content>
-
-    <mat-card-actions>
-      <button mat-button (click)="back()">
-        Отмена
-      </button>
-      <button 
-        mat-raised-button 
-        color="primary"
-        [disabled]="!canProceed()"
-        (click)="proceed()"
-      >
-        @if (loading()) {
-          <ng-container>
-            <mat-spinner diameter="20"></mat-spinner>
-            Загрузка...
-          </ng-container>
-        } @else {
-          <ng-container>
-            <mat-icon>upload</mat-icon>
-            Загрузить контакты
-          </ng-container>
-        }
-      </button>
-    </mat-card-actions>
-  </mat-card>
-</div>
+      </mat-card-content>
+      <mat-card-actions>
+        <button mat-button (click)="back()">
+          <mat-icon>arrow_back</mat-icon>
+          К списку кампаний
+        </button>
+        <button mat-raised-button color="primary" (click)="goToContacts()">
+          <mat-icon>visibility</mat-icon>
+          Просмотреть контакты
+        </button>
+      </mat-card-actions>
+    </mat-card>
+  }
+</app-page-layout>
