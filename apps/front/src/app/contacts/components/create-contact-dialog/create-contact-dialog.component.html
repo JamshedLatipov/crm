@@ -1,11 +1,11 @@
 <div class="dialog-header">
   <div class="header-content">
     <div class="header-icon">
-      <mat-icon>person_add</mat-icon>
+      <mat-icon>{{ isEditMode ? 'edit' : 'person_add' }}</mat-icon>
     </div>
     <div class="header-text">
-      <h2>Создать контакт</h2>
-      <p class="header-subtitle">Добавьте новый контакт в вашу систему</p>
+      <h2>{{ dialogTitle }}</h2>
+      <p class="header-subtitle">{{ isEditMode ? 'Редактируйте информацию о контакте' : 'Добавьте новый контакт в вашу систему' }}</p>
     </div>
   </div>
   <button mat-icon-button (click)="cancel()" class="close-button">
@@ -275,7 +275,7 @@
   <button mat-stroked-button (click)="cancel()" class="cancel-button">Отмена</button>
   <button mat-raised-button color="primary" (click)="save()" [disabled]="form.invalid || saving">
     <mat-spinner diameter="20" *ngIf="saving" class="button-spinner"></mat-spinner>
-    <mat-icon *ngIf="!saving">add</mat-icon>
-    <span>{{ saving ? 'Создание...' : 'Создать контакт' }}</span>
+    <mat-icon *ngIf="!saving">{{ isEditMode ? 'save' : 'add' }}</mat-icon>
+    <span>{{ saving ? (isEditMode ? 'Сохранение...' : 'Создание...') : (isEditMode ? 'Сохранить' : 'Создать контакт') }}</span>
   </button>
 </mat-dialog-actions>

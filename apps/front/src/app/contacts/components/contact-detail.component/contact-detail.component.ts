@@ -388,8 +388,8 @@ export class ContactDetailComponent implements OnInit {
   onEdit(): void {
     if (!this.contact) return;
     
-    import('../edit-contact-dialog.component').then((m) => {
-      const dialogRef = this.dialog.open(m.EditContactDialogComponent, {
+    import('../create-contact-dialog/create-contact-dialog.component').then((m) => {
+      const dialogRef = this.dialog.open(m.CreateContactDialogComponent, {
         width: '700px',
         maxWidth: '95vw',
         maxHeight: '90vh',
@@ -400,6 +400,16 @@ export class ContactDetailComponent implements OnInit {
         if (updatedContact) {
           this.contact = updatedContact;
           this.showSuccess('Контакт успешно обновлен');
+          // Перезагружаем контакт для получения всех обновленных данных
+          const contactId = this.contact?.id;
+          if (contactId) {
+            this.contactsService.getContactById(contactId).subscribe({
+              next: (refreshed) => {
+                this.contact = refreshed;
+              },
+              error: (err) => console.error('Error reloading contact:', err)
+            });
+          }
         }
       });
     });

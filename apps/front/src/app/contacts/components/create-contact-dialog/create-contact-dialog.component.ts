@@ -1,7 +1,7 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, Inject, Optional } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -15,7 +15,7 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
 
 import { ContactsService } from '../../contacts.service';
 import { CompanySelectorComponent } from '../../../shared/components/company-selector/company-selector.component';
-import { CreateContactDto } from '../../contact.interfaces';
+import { CreateContactDto, Contact } from '../../contact.interfaces';
 import { CompaniesService } from '../../../services/companies.service';
 import { Company } from '../../../pipeline/dtos';
 import { CustomFieldsService } from '../../../services/custom-fields.service';
@@ -44,8 +44,16 @@ export class CreateContactDialogComponent implements OnInit {
   
   customFieldDefinitions = signal<CustomFieldDefinition[]>([]);
   customFieldValues: Record<string, any> = {};
+  
+  // Флаг для определения режима работы
+  isEditMode = false;
+  dialogTitle = 'Создать контакт';
 
-  constructor() {
+  constructor(@Optional() @Inject(MAT_DIALOG_DATA) public data?: { contact?: Contact }) {
+    // Определяем режим работы
+    this.isEditMode = !!(data?.contact);
+    this.dialogTitle = this.isEditMode ? 'Редактировать контакт' : 'Создать контакт';
+    
     this.form = this.fb.group({
       name: ['', [Validators.required]],
       type: [null],
@@ -93,6 +101,63 @@ export class CreateContactDialogComponent implements OnInit {
   ngOnInit(): void {
     this.loadCustomFields();
     this.setupFullNameAutofill();
+    
+    // Если режим редактирования, загружаем данные контакта
+    if (this.isEditMode && this.data?.contact) {
+      this.populateForm(this.data.contact);
+    }
+  }
+
+  populateForm(contact: Contact): void {
+    // Загружаем основные данные
+    this.form.patchValue({
+      name: contact.name || '',
+      type: contact.type || null,
+      firstName: contact.firstName || '',
+      lastName: contact.lastName || '',
+      middleName: contact.middleName || '',
+      email: contact.email || '',
+      phone: contact.phone || '',
+      mobilePhone: contact.mobilePhone || '',
+      workPhone: contact.workPhone || '',
+      website: contact.website || '',
+      companyName: contact.companyName || '',
+      companyId: contact.companyId || null,
+      position: contact.position || '',
+      notes: contact.notes || '',
+      source: contact.source || null,
+      assignedTo: contact.assignedTo || null,
+    });
+
+    // Загружаем адрес
+    if (contact.address) {
+      this.form.get('address')?.patchValue({
+        country: contact.address.country || '',
+        region: contact.address.region || '',
+        city: contact.address.city || '',
+        street: contact.address.street || '',
+        building: contact.address.building || '',
+        apartment: contact.address.apartment || '',
+        postalCode: contact.address.postalCode || '',
+      });
+    }
+
+    // Загружаем социальные сети
+    if (contact.socialMedia) {
+      this.form.get('socialMedia')?.patchValue({
+        telegram: contact.socialMedia.telegram || '',
+        whatsapp: contact.socialMedia.whatsapp || '',
+        linkedin: contact.socialMedia.linkedin || '',
+        facebook: contact.socialMedia.facebook || '',
+        instagram: contact.socialMedia.instagram || '',
+        vk: contact.socialMedia.vk || '',
+      });
+    }
+
+    // Загружаем кастомные поля
+    if (contact.customFields) {
+      this.customFieldValues = { ...contact.customFields };
+    }
   }
 
   setupFullNameAutofill(): void {
@@ -202,13 +267,18 @@ export class CreateContactDialogComponent implements OnInit {
       customFields: Object.keys(this.customFieldValues).length > 0 ? this.customFieldValues : undefined,
     };
 
-    this.contactsService.createContact(dto).subscribe({
-      next: (created) => {
+    // Выбираем метод в зависимости от режима
+    const operation$ = this.isEditMode && this.data?.contact?.id
+      ? this.contactsService.updateContact(this.data.contact.id, dto)
+      : this.contactsService.createContact(dto);
+
+    operation$.subscribe({
+      next: (result) => {
         this.saving = false;
-        this.dialogRef.close(created);
+        this.dialogRef.close(result);
       },
       error: (err) => {
-        console.error('Error creating contact', err);
+        console.error(`Error ${this.isEditMode ? 'updating' : 'creating'} contact`, err);
         this.saving = false;
       },
     });

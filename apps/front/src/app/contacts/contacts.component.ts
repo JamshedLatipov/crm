@@ -433,6 +433,27 @@ export class ContactsComponent implements OnInit {
     });
   }
 
+  openEditDialog(contact: Contact): void {
+    import(
+      './components/create-contact-dialog/create-contact-dialog.component'
+    ).then((m) => {
+      const dialogRef = this.dialog.open(m.CreateContactDialogComponent, {
+        width: '700px',
+        maxWidth: '95vw',
+        maxHeight: '90vh',
+        panelClass: 'modern-dialog',
+        data: { contact }
+      });
+      
+      dialogRef.afterClosed().subscribe((updated: Contact | null) => {
+        if (updated) {
+          this.snackBar.open('Контакт обновлен', 'Закрыть', { duration: 2000 });
+          this.loadData();
+        }
+      });
+    });
+  }
+
   viewContact(contact: Contact): void {
     this.snackBar.open(
       `Просмотр контакта "${contact.name}" - в разработке`,
