@@ -73,6 +73,11 @@ export class SidebarComponent {
         { icon: 'call', label: 'Активные звонки', route: '/contact-center/calls' },
         { icon: 'dialpad', label: 'Голосовое меню (IVR)', route: '/contact-center/ivr' },
         {
+          icon: 'campaign',
+          label: 'Исходящие кампании',
+          route: '/contact-center/campaigns',
+        },
+        {
           icon: 'description',
           label: 'Скрипты разговоров',
           route: '/contact-center/scripts',

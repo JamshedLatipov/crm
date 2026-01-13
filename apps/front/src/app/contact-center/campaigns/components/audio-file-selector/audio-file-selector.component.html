@@ -1,0 +1,98 @@
+<div class="audio-file-selector">
+  <h2 mat-dialog-title>Выбор аудио файла</h2>
+
+  <mat-dialog-content>
+    <!-- Upload Area -->
+    <div 
+      class="upload-area"
+      [class.drag-over]="dragOver()"
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave($event)"
+      (drop)="onDrop($event)"
+    >
+      <mat-icon>cloud_upload</mat-icon>
+      <p>Перетащите файл сюда или</p>
+      <input
+        type="file"
+        #fileInput
+        accept=".wav,.mp3,audio/wav,audio/mpeg"
+        (change)="onFileSelected($event)"
+        style="display: none"
+      />
+      <button mat-raised-button color="primary" (click)="fileInput.click()" [disabled]="uploading()">
+        <mat-icon>folder_open</mat-icon>
+        Выбрать файл
+      </button>
+      <p class="hint">Поддерживаются WAV и MP3 (макс. 8MB)</p>
+    </div>
+
+    <!-- Upload Progress -->
+    @if (uploading()) {
+      <div class="upload-progress">
+        <p>Загрузка файла... {{ uploadProgress() }}%</p>
+        <mat-progress-bar mode="determinate" [value]="uploadProgress()"></mat-progress-bar>
+      </div>
+    }
+
+    <!-- File List -->
+    @if (loading()) {
+      <div class="loading-container">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Загрузка файлов...</p>
+      </div>
+    } @else {
+      <div class="file-list">
+        <h3>Доступные файлы</h3>
+        
+        @if (files().length === 0) {
+          <div class="no-files">
+            <mat-icon>folder_open</mat-icon>
+            <p>Нет загруженных файлов</p>
+          </div>
+        } @else {
+          <mat-selection-list [multiple]="false">
+            @for (file of files(); track file.id) {
+              <mat-list-option
+                [value]="file"
+                [selected]="selectedFile()?.id === file.id"
+                (click)="selectFile(file)"
+              >
+                <div class="file-item">
+                  <div class="file-info">
+                    <mat-icon matListItemIcon>audiotrack</mat-icon>
+                    <div class="file-details">
+                      <span class="file-name">{{ file.name }}</span>
+                      <span class="file-meta">
+                        {{ formatFileSize(file.size) }} · {{ formatDate(file.createdAt) }}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    mat-icon-button
+                    color="warn"
+                    (click)="deleteFile(file, $event)"
+                    matTooltip="Удалить файл"
+                  >
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+              </mat-list-option>
+            }
+          </mat-selection-list>
+        }
+      </div>
+    }
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="cancel()">Отмена</button>
+    <button
+      mat-raised-button
+      color="primary"
+      (click)="confirm()"
+      [disabled]="!selectedFile()"
+    >
+      Выбрать
+    </button>
+  </mat-dialog-actions>
+</div>

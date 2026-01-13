@@ -1,0 +1,119 @@
+.campaign-form-container {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 500;
+    }
+  }
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  mat-card {
+    mat-card-header {
+      margin-bottom: 16px;
+    }
+
+    mat-card-content {
+      padding-top: 16px;
+    }
+  }
+
+  .form-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+
+    mat-form-field {
+      flex: 1;
+
+      &.full-width {
+        width: 100%;
+      }
+    }
+
+    &.audio-selector-row {
+      align-items: center;
+      padding: 16px;
+      background-color: rgba(0, 0, 0, 0.02);
+      border-radius: 8px;
+      border: 1px solid rgba(0, 0, 0, 0.12);
+
+      .audio-file-info {
+        flex: 1;
+
+        .selected-file {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          color: rgba(0, 0, 0, 0.87);
+          font-size: 14px;
+
+          mat-icon {
+            color: var(--primary-color, #1976d2);
+          }
+        }
+
+        .no-file {
+          color: rgba(0, 0, 0, 0.6);
+          font-size: 14px;
+          font-style: italic;
+        }
+      }
+
+      button {
+        flex-shrink: 0;
+      }
+    }
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+    }
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+    margin-top: 24px;
+
+    button {
+      min-width: 120px;
+    }
+  }
+
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px;
+    gap: 16px;
+
+    p {
+      margin: 0;
+      color: rgba(0, 0, 0, 0.6);
+    }
+  }
+}
+
+::ng-deep {
+  .queue-description {
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.6);
+    font-style: italic;
+  }
+}

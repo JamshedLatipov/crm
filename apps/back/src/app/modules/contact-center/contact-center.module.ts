@@ -14,18 +14,44 @@ import { AgentStatus } from './entities/agent-status.entity';
 import { AgentStatusHistory } from './entities/agent-status-history.entity';
 import { Contact } from '../contacts/contact.entity';
 import { AmiModule } from '../ami/ami.module';
+import { OutboundCampaign } from './entities/outbound-campaign.entity';
+import { OutboundCampaignContact } from './entities/outbound-campaign-contact.entity';
+import { OutboundCampaignCall } from './entities/outbound-campaign-call.entity';
+import { OutboundCampaignSchedule } from './entities/outbound-campaign-schedule.entity';
+import { CampaignController } from './controllers/campaign.controller';
+import { CampaignService } from './services/campaign.service';
+import { CampaignDialerService } from './services/campaign-dialer.service';
+import { UserModule } from '../user/user.module';
+import { AriModule } from '../ari/ari.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Queue, QueueMember, Cdr, QueueLog, User, AgentStatus, AgentStatusHistory, Contact]),
+    TypeOrmModule.forFeature([
+      Queue,
+      QueueMember,
+      Cdr,
+      QueueLog,
+      User,
+      AgentStatus,
+      AgentStatusHistory,
+      Contact,
+      OutboundCampaign,
+      OutboundCampaignContact,
+      OutboundCampaignCall,
+      OutboundCampaignSchedule,
+    ]),
     AmiModule,
+    AriModule,
+    UserModule,
   ],
-  controllers: [ContactCenterController],
+  controllers: [ContactCenterController, CampaignController],
   providers: [
     ContactCenterGateway,
     ContactCenterService,
     EndpointSyncService,
     NameResolverService,
+    CampaignService,
+    CampaignDialerService,
     // Provide tokens for circular dependency resolution
     {
       provide: 'CONTACT_CENTER_GATEWAY',
@@ -36,6 +62,6 @@ import { AmiModule } from '../ami/ami.module';
       useExisting: forwardRef(() => ContactCenterService),
     },
   ],
-  exports: [ContactCenterService, NameResolverService],
+  exports: [ContactCenterService, NameResolverService, CampaignService],
 })
 export class ContactCenterModule {}

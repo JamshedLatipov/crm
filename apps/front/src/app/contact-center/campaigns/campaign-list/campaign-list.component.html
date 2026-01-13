@@ -1,0 +1,125 @@
+<div class="campaign-list-container">
+  <div class="header">
+    <h1>Исходящие кампании</h1>
+    <button mat-raised-button color="primary" (click)="createCampaign()">
+      <mat-icon>add</mat-icon>
+      Создать кампанию
+    </button>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-container">
+      <mat-spinner></mat-spinner>
+      <p>Загрузка кампаний...</p>
+    </div>
+  }
+
+  @if (!loading() && !error()) {
+    <mat-card>
+      <crm-table
+        [columns]="columns"
+        [data]="campaigns()"
+        [pageSize]="20"
+        [showPaginator]="true"
+      >
+        <ng-template crmColumnTemplate="typeTemplate" let-row>
+          <span class="type-badge">{{ getTypeLabel(row.type) }}</span>
+        </ng-template>
+
+        <ng-template crmColumnTemplate="statusTemplate" let-row>
+          <mat-chip [color]="getStatusColor(row.status)">
+            {{ getStatusLabel(row.status) }}
+          </mat-chip>
+        </ng-template>
+
+        <ng-template crmColumnTemplate="queueTemplate" let-row>
+          @if (row.queue) {
+            <span>{{ row.queue.name }}</span>
+          } @else {
+            <span class="text-muted">—</span>
+          }
+        </ng-template>
+
+        <ng-template crmColumnTemplate="creatorTemplate" let-row>
+          @if (row.creator) {
+            <span>{{ row.creator.name }}</span>
+          } @else {
+            <span class="text-muted">—</span>
+          }
+        </ng-template>
+
+        <ng-template crmColumnTemplate="dateTemplate" let-row>
+          {{ formatDate(row.createdAt) }}
+        </ng-template>
+
+        <ng-template crmColumnTemplate="actionsTemplate" let-row>
+          <button mat-icon-button [matMenuTriggerFor]="menu">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #menu="matMenu">
+            <button mat-menu-item (click)="uploadContacts(row)">
+              <mat-icon>upload</mat-icon>
+              <span>Загрузить контакты</span>
+            </button>
+            <button mat-menu-item (click)="viewStatistics(row)">
+              <mat-icon>bar_chart</mat-icon>
+              <span>Статистика</span>
+            </button>
+            <button mat-menu-item (click)="editCampaign(row)" [disabled]="row.status === CampaignStatus.RUNNING">
+              <mat-icon>edit</mat-icon>
+              <span>Редактировать</span>
+            </button>
+            @if (row.status === CampaignStatus.DRAFT || row.status === CampaignStatus.SCHEDULED) {
+              <button mat-menu-item (click)="startCampaign(row)">
+                <mat-icon>play_arrow</mat-icon>
+                <span>Запустить</span>
+              </button>
+            }
+            @if (row.status === CampaignStatus.RUNNING) {
+              <button mat-menu-item (click)="pauseCampaign(row)">
+                <mat-icon>pause</mat-icon>
+                <span>Приостановить</span>
+              </button>
+            }
+            @if (row.status === CampaignStatus.PAUSED) {
+              <button mat-menu-item (click)="resumeCampaign(row)">
+                <mat-icon>play_arrow</mat-icon>
+                <span>Возобновить</span>
+              </button>
+            }
+            @if (row.status === CampaignStatus.RUNNING || row.status === CampaignStatus.PAUSED) {
+              <button mat-menu-item (click)="stopCampaign(row)">
+                <mat-icon>stop</mat-icon>
+                <span>Остановить</span>
+              </button>
+            }
+            <button mat-menu-item (click)="deleteCampaign(row)" [disabled]="row.status === CampaignStatus.RUNNING">
+              <mat-icon color="warn">delete</mat-icon>
+              <span>Удалить</span>
+            </button>
+          </mat-menu>
+        </ng-template>
+      </crm-table>
+
+      @if (campaigns().length === 0) {
+        <div class="no-data">
+          <mat-icon>campaign</mat-icon>
+          <p>Нет кампаний</p>
+          <button mat-raised-button color="primary" (click)="createCampaign()">
+            Создать первую кампанию
+          </button>
+        </div>
+      }
+    </mat-card>
+  }
+
+  @if (error()) {
+    <div class="error-container">
+      <mat-icon color="warn">error</mat-icon>
+      <p>{{ error() }}</p>
+      <button mat-raised-button (click)="loadCampaigns()">
+        Попробовать снова
+      </button>
+    </div>
+  }
+</div>

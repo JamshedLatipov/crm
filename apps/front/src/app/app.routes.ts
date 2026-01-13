@@ -73,6 +73,10 @@ export const appRoutes: Route[] = [
             {
                 path: 'analytics',
                 loadChildren: () => import('./contact-center/analytics/analytics.routes').then(m => m.analyticsRoutes)
+            },
+            {
+                path: 'campaigns',
+                loadChildren: () => import('./contact-center/campaigns/campaigns.routes').then(m => m.campaignsRoutes)
             }
         ]
     },

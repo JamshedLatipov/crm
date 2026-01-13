@@ -1,0 +1,234 @@
+.contacts-upload-container {
+  padding: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 500;
+    }
+  }
+
+  mat-card {
+    mat-card-header {
+      margin-bottom: 24px;
+    }
+
+    mat-card-content {
+      padding-top: 16px;
+    }
+
+    mat-card-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 16px;
+      padding: 16px;
+    }
+  }
+
+  .template-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    background-color: rgba(33, 150, 243, 0.1);
+    border-radius: 8px;
+    margin-bottom: 24px;
+
+    p {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      color: rgba(0, 0, 0, 0.87);
+
+      mat-icon {
+        color: #2196f3;
+      }
+    }
+  }
+
+  .upload-area {
+    min-height: 200px;
+    border: 2px dashed rgba(0, 0, 0, 0.12);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    transition: all 0.3s ease;
+    background-color: rgba(0, 0, 0, 0.02);
+
+    &.drag-over {
+      border-color: var(--primary-color, #1976d2);
+      background-color: rgba(25, 118, 210, 0.05);
+    }
+
+    .file-selected {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      width: 100%;
+
+      mat-icon {
+        font-size: 48px;
+        width: 48px;
+        height: 48px;
+        color: var(--primary-color, #1976d2);
+      }
+
+      .file-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+
+        .file-name {
+          font-size: 16px;
+          font-weight: 500;
+          color: rgba(0, 0, 0, 0.87);
+        }
+
+        .file-size {
+          font-size: 14px;
+          color: rgba(0, 0, 0, 0.6);
+        }
+      }
+    }
+
+    .upload-prompt {
+      text-align: center;
+
+      mat-icon {
+        font-size: 64px;
+        width: 64px;
+        height: 64px;
+        color: rgba(0, 0, 0, 0.38);
+        margin-bottom: 16px;
+      }
+
+      p {
+        margin: 0 0 16px 0;
+        color: rgba(0, 0, 0, 0.6);
+      }
+    }
+  }
+
+  .progress-section {
+    margin-top: 24px;
+
+    p {
+      margin: 8px 0 0 0;
+      text-align: center;
+      color: rgba(0, 0, 0, 0.6);
+      font-size: 14px;
+    }
+  }
+
+  .result-section {
+    margin-top: 24px;
+    padding: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 8px;
+    background-color: rgba(0, 0, 0, 0.02);
+
+    h3 {
+      margin: 0 0 16px 0;
+      font-size: 18px;
+      font-weight: 500;
+    }
+
+    .result-stats {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+
+      .stat {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px;
+        border-radius: 8px;
+        background-color: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+        mat-icon {
+          font-size: 32px;
+          width: 32px;
+          height: 32px;
+        }
+
+        &.success mat-icon {
+          color: #4caf50;
+        }
+
+        &.warning mat-icon {
+          color: #ff9800;
+        }
+
+        div {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+
+          .label {
+            font-size: 12px;
+            color: rgba(0, 0, 0, 0.6);
+            text-transform: uppercase;
+          }
+
+          .value {
+            font-size: 24px;
+            font-weight: 500;
+            color: rgba(0, 0, 0, 0.87);
+          }
+        }
+      }
+    }
+
+    .errors-section {
+      padding: 16px;
+      background-color: rgba(244, 67, 54, 0.1);
+      border-radius: 8px;
+      border-left: 4px solid #f44336;
+
+      h4 {
+        margin: 0 0 8px 0;
+        color: #f44336;
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      ul {
+        margin: 0;
+        padding-left: 20px;
+
+        li {
+          color: rgba(0, 0, 0, 0.87);
+          font-size: 14px;
+          margin-bottom: 4px;
+        }
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    .template-section {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .result-stats {
+      flex-direction: column;
+    }
+  }
+}
