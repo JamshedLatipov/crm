@@ -1,0 +1,115 @@
+<div class="filter-group" [class.nested]="depth() > 0">
+  <!-- Group Header -->
+  <div class="group-header">
+    <div class="group-info">
+      <mat-icon class="group-icon">{{
+        depth() === 0 ? 'filter_list' : 'folder'
+      }}</mat-icon>
+      <span class="group-label">{{
+        depth() === 0 ? 'Корневая группа' : 'Вложенная группа'
+      }}</span>
+    </div>
+
+    <div class="group-actions">
+      <button
+        mat-stroked-button
+        color="primary"
+        type="button"
+        (click)="addFilter()"
+        class="add-filter-btn"
+      >
+        <mat-icon class="plus-icon">add</mat-icon>
+        Условие
+      </button>
+
+      <button
+        mat-stroked-button
+        type="button"
+        (click)="addGroup()"
+        class="add-group-btn"
+      >
+        <mat-icon class="plus-icon">add</mat-icon>
+        Группу
+      </button>
+
+      @if (depth() > 0) {
+      <button
+        type="button"
+        mat-icon-button
+        color="warn"
+        (click)="deleteGroup.emit()"
+        class="delete-group-btn"
+      >
+        <mat-icon>delete</mat-icon>
+      </button>
+      }
+    </div>
+  </div>
+
+  <!-- Conditions List -->
+  <div class="conditions-list">
+    @if (group().conditions.length === 0) {
+    <div class="no-conditions">
+      <mat-icon>info</mat-icon>
+      <p>Нет условий. Добавьте условие или группу.</p>
+    </div>
+    } 
+    
+    @for (filterCondition of group().conditions; track $index; let i = $index; let first = $first) {
+    <div class="condition-container">
+      <!-- Логический оператор (не для первого элемента) -->
+      @if (!first) {
+      <div class="logic-operator-selector">
+        <mat-chip-listbox class="logic-chips">
+          <mat-chip-option
+            [selected]="filterCondition.logicOperator === 'AND'"
+            (click)="toggleConditionLogic(i)"
+            [highlighted]="filterCondition.logicOperator === 'AND'"
+          >
+            AND
+          </mat-chip-option>
+          <mat-chip-option
+            [selected]="filterCondition.logicOperator === 'OR'"
+            (click)="toggleConditionLogic(i)"
+            [highlighted]="filterCondition.logicOperator === 'OR'"
+          >
+            OR
+          </mat-chip-option>
+        </mat-chip-listbox>
+        <span class="logic-description">
+          {{
+            filterCondition.logicOperator === 'AND'
+              ? 'И выполняется'
+              : 'ИЛИ выполняется'
+          }}
+        </span>
+      </div>
+      }
+
+      <!-- Условие или группа -->
+      <div class="condition-wrapper">
+        @if (isFilterGroup(filterCondition.item)) {
+        <!-- Nested Group -->
+        <app-segment-filter-group
+          [group]="filterCondition.item"
+          [depth]="depth() + 1"
+          (groupChange)="updateConditionItem(i, $event)"
+          (deleteGroup)="deleteCondition(i)"
+        >
+        </app-segment-filter-group>
+        } @else {
+        <!-- Filter -->
+        <div class="filter-item">
+          <app-segment-filter-editor
+            [filter]="filterCondition.item"
+            (filterChange)="updateConditionItem(i, $event)"
+            (delete)="deleteCondition(i)"
+          >
+          </app-segment-filter-editor>
+        </div>
+        }
+      </div>
+    </div>
+    }
+  </div>
+</div>
