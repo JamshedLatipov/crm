@@ -474,6 +474,15 @@ export class ContactSegmentService {
     // Определяем, является ли поле кастомным и JSONB
     const isCustomField = filter.field.startsWith('customFields.');
     const isJsonbField = isCustomField;
+    
+    // Определяем поля типа date/timestamp
+    const dateFields = ['createdAt', 'updatedAt', 'lastContact', 'lastActivityDate'];
+    const isDateField = dateFields.includes(filter.field);
+    
+    // Для полей типа date запрещаем текстовые операторы
+    if (isDateField && ['contains', 'not_contains', 'starts_with', 'ends_with'].includes(filter.operator)) {
+      throw new Error(`Operator ${filter.operator} is not supported for date field ${filter.field}. Use equals, greater, less, or between instead.`);
+    }
 
     switch (filter.operator) {
       case 'equals':

@@ -7,6 +7,8 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
 import { SegmentFilter } from '../../../../shared/models/segment.models';
 import { CustomFieldsService } from '../../../../services/custom-fields.service';
 import { CustomFieldDefinition, FieldType } from '../../../../models/custom-field.model';
@@ -37,6 +39,8 @@ interface FilterOperator {
     MatButtonModule,
     MatIconModule,
     MatTooltipModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
   ],
   template: `
     <div class="filter-editor">
@@ -81,23 +85,20 @@ interface FilterOperator {
         @if (selectedOperator()?.requiresValue) {
           <mat-form-field appearance="outline" class="value-input">
             <mat-label>Значение</mat-label>
-            <mat-icon matPrefix>
               @if (selectedFieldType() === 'number') {
-                tag
-              } @else if (selectedFieldType() === 'date') {
-                calendar_today
+               <mat-icon matPrefix>tag</mat-icon>
               } @else if (selectedFieldType() === 'boolean') {
-                check_circle
+                <mat-icon matPrefix>check_circle</mat-icon>
               } @else if (selectedCustomFieldDef()?.fieldType === 'select') {
-                list
-              } @else {
-                text_fields
+                <mat-icon matPrefix>list</mat-icon>
+              } @else if (selectedFieldType() === 'date') {}
+              @else {
+                <mat-icon matPrefix>text_fields</mat-icon>
               }
-            </mat-icon>
             @if (selectedFieldType() === 'number') {
               <input matInput type="number" [value]="filter().value" (input)="onValueChange($event)" placeholder="Введите число">
             } @else if (selectedFieldType() === 'date') {
-              <input matInput type="date" [value]="filter().value" (input)="onValueChange($event)">
+              <input matInput [matDatepicker]="datePicker" [value]="filter().value" (dateChange)="onDateChange($event)" placeholder="Выберите дату">
             } @else if (selectedFieldType() === 'boolean') {
               <mat-select [value]="filter().value" (selectionChange)="onBooleanChange($event.value)">
                 <mat-option [value]="true">Да</mat-option>
@@ -112,6 +113,12 @@ interface FilterOperator {
             } @else {
               <input matInput type="text" [value]="filter().value" (input)="onValueChange($event)" placeholder="Введите значение">
             }
+            
+            @if (selectedFieldType() === 'date') {
+              <mat-datepicker-toggle matSuffix [for]="datePicker"></mat-datepicker-toggle>
+            }
+            
+            <mat-datepicker #datePicker></mat-datepicker>
           </mat-form-field>
         }
 
@@ -389,9 +396,30 @@ export class SegmentFilterEditorComponent implements OnInit {
   });
 
   onFieldChange(field: string): void {
+    const newFieldType = this.allFields().find(f => f.value === field)?.type || 'string';
+    const currentOperator = this.filter().operator;
+    
+    // Проверяем, доступен ли текущий оператор для нового типа поля
+    let newOperator = currentOperator;
+    
+    if (newFieldType === 'date' || newFieldType === 'number') {
+      // Для date и number разрешены только: equals, not_equals, greater, less, between, is_null, is_not_null
+      const allowedOps = ['equals', 'not_equals', 'greater', 'less', 'between', 'is_null', 'is_not_null'];
+      if (!allowedOps.includes(currentOperator as string)) {
+        newOperator = 'equals'; // Сбрасываем на безопасный оператор
+      }
+    } else if (newFieldType === 'boolean') {
+      // Для boolean разрешены только: equals, not_equals, is_null, is_not_null
+      const allowedOps = ['equals', 'not_equals', 'is_null', 'is_not_null'];
+      if (!allowedOps.includes(currentOperator as string)) {
+        newOperator = 'equals';
+      }
+    }
+    
     this.filterChange.emit({
       ...this.filter(),
       field,
+      operator: newOperator as any,
       value: ''
     });
   }
@@ -410,6 +438,18 @@ export class SegmentFilterEditorComponent implements OnInit {
       ...this.filter(),
       value
     });
+  }
+
+  onDateChange(event: any): void {
+    const date = event.value;
+    if (date) {
+      // Convert to ISO string for storage
+      const value = date.toISOString();
+      this.filterChange.emit({
+        ...this.filter(),
+        value
+      });
+    }
   }
 
   onBooleanChange(value: boolean): void {
