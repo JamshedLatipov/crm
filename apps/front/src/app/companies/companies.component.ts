@@ -267,6 +267,8 @@ export class CompaniesComponent implements OnInit {
   setActiveTab(tab: string): void {
     this.activeTab = tab;
     this.filterState.update(state => ({ ...state, status: tab }));
+    this.currentPage = 0; // Reset to first page
+    this.loadCompanies();
   }
 
   /**

@@ -71,72 +71,38 @@
       <p>Загрузка задач...</p>
     </div>
 
-    <!-- Фильтры -->
-    <div class="filters-section">
-      <div class="filters-card">
-        <div class="filters-grid">
-          <!-- Статус табы -->
-          <div class="status-tabs">
-            <button
-              class="tab-button"
-              [class.active]="selectedStatus === null"
-              (click)="onStatusTabChange(null)"
-            >
-              Все
-            </button>
-            <button
-              class="tab-button"
-              [class.active]="selectedStatus === 'open'"
-              (click)="onStatusTabChange('open')"
-            >
-              В ожидании
-            </button>
-            <button
-              class="tab-button"
-              [class.active]="selectedStatus === 'in_progress'"
-              (click)="onStatusTabChange('in_progress')"
-            >
-              В работе
-            </button>
-            <button
-              class="tab-button"
-              [class.active]="selectedStatus === 'done'"
-              (click)="onStatusTabChange('done')"
-            >
-              Завершено
-            </button>
-            <button
-              class="tab-button"
-              [class.active]="selectedStatus === 'overdue'"
-              (click)="onStatusTabChange('overdue')"
-            >
-              Просрочено
-            </button>
-          </div>
+    <!-- Tabs и кнопка фильтров -->
+    <div class="tabs-section">
+      <app-status-tabs
+        [tabs]="statusTabs"
+        [selected]="activeTab"
+        [showCounts]="false"
+        (selectedChange)="setActiveTab($event)"
+      ></app-status-tabs>
 
-          <!-- Поиск -->
-          <mat-form-field appearance="outline" class="search-field">
-            <mat-label>Поиск</mat-label>
-            <input
-              matInput
-              [(ngModel)]="searchQuery"
-              (ngModelChange)="onSearchChange()"
-              placeholder="По названию или описанию"
-            />
-            <mat-icon matSuffix>search</mat-icon>
-          </mat-form-field>
-
-          <!-- Фильтр по исполнителям (вынесен за пределы *ngIf для сохранения состояния) -->
-          <div class="filters-section-wrapper">
-            <app-user-multiselect-filter
-              #userFilter
-              (selectionChange)="onAssigneesChange($event)"
-            >
-            </app-user-multiselect-filter>
-          </div>
-        </div>
+      <div class="filter-button-wrapper">
+        <button 
+          mat-icon-button 
+          color="primary"
+          (click)="openFiltersDialog()"
+          class="filter-button"
+          matTooltip="Фильтры и поиск"
+          [matBadge]="getActiveFiltersCount() > 0 ? getActiveFiltersCount() : null"
+          matBadgeColor="accent"
+          matBadgeSize="small">
+          <mat-icon>tune</mat-icon>
+        </button>
       </div>
     </div>
+
+    <!-- Active Filters Display -->
+    <app-active-filters 
+      *ngIf="getActiveFiltersCount() > 0"
+      [search]="searchQuery"
+      [filters]="getActiveFiltersForDisplay()"
+      (filterRemoved)="removeFilter($event)"
+      (clearAllFilters)="clearAllFilters()">
+    </app-active-filters>
     
     <!-- Таблица задач -->
     <div *ngIf="!isLoading() && tasks().length > 0" class="table-container">

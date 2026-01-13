@@ -1,7 +1,4 @@
-<app-page-layout
-  [title]="'Компании'"
-  subtitle="Управление всеми компаниями"
->
+<app-page-layout [title]="'Компании'" subtitle="Управление всеми компаниями">
   <div page-actions>
     <button mat-raised-button color="primary" (click)="createCompany()">
       <mat-icon>add</mat-icon>
@@ -62,6 +59,43 @@
       <p>Загрузка компаний...</p>
     </div>
 
+    <!-- Фильтры: табы статусов + кнопка фильтров -->
+    <div class="filters-section">
+      <div class="filters-card">
+        <div class="filters-grid">
+          <app-status-tabs
+            [tabs]="companyTabs"
+            [selected]="activeTab"
+            (selectedChange)="setActiveTab($event)"
+          ></app-status-tabs>
+
+          <button
+            mat-icon-button
+            color="primary"
+            (click)="openFiltersDialog()"
+            class="filter-button"
+            matTooltip="Фильтры и поиск"
+            [matBadge]="
+              getTotalActiveFilters() > 0 ? getTotalActiveFilters() : null
+            "
+            matBadgeColor="accent"
+            matBadgeSize="small"
+          >
+            <mat-icon>tune</mat-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Filters Display -->
+    <app-active-filters
+      [search]="filterState().search || ''"
+      [filters]="filterState().filters"
+      (filterRemoved)="removeFilter($event)"
+      (clearAllFilters)="clearAllFilters()"
+    >
+    </app-active-filters>
+
     <!-- Пустое состояние -->
     <div
       *ngIf="!isLoading && filteredCompanies.length === 0"
@@ -77,49 +111,12 @@
         }}
       </p>
       <ng-container *ngIf="!searchQuery">
-        <button
-          mat-raised-button
-          color="primary"
-          (click)="createCompany()"
-        >
+        <button mat-raised-button color="primary" (click)="createCompany()">
           <mat-icon>add</mat-icon>
           Создать компанию
         </button>
       </ng-container>
     </div>
-
-    <!-- Фильтры: табы статусов + кнопка фильтров -->
-    <div class="filters-section">
-      <div class="filters-card">
-        <div class="filters-grid">
-          <app-status-tabs
-            [tabs]="companyTabs"
-            [selected]="activeTab"
-            (selectedChange)="setActiveTab($event)"
-          ></app-status-tabs>
-
-          <button 
-            mat-icon-button
-            color="primary"
-            (click)="openFiltersDialog()"
-            class="filter-button"
-            matTooltip="Фильтры и поиск"
-            [matBadge]="getTotalActiveFilters() > 0 ? getTotalActiveFilters() : null"
-            matBadgeColor="accent"
-            matBadgeSize="small">
-            <mat-icon>tune</mat-icon>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Active Filters Display -->
-    <app-active-filters 
-      [search]="filterState().search || ''"
-      [filters]="filterState().filters"
-      (filterRemoved)="removeFilter($event)"
-      (clearAllFilters)="clearAllFilters()">
-    </app-active-filters>
 
     <!-- Таблица компаний -->
     <div

@@ -64,32 +64,6 @@
       <p>Загрузка сделок...</p>
     </div>
 
-    <!-- Пустое состояние -->
-    <div
-      *ngIf="!isLoading && filteredDeals.length === 0"
-      class="empty-state"
-    >
-      <mat-icon class="empty-icon">handshake</mat-icon>
-      <h3>{{ searchQuery ? 'Сделки не найдены' : 'Нет сделок' }}</h3>
-      <p>
-        {{
-          searchQuery
-            ? 'Попробуйте изменить параметры поиска'
-            : 'Создайте первую сделку для начала работы'
-        }}
-      </p>
-      <ng-container *ngIf="!searchQuery">
-        <button
-          mat-raised-button
-          color="primary"
-          (click)="openCreateDialog()"
-        >
-          <mat-icon>add</mat-icon>
-          Создать сделку
-        </button>
-      </ng-container>
-    </div>
-
     <!-- Фильтры: табы статусов + кнопка фильтров -->
     <div class="filters-section">
       <div class="filters-card">
@@ -122,6 +96,32 @@
       (filterRemoved)="removeFilter($event)"
       (clearAllFilters)="clearAllFilters()">
     </app-active-filters>
+
+    <!-- Пустое состояние -->
+    <div
+      *ngIf="!isLoading && filteredDeals.length === 0"
+      class="empty-state"
+    >
+      <mat-icon class="empty-icon">handshake</mat-icon>
+      <h3>{{ searchQuery ? 'Сделки не найдены' : 'Нет сделок' }}</h3>
+      <p>
+        {{
+          searchQuery
+            ? 'Попробуйте изменить параметры поиска'
+            : 'Создайте первую сделку для начала работы'
+        }}
+      </p>
+      <ng-container *ngIf="!searchQuery">
+        <button
+          mat-raised-button
+          color="primary"
+          (click)="openCreateDialog()"
+        >
+          <mat-icon>add</mat-icon>
+          Создать сделку
+        </button>
+      </ng-container>
+    </div>
 
     <!-- Таблица сделок -->
     <div

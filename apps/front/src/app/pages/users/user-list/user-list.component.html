@@ -33,14 +33,12 @@
       <!-- Status filter -->
       <!-- Status filter as tabs (replaces select) -->
       <div class="status-tabs">
-        <div class="tabs">
-          <app-status-tabs
-            [tabs]="userTabs"
-            [selected]="selectedStatus() || ''"
-            (selectedChange)="onStatusFilterChange($event)"
-          >
-          </app-status-tabs>
-        </div>
+        <app-status-tabs
+          [tabs]="userTabs"
+          [selected]="selectedStatus() || ''"
+          (selectedChange)="onStatusFilterChange($event)"
+        >
+        </app-status-tabs>
       </div>
 
       <mat-form-field class="search-field" appearance="outline">

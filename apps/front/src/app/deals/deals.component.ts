@@ -275,6 +275,8 @@ export class DealsComponent implements OnInit {
   setActiveTab(tab: string): void {
     this.activeTab = tab;
     this.filterState.update(state => ({ ...state, status: tab }));
+    this.currentPage = 0;
+    this.loadDeals();
   }
 
   /**

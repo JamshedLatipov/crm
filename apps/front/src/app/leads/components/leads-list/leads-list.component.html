@@ -12,13 +12,12 @@
 
   <!-- Tabs -->
   <div class="tabs-section">
-    <div class="tabs">
-      <app-status-tabs
-        [tabs]="leadTabs"
-        [selected]="activeTab"
-        (selectedChange)="setActiveTab($event)">
-      </app-status-tabs>
-    </div>
+    <app-status-tabs
+      [tabs]="leadTabs"
+      [selected]="activeTab"
+      (selectedChange)="setActiveTab($event)">
+    </app-status-tabs>
+    
     <div class="search-and-filter-section">
       
       <button 

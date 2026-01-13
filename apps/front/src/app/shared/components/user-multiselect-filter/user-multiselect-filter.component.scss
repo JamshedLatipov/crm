@@ -1,91 +1,124 @@
 // Общие стили
 .filter-field {
+  width: 100%;
+  
   &.multiselect-field {
-    min-width: 400px;
-    flex: 1;
+    min-width: 250px;
+  }
+
+  // Убираем дефолтные отступы Material
+  ::ng-deep {
+    .mat-mdc-text-field-wrapper {
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
+    }
+
+    .mat-mdc-form-field-flex {
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
+    }
   }
 }
 
 .filter-icon {
   color: #64748b;
-  margin-right: 8px;
+  margin-right: 4px;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
 }
 
 .clear-btn {
-  margin-right: 10px;
+  margin-right: 4px;
+  width: 32px;
+  height: 32px;
   
   mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
   }
 }
 
-// Чипы для мультиселекта
+// Чипы для мультиселекта - более современный стиль
 mat-chip-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 4px;
   margin: 0;
+  padding: 0;
+  min-height: auto;
 }
 
 mat-chip-row {
   display: inline-flex !important;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.375rem 0.75rem !important;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  gap: 4px;
+  padding: 4px 10px !important;
+  background: #4285f4 !important;
   color: white !important;
-  font-size: 0.875rem;
+  font-size: 12px;
   font-weight: 500;
-  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(66, 133, 244, 0.3);
   transition: all 0.2s;
+  height: 26px;
+  max-height: 26px;
+  margin: 0 !important;
 
-
-  & .crm-chip-row {
+  .crm-chip-row {
     display: flex !important;
     align-items: center !important;
-    justify-content: space-between !important;
-
-    
-    .chip-avatar {
-        margin-right: 10px;
-    }
+    gap: 4px;
   }
 
   &:hover {
-    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
-    transform: translateY(-1px);
+    background: #3b78e7 !important;
+    box-shadow: 0 2px 4px rgba(66, 133, 244, 0.4);
   }
 
   .chip-avatar {
-    width: 24px;
-    height: 24px;
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.3);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.65rem;
+    font-size: 9px;
     font-weight: 700;
     color: white;
+    flex-shrink: 0;
   }
 
   .chip-label {
     color: white;
     font-weight: 500;
+    line-height: 1;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   button[matChipRemove] {
     color: white !important;
     opacity: 0.85;
     transition: opacity 0.2s;
+    padding: 0;
+    width: 14px;
+    height: 14px;
+    min-width: 14px;
+    margin: 0;
 
     &:hover {
       opacity: 1;
     }
 
     mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
     }
   }
 }

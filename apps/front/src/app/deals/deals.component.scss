@@ -80,34 +80,6 @@
       .search-field {
         min-width: 300px;
       }
-
-      /* Tabs styled like Contacts.tabs */
-      .tabs {
-        display: flex;
-        gap: 0;
-        border-bottom: 1px solid #e1e4e8;
-      }
-
-      .tab {
-        background: none;
-        border: none;
-        padding: 12px 20px;
-        font-size: 14px;
-        font-weight: 500;
-        color: #6c757d;
-        cursor: pointer;
-        border-bottom: 2px solid transparent;
-        transition: all 0.15s ease;
-      }
-
-      .tab.active {
-        color: #2f78ff;
-        border-bottom-color: #2f78ff;
-      }
-
-      .tab:hover {
-        color: #2f78ff;
-      }
     }
   }
 }

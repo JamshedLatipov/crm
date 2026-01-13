@@ -387,6 +387,39 @@ export class LeadsListComponent implements OnInit {
   setActiveTab(tab: string): void {
     this.activeTab = tab;
     this.currentPage = 1;
+    
+    // Get statuses for the active tab
+    const statuses = this.getStatusesForActiveTab();
+    
+    // Update filterState to include/exclude status filter
+    this.filterState.update(state => {
+      // Remove existing status filters
+      const filtersWithoutStatus = state.filters.filter(f => f.fieldName !== 'status');
+      
+      // Add new status filter if we have statuses
+      if (statuses && statuses.length > 0) {
+        return {
+          ...state,
+          filters: [
+            ...filtersWithoutStatus,
+            {
+              fieldType: 'static' as const,
+              fieldName: 'status',
+              fieldLabel: 'Status',
+              operator: 'in',
+              value: statuses
+            }
+          ]
+        };
+      }
+      
+      // No status filter for 'all' tab
+      return {
+        ...state,
+        filters: filtersWithoutStatus
+      };
+    });
+    
     this.loadLeads();
   }
 

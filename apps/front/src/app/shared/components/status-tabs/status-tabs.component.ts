@@ -20,11 +20,11 @@ export interface StatusTab {
   standalone: true,
   imports: [CommonModule, MatButtonModule],
   template: `
-    <div class="tabs" role="tablist" aria-label="Status tabs">
+    <div class="tabs-container" role="tablist" aria-label="Status tabs">
       <button
         *ngFor="let t of effectiveTabs; trackBy: trackByValue"
         type="button"
-        class="tab"
+        class="tab-button"
         [class.active]="selected === t.value"
         [attr.aria-pressed]="selected === t.value"
         [disabled]="t.disabled"
@@ -36,47 +36,68 @@ export interface StatusTab {
   `,
   styles: [
     `
-    .tabs {
+    .tabs-container {
       display: flex;
-      gap: 0;
-      border-bottom: 1px solid #e1e4e8;
-      align-items: center;
+      gap: 4px;
+      padding: 4px;
+      background: #f8fafc;
+      border-radius: 12px;
+      width: fit-content;
     }
 
-    .tab {
-      background: none;
+    .tab-button {
+      padding: 8px 20px;
       border: none;
-      padding: 12px 20px;
+      background: transparent;
+      border-radius: 8px;
+      font-weight: 600;
       font-size: 14px;
-      font-weight: 500;
-      color: #6c757d;
+      color: #64748b;
       cursor: pointer;
-      border-bottom: 2px solid transparent;
-      transition: all 0.15s ease;
+      transition: all 0.2s ease;
+      white-space: nowrap;
       display: inline-flex;
       gap: 8px;
       align-items: center;
+      position: relative;
     }
 
-    .tab.active {
-      color: #2f78ff;
-      border-bottom-color: #2f78ff;
+    .tab-button:hover:not(.active):not(:disabled) {
+      background: rgba(100, 116, 139, 0.08);
+      color: #475569;
     }
 
-    .tab:hover {
-      color: #2f78ff;
+    .tab-button.active {
+      background: white;
+      color: #4285f4;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08),
+                  0 1px 2px rgba(0, 0, 0, 0.06);
+    }
+
+    .tab-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .label { 
+      white-space: nowrap; 
     }
 
     .count {
-      background: rgba(47,120,255,0.08);
-      color: #2f78ff;
+      background: rgba(66, 133, 244, 0.12);
+      color: #4285f4;
       padding: 2px 8px;
-      border-radius: 12px;
+      border-radius: 10px;
       font-size: 12px;
       font-weight: 600;
+      min-width: 20px;
+      text-align: center;
     }
 
-    .label { white-space: nowrap; }
+    .tab-button.active .count {
+      background: rgba(66, 133, 244, 0.15);
+      color: #4285f4;
+    }
   `,
   ],
 })

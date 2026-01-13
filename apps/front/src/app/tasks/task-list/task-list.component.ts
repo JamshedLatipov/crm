@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, ViewChild, AfterViewInit } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -15,6 +15,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatBadgeModule } from '@angular/material/badge';
 import { ConfirmActionDialogComponent } from '../../shared/dialogs/confirm-action-dialog.component';
 import { TasksService } from '../tasks.service';
 import { AssignmentService } from '../../services/assignment.service';
@@ -25,7 +26,10 @@ import { TaskStatusComponent } from '../components/task-status/task-status.compo
 import { TaskModalService } from '../services/task-modal.service';
 import { TaskModalComponent } from '../components/task-modal/task-modal.component';
 import { PageLayoutComponent } from '../../shared/page-layout/page-layout.component';
-import { UserMultiselectFilterComponent } from '../../shared/components/user-multiselect-filter/user-multiselect-filter.component';
+import { ActiveFiltersComponent } from '../../shared/components/active-filters/active-filters.component';
+import { UniversalFiltersDialogComponent } from '../../shared/dialogs/universal-filters-dialog/universal-filters-dialog.component';
+import { BaseFilterState, FilterFieldDefinition, UniversalFilter } from '../../shared/interfaces/universal-filter.interface';
+import { StatusTabsComponent } from '../../shared/components/status-tabs/status-tabs.component';
 
 // Ensure this matches TaskDto in service
 interface Task {
@@ -74,18 +78,20 @@ interface Task {
     MatChipsModule,
     MatPaginatorModule,
     MatSortModule,
+    MatBadgeModule,
     TaskDueDateComponent,
     TaskTypeDisplayComponent,
     TaskStatusComponent,
     TaskModalComponent,
     PageLayoutComponent,
     MatDialogModule,
-    UserMultiselectFilterComponent,
+    ActiveFiltersComponent,
+    StatusTabsComponent,
   ],
   templateUrl: './task-list.component.html',
   styleUrls: ['./task-list.component.scss']
 })
-export class TaskListComponent implements OnInit, AfterViewInit {
+export class TaskListComponent implements OnInit {
   tasks = signal<Task[]>([]);
   paginatedTasks = signal<Task[]>([]);
   isLoading = signal(true);
@@ -94,7 +100,24 @@ export class TaskListComponent implements OnInit, AfterViewInit {
   selectedStatus: string | null = null;
   selectedAssignees = signal<Array<number | string>>([]);
   
-  @ViewChild(UserMultiselectFilterComponent) userFilter!: UserMultiselectFilterComponent;
+  // Status tabs configuration
+  statusTabs = [
+    { label: 'Все', value: 'all', count: 0 },
+    { label: 'В ожидании', value: 'open', count: 0 },
+    { label: 'В работе', value: 'in_progress', count: 0 },
+    { label: 'Завершено', value: 'done', count: 0 },
+    { label: 'Просрочено', value: 'overdue', count: 0 },
+  ];
+  
+  activeTab = 'all';
+  
+  // Filter state
+  filterState = signal<BaseFilterState>({
+    search: '',
+    filters: []
+  });
+  
+  staticFields: FilterFieldDefinition[] = [];
   
   // Pagination
   currentPage = 0;
@@ -124,6 +147,7 @@ export class TaskListComponent implements OnInit, AfterViewInit {
   ) {}
 
   ngOnInit() {
+    this.initializeStaticFields();
     this.loadTasks();
     
     // Subscribe to task saved events to reload the list
@@ -132,11 +156,109 @@ export class TaskListComponent implements OnInit, AfterViewInit {
     });
   }
 
-  ngAfterViewInit() {
-    // Синхронизируем состояние фильтра с компонентом после инициализации view
-    if (this.userFilter && this.selectedAssignees().length > 0) {
-      this.userFilter.setSelectedUsers(this.selectedAssignees());
+  initializeStaticFields() {
+    this.staticFields = [
+      {
+        name: 'assignedTo',
+        label: 'Исполнитель',
+        type: 'select', // будет использовать user-select
+        operators: ['equals', 'not_equals', 'exists']
+      },
+      {
+        name: 'taskType',
+        label: 'Тип задачи',
+        type: 'select',
+        operators: ['equals', 'not_equals'],
+        selectOptions: [] // TODO: загрузить типы задач
+      },
+      {
+        name: 'dueDate',
+        label: 'Срок выполнения',
+        type: 'date',
+        operators: ['equals', 'greater', 'less', 'between']
+      }
+    ];
+  }
+
+  openFiltersDialog(): void {
+    const dialogRef = this.dialog.open(UniversalFiltersDialogComponent, {
+      minWidth: '800px',
+      data: {
+        title: 'Фильтры задач',
+        staticFields: this.staticFields,
+        customFields: [],
+        initialState: this.filterState(),
+        showSearch: true,
+      },
+    });
+
+    dialogRef.afterClosed().subscribe((result: BaseFilterState | undefined) => {
+      if (result) {
+        this.filterState.set(result);
+        this.searchQuery = result.search || '';
+        
+        // Применяем фильтры
+        this.applyFiltersFromState();
+        this.currentPage = 0;
+        this.loadTasks();
+      }
+    });
+  }
+
+  applyFiltersFromState() {
+    const state = this.filterState();
+    
+    // Извлекаем исполнителей из фильтров
+    const assigneeFilter = state.filters.find(f => f.fieldName === 'assignedTo');
+    if (assigneeFilter && assigneeFilter.value) {
+      const values = Array.isArray(assigneeFilter.value) ? assigneeFilter.value : [assigneeFilter.value];
+      this.selectedAssignees.set(values.filter(v => typeof v === 'string' || typeof v === 'number') as (string | number)[]);
+    } else {
+      this.selectedAssignees.set([]);
     }
+  }
+
+  getActiveFiltersCount(): number {
+    let count = 0;
+    if (this.searchQuery) count++;
+    count += this.filterState().filters.length;
+    return count;
+  }
+
+  getActiveFiltersForDisplay(): UniversalFilter[] {
+    return this.filterState().filters;
+  }
+
+  removeFilter(filterIndex: number): void {
+    const currentFilters = this.filterState().filters;
+    const filterToRemove = currentFilters[filterIndex];
+    
+    if (!filterToRemove) return;
+    
+    const updatedFilters = currentFilters.filter((_, index) => index !== filterIndex);
+    
+    this.filterState.set({
+      ...this.filterState(),
+      filters: updatedFilters
+    });
+    
+    // Если удален фильтр исполнителей, очищаем
+    if (filterToRemove.fieldName === 'assignedTo') {
+      this.selectedAssignees.set([]);
+    }
+    
+    this.loadTasks();
+  }
+
+  clearAllFilters(): void {
+    this.filterState.set({
+      search: '',
+      filters: []
+    });
+    this.searchQuery = '';
+    this.selectedAssignees.set([]);
+    this.currentPage = 0;
+    this.loadTasks();
   }
 
   loadTasks() {
@@ -203,6 +325,13 @@ export class TaskListComponent implements OnInit, AfterViewInit {
   // Removed local pagination logic
   
   onSearchChange() {
+    this.currentPage = 0;
+    this.loadTasks();
+  }
+  
+  setActiveTab(tab: string | null) {
+    this.activeTab = tab || 'all';
+    this.selectedStatus = tab === 'all' || tab === null ? null : tab;
     this.currentPage = 0;
     this.loadTasks();
   }
@@ -353,19 +482,8 @@ export class TaskListComponent implements OnInit, AfterViewInit {
     return '';
   }
 
-  // ========== Методы для фильтра по исполнителям ==========
+  // ========== Методы для фильтров ==========
   
-  onAssigneesChange(userIds: Array<number | string>): void {
-    this.selectedAssignees.set(userIds);
-    
-    // Синхронизируем дочерний компонент с новым состоянием
-    if (this.userFilter) {
-      this.userFilter.setSelectedUsers(userIds);
-    }
-    
-    this.applyFilters();
-  }
-
   applyFilters(): void {
     this.currentPage = 0; // Reset to first page
     this.loadTasks();

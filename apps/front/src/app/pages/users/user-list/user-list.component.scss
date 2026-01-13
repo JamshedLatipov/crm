@@ -101,32 +101,41 @@
   max-width: 260px;
 }
 
-/* Status tabs (replace select) */
-.status-tabs .tabs {
-  display: flex;
-  gap: 1;
-  width: 600px;
-}
+/* Status tabs - новый минималистичный стиль */
+.status-tabs {
+  ::ng-deep .tabs-container {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: #f8fafc;
+    border-radius: 12px;
+    width: fit-content;
+  }
 
-.status-tabs .tab {
-  background: none;
-  border: none;
-  padding: 8px 14px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #6c757d;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  transition: all 0.15s ease;
-}
+  ::ng-deep .tab-button {
+    padding: 8px 20px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
 
-.status-tabs .tab.active {
-  color: #2f78ff;
-  border-bottom-color: #2f78ff;
-}
+    &:hover:not(.active) {
+      background: rgba(100, 116, 139, 0.08);
+      color: #475569;
+    }
 
-.status-tabs .tab:hover {
-  color: #2f78ff;
+    &.active {
+      background: white;
+      color: #4285f4;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08),
+                  0 1px 2px rgba(0, 0, 0, 0.06);
+    }
+  }
 }
 
 .results-info {

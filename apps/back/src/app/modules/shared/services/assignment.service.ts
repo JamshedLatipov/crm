@@ -504,6 +504,7 @@ export class AssignmentService {
         map.set(key, {
           id: assignment.id,
           userId: assignment.userId,
+          name: mappedUser?.fullName || mappedUser?.email,
           userName: mappedUser?.fullName || mappedUser?.email,
           userEmail: mappedUser?.email,
           assignedAt: assignment.assignedAt,

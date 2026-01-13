@@ -33,14 +33,13 @@
 
   <!-- Tabs like in Leads: statuses on the left, filters button on the right -->
   <div class="tabs-section">
-    <div class="tabs">
-      <app-status-tabs
-        [tabs]="contactTabs"
-        [selected]="activeFilter"
-        (selectedChange)="onActiveFilterChange($event)"
-      >
-      </app-status-tabs>
-    </div>
+    <app-status-tabs
+      [tabs]="contactTabs"
+      [selected]="activeFilter"
+      (selectedChange)="onActiveFilterChange($event)"
+    >
+    </app-status-tabs>
+    
     <div class="search-section">
       <button 
         mat-icon-button
