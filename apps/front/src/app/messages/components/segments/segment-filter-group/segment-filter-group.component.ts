@@ -149,14 +149,22 @@ import { SegmentFilterEditorComponent } from '../segment-filter-editor/segment-f
     `
       .filter-group {
         border: 2px solid #e0e0e0;
-        border-radius: 8px;
-        padding: 16px;
-        background-color: #fafafa;
+        border-radius: 10px;
+        padding: 14px;
+        background: linear-gradient(135deg, #fafafa 0%, #ffffff 100%);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+
+        &:hover {
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
 
         &.nested {
           margin: 8px 0;
-          background-color: #f5f5f5;
+          background: linear-gradient(135deg, #f5f5f5 0%, #fafafa 100%);
           border-color: #bdbdbd;
+          border-width: 2px;
+          padding: 12px;
         }
       }
 
@@ -164,30 +172,66 @@ import { SegmentFilterEditorComponent } from '../segment-filter-editor/segment-f
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 16px;
-        gap: 16px;
+        margin-bottom: 14px;
+        gap: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #e8e8e8;
       }
 
       .group-info {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
         flex: 1;
 
         .group-icon {
           color: #1976d2;
+          font-size: 22px;
+          width: 22px;
+          height: 22px;
         }
 
         .group-label {
-          font-weight: 500;
+          font-weight: 600;
           font-size: 14px;
           color: rgba(0, 0, 0, 0.87);
+          letter-spacing: 0.3px;
         }
       }
 
       .group-actions {
         display: flex;
-        gap: 8px;
+        gap: 6px;
+        align-items: center;
+
+        button[mat-button] {
+          border-radius: 8px;
+          font-weight: 500;
+          font-size: 13px;
+          padding: 0 12px;
+          height: 36px;
+
+          mat-icon {
+            margin-right: 4px;
+            font-size: 18px;
+            width: 18px;
+            height: 18px;
+          }
+        }
+
+        button[mat-icon-button] {
+          transition: all 0.2s ease;
+          width: 36px;
+          height: 36px;
+
+          mat-icon {
+            font-size: 20px;
+          }
+
+          &:hover {
+            transform: scale(1.1);
+          }
+        }
       }
 
       .conditions-list {
@@ -199,68 +243,91 @@ import { SegmentFilterEditorComponent } from '../segment-filter-editor/segment-f
       .no-conditions {
         display: flex;
         align-items: center;
-        gap: 12px;
-        padding: 24px;
-        background-color: #fff;
-        border: 2px dashed #e0e0e0;
-        border-radius: 8px;
+        justify-content: center;
+        gap: 10px;
+        padding: 24px 20px;
+        background: linear-gradient(135deg, #ffffff 0%, #f9f9f9 100%);
+        border: 2px dashed #d0d0d0;
+        border-radius: 10px;
         color: rgba(0, 0, 0, 0.6);
+        transition: all 0.2s ease;
+
+        &:hover {
+          border-color: #b0b0b0;
+          background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+        }
 
         mat-icon {
           color: #9e9e9e;
+          font-size: 28px;
+          width: 28px;
+          height: 28px;
         }
 
         p {
           margin: 0;
+          font-size: 13px;
+          font-weight: 500;
         }
       }
 
       .condition-container {
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 10px;
       }
 
       .logic-operator-selector {
         display: flex;
         align-items: center;
         gap: 12px;
-        padding: 8px 12px;
-        background-color: #e3f2fd;
-        border-radius: 6px;
-        border-left: 4px solid #1976d2;
+        padding: 10px 14px;
+        background: linear-gradient(90deg, #e3f2fd 0%, #f3f8fe 100%);
+        border-left: 3px solid #1976d2;
+        box-shadow: 0 1px 3px rgba(25, 118, 210, 0.1);
+        transition: all 0.2s ease;
+
+        &:hover {
+          box-shadow: 0 2px 6px rgba(25, 118, 210, 0.15);
+        }
 
         .logic-chips {
           display: flex;
-          gap: 8px;
+          gap: 6px;
 
           mat-chip-option {
-            font-weight: 600;
-            font-size: 12px;
+            font-weight: 700;
+            font-size: 11px;
+            letter-spacing: 0.5px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
+            padding: 0 10px;
+            height: 28px;
 
             &[selected='true'] {
               background-color: #1976d2;
               color: white;
+              box-shadow: 0 2px 4px rgba(25, 118, 210, 0.3);
+              transform: scale(1.05);
             }
 
             &:not([selected='true']) {
               background-color: #fff;
               color: #1976d2;
-              border: 1px solid #1976d2;
             }
 
             &:hover {
-              opacity: 0.8;
+              opacity: 0.9;
+              transform: scale(1.05);
             }
           }
         }
 
         .logic-description {
           font-size: 13px;
-          color: rgba(0, 0, 0, 0.7);
+          color: rgba(0, 0, 0, 0.75);
           font-style: italic;
+          font-weight: 500;
         }
       }
 
@@ -269,10 +336,42 @@ import { SegmentFilterEditorComponent } from '../segment-filter-editor/segment-f
       }
 
       .filter-item {
-        background-color: #fff;
+        background-color: #ffffff;
         border-radius: 8px;
         padding: 12px;
-        border: 1px solid #e0e0e0;
+        border: 1px solid #e8e8e8;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        transition: all 0.2s ease;
+
+        &:hover {
+          border-color: #1976d2;
+          box-shadow: 0 2px 6px rgba(25, 118, 210, 0.1);
+        }
+      }
+
+      /* Responsive design */
+      @media (max-width: 768px) {
+        .filter-group {
+          padding: 12px;
+        }
+
+        .group-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 10px;
+        }
+
+        .group-actions {
+          width: 100%;
+          justify-content: space-between;
+        }
+
+        .logic-operator-selector {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 10px;
+          padding: 8px 12px;
+        }
       }
     `,
   ],

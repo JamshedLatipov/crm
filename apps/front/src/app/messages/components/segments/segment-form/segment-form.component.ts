@@ -7,7 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatCardModule } from '@angular/material/card';
@@ -15,6 +15,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { SegmentService } from '../../../../shared/services/segment.service';
 import { Segment, SegmentUsageType, FilterGroup, FilterCondition, isFilterGroup } from '../../../../shared/models/segment.models';
 import { SegmentFilterGroupComponent } from '../segment-filter-group/segment-filter-group.component';
+import { PageLayoutComponent } from '../../../../shared/page-layout/page-layout.component';
 
 @Component({
   selector: 'app-segment-form',
@@ -28,12 +29,13 @@ import { SegmentFilterGroupComponent } from '../segment-filter-group/segment-fil
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-    MatCheckboxModule,
+    MatSlideToggleModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
     MatCardModule,
     MatDividerModule,
     SegmentFilterGroupComponent,
+    PageLayoutComponent,
   ],
   templateUrl: './segment-form.component.html',
   styleUrls: ['./segment-form.component.scss'],

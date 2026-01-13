@@ -6,6 +6,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { SegmentFilter } from '../../../../shared/models/segment.models';
 import { CustomFieldsService } from '../../../../services/custom-fields.service';
 import { CustomFieldDefinition, FieldType } from '../../../../models/custom-field.model';
@@ -35,6 +36,7 @@ interface FilterOperator {
     MatSelectModule,
     MatButtonModule,
     MatIconModule,
+    MatTooltipModule,
   ],
   template: `
     <div class="filter-editor">
@@ -42,16 +44,22 @@ interface FilterOperator {
         <!-- Field Selector -->
         <mat-form-field appearance="outline" class="field-select">
           <mat-label>Поле</mat-label>
+          <mat-icon matPrefix class="field-icon">filter_alt</mat-icon>
           <mat-select [value]="filter().field" (selectionChange)="onFieldChange($event.value)">
             <mat-optgroup label="Стандартные поля">
               @for (field of standardFields; track field.value) {
-                <mat-option [value]="field.value">{{ field.label }}</mat-option>
+                <mat-option [value]="field.value">
+                  <span class="option-label">{{ field.label }}</span>
+                </mat-option>
               }
             </mat-optgroup>
             @if (customFields().length > 0) {
               <mat-optgroup label="Кастомные поля">
                 @for (field of customFields(); track field.value) {
-                  <mat-option [value]="field.value">{{ field.label }}</mat-option>
+                  <mat-option [value]="field.value">
+                    <mat-icon class="custom-field-icon">extension</mat-icon>
+                    <span class="option-label">{{ field.label }}</span>
+                  </mat-option>
                 }
               </mat-optgroup>
             }
@@ -61,6 +69,7 @@ interface FilterOperator {
         <!-- Operator Selector -->
         <mat-form-field appearance="outline" class="operator-select">
           <mat-label>Условие</mat-label>
+          <mat-icon matPrefix class="operator-icon">rule</mat-icon>
           <mat-select [value]="filter().operator" (selectionChange)="onOperatorChange($event.value)">
             @for (op of availableOperators(); track op.value) {
               <mat-option [value]="op.value">{{ op.label }}</mat-option>
@@ -72,8 +81,21 @@ interface FilterOperator {
         @if (selectedOperator()?.requiresValue) {
           <mat-form-field appearance="outline" class="value-input">
             <mat-label>Значение</mat-label>
+            <mat-icon matPrefix>
+              @if (selectedFieldType() === 'number') {
+                tag
+              } @else if (selectedFieldType() === 'date') {
+                calendar_today
+              } @else if (selectedFieldType() === 'boolean') {
+                check_circle
+              } @else if (selectedCustomFieldDef()?.fieldType === 'select') {
+                list
+              } @else {
+                text_fields
+              }
+            </mat-icon>
             @if (selectedFieldType() === 'number') {
-              <input matInput type="number" [value]="filter().value" (input)="onValueChange($event)">
+              <input matInput type="number" [value]="filter().value" (input)="onValueChange($event)" placeholder="Введите число">
             } @else if (selectedFieldType() === 'date') {
               <input matInput type="date" [value]="filter().value" (input)="onValueChange($event)">
             } @else if (selectedFieldType() === 'boolean') {
@@ -88,51 +110,117 @@ interface FilterOperator {
                 }
               </mat-select>
             } @else {
-              <input matInput type="text" [value]="filter().value" (input)="onValueChange($event)">
+              <input matInput type="text" [value]="filter().value" (input)="onValueChange($event)" placeholder="Введите значение">
             }
           </mat-form-field>
         }
 
         <!-- Delete Button -->
-        <button mat-icon-button color="warn" (click)="onDelete()" type="button" class="delete-btn">
-          <mat-icon>delete</mat-icon>
+        <button mat-icon-button color="warn" (click)="onDelete()" type="button" class="delete-btn" 
+                matTooltip="Удалить условие">
+          <mat-icon>delete_outline</mat-icon>
         </button>
       </div>
     </div>
   `,
   styles: [`
     .filter-editor {
-      margin-bottom: 12px;
+      margin-bottom: 0;
     }
 
     .filter-fields {
       display: flex;
-      gap: 12px;
+      gap: 10px;
       align-items: flex-start;
+      flex-wrap: nowrap;
     }
 
     .field-select {
-      flex: 2;
-      min-width: 150px;
+      flex: 0 1 220px;
+      min-width: 170px;
     }
 
     .operator-select {
-      flex: 2;
-      min-width: 150px;
+      flex: 0 1 180px;
+      min-width: 140px;
     }
 
     .value-input {
-      flex: 3;
-      min-width: 200px;
+      flex: 1 1 auto;
+      min-width: 180px;
     }
 
     .delete-btn {
-      margin-top: 8px;
+      flex-shrink: 0;
+      margin-top: 2px;
+      transition: all 0.2s ease;
+      width: 36px;
+      height: 36px;
+      
+      mat-icon {
+        font-size: 20px;
+      }
+      
+      &:hover {
+        transform: scale(1.1);
+      }
+    }
+
+    /* Стили для иконок в префиксах */
+    .field-icon {
+      color: #1976d2;
+      margin-right: 6px;
+      font-size: 20px;
+    }
+
+    .operator-icon {
+      color: #7b1fa2;
+      margin-right: 6px;
+      font-size: 20px;
+    }
+
+    mat-icon[matPrefix] {
+      color: #616161;
+      margin-right: 6px;
+      font-size: 20px;
+    }
+
+    /* Стили для кастомных полей в выпадающем списке */
+    .custom-field-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      margin-right: 6px;
+      color: #ff9800;
+      vertical-align: middle;
+    }
+
+    .option-label {
+      vertical-align: middle;
+    }
+
+    /* Responsive design */
+    @media (max-width: 1024px) {
+      .filter-fields {
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .field-select,
+      .operator-select {
+        flex: 1 1 calc(50% - 4px);
+        min-width: 140px;
+      }
+
+      .value-input {
+        flex: 1 1 calc(100% - 40px);
+        min-width: 180px;
+      }
     }
 
     @media (max-width: 768px) {
       .filter-fields {
-        flex-wrap: wrap;
+        gap: 8px;
       }
 
       .field-select,
@@ -140,6 +228,31 @@ interface FilterOperator {
       .value-input {
         flex: 1 1 100%;
         min-width: 100%;
+      }
+
+      .delete-btn {
+        align-self: center;
+        margin-top: 0;
+      }
+    }
+
+    /* Уменьшенные form fields */
+    ::ng-deep .filter-editor {
+      mat-form-field {
+        .mat-mdc-form-field-infix {
+          padding-top: 14px;
+          padding-bottom: 14px;
+        }
+
+        .mat-mdc-text-field-wrapper {
+          background-color: #ffffff;
+        }
+
+        &.mat-focused {
+          .mat-mdc-form-field-focus-overlay {
+            opacity: 0.05;
+          }
+        }
       }
     }
   `]

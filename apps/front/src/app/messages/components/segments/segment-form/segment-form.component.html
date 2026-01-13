@@ -1,79 +1,98 @@
-<div class="segment-form-container">
-  <div class="header">
-    <button mat-icon-button (click)="cancel()" class="back-button">
+<app-page-layout [title]="title">
+  <!-- Actions в header -->
+  <div page-actions>
+    <button
+      mat-button
+      type="button"
+      (click)="cancel()"
+      [disabled]="isLoading()"
+    >
       <mat-icon>arrow_back</mat-icon>
+      Назад
     </button>
-    <h1>{{ title }}</h1>
   </div>
 
+  <!-- Загрузка -->
   @if (isLoading()) {
-    <div class="loading-spinner">
-      <mat-spinner></mat-spinner>
+    <div class="loading-container">
+      <mat-spinner diameter="40"></mat-spinner>
       <p>Загрузка...</p>
     </div>
   } @else {
+    <!-- Контент страницы -->
     <mat-card>
       <mat-card-content>
         <form [formGroup]="segmentForm" (ngSubmit)="onSubmit()">
-          <!-- Name Field -->
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Название сегмента</mat-label>
-            <input
-              matInput
-              formControlName="name"
-              placeholder="Введите название сегмента"
-              required
-            />
-            <mat-icon matPrefix>label</mat-icon>
-            @if (segmentForm.get('name')?.hasError('required') && segmentForm.get('name')?.touched) {
-              <mat-error>Название обязательно</mat-error>
-            }
-            @if (segmentForm.get('name')?.hasError('minlength')) {
-              <mat-error>Минимум 2 символа</mat-error>
-            }
-          </mat-form-field>
+          <!-- Name and Usage Type Row -->
+          <div class="form-row">
+              <!-- Name Field -->
+              <mat-form-field appearance="outline" class="form-field-flex">
+                <mat-label>Название сегмента</mat-label>
+                <input
+                  matInput
+                  formControlName="name"
+                  placeholder="Введите название сегмента"
+                  required
+                />
+                <mat-icon matPrefix>label</mat-icon>
+                @if (segmentForm.get('name')?.hasError('required') && segmentForm.get('name')?.touched) {
+                  <mat-error>Название обязательно</mat-error>
+                }
+                @if (segmentForm.get('name')?.hasError('minlength')) {
+                  <mat-error>Минимум 2 символа</mat-error>
+                }
+              </mat-form-field>
 
-          <!-- Description Field -->
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Описание</mat-label>
-            <textarea
-              matInput
-              formControlName="description"
-              placeholder="Введите описание сегмента"
-              rows="3"
-            ></textarea>
-            <mat-icon matPrefix>description</mat-icon>
-          </mat-form-field>
+              <!-- Usage Type Field -->
+              <mat-form-field appearance="outline" class="form-field-flex">
+                <mat-label>Тип использования</mat-label>
+                <mat-select formControlName="usageType" required>
+                  @for (type of usageTypes; track type.value) {
+                    <mat-option [value]="type.value">
+                      {{ type.label }}
+                    </mat-option>
+                  }
+                </mat-select>
+                <mat-icon matPrefix>category</mat-icon>
+                @if (segmentForm.get('usageType')?.hasError('required') && segmentForm.get('usageType')?.touched) {
+                  <mat-error>Тип обязателен</mat-error>
+                }
+              </mat-form-field>
+            </div>
 
-          <!-- Usage Type Field -->
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Тип использования</mat-label>
-            <mat-select formControlName="usageType" required>
-              @for (type of usageTypes; track type.value) {
-                <mat-option [value]="type.value">
-                  {{ type.label }}
-                </mat-option>
-              }
-            </mat-select>
-            <mat-icon matPrefix>category</mat-icon>
-            @if (segmentForm.get('usageType')?.hasError('required') && segmentForm.get('usageType')?.touched) {
-              <mat-error>Тип обязателен</mat-error>
-            }
-          </mat-form-field>
+            <!-- Description Field -->
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Описание</mat-label>
+              <textarea
+                matInput
+                formControlName="description"
+                placeholder="Введите описание сегмента"
+                rows="3"
+              ></textarea>
+              <mat-icon matPrefix>description</mat-icon>
+            </mat-form-field>
 
-          <!-- Active Checkbox -->
-          <div class="checkbox-field">
-            <mat-checkbox formControlName="isActive">
-              Активен
-            </mat-checkbox>
-            <p class="hint">Неактивные сегменты не отображаются в списке выбора</p>
-          </div>
+            <!-- Active Toggle -->
+            <div class="toggle-field">
+              <div class="toggle-content">
+                <div class="toggle-label">
+                  <mat-icon>toggle_on</mat-icon>
+                  <div>
+                    <span class="label-text">Статус сегмента</span>
+                    <p class="hint">Неактивные сегменты не отображаются в списке выбора</p>
+                  </div>
+                </div>
+                <mat-slide-toggle formControlName="isActive" color="primary">
+                  {{ segmentForm.get('isActive')?.value ? 'Активен' : 'Неактивен' }}
+                </mat-slide-toggle>
+              </div>
+            </div>
 
-          <mat-divider></mat-divider>
+            <mat-divider></mat-divider>
 
-          <!-- Filters Section -->
-          <div class="filters-section">
-            <div class="filters-header">
+            <!-- Filters Section -->
+            <div class="filters-section">
+              <div class="filters-header">
               <h3>Фильтры контактов</h3>
               <p class="filters-description">
                 Настройте условия для выборки контактов с поддержкой группировки и вложенных условий
@@ -130,4 +149,4 @@
       </mat-card-content>
     </mat-card>
   }
-</div>
+</app-page-layout>
