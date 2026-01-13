@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, Between } from 'typeorm';
 import { OutboundCampaign, CampaignStatus } from '../entities/outbound-campaign.entity';
@@ -9,6 +9,8 @@ import { CreateCampaignDto } from '../dto/campaign/create-campaign.dto';
 import { UpdateCampaignDto } from '../dto/campaign/update-campaign.dto';
 import { CampaignFiltersDto } from '../dto/campaign/campaign-filters.dto';
 import { UploadContactsDto } from '../dto/campaign/upload-contacts.dto';
+import { ContactSegmentService } from '../../segments/services/contact-segment.service';
+import { Contact } from '../../contacts/contact.entity';
 
 @Injectable()
 export class CampaignService {
@@ -21,6 +23,10 @@ export class CampaignService {
     private readonly callRepository: Repository<OutboundCampaignCall>,
     @InjectRepository(OutboundCampaignSchedule)
     private readonly scheduleRepository: Repository<OutboundCampaignSchedule>,
+    @InjectRepository(Contact)
+    private readonly systemContactRepository: Repository<Contact>,
+    @Inject(forwardRef(() => ContactSegmentService))
+    private readonly segmentService: ContactSegmentService,
   ) {}
 
   async create(createDto: CreateCampaignDto, userId: number): Promise<OutboundCampaign> {
@@ -263,13 +269,78 @@ export class CampaignService {
       );
     }
 
-    // Получаем телефоны из сегмента через инжектированный сервис
-    // Временно используем прямой запрос к базе
-    const contacts = await this.contactRepository
+    // Получаем все контакты из сегмента
+    const contacts = await this.segmentService.getSegmentContactsAll(segmentId);
+
+    let added = 0;
+    let skipped = 0;
+
+    for (const contact of contacts) {
+      if (!contact.phone || contact.phone.trim() === '') {
+        skipped++;
+        continue;
+      }
+
+      // Проверяем, нет ли уже такого контакта в кампании
+      const existing = await this.contactRepository.findOne({
+        where: {
+          campaignId: campaignId,
+          phone: contact.phone,
+        },
+      });
+
+      if (existing) {
+        skipped++;
+        continue;
+      }
+
+      const campaignContact = this.contactRepository.create({
+        phone: contact.phone,
+        name: contact.name || undefined,
+        campaignId: campaignId,
+      });
+
+      await this.contactRepository.save(campaignContact);
+      added++;
+    }
+
+    return { added, skipped };
+  }
+
+  /**
+   * Загрузка всех контактов из системы
+   */
+  async loadAllContacts(
+    campaignId: string,
+    filters?: { search?: string; companyId?: number },
+  ): Promise<{ added: number; skipped: number }> {
+    const campaign = await this.findOne(campaignId);
+
+    if (campaign.status === CampaignStatus.RUNNING) {
+      throw new BadRequestException(
+        'Cannot load contacts while campaign is running',
+      );
+    }
+
+    const query = this.systemContactRepository
       .createQueryBuilder('contact')
       .where('contact.phone IS NOT NULL')
-      .andWhere("contact.phone != ''")
-      .getMany();
+      .andWhere("contact.phone != ''");
+
+    if (filters?.search) {
+      query.andWhere(
+        '(contact.name ILIKE :search OR contact.email ILIKE :search OR contact.phone ILIKE :search)',
+        { search: `%${filters.search}%` },
+      );
+    }
+
+    if (filters?.companyId) {
+      query.andWhere('contact.companyId = :companyId', {
+        companyId: filters.companyId,
+      });
+    }
+
+    const contacts = await query.getMany();
 
     let added = 0;
     let skipped = 0;
@@ -287,9 +358,6 @@ export class CampaignService {
         skipped++;
         continue;
       }
-
-      // Разбиваем имя на firstName и lastName
-      const [firstName, ...lastNameParts] = (contact.name || '').split(' ');
 
       const campaignContact = this.contactRepository.create({
         phone: contact.phone,

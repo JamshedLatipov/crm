@@ -89,7 +89,7 @@ export class CampaignListComponent implements OnInit {
   }
 
   uploadContacts(campaign: OutboundCampaign): void {
-    this.router.navigate(['/contact-center/campaigns', campaign.id, 'contacts', 'upload']);
+    this.router.navigate(['/contact-center/campaigns', campaign.id, 'contacts']);
   }
 
   viewStatistics(campaign: OutboundCampaign): void {

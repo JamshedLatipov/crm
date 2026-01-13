@@ -73,6 +73,25 @@ export class CampaignApiService {
     });
   }
 
+  loadContactsFromSegment(id: string, segmentId: string): Observable<UploadContactsResult> {
+    return this.http.post<UploadContactsResult>(
+      `${this.baseUrl}/${id}/contacts/from-segment/${segmentId}`,
+      {}
+    );
+  }
+
+  loadAllContacts(id: string, filters?: { search?: string; companyId?: number }): Observable<UploadContactsResult> {
+    let params = new HttpParams();
+    if (filters?.search) params = params.set('search', filters.search);
+    if (filters?.companyId) params = params.set('companyId', filters.companyId.toString());
+
+    return this.http.post<UploadContactsResult>(
+      `${this.baseUrl}/${id}/contacts/from-system`,
+      {},
+      { params }
+    );
+  }
+
   getContacts(id: string): Observable<OutboundCampaignContact[]> {
     return this.http.get<OutboundCampaignContact[]>(`${this.baseUrl}/${id}/contacts`);
   }

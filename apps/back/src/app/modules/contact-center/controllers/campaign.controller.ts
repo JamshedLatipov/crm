@@ -97,6 +97,15 @@ export class CampaignController {
     return this.campaignService.loadContactsFromSegment(id, segmentId);
   }
 
+  @Post(':id/contacts/from-system')
+  loadAllContacts(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('search') search?: string,
+    @Query('companyId') companyId?: number
+  ) {
+    return this.campaignService.loadAllContacts(id, { search, companyId });
+  }
+
   @Get(':id/contacts')
   getContacts(@Param('id', ParseUUIDPipe) id: string) {
     return this.campaignService.getContacts(id);

@@ -218,6 +218,15 @@ export class ContactSegmentService {
   }
 
   /**
+   * Получение всех контактов сегмента без пагинации (для кампаний)
+   */
+  async getSegmentContactsAll(segmentId: string): Promise<Contact[]> {
+    const segment = await this.findOne(segmentId);
+    const query = this.buildContactQuery(segment.filters, segment.filterLogic);
+    return query.getMany();
+  }
+
+  /**
    * Получение номеров телефонов из сегмента
    * Используется для SMS и звонков
    */
