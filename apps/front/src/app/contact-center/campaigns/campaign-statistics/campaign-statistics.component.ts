@@ -166,4 +166,9 @@ export class CampaignStatisticsComponent implements OnInit {
     link.click();
     document.body.removeChild(link);
   }
+
+  getCreatorName(creator: { firstName: string; lastName: string; username: string }): string {
+    const fullName = `${creator.firstName || ''} ${creator.lastName || ''}`.trim();
+    return fullName || creator.username;
+  }
 }

@@ -210,7 +210,7 @@
                     <mat-icon class="info-icon">person</mat-icon>
                     <div class="info-content">
                       <span class="info-label">Создал</span>
-                      <span class="info-value">{{ statistics()!.campaign.creator.name }}</span>
+                      <span class="info-value">{{ getCreatorName(statistics()!.campaign.creator) }}</span>
                     </div>
                   </div>
                 }

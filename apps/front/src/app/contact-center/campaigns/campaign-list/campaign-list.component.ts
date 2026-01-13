@@ -197,4 +197,9 @@ export class CampaignListComponent implements OnInit {
       minute: '2-digit'
     });
   }
+
+  getCreatorName(creator: { firstName: string; lastName: string; username: string }): string {
+    const fullName = `${creator.firstName || ''} ${creator.lastName || ''}`.trim();
+    return fullName || creator.username;
+  }
 }

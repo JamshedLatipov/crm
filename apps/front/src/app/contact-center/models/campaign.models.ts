@@ -69,8 +69,10 @@ export interface OutboundCampaign {
   createdBy: number;
   creator?: {
     id: number;
-    name: string;
+    firstName: string;
+    lastName: string;
     email: string;
+    username: string;
   };
   settings: CampaignSettings;
   schedules?: CampaignSchedule[];
@@ -109,7 +111,9 @@ export interface OutboundCampaignCall {
   agentId?: number;
   agent?: {
     id: number;
-    name: string;
+    firstName: string;
+    lastName: string;
+    username: string;
   };
   recordingUrl?: string;
   createdAt: string;

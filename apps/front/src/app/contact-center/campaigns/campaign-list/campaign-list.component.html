@@ -46,7 +46,7 @@
         <ng-template crmColumnTemplate="creatorTemplate" let-row>
           @if (row.creator) {
             <div class="creator-info">
-              <span class="creator-name">{{ row.creator.name }}</span>
+              <span class="creator-name">{{ getCreatorName(row.creator) }}</span>
             </div>
           } @else {
             <span class="text-muted">—</span>
