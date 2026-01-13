@@ -47,7 +47,6 @@ export class SidebarComponent {
 
   menuItems: MenuItem[] = [
     { icon: 'dashboard', label: 'Дашборд', route: '/dashboard' },
-    { icon: 'people', label: 'Контакты', route: '/contacts' },
     { icon: 'business', label: 'Компании', route: '/companies' },
     { icon: 'trending_up', label: 'Лиды', route: '/leads' },
     { icon: 'account_tree', label: 'Воронка', route: '/pipeline' },
@@ -57,6 +56,15 @@ export class SidebarComponent {
     // { icon: 'campaign', label: 'Рекламные аккаунты', route: '/ads/accounts' },
     { icon: 'task', label: 'Задачи', route: '/tasks' },
     { icon: 'group', label: 'Пользователи', route: '/users' },
+    {
+      icon: 'people',
+      label: 'Контакты',
+      expanded: false,
+      children: [
+        { icon: 'people', label: 'Все контакты', route: '/contacts' },
+        { icon: 'group', label: 'Сегменты контактов', route: '/messages/segments' },
+      ],
+    },
     {
       icon: 'contact_support',
       label: 'Контакт центр',
@@ -140,11 +148,6 @@ export class SidebarComponent {
           icon: 'send',
           label: 'Telegram шаблоны',
           route: '/messages/telegram-templates',
-        },
-        {
-          icon: 'group',
-          label: 'Сегменты',
-          route: '/messages/segments',
         },
         {
           icon: 'analytics',
