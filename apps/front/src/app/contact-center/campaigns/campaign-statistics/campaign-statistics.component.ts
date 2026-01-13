@@ -8,6 +8,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTableModule } from '@angular/material/table';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.component';
+import { CrmTableComponent, CrmColumn, CrmColumnTemplateDirective } from '../../../shared/components/crm-table/crm-table.component';
 import { CampaignApiService } from '../../services/campaign-api.service';
 import {
   OutboundCampaign,
@@ -28,6 +30,9 @@ import {
     MatTableModule,
     MatChipsModule,
     MatSnackBarModule,
+    PageLayoutComponent,
+    CrmTableComponent,
+    CrmColumnTemplateDirective,
   ],
   templateUrl: './campaign-statistics.component.html',
   styleUrls: ['./campaign-statistics.component.scss'],
@@ -42,7 +47,14 @@ export class CampaignStatisticsComponent implements OnInit {
   loading = signal(false);
   statistics = signal<CampaignStatistics | null>(null);
 
-  // Table columns
+  // Table columns for crm-table
+  statusColumns: CrmColumn[] = [
+    { key: 'status', label: 'Статус', template: 'statusTemplate' },
+    { key: 'count', label: 'Количество', template: 'countTemplate' },
+    { key: 'percentage', label: 'Процент', template: 'percentageTemplate' },
+  ];
+
+  // Old table columns (deprecated)
   displayedColumns = ['status', 'count', 'percentage'];
   callsColumns = ['phone', 'name', 'status', 'attempts', 'lastCallAt'];
 
@@ -111,7 +123,13 @@ export class CampaignStatisticsComponent implements OnInit {
 
   formatDate(date: string | undefined): string {
     if (!date) return '—';
-    return new Date(date).toLocaleString('ru-RU');
+    return new Date(date).toLocaleString('ru-RU', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   }
 
   formatDuration(seconds: number): string {

@@ -11,6 +11,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.component';
 import { CampaignApiService } from '../../services/campaign-api.service';
 import { QueuesService, QueueRecord } from '../../services/queues.service';
 import { CampaignType, CreateCampaignDto } from '../../models/campaign.models';
@@ -31,6 +32,7 @@ import { AudioFileSelectorComponent } from '../components/audio-file-selector/au
     MatProgressSpinnerModule,
     MatSnackBarModule,
     MatDialogModule,
+    PageLayoutComponent,
   ],
   templateUrl: './campaign-form.component.html',
   styleUrls: ['./campaign-form.component.scss'],

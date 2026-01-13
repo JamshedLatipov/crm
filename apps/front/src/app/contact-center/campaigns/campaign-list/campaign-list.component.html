@@ -1,6 +1,7 @@
-<div class="campaign-list-container">
-  <div class="header">
-    <h1>Исходящие кампании</h1>
+<app-page-layout 
+  title="Исходящие кампании" 
+  subtitle="Управление автоматическими обзвонами и IVR кампаниями">
+  <div page-actions>
     <button mat-raised-button color="primary" (click)="createCampaign()">
       <mat-icon>add</mat-icon>
       Создать кампанию
@@ -15,7 +16,7 @@
   }
 
   @if (!loading() && !error()) {
-    <mat-card>
+    <div class="campaigns-table-container">
       <crm-table
         [columns]="columns"
         [data]="campaigns()"
@@ -23,11 +24,13 @@
         [showPaginator]="true"
       >
         <ng-template crmColumnTemplate="typeTemplate" let-row>
-          <span class="type-badge">{{ getTypeLabel(row.type) }}</span>
+          <span class="type-badge" [class]="'type-' + row.type.toLowerCase()">
+            {{ getTypeLabel(row.type) }}
+          </span>
         </ng-template>
 
         <ng-template crmColumnTemplate="statusTemplate" let-row>
-          <mat-chip [color]="getStatusColor(row.status)">
+          <mat-chip [class]="'status-chip status-' + row.status.toLowerCase()">
             {{ getStatusLabel(row.status) }}
           </mat-chip>
         </ng-template>
@@ -42,18 +45,20 @@
 
         <ng-template crmColumnTemplate="creatorTemplate" let-row>
           @if (row.creator) {
-            <span>{{ row.creator.name }}</span>
+            <div class="creator-info">
+              <span class="creator-name">{{ row.creator.name }}</span>
+            </div>
           } @else {
             <span class="text-muted">—</span>
           }
         </ng-template>
 
         <ng-template crmColumnTemplate="dateTemplate" let-row>
-          {{ formatDate(row.createdAt) }}
+          <span class="date-text">{{ formatDate(row.createdAt) }}</span>
         </ng-template>
 
         <ng-template crmColumnTemplate="actionsTemplate" let-row>
-          <button mat-icon-button [matMenuTriggerFor]="menu">
+          <button mat-icon-button [matMenuTriggerFor]="menu" class="action-btn">
             <mat-icon>more_vert</mat-icon>
           </button>
           <mat-menu #menu="matMenu">
@@ -102,24 +107,28 @@
       </crm-table>
 
       @if (campaigns().length === 0) {
-        <div class="no-data">
+        <div class="empty-state">
           <mat-icon>campaign</mat-icon>
-          <p>Нет кампаний</p>
+          <h3>Нет кампаний</h3>
+          <p>Создайте свою первую исходящую кампанию для автоматизации обзвонов</p>
           <button mat-raised-button color="primary" (click)="createCampaign()">
-            Создать первую кампанию
+            <mat-icon>add</mat-icon>
+            Создать кампанию
           </button>
         </div>
       }
-    </mat-card>
+    </div>
   }
 
   @if (error()) {
     <div class="error-container">
       <mat-icon color="warn">error</mat-icon>
+      <h3>Ошибка загрузки</h3>
       <p>{{ error() }}</p>
-      <button mat-raised-button (click)="loadCampaigns()">
+      <button mat-raised-button color="primary" (click)="loadCampaigns()">
+        <mat-icon>refresh</mat-icon>
         Попробовать снова
       </button>
     </div>
   }
-</div>
+</app-page-layout>

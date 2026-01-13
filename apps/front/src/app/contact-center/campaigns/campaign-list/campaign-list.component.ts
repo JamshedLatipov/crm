@@ -10,6 +10,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { CrmTableComponent, CrmColumn, CrmColumnTemplateDirective } from '../../../shared/components/crm-table/crm-table.component';
+import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.component';
 import { CampaignApiService } from '../../services/campaign-api.service';
 import {
   OutboundCampaign,
@@ -32,6 +33,7 @@ import {
     MatSnackBarModule,
     CrmTableComponent,
     CrmColumnTemplateDirective,
+    PageLayoutComponent,
   ],
   templateUrl: './campaign-list.component.html',
   styleUrls: ['./campaign-list.component.scss'],
@@ -177,18 +179,6 @@ export class CampaignListComponent implements OnInit {
     return labels[status];
   }
 
-  getStatusColor(status: CampaignStatus): string {
-    const colors: Record<CampaignStatus, string> = {
-      [CampaignStatus.DRAFT]: 'default',
-      [CampaignStatus.SCHEDULED]: 'accent',
-      [CampaignStatus.RUNNING]: 'primary',
-      [CampaignStatus.PAUSED]: 'warn',
-      [CampaignStatus.COMPLETED]: 'default',
-      [CampaignStatus.STOPPED]: 'default',
-    };
-    return colors[status];
-  }
-
   getTypeLabel(type: CampaignType): string {
     const labels: Record<CampaignType, string> = {
       [CampaignType.IVR]: 'IVR',
@@ -199,6 +189,12 @@ export class CampaignListComponent implements OnInit {
   }
 
   formatDate(date: string): string {
-    return new Date(date).toLocaleString('ru-RU');
+    return new Date(date).toLocaleString('ru-RU', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   }
 }

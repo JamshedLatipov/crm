@@ -1,9 +1,13 @@
-<div class="campaign-form-container">
-  <div class="header">
-    <button mat-icon-button (click)="cancel()">
-      <mat-icon>arrow_back</mat-icon>
+<app-page-layout [title]="isEditMode() ? 'Редактировать кампанию' : 'Создать кампанию'">
+  <div page-actions>
+    <button mat-button (click)="cancel()">
+      <mat-icon>close</mat-icon>
+      Отмена
     </button>
-    <h1>{{ isEditMode() ? 'Редактировать кампанию' : 'Создать кампанию' }}</h1>
+    <button mat-raised-button color="primary" [disabled]="form.invalid || loading()" (click)="onSubmit()">
+      <mat-icon>save</mat-icon>
+      {{ isEditMode() ? 'Сохранить' : 'Создать' }}
+    </button>
   </div>
 
   @if (loading()) {
@@ -12,141 +16,147 @@
       <p>Загрузка...</p>
     </div>
   } @else {
-    <form [formGroup]="form" (ngSubmit)="onSubmit()">
-      <mat-card>
-        <mat-card-header>
-          <mat-card-title>Основная информация</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <div class="form-row">
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Название кампании</mat-label>
-              <input matInput formControlName="name" placeholder="Введите название">
-              @if (form.get('name')?.hasError('required') && form.get('name')?.touched) {
-                <mat-error>Название обязательно</mat-error>
-              }
-              @if (form.get('name')?.hasError('minlength')) {
-                <mat-error>Минимум 3 символа</mat-error>
-              }
-            </mat-form-field>
-          </div>
-
-          <div class="form-row">
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Описание</mat-label>
-              <textarea matInput formControlName="description" rows="3" placeholder="Описание кампании"></textarea>
-            </mat-form-field>
-          </div>
-
-          <div class="form-row">
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Тип кампании</mat-label>
-              <mat-select formControlName="type">
-                @for (type of campaignTypes; track type.value) {
-                  <mat-option [value]="type.value">{{ type.label }}</mat-option>
-                }
-              </mat-select>
-            </mat-form-field>
-          </div>
-
-          @if (form.get('type')?.value === CampaignType.IVR || form.get('type')?.value === CampaignType.HYBRID) {
-            <div class="form-row audio-selector-row">
-              <div class="audio-file-info">
-                @if (selectedAudioFile()) {
-                  <div class="selected-file">
-                    <mat-icon>audiotrack</mat-icon>
-                    <span>{{ selectedAudioFile() }}</span>
-                  </div>
-                } @else {
-                  <span class="no-file">Аудиофайл не выбран</span>
-                }
-              </div>
-              <button type="button" mat-raised-button color="primary" (click)="openAudioFileSelector()">
-                <mat-icon>upload_file</mat-icon>
-                {{ selectedAudioFile() ? 'Изменить файл' : 'Выбрать файл' }}
-              </button>
-            </div>
-          }
-
-          @if (form.get('type')?.value === CampaignType.AGENT || form.get('type')?.value === CampaignType.HYBRID) {
-            <div class="form-row">
+    <form [formGroup]="form" class="campaign-form">
+      <div class="form-grid">
+        <!-- Основная информация -->
+        <mat-card class="form-section">
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>info</mat-icon>
+              Основная информация
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="form-fields">
               <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Очередь</mat-label>
-                <mat-select formControlName="queueId" placeholder="Выберите очередь">
-                  @for (queue of queues(); track queue.id) {
-                    <mat-option [value]="queue.id">
-                      {{ queue.name }}
-                      @if (queue.description) {
-                        <span class="queue-description"> - {{ queue.description }}</span>
-                      }
-                    </mat-option>
+                <mat-label>Название кампании</mat-label>
+                <input matInput formControlName="name" placeholder="Введите название">
+                <mat-icon matPrefix>campaign</mat-icon>
+                @if (form.get('name')?.hasError('required') && form.get('name')?.touched) {
+                  <mat-error>Название обязательно</mat-error>
+                }
+                @if (form.get('name')?.hasError('minlength')) {
+                  <mat-error>Минимум 3 символа</mat-error>
+                }
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Описание</mat-label>
+                <textarea matInput formControlName="description" rows="3" placeholder="Описание кампании"></textarea>
+                <mat-icon matPrefix>description</mat-icon>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Тип кампании</mat-label>
+                <mat-select formControlName="type">
+                  @for (type of campaignTypes; track type.value) {
+                    <mat-option [value]="type.value">{{ type.label }}</mat-option>
                   }
                 </mat-select>
-                <mat-hint>Выберите очередь для переброса звонков</mat-hint>
+                <mat-icon matPrefix>category</mat-icon>
               </mat-form-field>
+
+              @if (form.get('type')?.value === CampaignType.IVR || form.get('type')?.value === CampaignType.HYBRID) {
+                <div class="audio-selector-row">
+                  <div class="audio-file-info">
+                    @if (selectedAudioFile()) {
+                      <div class="selected-file">
+                        <mat-icon>audiotrack</mat-icon>
+                        <span>{{ selectedAudioFile() }}</span>
+                      </div>
+                    } @else {
+                      <span class="no-file">Аудиофайл не выбран</span>
+                    }
+                  </div>
+                  <button type="button" mat-raised-button color="accent" (click)="openAudioFileSelector()">
+                    <mat-icon>upload_file</mat-icon>
+                    {{ selectedAudioFile() ? 'Изменить файл' : 'Выбрать файл' }}
+                  </button>
+                </div>
+              }
+
+              @if (form.get('type')?.value === CampaignType.AGENT || form.get('type')?.value === CampaignType.HYBRID) {
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Очередь</mat-label>
+                  <mat-select formControlName="queueId" placeholder="Выберите очередь">
+                    @for (queue of queues(); track queue.id) {
+                      <mat-option [value]="queue.id">
+                        {{ queue.name }}
+                        @if (queue.description) {
+                          <span class="queue-description"> - {{ queue.description }}</span>
+                        }
+                      </mat-option>
+                    }
+                  </mat-select>
+                  <mat-icon matPrefix>queue</mat-icon>
+                  <mat-hint>Выберите очередь для переброса звонков</mat-hint>
+                </mat-form-field>
+              }
             </div>
-          }
-        </mat-card-content>
-      </mat-card>
+          </mat-card-content>
+        </mat-card>
 
-      <mat-card formGroupName="settings">
-        <mat-card-header>
-          <mat-card-title>Настройки автообзвона</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <div class="form-row">
-            <mat-form-field appearance="outline">
-              <mat-label>Максимум попыток</mat-label>
-              <input matInput type="number" formControlName="maxAttempts" min="1" max="10">
-              <mat-hint>От 1 до 10</mat-hint>
-            </mat-form-field>
+        <!-- Настройки автообзвона -->
+        <mat-card class="form-section" formGroupName="settings">
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon>settings</mat-icon>
+              Настройки автообзвона
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="form-fields">
+              <div class="form-row-grid">
+                <mat-form-field appearance="outline">
+                  <mat-label>Максимум попыток</mat-label>
+                  <input matInput type="number" formControlName="maxAttempts" min="1" max="10">
+                  <mat-icon matPrefix>replay</mat-icon>
+                  <mat-hint>От 1 до 10</mat-hint>
+                </mat-form-field>
 
-            <mat-form-field appearance="outline">
-              <mat-label>Интервал повтора (мин)</mat-label>
-              <input matInput type="number" formControlName="retryInterval" min="5" max="1440">
-              <mat-hint>От 5 до 1440 минут</mat-hint>
-            </mat-form-field>
-          </div>
+                <mat-form-field appearance="outline">
+                  <mat-label>Интервал повтора (мин)</mat-label>
+                  <input matInput type="number" formControlName="retryInterval" min="5" max="1440">
+                  <mat-icon matPrefix>schedule</mat-icon>
+                  <mat-hint>От 5 до 1440 минут</mat-hint>
+                </mat-form-field>
+              </div>
 
-          <div class="form-row">
-            <mat-form-field appearance="outline">
-              <mat-label>Макс. длительность звонка (сек)</mat-label>
-              <input matInput type="number" formControlName="maxCallDuration" min="30" max="3600">
-              <mat-hint>От 30 до 3600 секунд</mat-hint>
-            </mat-form-field>
+              <div class="form-row-grid">
+                <mat-form-field appearance="outline">
+                  <mat-label>Макс. длительность звонка (сек)</mat-label>
+                  <input matInput type="number" formControlName="maxCallDuration" min="30" max="3600">
+                  <mat-icon matPrefix>timer</mat-icon>
+                  <mat-hint>От 30 до 3600 секунд</mat-hint>
+                </mat-form-field>
 
-            <mat-form-field appearance="outline">
-              <mat-label>Одновременных звонков</mat-label>
-              <input matInput type="number" formControlName="simultaneousCalls" min="1" max="50">
-              <mat-hint>От 1 до 50</mat-hint>
-            </mat-form-field>
-          </div>
+                <mat-form-field appearance="outline">
+                  <mat-label>Одновременных звонков</mat-label>
+                  <input matInput type="number" formControlName="simultaneousCalls" min="1" max="50">
+                  <mat-icon matPrefix>phone_in_talk</mat-icon>
+                  <mat-hint>От 1 до 50</mat-hint>
+                </mat-form-field>
+              </div>
 
-          <div class="form-row">
-            <mat-form-field appearance="outline">
-              <mat-label>Caller ID (номер)</mat-label>
-              <input matInput formControlName="callerIdNumber" placeholder="+71234567890">
-              <mat-hint>Опционально</mat-hint>
-            </mat-form-field>
+              <div class="form-row-grid">
+                <mat-form-field appearance="outline">
+                  <mat-label>Caller ID (номер)</mat-label>
+                  <input matInput formControlName="callerIdNumber" placeholder="+71234567890">
+                  <mat-icon matPrefix>dialpad</mat-icon>
+                  <mat-hint>Опционально</mat-hint>
+                </mat-form-field>
 
-            <mat-form-field appearance="outline">
-              <mat-label>Caller ID (имя)</mat-label>
-              <input matInput formControlName="callerIdName" placeholder="Название компании">
-              <mat-hint>Опционально</mat-hint>
-            </mat-form-field>
-          </div>
-        </mat-card-content>
-      </mat-card>
-
-      <div class="form-actions">
-        <button mat-button type="button" (click)="cancel()">
-          Отмена
-        </button>
-        <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid || loading()">
-          <mat-icon>save</mat-icon>
-          {{ isEditMode() ? 'Сохранить' : 'Создать' }}
-        </button>
+                <mat-form-field appearance="outline">
+                  <mat-label>Caller ID (имя)</mat-label>
+                  <input matInput formControlName="callerIdName" placeholder="Название компании">
+                  <mat-icon matPrefix>badge</mat-icon>
+                  <mat-hint>Опционально</mat-hint>
+                </mat-form-field>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
       </div>
     </form>
   }
-</div>
+</app-page-layout>

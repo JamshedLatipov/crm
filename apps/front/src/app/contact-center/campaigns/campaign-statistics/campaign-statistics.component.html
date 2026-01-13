@@ -1,10 +1,12 @@
-<div class="campaign-statistics-container">
-  <div class="header">
-    <button mat-icon-button (click)="back()">
+<app-page-layout 
+  [title]="'Статистика кампании: ' + getCampaignName()"
+  subtitle="Аналитика и метрики исходящей кампании">
+  <div page-actions>
+    <button mat-button (click)="back()">
       <mat-icon>arrow_back</mat-icon>
+      Назад
     </button>
-    <h1>Статистика кампании: {{ getCampaignName() }}</h1>
-    <button mat-stroked-button (click)="exportToCSV()" [disabled]="!statistics()">
+    <button mat-raised-button color="primary" (click)="exportToCSV()" [disabled]="!statistics()">
       <mat-icon>download</mat-icon>
       Экспорт CSV
     </button>
@@ -18,7 +20,7 @@
   }
 
   @if (!loading() && statistics()) {
-    <div class="statistics-grid">
+    <div class="statistics-content">
       <!-- Summary Cards -->
       <div class="summary-cards">
         <mat-card class="stat-card">
@@ -29,6 +31,7 @@
             <div class="stat-info">
               <span class="stat-label">Всего контактов</span>
               <span class="stat-value">{{ statistics()!.totalContacts }}</span>
+              <span class="stat-trend positive">База данных</span>
             </div>
           </mat-card-content>
         </mat-card>
@@ -41,6 +44,7 @@
             <div class="stat-info">
               <span class="stat-label">Всего звонков</span>
               <span class="stat-value">{{ statistics()!.totalCalls }}</span>
+              <span class="stat-trend">Выполнено</span>
             </div>
           </mat-card-content>
         </mat-card>
@@ -53,6 +57,7 @@
             <div class="stat-info">
               <span class="stat-label">Отвечено</span>
               <span class="stat-value">{{ statistics()!.answeredCalls }}</span>
+              <span class="stat-trend positive">Успешно</span>
             </div>
           </mat-card-content>
         </mat-card>
@@ -65,6 +70,7 @@
             <div class="stat-info">
               <span class="stat-label">Неуспешно</span>
               <span class="stat-value">{{ statistics()!.failedCalls }}</span>
+              <span class="stat-trend negative">Ошибки</span>
             </div>
           </mat-card-content>
         </mat-card>
@@ -77,11 +83,12 @@
             <div class="stat-info">
               <span class="stat-label">Средняя длительность</span>
               <span class="stat-value">{{ formatDuration(statistics()!.avgDuration) }}</span>
+              <span class="stat-trend">Минут</span>
             </div>
           </mat-card-content>
         </mat-card>
 
-        <mat-card class="stat-card">
+        <mat-card class="stat-card highlight">
           <mat-card-content>
             <div class="stat-icon rate">
               <mat-icon>trending_up</mat-icon>
@@ -89,130 +96,184 @@
             <div class="stat-info">
               <span class="stat-label">Процент ответов</span>
               <span class="stat-value">{{ statistics()!.answerRate }}%</span>
+              <span class="stat-trend positive">Конверсия</span>
             </div>
           </mat-card-content>
         </mat-card>
       </div>
 
-      <!-- Contacts by Status Table -->
-      <mat-card>
-        <mat-card-header>
-          <mat-card-title>Распределение контактов по статусам</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <table mat-table [dataSource]="statistics()!.contactsByStatus" class="status-table">
-            <!-- Status Column -->
-            <ng-container matColumnDef="status">
-              <th mat-header-cell *matHeaderCellDef>Статус</th>
-              <td mat-cell *matCellDef="let element">
-                <mat-chip [color]="getStatusColor(element.status)">
-                  {{ getStatusLabel(element.status) }}
-                </mat-chip>
-              </td>
-            </ng-container>
+      <!-- Two Column Layout -->
+      <div class="content-grid">
+        <!-- Left Column -->
+        <div class="left-column">
+          <!-- Contacts by Status Table -->
+          <mat-card class="data-card">
+            <mat-card-header>
+              <mat-card-title>
+                <mat-icon>pie_chart</mat-icon>
+                Распределение контактов по статусам
+              </mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <crm-table
+                [columns]="statusColumns"
+                [data]="statistics()!.contactsByStatus"
+                [showPaginator]="false"
+              >
+                <ng-template crmColumnTemplate="statusTemplate" let-row>
+                  <mat-chip [class]="'status-chip status-' + row.status.toLowerCase()">
+                    {{ getStatusLabel(row.status) }}
+                  </mat-chip>
+                </ng-template>
 
-            <!-- Count Column -->
-            <ng-container matColumnDef="count">
-              <th mat-header-cell *matHeaderCellDef>Количество</th>
-              <td mat-cell *matCellDef="let element">
-                <strong>{{ element.count }}</strong>
-              </td>
-            </ng-container>
+                <ng-template crmColumnTemplate="countTemplate" let-row>
+                  <strong class="count-value">{{ row.count }}</strong>
+                </ng-template>
 
-            <!-- Percentage Column -->
-            <ng-container matColumnDef="percentage">
-              <th mat-header-cell *matHeaderCellDef>Процент</th>
-              <td mat-cell *matCellDef="let element">
-                <div class="percentage-bar">
-                  <div class="bar" [style.width.%]="calculatePercentage(element.count)"></div>
-                  <span class="percentage-text">{{ calculatePercentage(element.count) }}%</span>
+                <ng-template crmColumnTemplate="percentageTemplate" let-row>
+                  <div class="percentage-bar">
+                    <div class="bar" [style.width.%]="calculatePercentage(row.count)"></div>
+                    <span class="percentage-text">{{ calculatePercentage(row.count) }}%</span>
+                  </div>
+                </ng-template>
+              </crm-table>
+            </mat-card-content>
+          </mat-card>
+        </div>
+
+        <!-- Right Column -->
+        <div class="right-column">
+          <!-- Campaign Info -->
+          <mat-card class="info-card">
+            <mat-card-header>
+              <mat-card-title>
+                <mat-icon>info</mat-icon>
+                Информация о кампании
+              </mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="info-list">
+                <div class="info-item">
+                  <mat-icon class="info-icon">campaign</mat-icon>
+                  <div class="info-content">
+                    <span class="info-label">Название</span>
+                    <span class="info-value">{{ statistics()!.campaign.name }}</span>
+                  </div>
                 </div>
-              </td>
-            </ng-container>
 
-            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-          </table>
-        </mat-card-content>
-      </mat-card>
+                <div class="info-item">
+                  <mat-icon class="info-icon">category</mat-icon>
+                  <div class="info-content">
+                    <span class="info-label">Тип</span>
+                    <span class="info-value">{{ statistics()!.campaign.type }}</span>
+                  </div>
+                </div>
 
-      <!-- Campaign Info -->
-      <mat-card>
-        <mat-card-header>
-          <mat-card-title>Информация о кампании</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <div class="info-grid">
-            <div class="info-item">
-              <span class="info-label">Название:</span>
-              <span class="info-value">{{ statistics()!.campaign.name }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Тип:</span>
-              <span class="info-value">{{ statistics()!.campaign.type }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Статус:</span>
-              <mat-chip>{{ statistics()!.campaign.status }}</mat-chip>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Создана:</span>
-              <span class="info-value">{{ formatDate(statistics()!.campaign.createdAt) }}</span>
-            </div>
-            @if (statistics()!.campaign.startedAt) {
-              <div class="info-item">
-                <span class="info-label">Запущена:</span>
-                <span class="info-value">{{ formatDate(statistics()!.campaign.startedAt) }}</span>
-              </div>
-            }
-            @if (statistics()!.campaign.completedAt) {
-              <div class="info-item">
-                <span class="info-label">Завершена:</span>
-                <span class="info-value">{{ formatDate(statistics()!.campaign.completedAt) }}</span>
-              </div>
-            }
-            @if (statistics()!.campaign.creator) {
-              <div class="info-item">
-                <span class="info-label">Создал:</span>
-                <span class="info-value">{{ statistics()!.campaign.creator.name }}</span>
-              </div>
-            }
-          </div>
-        </mat-card-content>
-      </mat-card>
+                <div class="info-item">
+                  <mat-icon class="info-icon">flag</mat-icon>
+                  <div class="info-content">
+                    <span class="info-label">Статус</span>
+                    <mat-chip class="status-chip">{{ statistics()!.campaign.status }}</mat-chip>
+                  </div>
+                </div>
 
-      <!-- Settings -->
-      <mat-card>
-        <mat-card-header>
-          <mat-card-title>Настройки кампании</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <div class="info-grid">
-            <div class="info-item">
-              <span class="info-label">Макс. попыток:</span>
-              <span class="info-value">{{ statistics()!.campaign.settings.maxAttempts }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Интервал повтора:</span>
-              <span class="info-value">{{ statistics()!.campaign.settings.retryInterval }} мин</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Макс. длительность:</span>
-              <span class="info-value">{{ formatDuration(statistics()!.campaign.settings.maxCallDuration) }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Одновременных звонков:</span>
-              <span class="info-value">{{ statistics()!.campaign.settings.simultaneousCalls }}</span>
-            </div>
-            @if (statistics()!.campaign.settings.callerIdNumber) {
-              <div class="info-item">
-                <span class="info-label">Caller ID:</span>
-                <span class="info-value">{{ statistics()!.campaign.settings.callerIdNumber }}</span>
+                <div class="info-item">
+                  <mat-icon class="info-icon">event</mat-icon>
+                  <div class="info-content">
+                    <span class="info-label">Создана</span>
+                    <span class="info-value">{{ formatDate(statistics()!.campaign.createdAt) }}</span>
+                  </div>
+                </div>
+
+                @if (statistics()!.campaign.startedAt) {
+                  <div class="info-item">
+                    <mat-icon class="info-icon">play_arrow</mat-icon>
+                    <div class="info-content">
+                      <span class="info-label">Запущена</span>
+                      <span class="info-value">{{ formatDate(statistics()!.campaign.startedAt) }}</span>
+                    </div>
+                  </div>
+                }
+
+                @if (statistics()!.campaign.completedAt) {
+                  <div class="info-item">
+                    <mat-icon class="info-icon">check</mat-icon>
+                    <div class="info-content">
+                      <span class="info-label">Завершена</span>
+                      <span class="info-value">{{ formatDate(statistics()!.campaign.completedAt) }}</span>
+                    </div>
+                  </div>
+                }
+
+                @if (statistics()!.campaign.creator) {
+                  <div class="info-item">
+                    <mat-icon class="info-icon">person</mat-icon>
+                    <div class="info-content">
+                      <span class="info-label">Создал</span>
+                      <span class="info-value">{{ statistics()!.campaign.creator.name }}</span>
+                    </div>
+                  </div>
+                }
               </div>
-            }
-          </div>
-        </mat-card-content>
-      </mat-card>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Settings -->
+          <mat-card class="info-card">
+            <mat-card-header>
+              <mat-card-title>
+                <mat-icon>settings</mat-icon>
+                Настройки кампании
+              </mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="info-list">
+                <div class="info-item">
+                  <mat-icon class="info-icon">replay</mat-icon>
+                  <div class="info-content">
+                    <span class="info-label">Макс. попыток</span>
+                    <span class="info-value">{{ statistics()!.campaign.settings.maxAttempts }}</span>
+                  </div>
+                </div>
+
+                <div class="info-item">
+                  <mat-icon class="info-icon">schedule</mat-icon>
+                  <div class="info-content">
+                    <span class="info-label">Интервал повтора</span>
+                    <span class="info-value">{{ statistics()!.campaign.settings.retryInterval }} мин</span>
+                  </div>
+                </div>
+
+                <div class="info-item">
+                  <mat-icon class="info-icon">timer</mat-icon>
+                  <div class="info-content">
+                    <span class="info-label">Макс. длительность</span>
+                    <span class="info-value">{{ formatDuration(statistics()!.campaign.settings.maxCallDuration) }}</span>
+                  </div>
+                </div>
+
+                <div class="info-item">
+                  <mat-icon class="info-icon">phone_in_talk</mat-icon>
+                  <div class="info-content">
+                    <span class="info-label">Одновременных звонков</span>
+                    <span class="info-value">{{ statistics()!.campaign.settings.simultaneousCalls }}</span>
+                  </div>
+                </div>
+
+                @if (statistics()!.campaign.settings.callerIdNumber) {
+                  <div class="info-item">
+                    <mat-icon class="info-icon">dialpad</mat-icon>
+                    <div class="info-content">
+                      <span class="info-label">Caller ID</span>
+                      <span class="info-value">{{ statistics()!.campaign.settings.callerIdNumber }}</span>
+                    </div>
+                  </div>
+                }
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </div>
     </div>
   }
-</div>
+</app-page-layout>
