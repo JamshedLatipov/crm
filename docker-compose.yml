@@ -70,6 +70,7 @@ services:
       - "5060:5060/udp"   # SIP UDP (signalling)
       - "5061:5061/tcp"   # SIP TLS (WebRTC)
       - "8089:8089/tcp"   # WebSocket (ws) for JsSIP
+      - "8443:8443/tcp"   # WebSocket Secure (wss) for JsSIP
       - "5038:5038/tcp"   # AMI management interface
       - "10000-10020:10000-10020/udp" # RTP (smaller range)
     entrypoint: ["/usr/sbin/asterisk","-f"]

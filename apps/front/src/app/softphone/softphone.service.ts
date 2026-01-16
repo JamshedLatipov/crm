@@ -21,8 +21,11 @@ export class SoftphoneService {
       this.ua = null;
     }
     
-    const socketWs = new JsSIP.WebSocketInterface(`ws://${asteriskHost}:8089/ws`);
-    socketWs.via_transport = 'WS';
+    // Use WSS if page is loaded over HTTPS, otherwise WS
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const wsPort = wsProtocol === 'wss' ? '8443' : '8089';
+    const socketWs = new JsSIP.WebSocketInterface(`${wsProtocol}://${asteriskHost}:${wsPort}/ws`);
+    socketWs.via_transport = wsProtocol.toUpperCase();
 
     this.ua = new JsSIP.UA({
       uri: `sip:${sipUser}@${asteriskHost}`,
