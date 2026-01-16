@@ -22,9 +22,10 @@ export class SoftphoneService {
     }
     
     // Use WSS if page is loaded over HTTPS, otherwise WS
+    // Connect through nginx proxy on the same domain to avoid certificate issues
     const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const wsPort = wsProtocol === 'wss' ? '8443' : '8089';
-    const socketWs = new JsSIP.WebSocketInterface(`${wsProtocol}://${asteriskHost}:${wsPort}/ws`);
+    const wsHost = window.location.host; // Use the same host as the page (nginx will proxy to Asterisk)
+    const socketWs = new JsSIP.WebSocketInterface(`${wsProtocol}://${wsHost}/ws`);
     socketWs.via_transport = wsProtocol.toUpperCase();
 
     this.ua = new JsSIP.UA({
