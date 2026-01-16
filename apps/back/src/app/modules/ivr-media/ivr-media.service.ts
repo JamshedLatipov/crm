@@ -29,6 +29,7 @@ export class IvrMediaService {
     const base = file.filename.replace(/\.[^.]+$/, '');
     const outGsm = path.join(this.mediaDir, base + '.gsm');
     const outWav = path.join(this.mediaDir, base + '.wav');
+    const outSln = path.join(this.mediaDir, base + '.slin');
 
     // determine ffmpeg binary: env override, ffmpeg-static package, node_modules/.bin, or plain 'ffmpeg'
     let ffmpegBin: string | undefined = process.env.FFMPEG_PATH;
@@ -82,9 +83,11 @@ export class IvrMediaService {
     try {
       if (fs.existsSync(input)) {
         // create gsm (narrowband 8k mono)
-        await run(['-y','-i', input, '-ar','8000','-ac','1','-ab','12k', outGsm]);
+        await run(['-y','-i', input, '-ar','8000','-ac','1','-acodec','gsm', outGsm]);
         // create 8k mono wav (PCM 16-bit) — Asterisk can use .wav
         await run(['-y','-i', input, '-ar','8000','-ac','1','-acodec','pcm_s16le', outWav]);
+        // create slin (signed linear 16-bit)
+        await run(['-y','-i', input, '-ar','8000','-ac','1','-f','s16le', outSln]);
       } else {
         this.logger.warn('Uploaded file missing for conversion: '+input);
       }
