@@ -131,11 +131,13 @@ services:
       AMI_USER: admin
       AMI_PASSWORD: amp111
       RECORDINGS_PATH: /var/lib/asterisk/recordings
+      IVR_MEDIA_DIR: /var/lib/asterisk/sounds/custom
       TZ: Asia/Tashkent
     ports:
       - "3000:3000"
     volumes:
       - ./data/asterisk/recordings:/var/lib/asterisk/recordings:ro
+      - ./data/asterisk/sounds/custom:/var/lib/asterisk/sounds/custom:rw
     command: ["node", "dist/main.js"]
     mem_limit: "512m"
     mem_reservation: "256m"

@@ -16,7 +16,7 @@ COPY . .
 RUN npm install --legacy-peer-deps
 
 # Run the Nx build using the locally installed binary
-RUN npx nx build front
+RUN npx nx build front --configuration=nets
 
 # Production stage
 FROM nginx:stable-alpine AS runner
@@ -27,7 +27,8 @@ RUN rm /etc/nginx/conf.d/default.conf || true
 COPY apps/front/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy built artifacts. Adjust path if your build outputs elsewhere.
-COPY --from=builder /workspace/dist/apps/front /usr/share/nginx/html
+RUN rm -rf /usr/share/nginx/html/*
+COPY --from=builder /workspace/dist/apps/front/browser /usr/share/nginx/html
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

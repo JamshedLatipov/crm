@@ -45,6 +45,27 @@
             }
           ]
         },
+        "nets": {
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "2mb",
+              "maximumError": "5mb"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "50kb",
+              "maximumError": "100kb"
+            }
+          ],
+          "outputHashing": "all",
+          "fileReplacements": [
+            {
+              "replace": "apps/front/src/environments/environment.ts",
+              "with": "apps/front/src/environments/environment.nets.ts"
+            }
+          ]
+        },
         "development": {
           "optimization": false,
           "extractLicenses": false,
@@ -62,6 +83,9 @@
         },
         "development": {
           "buildTarget": "front:build:development"
+        },
+        "nets": {
+          "buildTarget": "front:build:nets"
         }
       },
       "defaultConfiguration": "development"

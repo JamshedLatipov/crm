@@ -12,6 +12,7 @@ RUN npm run build:back --loglevel=info
 
 # Stage 2: Production
 FROM node:24.12.0-alpine
+RUN apk add --no-cache ffmpeg
 WORKDIR /app
 COPY --from=builder /app/dist/apps/back ./dist
 # Copy the workspace root package.json and lockfile from the builder so
