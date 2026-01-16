@@ -708,13 +708,35 @@ export class IvrRuntimeService implements OnModuleInit, OnModuleDestroy {
         st.pendingTimeoutMs = undefined;
       }
     } else if (node.action === 'playback') {
-      // After playback: return to parent menu if exists; else keep call (no hangup)
+      // After playback: check for auto-next node (child with no digit), then return to parent menu
       await this.safeLog({
         channelId,
         nodeId: node.id,
         nodeName: node.name,
         event: 'PLAYBACK_FINISHED',
       });
+      
+      // Check for auto-transition child node (child without digit for sequential flow)
+      const autoNextChild = await this.repo.findOne({
+        where: [
+          { parentId: node.id, digit: null },
+          { parentId: node.id, digit: '' }
+        ]
+      });
+      
+      if (autoNextChild) {
+        // Auto-transition to next node (e.g., queue after playback)
+        const st2 = this.calls.get(channelId);
+        if (st2) {
+          st2.currentNodeId = autoNextChild.id;
+          st2.waitingForDigit = false;
+          await this.saveCallToRedis(channelId, st2);
+        }
+        await this.executeNode(autoNextChild, channelId);
+        return;
+      }
+      
+      // Fallback: return to parent menu if exists
       const current = await this.getNodeById(node.id);
       if (current?.parentId) {
         const parent = await this.getNodeById(current.parentId);

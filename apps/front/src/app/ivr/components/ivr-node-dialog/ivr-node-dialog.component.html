@@ -164,7 +164,7 @@
             <mat-label>Очередь</mat-label>
             <mat-select formControlName="queueName">
               <mat-option [value]="null">(нет)</mat-option>
-              <mat-option *ngFor="let q of queues" [value]="q.id">
+              <mat-option *ngFor="let q of queues" [value]="q.name">
                 <mat-icon>groups</mat-icon>
                 {{ q.name }}
               </mat-option>
