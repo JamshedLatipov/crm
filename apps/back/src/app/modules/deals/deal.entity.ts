@@ -13,6 +13,7 @@ import { Company } from '../companies/entities/company.entity';
 import { Contact } from '../contacts/contact.entity';
 import { Lead } from '../leads/lead.entity';
 import { Assignment } from '../shared/entities/assignment.entity';
+import { PromoCompany } from '../promo-companies/entities/promo-company.entity';
 
 export enum DealStatus {
   OPEN = 'open',
@@ -89,6 +90,14 @@ export class Deal {
 
   @Column('json', { nullable: true })
   meta?: Record<string, unknown>;
+
+  // Промо-компания, к которой привязана сделка (наследуется от лида)
+  @ManyToOne(() => PromoCompany, { nullable: true })
+  @JoinColumn({ name: 'promoCompanyId' })
+  promoCompany?: PromoCompany;
+
+  @Column({ nullable: true })
+  promoCompanyId?: number;
 
   @CreateDateColumn()
   createdAt: Date;

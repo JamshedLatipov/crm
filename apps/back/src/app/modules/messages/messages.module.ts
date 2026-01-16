@@ -18,6 +18,7 @@ import { TelegramTemplate } from './entities/telegram-template.entity';
 import { MessageCampaign } from './entities/message-campaign.entity';
 import { Media } from './entities/media.entity';
 import { Setting } from './entities/setting.entity';
+import { SmsProviderConfig } from './entities/sms-provider-config.entity';
 import { NotificationAnalytics } from '../shared/entities/notification-analytics.entity';
 import { Contact } from '../contacts/contact.entity';
 import { Lead } from '../leads/lead.entity';
@@ -26,6 +27,8 @@ import { Company } from '../companies/entities/company.entity';
 
 // Services
 import { SmsProviderService } from './services/sms-provider.service';
+import { SmsProviderConfigService } from './services/sms-provider-config.service';
+import { SmsProviderFactory } from './services/providers/sms-provider.factory';
 import { SmsTemplateService } from './services/sms-template.service';
 import { MessageCampaignService } from './services/message-campaign.service';
 import { EmailProviderService } from './services/email-provider.service';
@@ -73,6 +76,7 @@ import { SettingController } from './controllers/setting.controller';
       MessageCampaign,
       Media,
       Setting,
+      SmsProviderConfig, // Новая entity для конфигурации провайдеров
       NotificationAnalytics,
       Contact,
       Lead,
@@ -122,16 +126,23 @@ import { SettingController } from './controllers/setting.controller';
     SettingController,
   ],
   providers: [
+    // SMS Provider System
     SmsProviderService,
+    SmsProviderConfigService,
+    SmsProviderFactory,
+    // Templates
     SmsTemplateService,
-    MessageCampaignService,
-    EmailProviderService,
     EmailTemplateService,
-    WhatsAppProviderService,
     WhatsAppTemplateService,
-    TelegramProviderService,
     TelegramTemplateService,
+    // Campaigns
+    MessageCampaignService,
+    // Providers
+    EmailProviderService,
+    WhatsAppProviderService,
+    TelegramProviderService,
     RestApiProviderService,
+    // Utils
     NotificationService,
     TemplateRenderService,
     MessageQueueService,
@@ -141,6 +152,8 @@ import { SettingController } from './controllers/setting.controller';
   ],
   exports: [
     SmsProviderService,
+    SmsProviderConfigService,
+    SmsProviderFactory,
     SmsTemplateService,
     MessageCampaignService,
     EmailProviderService,

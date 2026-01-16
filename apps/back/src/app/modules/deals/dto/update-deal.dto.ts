@@ -7,6 +7,7 @@ export class UpdateDealDto {
   contactId?: string;
   companyId?: string;
   leadId?: number;
+  promoCompanyId?: number; // ID промо-компании
   
   amount?: number;
   currency?: string;

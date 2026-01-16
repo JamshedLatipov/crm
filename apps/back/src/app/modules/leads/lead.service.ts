@@ -1195,6 +1195,7 @@ export class LeadService {
     const dealDto: CreateDealDto = {
       title: dealData.title || `Deal from ${lead.name}`,
       leadId: lead.id,
+      promoCompanyId: lead.promoCompanyId || undefined, // Переносим промо-компанию из лида в сделку
       amount: typeof dealData.amount === 'string' ? Number(dealData.amount) : dealData.amount,
       currency: dealData.currency || 'RUB',
       probability: typeof dealData.probability === 'string' ? Number(dealData.probability) : (dealData.probability ?? (typeof lead.conversionProbability === 'string' ? Number(lead.conversionProbability) : lead.conversionProbability) ?? 50),
@@ -1291,30 +1292,21 @@ export class LeadService {
       isQualified: true 
     }, userId, userName);
 
-    // Если лид был привязан к промо-компании, отвязываем его при конвертации
+    // Если лид был привязан к промо-компании, обновляем статистику
     if (lead.promoCompanyId) {
       try {
-        // Устанавливаем promoCompanyId в null
-        await this.leadRepo.update(leadId, { promoCompanyId: null });
+        // НЕ удаляем promoCompanyId из лида, так как он перенесён в сделку
+        // Просто обновляем счётчики в промо-компании
         
-        // Обновляем leadsReached в промо-компании
-        const currentLeadsCount = await this.leadRepo.count({ 
-          where: { 
-            promoCompanyId: lead.promoCompanyId,
-            status: Not(LeadStatus.CONVERTED) // Считаем только активные лиды
-          } 
-        });
-        
-        // Получаем текущую промо-компанию для обновления leadsConverted
+        // Обновляем leadsReached и leadsConverted в промо-компании
         const promoCompany = await this.promoCompaniesService.findOne(lead.promoCompanyId);
         await this.promoCompaniesService.update(lead.promoCompanyId, {
-          leadsReached: currentLeadsCount,
           leadsConverted: promoCompany.leadsConverted + 1 // Увеличиваем количество конвертированных лидов
         });
         
-        console.log(`Lead ${leadId} removed from promo company ${lead.promoCompanyId} during conversion to deal`);
+        console.log(`Lead ${leadId} converted to deal with promo company ${lead.promoCompanyId}, statistics updated`);
       } catch (error) {
-        console.warn('Failed to remove lead from promo company during conversion:', error.message);
+        console.warn('Failed to update promo company statistics during conversion:', error.message);
         // Не прерываем конвертацию из-за этой ошибки
       }
     }

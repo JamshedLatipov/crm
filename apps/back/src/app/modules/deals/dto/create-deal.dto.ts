@@ -5,6 +5,7 @@ export class CreateDealDto {
   contactId?: string; // ID контакта
   companyId?: string; // ID компании  
   leadId?: number;    // ID лида
+  promoCompanyId?: number; // ID промо-компании (наследуется от лида)
   
   amount: number;
   currency: string;

@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance } from 'axios';
+import { SmsProviderConfigService } from './sms-provider-config.service';
+import { SmsProviderFactory } from './providers/sms-provider.factory';
+import { SmsProviderInterface, SendSmsResult as NewSendSmsResult } from './providers/sms-provider.interface';
 
 export interface SendSmsResult {
   success: boolean;
@@ -20,7 +23,8 @@ export interface SmsProviderConfig {
 
 /**
  * Сервис для интеграции с СМС-провайдерами
- * Поддерживает: SMS.RU, SMSC.RU, Twilio
+ * Теперь поддерживает динамическое подключение провайдеров через БД
+ * Обратная совместимость с существующими методами сохранена
  */
 @Injectable()
 export class SmsProviderService {
@@ -28,14 +32,21 @@ export class SmsProviderService {
   private readonly httpClient: AxiosInstance;
   private readonly config: SmsProviderConfig;
   private readonly isEnabled: boolean;
+  private readonly useNewSystem: boolean;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private providerConfigService: SmsProviderConfigService,
+    private providerFactory: SmsProviderFactory
+  ) {
     this.isEnabled = this.configService.get<boolean>('FEATURE_SMS_ENABLED', true);
+    this.useNewSystem = this.configService.get<boolean>('USE_NEW_SMS_SYSTEM', true);
 
     if (!this.isEnabled) {
       this.logger.warn('SMS provider is disabled. Set FEATURE_SMS_ENABLED=true to enable.');
     }
 
+    // Legacy конфигурация (для обратной совместимости)
     this.config = {
       apiUrl: this.configService.get<string>('SMS_API_URL', 'https://sms.ru/sms/send'),
       apiKey: this.configService.get<string>('SMS_API_KEY', ''),
@@ -53,6 +64,8 @@ export class SmsProviderService {
 
   /**
    * Отправка СМС через провайдера
+   * Если включена новая система - использует динамических провайдеров из БД
+   * Иначе - использует legacy логику
    */
   async sendSms(phoneNumber: string, message: string): Promise<SendSmsResult> {
     if (!this.isEnabled) {
@@ -62,6 +75,65 @@ export class SmsProviderService {
         error: 'SMS provider is disabled',
       };
     }
+
+    // Новая система с динамическими провайдерами
+    if (this.useNewSystem) {
+      return this.sendSmsViaNewSystem(phoneNumber, message);
+    }
+
+    // Legacy система
+    return this.sendSmsViaLegacy(phoneNumber, message);
+  }
+
+  /**
+   * Отправка через новую систему провайдеров
+   */
+  private async sendSmsViaNewSystem(phoneNumber: string, message: string): Promise<SendSmsResult> {
+    try {
+      // Получаем активного провайдера из БД
+      const providerConfig = await this.providerConfigService.findActive();
+
+      if (!providerConfig) {
+        this.logger.error('No active SMS provider configured');
+        return {
+          success: false,
+          error: 'No active SMS provider configured',
+        };
+      }
+
+      this.logger.log(`Using provider: ${providerConfig.displayName}`);
+
+      // Создаем экземпляр провайдера
+      const provider: SmsProviderInterface = this.providerFactory.create(providerConfig);
+
+      // Отправляем SMS
+      const result = await provider.sendSms({
+        phoneNumber,
+        message,
+      });
+
+      // Конвертируем новый формат в старый для обратной совместимости
+      return {
+        success: result.success,
+        providerId: result.messageId,
+        cost: result.cost || providerConfig.settings?.costPerMessage,
+        segmentsCount: result.segmentsCount,
+        error: result.error,
+        errorCode: result.errorCode,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to send SMS via new system: ${error.message}`, error.stack);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Legacy отправка СМС (для обратной совместимости)
+   */
+  private async sendSmsViaLegacy(phoneNumber: string, message: string): Promise<SendSmsResult> {
     try {
       this.logger.log(`Sending SMS to ${phoneNumber} via ${this.config.provider}`);
 

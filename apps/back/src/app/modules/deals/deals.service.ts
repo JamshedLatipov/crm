@@ -239,6 +239,7 @@ export class DealsService {
       notes: dto.notes,
       meta: dto.meta,
       customFields: dto.customFields,
+      promoCompanyId: dto.promoCompanyId, // Сохраняем промо-компанию
     };
 
     const deal = this.dealRepository.create(dealPayload as any);
