@@ -1,0 +1,211 @@
+<div class="qr-join-container">
+  @if (!success()) {
+    <!-- Form -->
+    <div class="join-card">
+      <div class="card-header">
+        <div class="icon">🚗</div>
+        <h1>Запись в очередь</h1>
+        @if (queueInfo()) {
+          <div class="zone-info">
+            <span class="zone-badge">Зона {{ queueInfo()!.zone }}</span>
+            <span class="wait-time">⏱️ ~{{ queueInfo()!.estimatedWaitMinutes }} мин</span>
+          </div>
+        }
+      </div>
+
+      @if (loading() && !queueInfo()) {
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <p>Загрузка информации...</p>
+        </div>
+      }
+
+      @if (error()) {
+        <div class="error-banner">
+          <span class="error-icon">⚠️</span>
+          <span class="error-text">{{ error() }}</span>
+        </div>
+      }
+
+      @if (queueInfo()) {
+        <form class="join-form" (ngSubmit)="submitForm()">
+          <!-- Contact Information -->
+          <div class="form-section">
+            <h3 class="section-title">Контактная информация</h3>
+            
+            <div class="form-group">
+              <label class="required">Номер телефона</label>
+              <input
+                type="tel"
+                class="form-input"
+                [(ngModel)]="phone"
+                name="phone"
+                placeholder="+992 XX XXX XXXX"
+                required
+              />
+              <small class="form-hint">Для отслеживания статуса и уведомлений</small>
+            </div>
+
+            <div class="form-group">
+              <label>Имя</label>
+              <input
+                type="text"
+                class="form-input"
+                [(ngModel)]="customerName"
+                name="customerName"
+                placeholder="Иван Иванов"
+              />
+            </div>
+          </div>
+
+          <!-- Vehicle Information -->
+          <div class="form-section">
+            <h3 class="section-title">Информация об автомобиле</h3>
+            
+            <div class="form-group">
+              <label>Марка</label>
+              <input
+                type="text"
+                class="form-input"
+                [(ngModel)]="vehicleMake"
+                name="vehicleMake"
+                placeholder="Toyota"
+              />
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Модель</label>
+                <input
+                  type="text"
+                  class="form-input"
+                  [(ngModel)]="vehicleModel"
+                  name="vehicleModel"
+                  placeholder="Camry"
+                />
+              </div>
+
+              <div class="form-group">
+                <label>Год</label>
+                <input
+                  type="number"
+                  class="form-input"
+                  [(ngModel)]="vehicleYear"
+                  name="vehicleYear"
+                  [min]="1990"
+                  [max]="maxYear"
+                />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Гос. номер</label>
+              <input
+                type="text"
+                class="form-input license-input"
+                [(ngModel)]="licensePlate"
+                name="licensePlate"
+                placeholder="AA 1234 BB"
+                maxlength="10"
+              />
+            </div>
+          </div>
+
+          <!-- Work Type -->
+          <div class="form-section">
+            <h3 class="section-title">Тип работ</h3>
+            
+            <div class="form-group">
+              <label>Выберите услугу</label>
+              <select
+                class="form-select"
+                [(ngModel)]="workType"
+                name="workType"
+              >
+                <option value="">-- Выберите --</option>
+                @for (type of queueInfo()!.availableWorkTypes; track type) {
+                  <option [value]="type">{{ getWorkTypeLabel(type) }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Описание работ (необязательно)</label>
+              <textarea
+                class="form-textarea"
+                [(ngModel)]="workDescription"
+                name="workDescription"
+                placeholder="Например: замена масла, проверка тормозов"
+                rows="3"
+              ></textarea>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <div class="form-actions">
+            <button
+              type="submit"
+              class="submit-btn"
+              [disabled]="!formValid() || loading()"
+            >
+              @if (loading()) {
+                <span class="btn-spinner"></span>
+                <span>Отправка...</span>
+              } @else {
+                <span>📝 Записаться в очередь</span>
+              }
+            </button>
+          </div>
+
+          <div class="form-footer">
+            <small>
+              * - обязательные поля<br>
+              Нажимая кнопку, вы соглашаетесь с условиями обработки персональных данных
+            </small>
+          </div>
+        </form>
+      }
+    </div>
+  } @else {
+    <!-- Success Screen -->
+    <div class="success-card">
+      <div class="success-icon-large">✅</div>
+      <h1 class="success-title">Вы успешно записаны!</h1>
+      
+      <div class="success-info">
+        <div class="info-item">
+          <div class="info-label">Ваш номер в очереди</div>
+          <div class="info-value queue-number">{{ successData()!.queueNumber }}</div>
+        </div>
+
+        @if (queueInfo()) {
+          <div class="info-item">
+            <div class="info-label">Зона обслуживания</div>
+            <div class="info-value">{{ queueInfo()!.zone }}</div>
+          </div>
+        }
+
+        <div class="info-item">
+          <div class="info-label">Примерное время ожидания</div>
+          <div class="info-value">{{ successData()!.estimatedWaitMinutes }} минут</div>
+        </div>
+      </div>
+
+      <div class="success-message">
+        <span class="message-icon">📱</span>
+        <p>Вы получите SMS уведомление, когда ваш автомобиль будет готов</p>
+      </div>
+
+      <div class="success-actions">
+        @if (successData()!.orderId) {
+          <button class="btn btn-primary" (click)="trackOrder()">
+            🔍 Отслеживать статус
+          </button>
+        }
+        <button class="btn btn-secondary" (click)="resetForm()">
+          ➕ Записать еще один автомобиль
+        </button>
+      </div>
+    </div>
+  }
+</div>

@@ -13,6 +13,7 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./scripts/init-sto-db.sql:/docker-entrypoint-initdb.d/init-sto-db.sql
     mem_limit: "1g"
     mem_reservation: "512m"
 
@@ -152,6 +153,37 @@ services:
       - "80:80"
     mem_limit: "64m"
     mem_reservation: "32m"
+
+  sto-service:
+    build:
+      context: .
+      dockerfile: apps/sto-service/Dockerfile
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: sto_db
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      CRM_API_URL: http://back:3000/api
+      CRM_API_KEY: shared_secret_key
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key}
+      PORT: 3001
+      WS_PORT: 3002
+      NODE_ENV: production
+      TZ: Asia/Tashkent
+    ports:
+      - "3001:3001"
+      - "3002:3002"
+    command: ["node", "dist/main.js"]
+    mem_limit: "512m"
+    mem_reservation: "256m"
 
 volumes:
   pgdata:

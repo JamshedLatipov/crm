@@ -1,0 +1,43 @@
+<div class="app-container">
+  <header class="app-header">
+    <div class="header-content">
+      <h1>
+        <span class="icon">🚗</span>
+        STO Service Demo
+      </h1>
+      <nav class="nav-links">
+        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+          <span class="icon">🏠</span>
+          Главная
+        </a>
+        <a routerLink="/display" routerLinkActive="active">
+          <span class="icon">📺</span>
+          Табло
+        </a>
+        <a routerLink="/track/test-001?phone=79991234567" routerLinkActive="active">
+          <span class="icon">🔍</span>
+          Отслеживание
+        </a>
+        <a routerLink="/mechanic" routerLinkActive="active">
+          <span class="icon">🔧</span>
+          Терминал
+        </a>
+        <a routerLink="/join?token=demo-zone-a" routerLinkActive="active">
+          <span class="icon">📱</span>
+          Запись
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <router-outlet></router-outlet>
+  </main>
+
+  <footer class="app-footer">
+    <p>
+      STO Service Demo App • Angular 20 • 
+      <a href="https://github.com/your-repo" target="_blank">GitHub</a>
+    </p>
+  </footer>
+</div>

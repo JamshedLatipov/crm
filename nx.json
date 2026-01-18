@@ -101,15 +101,22 @@
       "linter": "eslint",
       "style": "scss",
       "unitTestRunner": "vitest",
+      "strict": true,
       "standalone": true,
-      "routing": true,
-      "strict": true
+      "routing": true
     },
     "@nx/node:application": {
       "framework": "nestjs",
       "bundler": "webpack",
       "linter": "eslint",
       "unitTestRunner": "jest"
+    },
+    "@nx/angular:library": {
+      "linter": "eslint",
+      "unitTestRunner": "vitest"
+    },
+    "@nx/angular:component": {
+      "style": "scss"
     }
   },
   "namedInputs": {

@@ -1,0 +1,105 @@
+<div class="display-board">
+  <!-- Header -->
+  <div class="board-header">
+    <div class="header-left">
+      <h1 class="board-title">СТО - Очередь</h1>
+      <span class="display-id">{{ displayId() }}</span>
+    </div>
+    <div class="header-right">
+      <div class="status-indicator" [class.connected]="connected()" [class.disconnected]="!connected()">
+        <span class="status-dot"></span>
+        <span class="status-text">{{ connected() ? 'Подключено' : 'Нет связи' }}</span>
+      </div>
+      <div class="current-time">{{ currentTime() | date:'HH:mm:ss' }}</div>
+      <button class="refresh-btn" (click)="refresh()" [disabled]="!connected()">
+        🔄 Обновить
+      </button>
+    </div>
+  </div>
+
+  <!-- Queue Table -->
+  <div class="queue-container">
+    @if (orders().length === 0) {
+      <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <p class="empty-text">Очередь пуста</p>
+        <p class="empty-subtext">Новые заказы появятся здесь автоматически</p>
+      </div>
+    } @else {
+      <table class="queue-table">
+        <thead>
+          <tr>
+            <th class="col-number">№</th>
+            <th class="col-zone">Зона</th>
+            <th class="col-vehicle">Автомобиль</th>
+            <th class="col-plate">Гос. номер</th>
+            <th class="col-work">Тип работ</th>
+            <th class="col-status">Статус</th>
+            <th class="col-priority">Приоритет</th>
+            <th class="col-time">Время</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (order of orders(); track order.id) {
+            <tr class="queue-row" [class]="getStatusClass(order.status)">
+              <td class="col-number">
+                <div class="queue-number">{{ order.queueNumber }}</div>
+                <div class="zone-number">{{ order.zone }}-{{ order.queueNumberInZone }}</div>
+              </td>
+              <td class="col-zone">
+                <div class="zone-badge">{{ order.zone }}</div>
+              </td>
+              <td class="col-vehicle">
+                <div class="vehicle-make">{{ order.vehicleMake }}</div>
+                <div class="vehicle-model">{{ order.vehicleModel }} ({{ order.vehicleYear }})</div>
+              </td>
+              <td class="col-plate">
+                <div class="license-plate">{{ order.licensePlate }}</div>
+              </td>
+              <td class="col-work">
+                <div class="work-type">{{ order.workType }}</div>
+                @if (order.workDescription) {
+                  <div class="work-desc">{{ order.workDescription }}</div>
+                }
+              </td>
+              <td class="col-status">
+                <span class="status-badge" [class]="getStatusClass(order.status)">
+                  {{ getStatusText(order.status) }}
+                </span>
+              </td>
+              <td class="col-priority">
+                <span class="priority-badge" [class]="getPriorityClass(order.priority)">
+                  {{ order.priority }}
+                </span>
+              </td>
+              <td class="col-time">
+                <div class="time-created">{{ order.createdAt | date:'HH:mm' }}</div>
+                @if (order.startedAt) {
+                  <div class="time-started">🔧 {{ order.startedAt | date:'HH:mm' }}</div>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+
+  <!-- Footer -->
+  <div class="board-footer">
+    <div class="footer-info">
+      <span>Всего в очереди: {{ orders().length }}</span>
+    </div>
+    <div class="footer-legend">
+      <span class="legend-item">
+        <span class="legend-dot status-waiting"></span> Ожидание
+      </span>
+      <span class="legend-item">
+        <span class="legend-dot status-in-progress"></span> В работе
+      </span>
+      <span class="legend-item">
+        <span class="legend-dot status-completed"></span> Завершено
+      </span>
+    </div>
+  </div>
+</div>

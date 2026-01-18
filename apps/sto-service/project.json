@@ -1,0 +1,57 @@
+{
+  "name": "sto-service",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/sto-service/src",
+  "projectType": "application",
+  "tags": ["type:app", "scope:sto"],
+  "targets": {
+    "build": {
+      "executor": "@nx/webpack:webpack",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "target": "node",
+        "compiler": "tsc",
+        "outputPath": "dist/apps/sto-service",
+        "main": "apps/sto-service/src/main.ts",
+        "tsConfig": "apps/sto-service/tsconfig.app.json",
+        "assets": ["apps/sto-service/src/assets"],
+        "webpackConfig": "apps/sto-service/webpack.config.js"
+      },
+      "configurations": {
+        "development": {},
+        "production": {
+          "optimization": true,
+          "extractLicenses": true,
+          "inspect": false
+        }
+      }
+    },
+    "serve": {
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "sto-service:build",
+        "watch": true
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "sto-service:build:development"
+        },
+        "production": {
+          "buildTarget": "sto-service:build:production"
+        }
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "apps/sto-service/jest.config.ts"
+      }
+    }
+  }
+}

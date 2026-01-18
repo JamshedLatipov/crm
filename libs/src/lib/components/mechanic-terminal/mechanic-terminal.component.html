@@ -1,0 +1,192 @@
+<div class="mechanic-terminal">
+  @if (!authenticated()) {
+    <!-- Login Screen -->
+    <div class="login-screen">
+      <div class="login-card">
+        <div class="login-header">
+          <div class="icon">🔧</div>
+          <h1>Терминал механика</h1>
+          <p>Введите ваш PIN-код</p>
+        </div>
+
+        <div class="pin-input-container">
+          <input
+            type="password"
+            class="pin-input"
+            [(ngModel)]="pinInput"
+            (keyup.enter)="login()"
+            placeholder="••••"
+            maxlength="6"
+            autofocus
+          />
+        </div>
+
+        @if (error()) {
+          <div class="error-message">
+            {{ error() }}
+          </div>
+        }
+
+        <button class="login-btn" (click)="login()" [disabled]="pinInput().length < 4">
+          Войти
+        </button>
+
+        <div class="login-hint">
+          <small>Минимум 4 цифры</small>
+        </div>
+      </div>
+    </div>
+  } @else {
+    <!-- Main Terminal -->
+    <div class="terminal-screen">
+      <!-- Header -->
+      <div class="terminal-header">
+        <div class="header-left">
+          <div class="mechanic-info">
+            <div class="mechanic-avatar">{{ currentMechanic()?.name?.charAt(0) || '?' }}</div>
+            <div class="mechanic-details">
+              <div class="mechanic-name">{{ currentMechanic()?.name }}</div>
+              <div class="mechanic-id">ID: {{ currentMechanic()?.id }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="header-right">
+          <button class="refresh-btn" (click)="loadOrders()" [disabled]="loading()">
+            🔄 {{ loading() ? 'Загрузка...' : 'Обновить' }}
+          </button>
+          <button class="logout-btn" (click)="logout()">
+            🚪 Выход
+          </button>
+        </div>
+      </div>
+
+      <div class="terminal-content">
+        <!-- My Active Orders -->
+        <div class="section">
+          <div class="section-header">
+            <h2>Мои заказы ({{ myOrders().length }})</h2>
+          </div>
+
+          @if (myOrders().length === 0) {
+            <div class="empty-state">
+              <div class="empty-icon">📋</div>
+              <p>У вас нет активных заказов</p>
+              <p class="empty-hint">Выберите заказ из доступных ниже</p>
+            </div>
+          } @else {
+            <div class="orders-grid">
+              @for (order of myOrders(); track order.id) {
+                <div class="order-card active">
+                  <div class="order-header">
+                    <div class="order-number">
+                      <span class="number">{{ order.queueNumber }}</span>
+                      <span class="zone-badge">{{ order.zone }}</span>
+                    </div>
+                    <div class="order-timer">
+                      ⏱️ {{ getTimerDisplay(order.id) }}
+                    </div>
+                  </div>
+
+                  <div class="order-body">
+                    <div class="vehicle-info">
+                      <div class="vehicle-make">{{ order.vehicleMake }} {{ order.vehicleModel }}</div>
+                      <div class="license-plate">{{ order.licensePlate }}</div>
+                    </div>
+
+                    <div class="work-info">
+                      <div class="work-type">{{ order.workType }}</div>
+                      @if (order.workDescription) {
+                        <div class="work-desc">{{ order.workDescription }}</div>
+                      }
+                    </div>
+
+                    <div class="customer-info">
+                      <div class="customer-name">👤 {{ order.customerName }}</div>
+                      <div class="customer-phone">📞 {{ order.customerPhone }}</div>
+                    </div>
+                  </div>
+
+                  <div class="order-actions">
+                    <button class="btn btn-success" (click)="completeOrder(order)" [disabled]="loading()">
+                      ✅ Завершить
+                    </button>
+                    <button class="btn btn-danger" (click)="blockOrder(order)" [disabled]="loading()">
+                      🚫 Заблокировать
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Available Orders -->
+        <div class="section">
+          <div class="section-header">
+            <h2>Доступные заказы ({{ filteredAvailable().length }})</h2>
+            <div class="zone-filter">
+              <label>Зона:</label>
+              <select [(ngModel)]="selectedZone" class="zone-select">
+                @for (zone of availableZones(); track zone) {
+                  <option [value]="zone">{{ zone }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          @if (filteredAvailable().length === 0) {
+            <div class="empty-state">
+              <div class="empty-icon">✨</div>
+              <p>Нет доступных заказов</p>
+              @if (selectedZone() !== 'ALL') {
+                <p class="empty-hint">Попробуйте выбрать другую зону</p>
+              }
+            </div>
+          } @else {
+            <div class="orders-list">
+              @for (order of filteredAvailable(); track order.id) {
+                <div class="order-row">
+                  <div class="order-info">
+                    <div class="order-number-col">
+                      <span class="queue-num">{{ order.queueNumber }}</span>
+                      <span class="zone-badge">{{ order.zone }}-{{ order.queueNumberInZone }}</span>
+                    </div>
+
+                    <div class="vehicle-col">
+                      <div class="vehicle-name">{{ order.vehicleMake }} {{ order.vehicleModel }}</div>
+                      <div class="license-plate-small">{{ order.licensePlate }}</div>
+                    </div>
+
+                    <div class="work-col">
+                      <div class="work-type-text">{{ order.workType }}</div>
+                      @if (order.workDescription) {
+                        <div class="work-desc-small">{{ order.workDescription }}</div>
+                      }
+                    </div>
+
+                    <div class="priority-col">
+                      <span class="priority-badge" [class]="getPriorityBadgeClass(order.priority)">
+                        {{ order.priority }}
+                      </span>
+                    </div>
+
+                    <div class="time-col">
+                      <div class="time-label">Создан:</div>
+                      <div class="time-value">{{ order.createdAt | date:'HH:mm' }}</div>
+                    </div>
+                  </div>
+
+                  <div class="order-action">
+                    <button class="btn btn-primary" (click)="takeOrder(order)" [disabled]="loading()">
+                      Взять
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,140 @@
+<div class="tracking-container">
+  <div class="tracking-card">
+    <!-- Header -->
+    <div class="card-header">
+      <h1 class="title">Отслеживание заказа</h1>
+      <div class="auto-refresh">
+        <label class="switch">
+          <input type="checkbox" [checked]="autoRefresh()" (change)="toggleAutoRefresh()">
+          <span class="slider"></span>
+        </label>
+        <span class="refresh-label">Автообновление</span>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    @if (loading() && !trackingInfo()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Загрузка информации...</p>
+      </div>
+    }
+
+    <!-- Error State -->
+    @if (error()) {
+      <div class="error-state">
+        <div class="error-icon">⚠️</div>
+        <p class="error-message">{{ error() }}</p>
+        <button class="retry-btn" (click)="loadTrackingInfo()">Повторить</button>
+      </div>
+    }
+
+    <!-- Tracking Info -->
+    @if (trackingInfo(); as info) {
+      <div class="tracking-content">
+        <!-- Status Banner -->
+        <div class="status-banner" [class]="statusClass()">
+          <div class="status-icon">
+            @switch (info.status) {
+              @case ('WAITING') { <span>⏳</span> }
+              @case ('IN_PROGRESS') { <span>🔧</span> }
+              @case ('COMPLETED') { <span>✅</span> }
+              @case ('CANCELLED') { <span>❌</span> }
+              @case ('BLOCKED') { <span>🚫</span> }
+            }
+          </div>
+          <div class="status-text">
+            <h2>{{ statusText() }}</h2>
+            <p class="queue-number">Номер в очереди: #{{ info.queueNumber }}</p>
+          </div>
+        </div>
+
+        <!-- Current Position (only for WAITING) -->
+        @if (info.status === 'WAITING') {
+          <div class="position-card">
+            <div class="position-number">{{ info.currentPosition }}</div>
+            <div class="position-label">Позиция в очереди</div>
+            <div class="estimated-time">
+              <span class="clock-icon">🕐</span>
+              Примерное время ожидания: <strong>{{ info.estimatedWaitMinutes }} мин</strong>
+            </div>
+          </div>
+        }
+
+        <!-- Order Details -->
+        <div class="details-section">
+          <h3 class="section-title">Детали заказа</h3>
+          
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">Зона обслуживания</span>
+              <span class="detail-value zone-badge">{{ info.zone }}</span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="detail-label">Номер в зоне</span>
+              <span class="detail-value">{{ info.zone }}-{{ info.queueNumberInZone }}</span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="detail-label">Автомобиль</span>
+              <span class="detail-value">{{ info.vehicleMake }} {{ info.vehicleModel }}</span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="detail-label">Тип работ</span>
+              <span class="detail-value">{{ info.workType }}</span>
+            </div>
+            
+            <div class="detail-item">
+              <span class="detail-label">Время создания</span>
+              <span class="detail-value">{{ info.createdAt | date:'dd.MM.yyyy HH:mm' }}</span>
+            </div>
+            
+            @if (info.startedAt) {
+              <div class="detail-item">
+                <span class="detail-label">Начало работ</span>
+                <span class="detail-value">{{ info.startedAt | date:'dd.MM.yyyy HH:mm' }}</span>
+              </div>
+            }
+            
+            @if (info.completedAt) {
+              <div class="detail-item">
+                <span class="detail-label">Завершено</span>
+                <span class="detail-value">{{ info.completedAt | date:'dd.MM.yyyy HH:mm' }}</span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="actions-section">
+          @if (canCancel()) {
+            <button class="cancel-btn" (click)="cancelOrder()" [disabled]="loading()">
+              Отменить заказ
+            </button>
+          }
+          
+          <button class="refresh-btn" (click)="loadTrackingInfo()" [disabled]="loading()">
+            🔄 Обновить
+          </button>
+        </div>
+
+        <!-- Info Message -->
+        @if (info.status === 'WAITING') {
+          <div class="info-message">
+            <span class="info-icon">ℹ️</span>
+            <p>Вы получите уведомление, когда ваш автомобиль будет готов.</p>
+          </div>
+        }
+        
+        @if (info.status === 'COMPLETED') {
+          <div class="success-message">
+            <span class="success-icon">🎉</span>
+            <p>Ваш автомобиль готов! Пожалуйста, подъезжайте в зону {{ info.zone }}.</p>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

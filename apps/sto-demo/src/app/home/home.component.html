@@ -1,0 +1,133 @@
+<div class="home-container">
+  <section class="hero">
+    <div class="hero-content">
+      <h1 class="hero-title">
+        <span class="gradient-text">STO Service</span>
+        <span class="subtitle">UI Components Library</span>
+      </h1>
+      <p class="hero-description">
+        Полнофункциональная Angular 20 библиотека для управления очередью на СТО
+        с real-time обновлениями через WebSocket, REST API и современным UI
+      </p>
+      <div class="hero-stats">
+        <div class="stat">
+          <div class="stat-value">4</div>
+          <div class="stat-label">Компонента</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">2</div>
+          <div class="stat-label">Сервиса</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">235KB</div>
+          <div class="stat-label">Bundle Size</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">100%</div>
+          <div class="stat-label">Typed</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="demo-cards">
+    <h2 class="section-title">Доступные компоненты</h2>
+    <div class="cards-grid">
+      @for (card of demoCards; track card.route) {
+        <a [routerLink]="card.route" class="demo-card" [style.--card-color]="card.color">
+          <div class="card-icon">{{ card.icon }}</div>
+          <h3 class="card-title">{{ card.title }}</h3>
+          <p class="card-description">{{ card.description }}</p>
+          <ul class="card-features">
+            @for (feature of card.features; track feature) {
+              <li>✓ {{ feature }}</li>
+            }
+          </ul>
+          <div class="card-action">
+            Открыть демо →
+          </div>
+        </a>
+      }
+    </div>
+  </section>
+
+  <section class="tech-stack">
+    <h2 class="section-title">Технологический стек</h2>
+    <div class="tech-grid">
+      @for (tech of techStack; track tech.name) {
+        <div class="tech-item">
+          <span class="tech-icon">{{ tech.icon }}</span>
+          <span class="tech-name">{{ tech.name }}</span>
+        </div>
+      }
+    </div>
+  </section>
+
+  <section class="api-reference">
+    <h2 class="section-title">API Endpoints</h2>
+    <div class="api-list">
+      @for (endpoint of apiEndpoints; track endpoint.path) {
+        <div class="api-item">
+          <span class="api-method" [class]="'method-' + endpoint.method.toLowerCase()">
+            {{ endpoint.method }}
+          </span>
+          <code class="api-path">{{ endpoint.path }}</code>
+          <span class="api-description">{{ endpoint.description }}</span>
+        </div>
+      }
+    </div>
+  </section>
+
+  <section class="installation">
+    <h2 class="section-title">Установка</h2>
+    <div class="code-block">
+      <pre><code>npm install @sto/ui</code></pre>
+    </div>
+    <div class="code-block">
+      <pre><code>import {{ '{' }}
+  DisplayBoardComponent,
+  TrackingPageComponent,
+  MechanicTerminalComponent,
+  QrJoinFormComponent,
+  StoWebSocketService,
+  StoApiService
+{{ '}' }} from '@sto/ui';</code></pre>
+    </div>
+  </section>
+
+  <section class="features">
+    <h2 class="section-title">Ключевые возможности</h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <h3>Real-time Updates</h3>
+        <p>WebSocket через Socket.IO с автоматическим переподключением</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📱</div>
+        <h3>Mobile-First</h3>
+        <p>Адаптивный дизайн для всех устройств</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎯</div>
+        <h3>Standalone Components</h3>
+        <p>Современная архитектура Angular 20</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔒</div>
+        <h3>Type Safe</h3>
+        <p>Полная типизация TypeScript в strict mode</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📡</div>
+        <h3>Angular Signals</h3>
+        <p>Реактивное управление состоянием</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🌳</div>
+        <h3>Tree-shakeable</h3>
+        <p>Оптимизированный размер бандла</p>
+      </div>
+    </div>
+  </section>
+</div>

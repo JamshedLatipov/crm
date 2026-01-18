@@ -1,0 +1,22 @@
+{
+  "name": "sto-types",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/shared/sto-types/src",
+  "projectType": "library",
+  "tags": ["type:lib", "scope:shared"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/shared/sto-types",
+        "main": "libs/shared/sto-types/src/index.ts",
+        "tsConfig": "libs/shared/sto-types/tsconfig.lib.json",
+        "assets": ["libs/shared/sto-types/*.md"]
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    }
+  }
+}

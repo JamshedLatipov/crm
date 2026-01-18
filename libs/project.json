@@ -1,0 +1,37 @@
+{
+  "name": "sto-ui",
+  "$schema": "../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/src",
+  "prefix": "lib",
+  "projectType": "library",
+  "tags": ["type:ui", "scope:sto"],
+  "targets": {
+    "build": {
+      "executor": "@nx/angular:ng-packagr-lite",
+      "outputs": ["{workspaceRoot}/dist/libs"],
+      "options": {
+        "project": "libs/ng-package.json"
+      },
+      "configurations": {
+        "production": {
+          "tsConfig": "libs/tsconfig.lib.prod.json"
+        },
+        "development": {
+          "tsConfig": "libs/tsconfig.lib.json"
+        }
+      },
+      "defaultConfiguration": "production"
+    },
+    "test": {
+      "executor": "@nx/vite:test",
+      "outputs": ["{workspaceRoot}/coverage/libs"],
+      "options": {
+        "passWithNoTests": true,
+        "reportsDirectory": "../coverage/libs"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    }
+  }
+}

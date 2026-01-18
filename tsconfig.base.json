@@ -29,7 +29,10 @@
     "paths": {
       "@crm/back/*": ["apps/back/src/*"],
       "@crm/front/*": ["apps/front/src/*"],
-      "@crm/shared": ["libs/shared/src/index.ts"]
+      "@crm/shared": ["libs/shared/src/index.ts"],
+      "@libs/shared/sto-types": ["libs/shared/sto-types/src/index.ts"],
+      "@libs/sto-ui": ["libs/sto-ui/src/index.ts"],
+      "@sto/ui": ["libs/src/index.ts"]
     }
   },
   "exclude": [
